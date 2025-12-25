@@ -300,3 +300,51 @@ export function useMedicalProviders() {
 
   return { providers, refetch: fetchProviders };
 }
+
+// Hook for panic events
+interface PanicEvent {
+  id: string;
+  user_id: string;
+  panic_type: string;
+  lat: number;
+  lng: number;
+  resolved: boolean;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export function usePanicEvents() {
+  const [events, setEvents] = useState<PanicEvent[]>([]);
+
+  const fetchEvents = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('panic_events')
+      .select('*')
+      .eq('resolved', false)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (!error && data) {
+      setEvents(data as PanicEvent[]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+
+    const channel = supabase
+      .channel('panic_events_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'panic_events' },
+        () => fetchEvents()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchEvents]);
+
+  return { events, refetch: fetchEvents };
+}

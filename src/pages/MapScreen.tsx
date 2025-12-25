@@ -6,7 +6,8 @@ import L from 'leaflet';
 import DOMPurify from 'dompurify';
 import { Locate } from 'lucide-react';
 import { useLocation } from '@/hooks/useLocation';
-import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders } from '@/hooks/useRealtime';
+import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders, usePanicEvents } from '@/hooks/useRealtime';
+import { AlertsPanel } from '@/components/AlertsPanel';
 import { cn } from '@/lib/utils';
 import 'leaflet/dist/leaflet.css';
 
@@ -130,6 +131,57 @@ const createReportIcon = (severity: number) => {
   });
 };
 
+// Panic event icons with different colors based on type
+const createPanicIcon = (panicType: string) => {
+  const typeConfig: Record<string, { color: string; emoji: string }> = {
+    'AMBULANCIA_PROPIA': { color: '#ef4444', emoji: '🚑' },
+    'AMBULANCIA_TERCERO': { color: '#ef4444', emoji: '🚑' },
+    'PATRULLA': { color: '#3b82f6', emoji: '🚔' },
+    'MECANICO': { color: '#eab308', emoji: '🔧' },
+    'PROTECCION_CIVIL': { color: '#f97316', emoji: '🆘' },
+  };
+  const config = typeConfig[panicType] || { color: '#ef4444', emoji: '🆘' };
+  
+  return L.divIcon({
+    className: 'panic-marker',
+    html: `
+      <div style="
+        width: 44px;
+        height: 44px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <div style="
+          position: absolute;
+          width: 44px;
+          height: 44px;
+          background: ${config.color}40;
+          border-radius: 50%;
+          animation: pulsePanic 1s infinite;
+        "></div>
+        <div style="
+          width: 32px;
+          height: 32px;
+          background: ${config.color};
+          border: 3px solid white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1;
+          font-size: 16px;
+          box-shadow: 0 2px 8px ${config.color}80;
+        ">${config.emoji}</div>
+      </div>
+    `,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -22],
+  });
+};
+
 // Medical provider icon with cross symbol
 const createMedicalIcon = (hasKit: boolean, canProvide: boolean) => {
   const iconContent = canProvide 
@@ -196,6 +248,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
   const { requests: helpRequests } = useHelpRequests(position);
   const { reports } = useRoadReports();
   const { providers: medicalProviders } = useMedicalProviders();
+  const { events: panicEvents } = usePanicEvents();
 
   // Default center (Mexico City)
   const defaultCenter: [number, number] = [19.4326, -99.1332];
@@ -236,6 +289,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
       @keyframes pulseMedical {
         0%, 100% { transform: scale(1); opacity: 0.4; }
         50% { transform: scale(1.3); opacity: 0; }
+      }
+      @keyframes pulsePanic {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.4); opacity: 0; }
       }
     `;
     document.head.appendChild(style);
@@ -456,6 +513,66 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
     });
   }, [medicalProviders, mapReady]);
 
+  // Update panic event markers
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady) return;
+    const map = mapInstanceRef.current;
+
+    // Remove old panic markers
+    markersRef.current.forEach((marker, key) => {
+      if (key.startsWith('panic-') && !panicEvents.find(e => `panic-${e.id}` === key)) {
+        map.removeLayer(marker);
+        markersRef.current.delete(key);
+      }
+    });
+
+    // Add/update panic markers
+    panicEvents.forEach((event) => {
+      const key = `panic-${event.id}`;
+      const existingMarker = markersRef.current.get(key);
+
+      const typeLabels: Record<string, string> = {
+        'AMBULANCIA_PROPIA': '🚑 Ambulancia Propia',
+        'AMBULANCIA_TERCERO': '🚑 Ambulancia Tercero',
+        'PATRULLA': '🚔 Patrulla',
+        'MECANICO': '🔧 Mecánico',
+        'PROTECCION_CIVIL': '🆘 Protección Civil',
+      };
+      const label = typeLabels[event.panic_type] || '🆘 Emergencia';
+
+      if (existingMarker) {
+        existingMarker.setLatLng([event.lat, event.lng]);
+      } else {
+        const marker = L.marker([event.lat, event.lng], {
+          icon: createPanicIcon(event.panic_type),
+          zIndexOffset: 600,
+        })
+          .addTo(map)
+          .bindPopup(`
+            <div style="text-align: center; padding: 4px;">
+              <div style="font-size: 16px; font-weight: bold; color: #ef4444;">⚠️ ALERTA SOS</div>
+              <div style="font-size: 13px; margin-top: 4px;">${label}</div>
+              <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                ${new Date(event.created_at).toLocaleTimeString()}
+              </div>
+              <a href="https://maps.google.com/?q=${event.lat},${event.lng}" 
+                 target="_blank" 
+                 style="display: inline-block; margin-top: 8px; font-size: 12px; color: #3b82f6;">
+                Abrir en Google Maps
+              </a>
+            </div>
+          `);
+        markersRef.current.set(key, marker);
+      }
+    });
+  }, [panicEvents, mapReady]);
+
+  // Handle view location from alerts panel
+  const handleViewLocation = useCallback((lat: number, lng: number) => {
+    if (!mapInstanceRef.current) return;
+    mapInstanceRef.current.setView([lat, lng], 17, { animate: true });
+  }, []);
+
   return (
     <div className={cn('relative w-full h-full', className)}>
       {/* Location error banner */}
@@ -468,24 +585,33 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
       {/* Map container */}
       <div ref={mapRef} className="w-full h-full" />
 
-      {/* Active users count + center button */}
-      <div className="absolute top-4 left-4 z-[1000] flex items-center gap-2">
-        <div className="bg-card/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-border">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-sm font-medium text-foreground">
-              {locations.length} {locations.length === 1 ? 'activo' : 'activos'}
-            </span>
+      {/* Active users count + center button + alerts panel */}
+      <div className="absolute top-4 left-4 right-4 z-[1000] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="bg-card/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-border">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-sm font-medium text-foreground">
+                {locations.length} {locations.length === 1 ? 'activo' : 'activos'}
+              </span>
+            </div>
           </div>
+          <button
+            onClick={centerOnMe}
+            disabled={!position}
+            className="bg-card/95 backdrop-blur-sm rounded-lg p-2.5 shadow-lg border border-border hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Centrar en mi ubicación"
+          >
+            <Locate className="w-5 h-5 text-primary" />
+          </button>
         </div>
-        <button
-          onClick={centerOnMe}
-          disabled={!position}
-          className="bg-card/95 backdrop-blur-sm rounded-lg p-2.5 shadow-lg border border-border hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          aria-label="Centrar en mi ubicación"
-        >
-          <Locate className="w-5 h-5 text-primary" />
-        </button>
+        
+        {/* Alerts Panel Button */}
+        <AlertsPanel
+          panicEvents={panicEvents}
+          helpRequests={helpRequests}
+          onViewLocation={handleViewLocation}
+        />
       </div>
 
       {/* Map legend */}
@@ -500,7 +626,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
             <span className="text-foreground">Médico/Botiquín</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full" style={{ background: '#ef4444' }} />
+            <div className="w-4 h-4 rounded-full animate-pulse" style={{ background: '#ef4444' }} />
+            <span className="text-foreground">Alerta SOS</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full" style={{ background: '#ef4444', opacity: 0.7 }} />
             <span className="text-foreground">Ayuda 14</span>
           </div>
           <div className="flex items-center gap-2">
