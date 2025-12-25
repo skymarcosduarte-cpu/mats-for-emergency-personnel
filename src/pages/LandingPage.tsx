@@ -29,8 +29,14 @@ import {
   MessageSquare,
   Send,
   Loader2,
-  UserPlus
+  UserPlus,
+  Activity,
+  Heart,
+  Cake,
+  AlertTriangle
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 import {
@@ -293,21 +299,47 @@ export default function LandingPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [qrDialogCode, setQrDialogCode] = useState<string | null>(null);
   const [userCount, setUserCount] = useState<number | null>(null);
+  const [activities, setActivities] = useState<Array<{
+    activity_type: string;
+    activity_message: string;
+    created_at: string;
+  }>>([]);
 
-  // Fetch beta user count
+  // Fetch beta user count and recent activity
   useEffect(() => {
-    const fetchUserCount = async () => {
+    const fetchData = async () => {
       try {
-        const { data, error } = await supabase.rpc('get_beta_user_count');
-        if (!error && data !== null) {
-          setUserCount(data);
+        // Fetch user count
+        const { data: countData } = await supabase.rpc('get_beta_user_count');
+        if (countData !== null) {
+          setUserCount(countData);
+        }
+
+        // Fetch recent activity
+        const { data: activityData } = await supabase.rpc('get_recent_activity', { limit_count: 6 });
+        if (activityData) {
+          setActivities(activityData);
         }
       } catch (err) {
-        console.error('Error fetching user count:', err);
+        console.error('Error fetching data:', err);
       }
     };
-    fetchUserCount();
+    fetchData();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, []);
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'new_member': return <UserPlus className="w-4 h-4 text-primary" />;
+      case 'help_resolved': return <Heart className="w-4 h-4 text-green-500" />;
+      case 'community_event': return <Cake className="w-4 h-4 text-pink-500" />;
+      case 'road_verified': return <CheckCircle2 className="w-4 h-4 text-blue-500" />;
+      default: return <Activity className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -403,6 +435,49 @@ export default function LandingPage() {
       </section>
 
       {/* Beta Codes Section - Hidden during open beta */}
+
+      {/* Live Activity Feed */}
+      {activities.length > 0 && (
+        <section className="py-12 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                Actividad en vivo
+              </div>
+              <h2 className="text-2xl font-bold">Comunidad Activa</h2>
+            </div>
+            <div className="max-w-2xl mx-auto">
+              <div className="space-y-3">
+                {activities.map((activity, index) => (
+                  <div 
+                    key={`${activity.activity_type}-${index}`}
+                    className="flex items-center gap-3 p-3 bg-background rounded-lg border border-border/50 hover:border-primary/30 transition-colors"
+                  >
+                    <div className="p-2 rounded-full bg-muted">
+                      {getActivityIcon(activity.activity_type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {activity.activity_message}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(activity.created_at), { 
+                          addSuffix: true, 
+                          locale: es 
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* QR Code Dialog */}
       <Dialog open={!!qrDialogCode} onOpenChange={() => setQrDialogCode(null)}>
