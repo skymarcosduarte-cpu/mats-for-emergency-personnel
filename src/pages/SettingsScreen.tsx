@@ -48,7 +48,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onLogout
 }) => {
   const { profile, role, signOut, updateProfile } = useAuth();
-  const { permission, isSupported, requestPermission } = usePushNotifications();
+  const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState('');
@@ -62,6 +62,47 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     setRequestingPermission(true);
     await requestPermission();
     setRequestingPermission(false);
+  };
+
+  // Test notification
+  const handleTestNotification = () => {
+    const testQuake = {
+      id: 'test-123',
+      type: 'Feature' as const,
+      properties: {
+        mag: 5.2,
+        place: '10km NE of Test City (PRUEBA)',
+        time: Date.now(),
+        updated: Date.now(),
+        tz: null,
+        url: '',
+        detail: '',
+        felt: null,
+        cdi: null,
+        mmi: null,
+        alert: null,
+        status: 'automatic',
+        tsunami: 0,
+        sig: 500,
+        net: 'test',
+        code: 'test123',
+        ids: ',test123,',
+        sources: ',test,',
+        types: ',origin,',
+        nst: null,
+        dmin: null,
+        rms: 0.5,
+        gap: null,
+        magType: 'ml',
+        type: 'earthquake',
+        title: 'M 5.2 - 10km NE of Test City'
+      },
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [-99.1332, 19.4326, 10] as [number, number, number]
+      }
+    };
+    showEarthquakeNotification(testQuake, 15);
   };
 
   // Medical assistance state
@@ -322,6 +363,18 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   Las notificaciones fueron bloqueadas. Para activarlas, ve a la configuración de tu navegador y permite notificaciones para este sitio.
                 </p>
               </div>
+            )}
+
+            {permission === 'granted' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTestNotification}
+                className="w-full"
+              >
+                <Bell className="w-4 h-4 mr-2" />
+                Probar Notificación
+              </Button>
             )}
           </CardContent>
         </Card>
