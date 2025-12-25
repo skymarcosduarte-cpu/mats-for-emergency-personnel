@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BottomNavigation, type TabId } from '@/components/BottomNavigation';
+import { MatsLogo } from '@/components/MatsLogo';
 import { PanicButton } from '@/components/PanicButton';
 import { AppHeader } from '@/components/AppHeader';
 import { AuthGate } from '@/pages/AuthGate';
@@ -37,28 +38,38 @@ const queryClient = new QueryClient();
 
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('map');
   const [userRole] = useState<UserRole>('RESCATISTA');
+  
+  // Use the auth hook to check for existing session
+  const { user, profile, loading: authLoading, signOut } = useAuth();
+  
+  // Determine authentication state
+  const isAuthenticated = !!user;
+  const isProfileComplete = !!profile;
 
-  const handleAuthComplete = () => {
-    // Check if user has completed onboarding before
-    const onboardingComplete = localStorage.getItem('onboarding-complete');
-    if (!onboardingComplete) {
-      setIsNewUser(true);
-      setShowOnboarding(true);
+  // Handle new user onboarding
+  useEffect(() => {
+    if (isAuthenticated && isProfileComplete) {
+      const onboardingComplete = localStorage.getItem('onboarding-complete');
+      if (!onboardingComplete) {
+        setIsNewUser(true);
+        setShowOnboarding(true);
+      }
     }
-    setIsAuthenticated(true);
-  };
+  }, [isAuthenticated, isProfileComplete]);
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
     setIsNewUser(false);
+    localStorage.setItem('onboarding-complete', 'true');
   };
 
-  const handleLogout = () => setIsAuthenticated(false);
+  const handleLogout = async () => {
+    await signOut();
+  };
 
   // Check if splash was shown recently (within session)
   useEffect(() => {
@@ -73,12 +84,23 @@ function AppContent() {
     sessionStorage.setItem('splash-shown', 'true');
   };
 
+  // Show splash screen
   if (showSplash) {
     return <SplashScreen onComplete={handleSplashComplete} />;
   }
 
-  if (!isAuthenticated) {
-    return <AuthGate onAuthComplete={handleAuthComplete} />;
+  // Show loading while checking auth state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <MatsLogo size={64} showText />
+      </div>
+    );
+  }
+
+  // Show auth gate if not authenticated or profile incomplete
+  if (!isAuthenticated || !isProfileComplete) {
+    return <AuthGate onAuthComplete={() => {}} />;
   }
 
   // Show onboarding for new users
