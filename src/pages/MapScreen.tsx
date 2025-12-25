@@ -3,10 +3,17 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
+import DOMPurify from 'dompurify';
 import { useLocation } from '@/hooks/useLocation';
 import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders } from '@/hooks/useRealtime';
 import { cn } from '@/lib/utils';
 import 'leaflet/dist/leaflet.css';
+
+// Sanitize user content for safe HTML rendering
+const sanitize = (text: string | null | undefined): string => {
+  if (!text) return '';
+  return DOMPurify.sanitize(text, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+};
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
@@ -351,7 +358,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
               <div style="font-size: 11px; color: #666; margin-top: 4px;">
                 ${new Date(req.created_at).toLocaleTimeString()}
               </div>
-              ${req.message ? `<div style="font-size: 13px; margin-top: 8px;">${req.message}</div>` : ''}
+              ${req.message ? `<div style="font-size: 13px; margin-top: 8px;">${sanitize(req.message)}</div>` : ''}
             </div>
           `);
         markersRef.current.set(key, marker);
@@ -386,11 +393,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
           .addTo(map)
           .bindPopup(`
             <div style="max-width: 180px;">
-              <div style="font-weight: 500;">${report.title}</div>
+              <div style="font-weight: 500;">${sanitize(report.title)}</div>
               <div style="font-size: 11px; color: #666; margin-top: 4px;">
-                ${report.category} • Severidad ${report.severity}/4
+                ${sanitize(report.category)} • Severidad ${report.severity}/4
               </div>
-              ${report.description ? `<div style="font-size: 12px; margin-top: 8px;">${report.description}</div>` : ''}
+              ${report.description ? `<div style="font-size: 12px; margin-top: 8px;">${sanitize(report.description)}</div>` : ''}
             </div>
           `);
         markersRef.current.set(key, marker);
