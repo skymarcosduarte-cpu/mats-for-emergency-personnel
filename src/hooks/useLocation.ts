@@ -1,6 +1,7 @@
 // Geolocation Hook for COMUNIDAD EX SOS
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import type { GeoPosition } from '@/types';
 
 interface LocationState {
@@ -46,15 +47,41 @@ export function useLocation(options: UseLocationOptions = {}) {
     timestamp: pos.timestamp,
   });
 
+  // Sync position to database for other users to see
+  const syncPositionToDb = useCallback(async (pos: GeoPosition) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase
+        .from('user_locations')
+        .upsert({
+          user_id: user.id,
+          lat: pos.lat,
+          lng: pos.lng,
+          accuracy: pos.accuracy,
+          heading: pos.heading,
+          speed: pos.speed,
+          is_online: true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+    } catch (error) {
+      console.error('Error syncing location to DB:', error);
+    }
+  }, []);
+
   // Handle position update
   const handlePosition = useCallback((pos: GeolocationPosition) => {
+    const geoPos = convertPosition(pos);
     setState(prev => ({
       ...prev,
-      position: convertPosition(pos),
+      position: geoPos,
       loading: false,
       error: null,
     }));
-  }, []);
+    // Sync to database so other users can see
+    syncPositionToDb(geoPos);
+  }, [syncPositionToDb]);
 
   // Handle error
   const handleError = useCallback((err: GeolocationPositionError) => {
@@ -136,14 +163,30 @@ export function useLocation(options: UseLocationOptions = {}) {
     );
   }, [opts.enableHighAccuracy, opts.timeout, opts.maximumAge, handlePosition, handleError]);
 
+  // Mark user as offline in database
+  const markOffline = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase
+        .from('user_locations')
+        .update({ is_online: false })
+        .eq('user_id', user.id);
+    } catch (error) {
+      console.error('Error marking offline:', error);
+    }
+  }, []);
+
   // Stop watching position
   const stopWatching = useCallback(() => {
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
       setState(prev => ({ ...prev, watching: false }));
+      markOffline();
     }
-  }, []);
+  }, [markOffline]);
 
   // Auto-watch on mount
   useEffect(() => {
@@ -151,10 +194,19 @@ export function useLocation(options: UseLocationOptions = {}) {
       startWatching();
     }
 
+    // Mark offline when page unloads
+    const handleUnload = () => {
+      markOffline();
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    window.addEventListener('pagehide', handleUnload);
+
     return () => {
       stopWatching();
+      window.removeEventListener('beforeunload', handleUnload);
+      window.removeEventListener('pagehide', handleUnload);
     };
-  }, [opts.autoWatch, startWatching, stopWatching]);
+  }, [opts.autoWatch, startWatching, stopWatching, markOffline]);
 
   // Request permission (for UI purposes)
   const requestPermission = useCallback(async () => {
