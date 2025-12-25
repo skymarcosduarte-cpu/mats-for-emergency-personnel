@@ -461,6 +461,16 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
       {/* Map container */}
       <div ref={mapRef} className="w-full h-full" />
 
+      {/* Active users count */}
+      <div className="absolute top-4 left-4 z-[1000] bg-card/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-border">
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-sm font-medium text-foreground">
+            {locations.length} {locations.length === 1 ? 'activo' : 'activos'}
+          </span>
+        </div>
+      </div>
+
       {/* Map legend */}
       <div className="absolute bottom-20 right-4 z-[1000] bg-card/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-border">
         <div className="space-y-2 text-xs">
