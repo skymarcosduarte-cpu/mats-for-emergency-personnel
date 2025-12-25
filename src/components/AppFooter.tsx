@@ -17,7 +17,7 @@ export function AppFooter() {
         </p>
         
         <Button variant="ghost" size="sm" asChild>
-          <a href="mailto:contacto@businessfirstaid.online">
+          <a href="mailto:contacto@latamgrowthoperators.com">
             <MessageSquare className="h-4 w-4 mr-2" />
             Contáctanos
           </a>
@@ -25,6 +25,17 @@ export function AppFooter() {
         
         <p className="text-xs text-muted-foreground">
           © 2025 M.A.T.S.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Powered by{" "}
+          <a 
+            href="https://latamgrowthoperators.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            Latam Growth Operators
+          </a>
         </p>
       </div>
     </footer>
