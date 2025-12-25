@@ -22,6 +22,7 @@ import { SplashScreen } from '@/components/SplashScreen';
 import { EmergencyChat } from '@/components/EmergencyChat';
 import { SeismicAlert } from '@/components/SeismicAlert';
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
+import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import { useAppState } from '@/hooks/useRealtime';
 import { useLocation } from '@/hooks/useLocation';
 import { useEarthquakeDetection } from '@/hooks/useEarthquakeDetection';
@@ -34,10 +35,26 @@ const queryClient = new QueryClient();
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('map');
   const [userRole] = useState<UserRole>('RESCATISTA');
 
-  const handleAuthComplete = () => setIsAuthenticated(true);
+  const handleAuthComplete = () => {
+    // Check if user has completed onboarding before
+    const onboardingComplete = localStorage.getItem('onboarding-complete');
+    if (!onboardingComplete) {
+      setIsNewUser(true);
+      setShowOnboarding(true);
+    }
+    setIsAuthenticated(true);
+  };
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    setIsNewUser(false);
+  };
+
   const handleLogout = () => setIsAuthenticated(false);
 
   // Check if splash was shown recently (within session)
@@ -59,6 +76,11 @@ function AppContent() {
 
   if (!isAuthenticated) {
     return <AuthGate onAuthComplete={handleAuthComplete} />;
+  }
+
+  // Show onboarding for new users
+  if (showOnboarding) {
+    return <OnboardingTutorial onComplete={handleOnboardingComplete} />;
   }
 
   return <AuthenticatedApp activeTab={activeTab} setActiveTab={setActiveTab} userRole={userRole} handleLogout={handleLogout} />;
