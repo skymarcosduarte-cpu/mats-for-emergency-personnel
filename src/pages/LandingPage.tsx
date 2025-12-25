@@ -521,7 +521,7 @@ export default function LandingPage() {
             </p>
             
             <Button variant="outline" asChild>
-              <a href="mailto:contacto@businessfirstaid.online">
+              <a href="mailto:contacto@latamgrowthoperators.com">
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Contáctanos
               </a>
@@ -529,6 +529,17 @@ export default function LandingPage() {
             
             <p className="text-xs text-muted-foreground">
               © 2025 M.A.T.S. - Mutual Aid & Tactical Support
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Powered by{" "}
+              <a 
+                href="https://latamgrowthoperators.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                Latam Growth Operators
+              </a>
             </p>
           </div>
         </div>
