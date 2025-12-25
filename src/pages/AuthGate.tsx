@@ -204,7 +204,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col" style={{ minHeight: '100vh' }}>
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <MatsLogo size={80} showText className="mb-8" />
 
