@@ -15,7 +15,9 @@ import {
   Download,
   HeartPulse,
   Cross,
-  Loader2
+  Loader2,
+  Bell,
+  BellOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +35,7 @@ import { AppFooter } from '@/components/AppFooter';
 import { APP_VERSION, BUILD_TIME, getFullVersionString } from '@/lib/versionCheck';
 import { useAuth } from '@/hooks/useAuth';
 import { UpdateButton } from '@/components/UpdatePrompt';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import type { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 import QRCode from 'qrcode';
@@ -45,12 +48,21 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onLogout
 }) => {
   const { profile, role, signOut, updateProfile } = useAuth();
+  const { permission, isSupported, requestPermission } = usePushNotifications();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [savingMedical, setSavingMedical] = useState(false);
+  const [requestingPermission, setRequestingPermission] = useState(false);
+
+  // Handle notification permission request
+  const handleRequestPermission = async () => {
+    setRequestingPermission(true);
+    await requestPermission();
+    setRequestingPermission(false);
+  };
 
   // Medical assistance state
   const [canProvideMedical, setCanProvideMedical] = useState(
@@ -239,7 +251,81 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </CardContent>
         </Card>
 
-        {/* Invite Section */}
+        {/* Notifications Section */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Bell className="w-5 h-5" />
+              Notificaciones
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Recibe alertas de sismos cercanos incluso cuando la app está en segundo plano.
+            </p>
+            
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                {permission === 'granted' ? (
+                  <div className="w-10 h-10 rounded-full bg-safe/10 flex items-center justify-center">
+                    <Bell className="w-5 h-5 text-safe" />
+                  </div>
+                ) : permission === 'denied' ? (
+                  <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                    <BellOff className="w-5 h-5 text-destructive" />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                    <Bell className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                )}
+                <div>
+                  <p className="font-medium text-foreground">
+                    {!isSupported 
+                      ? 'No soportado'
+                      : permission === 'granted' 
+                        ? 'Activadas' 
+                        : permission === 'denied' 
+                          ? 'Bloqueadas' 
+                          : 'Sin configurar'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {!isSupported 
+                      ? 'Tu navegador no soporta notificaciones'
+                      : permission === 'granted' 
+                        ? 'Recibirás alertas de sismos' 
+                        : permission === 'denied' 
+                          ? 'Habilita en configuración del navegador' 
+                          : 'Activa las notificaciones para alertas'}
+                  </p>
+                </div>
+              </div>
+              
+              {isSupported && permission !== 'granted' && permission !== 'denied' && (
+                <Button
+                  size="sm"
+                  onClick={handleRequestPermission}
+                  disabled={requestingPermission}
+                >
+                  {requestingPermission ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Activar'
+                  )}
+                </Button>
+              )}
+            </div>
+
+            {permission === 'denied' && (
+              <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                <p className="text-xs text-destructive">
+                  Las notificaciones fueron bloqueadas. Para activarlas, ve a la configuración de tu navegador y permite notificaciones para este sitio.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
