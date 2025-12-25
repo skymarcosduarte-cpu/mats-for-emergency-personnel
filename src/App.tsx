@@ -30,6 +30,7 @@ import { useEarthquakeDetection } from '@/hooks/useEarthquakeDetection';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useStatusCheckin } from '@/hooks/useStatusCheckin';
 import { useAuth } from '@/hooks/useAuth';
+import { usePanicAlerts } from '@/hooks/usePanicAlerts';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { UserRole, USGSEarthquake, PanicType } from '@/types';
@@ -118,6 +119,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   const [panicOpen, setPanicOpen] = useState(false);
   const { user } = useAuth();
   
+  // Real-time panic alerts from other users
+  const { recentAlerts, unreadCount } = usePanicAlerts();
+  
   // Push notifications
   const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
   
@@ -162,7 +166,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     setPanicOpen(true); // Open panic button to request help
   };
 
-  // Handle panic button trigger - save to database
+  // Handle panic button trigger - save to database and notify other users
   const handlePanicTriggered = useCallback(async (type: PanicType, lat: number, lng: number) => {
     if (!user?.id) {
       console.error('No user ID for panic event');
@@ -181,8 +185,10 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
         console.error('Error saving panic event:', error);
         toast.error('Error al guardar alerta');
       } else {
-        console.log('Panic event saved successfully:', type, lat, lng);
-        toast.success('Alerta enviada a la comunidad');
+        console.log('Panic event saved and broadcasted:', type, lat, lng);
+        toast.success('🚨 Alerta enviada a todos los usuarios de la comunidad', {
+          duration: 5000,
+        });
       }
     } catch (err) {
       console.error('Failed to save panic event:', err);
