@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { USGSEarthquake } from '@/types';
+import type { TropicalCycloneAlert, FireHotspot } from '@/hooks/useMexicoAlerts';
 
 interface PushNotificationState {
   permission: NotificationPermission | 'unsupported';
@@ -72,6 +73,80 @@ export function usePushNotifications() {
     }
   }, [state.isSupported]);
 
+  const showCycloneNotification = useCallback((
+    cyclone: TropicalCycloneAlert
+  ) => {
+    if (!state.isSupported || Notification.permission !== 'granted') {
+      return false;
+    }
+
+    const typeLabels = {
+      hurricane: 'Huracán',
+      tropical_storm: 'Tormenta Tropical',
+      tropical_depression: 'Depresión Tropical',
+      disturbance: 'Perturbación',
+    };
+
+    const typeLabel = typeLabels[cyclone.type];
+    const distance = cyclone.distanceKm ? `a ${Math.round(cyclone.distanceKm)} km` : '';
+    const category = cyclone.category ? ` Cat. ${cyclone.category}` : '';
+
+    try {
+      const notification = new Notification(`🌀 ${typeLabel}${category}: ${cyclone.name}`, {
+        body: `${cyclone.headline}\n${distance}`,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: `cyclone-${cyclone.id}`,
+        requireInteraction: true,
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        if (cyclone.link) {
+          window.open(cyclone.link, '_blank');
+        }
+        notification.close();
+      };
+
+      return true;
+    } catch (error) {
+      console.error('Error showing cyclone notification:', error);
+      return false;
+    }
+  }, [state.isSupported]);
+
+  const showFireNotification = useCallback((
+    fires: FireHotspot[],
+    nearestDistance: number
+  ) => {
+    if (!state.isSupported || Notification.permission !== 'granted') {
+      return false;
+    }
+
+    const fireCount = fires.length;
+    const distanceText = `a ${Math.round(nearestDistance)} km`;
+
+    try {
+      const notification = new Notification('🔥 Incendio Forestal Detectado', {
+        body: `${fireCount} punto${fireCount > 1 ? 's' : ''} de calor ${distanceText} de tu ubicación`,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: 'fire-alert',
+        requireInteraction: true,
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+
+      return true;
+    } catch (error) {
+      console.error('Error showing fire notification:', error);
+      return false;
+    }
+  }, [state.isSupported]);
+
   const showGenericNotification = useCallback((
     title: string,
     body: string,
@@ -105,6 +180,8 @@ export function usePushNotifications() {
     ...state,
     requestPermission,
     showEarthquakeNotification,
+    showCycloneNotification,
+    showFireNotification,
     showGenericNotification,
   };
 }

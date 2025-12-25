@@ -1,11 +1,12 @@
 // Alerts Screen for COMUNIDAD EX SOS
 // USGS earthquakes + "4/10" quick report + "14" help + notifications
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind } from 'lucide-react';
 import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
 import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
-import { useMexicoAlerts } from '@/hooks/useMexicoAlerts';
+import { useMexicoAlerts, TropicalCycloneAlert, FireHotspot } from '@/hooks/useMexicoAlerts';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -25,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
+import { playUrgentAlert } from '@/lib/alertSound';
 
 // Removed - now using useEarthquakeHistory hook
 
@@ -73,6 +75,28 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     refresh: refreshWeather
   } = useWeatherAlerts(position);
 
+  // Push notifications
+  const { 
+    permission: notifPermission, 
+    isSupported: notifSupported,
+    requestPermission: requestNotifPermission,
+    showCycloneNotification,
+    showFireNotification 
+  } = usePushNotifications();
+
+  // Callbacks for Mexico alerts notifications
+  const handleNewCyclone = useCallback((cyclone: TropicalCycloneAlert) => {
+    console.log('New cyclone detected:', cyclone.name);
+    showCycloneNotification(cyclone);
+    playUrgentAlert();
+  }, [showCycloneNotification]);
+
+  const handleNewFires = useCallback((fires: FireHotspot[], nearestDistance: number) => {
+    console.log('New fires detected:', fires.length, 'nearest:', nearestDistance, 'km');
+    showFireNotification(fires, nearestDistance);
+    playUrgentAlert();
+  }, [showFireNotification]);
+
   // Mexico federal alerts (NHC tropical cyclones + fire hotspots)
   const {
     cyclones,
@@ -83,7 +107,10 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     getCycloneIcon,
     getCycloneSeverityColor,
     getFireConfidenceColor
-  } = useMexicoAlerts(position);
+  } = useMexicoAlerts(position, 500, {
+    onNewCyclone: handleNewCyclone,
+    onNewFires: handleNewFires,
+  });
 
   // Handle quick "4 de 10" report
   const handleQuickCheckin = async (quake: EarthquakeWithDistance) => {
@@ -180,6 +207,23 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             <RefreshCw className={cn('w-5 h-5', loading && 'animate-spin')} />
           </Button>
         </div>
+
+        {/* Notification permission prompt */}
+        {notifSupported && notifPermission !== 'granted' && (
+          <div className="mt-3 flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
+            <Bell className="w-5 h-5 text-primary shrink-0" />
+            <p className="text-sm text-foreground flex-1">
+              Activa notificaciones para alertas de ciclones e incendios cercanos
+            </p>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={requestNotifPermission}
+            >
+              Activar
+            </Button>
+          </div>
+        )}
       </div>
 
       <Tabs defaultValue="earthquakes" className="p-4">
