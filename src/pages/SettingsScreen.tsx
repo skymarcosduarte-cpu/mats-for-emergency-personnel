@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { MatsLogo } from '@/components/MatsLogo';
+import { AppFooter } from '@/components/AppFooter';
 import { APP_VERSION, BUILD_TIME, getFullVersionString } from '@/lib/versionCheck';
 import { useAuth } from '@/hooks/useAuth';
 import { UpdateButton } from '@/components/UpdatePrompt';
@@ -212,6 +213,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <LogOut className="w-4 h-4 mr-2" />
           Cerrar Sesión
         </Button>
+
+        {/* Footer */}
+        <AppFooter />
       </div>
 
       {/* Invite Dialog */}
