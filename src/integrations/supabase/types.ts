@@ -705,6 +705,14 @@ export type Database = {
     }
     Functions: {
       get_beta_user_count: { Args: never; Returns: number }
+      get_community_stats: {
+        Args: never
+        Returns: {
+          community_events_total: number
+          help_requests_resolved: number
+          road_reports_total: number
+        }[]
+      }
       get_recent_activity: {
         Args: { limit_count?: number }
         Returns: {

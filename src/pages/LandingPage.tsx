@@ -304,6 +304,11 @@ export default function LandingPage() {
     activity_message: string;
     created_at: string;
   }>>([]);
+  const [stats, setStats] = useState<{
+    help_requests_resolved: number;
+    road_reports_total: number;
+    community_events_total: number;
+  } | null>(null);
 
   // Fetch beta user count and recent activity
   useEffect(() => {
@@ -319,6 +324,12 @@ export default function LandingPage() {
         const { data: activityData } = await supabase.rpc('get_recent_activity', { limit_count: 6 });
         if (activityData) {
           setActivities(activityData);
+        }
+
+        // Fetch community stats
+        const { data: statsData } = await supabase.rpc('get_community_stats');
+        if (statsData && statsData.length > 0) {
+          setStats(statsData[0]);
         }
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -435,6 +446,41 @@ export default function LandingPage() {
       </section>
 
       {/* Beta Codes Section - Hidden during open beta */}
+
+      {/* Statistics Section */}
+      {stats && (stats.help_requests_resolved > 0 || stats.road_reports_total > 0 || stats.community_events_total > 0) && (
+        <section className="py-12 bg-primary/5">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2">Impacto Comunitario</h2>
+              <p className="text-muted-foreground">Juntos hacemos la diferencia</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
+              <Card className="text-center p-6 bg-background border-green-500/30">
+                <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-3">
+                  <Heart className="h-6 w-6 text-green-500" />
+                </div>
+                <div className="text-3xl font-bold text-green-600">{stats.help_requests_resolved}</div>
+                <p className="text-sm text-muted-foreground mt-1">Solicitudes de ayuda resueltas</p>
+              </Card>
+              <Card className="text-center p-6 bg-background border-blue-500/30">
+                <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-3">
+                  <AlertTriangle className="h-6 w-6 text-blue-500" />
+                </div>
+                <div className="text-3xl font-bold text-blue-600">{stats.road_reports_total}</div>
+                <p className="text-sm text-muted-foreground mt-1">Reportes de carretera activos</p>
+              </Card>
+              <Card className="text-center p-6 bg-background border-pink-500/30">
+                <div className="w-12 h-12 rounded-full bg-pink-500/10 flex items-center justify-center mx-auto mb-3">
+                  <Users className="h-6 w-6 text-pink-500" />
+                </div>
+                <div className="text-3xl font-bold text-pink-600">{stats.community_events_total}</div>
+                <p className="text-sm text-muted-foreground mt-1">Eventos comunitarios</p>
+              </Card>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Live Activity Feed */}
       {activities.length > 0 && (
