@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateDistance } from '@/hooks/useLocation';
 import { playSubtleAlert, playUrgentAlert } from '@/lib/alertSound';
+import { areHelpSoundsEnabled } from '@/hooks/useAlertSettings';
 
 interface UserLocation {
   user_id: string;
@@ -109,8 +110,12 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
 
   // Play alert sound based on distance
   const playHelpAlert = useCallback((request: HelpRequest) => {
+    // Check if sounds are enabled
+    if (!areHelpSoundsEnabled()) return;
+    
     // Skip if already alerted for this request
     if (alertedRequestsRef.current.has(request.id)) return;
+    alertedRequestsRef.current.add(request.id);
     alertedRequestsRef.current.add(request.id);
 
     if (!userPosition) {

@@ -17,7 +17,9 @@ import {
   Cross,
   Loader2,
   Bell,
-  BellOff
+  BellOff,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,6 +38,7 @@ import { APP_VERSION, BUILD_TIME, getFullVersionString } from '@/lib/versionChec
 import { useAuth } from '@/hooks/useAuth';
 import { UpdateButton } from '@/components/UpdatePrompt';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useAlertSettings } from '@/hooks/useAlertSettings';
 import type { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 import QRCode from 'qrcode';
@@ -49,6 +52,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 }) => {
   const { profile, role, signOut, updateProfile } = useAuth();
   const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
+  const { helpRequestSounds, earthquakeSounds, setHelpRequestSounds, setEarthquakeSounds } = useAlertSettings();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState('');
@@ -376,6 +380,67 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 Probar Notificación
               </Button>
             )}
+
+            {/* Sound toggles */}
+            <div className="border-t border-border pt-4 mt-4 space-y-4">
+              <p className="text-sm font-medium text-foreground">Sonidos de alerta</p>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center",
+                    earthquakeSounds ? "bg-warning/10" : "bg-muted"
+                  )}>
+                    {earthquakeSounds ? (
+                      <Volume2 className="w-5 h-5 text-warning" />
+                    ) : (
+                      <VolumeX className="w-5 h-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="earthquake-sounds" className="text-foreground font-medium">
+                      Alertas sísmicas
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Sonido al detectar sismos cercanos
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="earthquake-sounds"
+                  checked={earthquakeSounds}
+                  onCheckedChange={setEarthquakeSounds}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center",
+                    helpRequestSounds ? "bg-destructive/10" : "bg-muted"
+                  )}>
+                    {helpRequestSounds ? (
+                      <Volume2 className="w-5 h-5 text-destructive" />
+                    ) : (
+                      <VolumeX className="w-5 h-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="help-sounds" className="text-foreground font-medium">
+                      Solicitudes de ayuda
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Sonido cuando alguien pide ayuda
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="help-sounds"
+                  checked={helpRequestSounds}
+                  onCheckedChange={setHelpRequestSounds}
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
 

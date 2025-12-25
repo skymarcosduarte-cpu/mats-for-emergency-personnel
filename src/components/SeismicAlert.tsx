@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { formatDistance, getGoogleMapsLink } from '@/hooks/useLocation';
 import { playAlertWithVibration } from '@/lib/alertSound';
+import { areEarthquakeSoundsEnabled } from '@/hooks/useAlertSettings';
 import type { USGSEarthquake, QuakeIntensity, QuakeDamage, GeoPosition, UserRole } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -46,9 +47,11 @@ export function SeismicAlert({
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
-  // Play alert sound and vibration when component mounts
+  // Play alert sound and vibration when component mounts (if enabled)
   useEffect(() => {
-    playAlertWithVibration();
+    if (areEarthquakeSoundsEnabled()) {
+      playAlertWithVibration();
+    }
   }, []);
 
   const mag = earthquake.properties.mag;
