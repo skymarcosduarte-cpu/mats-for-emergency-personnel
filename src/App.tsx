@@ -15,6 +15,8 @@ import { StatusScreen } from '@/pages/StatusScreen';
 import { MarketScreen } from '@/pages/MarketScreen';
 import { SettingsScreen } from '@/pages/SettingsScreen';
 import LandingPage from '@/pages/LandingPage';
+import { InstallPrompt } from '@/components/InstallPrompt';
+import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { useAppState } from '@/hooks/useRealtime';
 import type { UserRole } from '@/types';
 
@@ -56,8 +58,10 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <AppHeader onPanicClick={() => setPanicOpen(true)} />
+      <UpdatePrompt />
       <main className="flex-1 overflow-hidden">{renderScreen()}</main>
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} />
+      <InstallPrompt />
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'RESCATISTA'} disasterMode={disasterMode} />
     </div>
   );
