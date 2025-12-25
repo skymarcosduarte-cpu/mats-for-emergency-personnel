@@ -19,16 +19,17 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [rawEarthquakes, setRawEarthquakes] = useState<USGSEarthquake[]>([]);
 
   // Calculate distance for each earthquake
-  const addDistances = useCallback((quakes: USGSEarthquake[]): EarthquakeWithDistance[] => {
+  const addDistances = useCallback((quakes: USGSEarthquake[], pos: GeoPosition | null): EarthquakeWithDistance[] => {
     return quakes.map(quake => {
       let distanceKm: number | null = null;
       let distanceMiles: number | null = null;
 
-      if (userPosition) {
+      if (pos) {
         const [lng, lat] = quake.geometry.coordinates;
-        distanceKm = calculateDistance(userPosition.lat, userPosition.lng, lat, lng);
+        distanceKm = calculateDistance(pos.lat, pos.lng, lat, lng);
         distanceMiles = distanceKm / 1.60934;
       }
 
@@ -38,7 +39,7 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
         distanceMiles,
       };
     });
-  }, [userPosition]);
+  }, []);
 
   // Sort by distance (nearest first) or by time if no position
   const sortEarthquakes = useCallback((quakes: EarthquakeWithDistance[]): EarthquakeWithDistance[] => {
@@ -59,7 +60,7 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
     return data.features;
   }, []);
 
-  // Main fetch function
+  // Main fetch function - doesn't depend on userPosition
   const fetchEarthquakes = useCallback(async (forceRefresh = false) => {
     setLoading(true);
     setError(null);
@@ -96,9 +97,8 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
         }
       }
 
-      const withDistances = addDistances(quakes);
-      const sorted = sortEarthquakes(withDistances);
-      setEarthquakes(sorted);
+      // Store raw earthquakes, distances will be calculated separately
+      setRawEarthquakes(quakes);
     } catch (err) {
       console.error('Error fetching earthquakes:', err);
       
@@ -106,9 +106,7 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
       try {
         const cached = await getCachedEarthquakes();
         if (cached.data.length > 0) {
-          const withDistances = addDistances(cached.data);
-          const sorted = sortEarthquakes(withDistances);
-          setEarthquakes(sorted);
+          setRawEarthquakes(cached.data);
           setIsOffline(true);
           if (cached.cachedAt) {
             setLastUpdated(new Date(cached.cachedAt));
@@ -122,9 +120,9 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
     } finally {
       setLoading(false);
     }
-  }, [fetchFromApi, addDistances, sortEarthquakes]);
+  }, [fetchFromApi]);
 
-  // Initial fetch and set up refresh interval
+  // Initial fetch and set up refresh interval (only runs once)
   useEffect(() => {
     fetchEarthquakes();
 
@@ -155,14 +153,14 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
     };
   }, [fetchEarthquakes]);
 
-  // Re-calculate distances when user position changes
+  // Re-calculate distances when user position or raw earthquakes change
   useEffect(() => {
-    if (earthquakes.length > 0) {
-      const withDistances = addDistances(earthquakes);
+    if (rawEarthquakes.length > 0) {
+      const withDistances = addDistances(rawEarthquakes, userPosition);
       const sorted = sortEarthquakes(withDistances);
       setEarthquakes(sorted);
     }
-  }, [userPosition]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userPosition, rawEarthquakes, addDistances, sortEarthquakes]);
 
   return {
     earthquakes,

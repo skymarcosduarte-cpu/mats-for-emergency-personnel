@@ -198,6 +198,16 @@ export function useMexicoAlerts(
   const seenCycloneIds = useRef<Set<string>>(new Set());
   const seenFireIds = useRef<Set<string>>(new Set());
   const isFirstLoad = useRef(true);
+  
+  // Store callbacks in refs to avoid recreating fetchAlerts on every render
+  const onNewCycloneRef = useRef(options.onNewCyclone);
+  const onNewFiresRef = useRef(options.onNewFires);
+  
+  // Update refs when callbacks change
+  useEffect(() => {
+    onNewCycloneRef.current = options.onNewCyclone;
+    onNewFiresRef.current = options.onNewFires;
+  }, [options.onNewCyclone, options.onNewFires]);
 
   const fetchAlerts = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
@@ -265,7 +275,7 @@ export function useMexicoAlerts(
           const stableId = `${cyclone.basin}-${cyclone.name.toLowerCase()}`;
           if (!seenCycloneIds.current.has(stableId)) {
             seenCycloneIds.current.add(stableId);
-            options.onNewCyclone?.(cyclone);
+            onNewCycloneRef.current?.(cyclone);
           }
         }
 
@@ -274,7 +284,7 @@ export function useMexicoAlerts(
         if (newFires.length > 0) {
           const nearestDistance = Math.min(...newFires.map(f => f.distanceKm || Infinity));
           if (nearestDistance < 100) { // Only notify for fires within 100km
-            options.onNewFires?.(newFires, nearestDistance);
+            onNewFiresRef.current?.(newFires, nearestDistance);
           }
         }
       }
@@ -302,13 +312,13 @@ export function useMexicoAlerts(
         error: 'Error al obtener alertas de México',
       }));
     }
-  }, [position, radiusKm, options]);
+  }, [position, radiusKm]); // Removed options dependency - using refs instead
 
   // Initial fetch and periodic refresh
   useEffect(() => {
     fetchAlerts();
 
-    // Refresh every 1 minute
+    // Refresh every 60 seconds
     const interval = setInterval(fetchAlerts, 60 * 1000);
 
     return () => clearInterval(interval);
