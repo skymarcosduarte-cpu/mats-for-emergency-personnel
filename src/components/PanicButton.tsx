@@ -82,10 +82,16 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
 
   const handlePanicSelect = async (option: PanicOption) => {
     setSelectedType(option.type);
-    
+
+    // IMPORTANT: Open a window synchronously to avoid popup blockers (mobile Safari/Chrome)
+    const placeholderWindow = window.open('about:blank', '_blank');
+    if (!placeholderWindow) {
+      toast.error('No se pudo abrir WhatsApp (bloqueador de ventanas emergentes).');
+    }
+
     let lat = position?.lat;
     let lng = position?.lng;
-    
+
     if (!lat || !lng) {
       try {
         const pos = await getCurrentPosition();
@@ -93,6 +99,12 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         lng = pos.lng;
       } catch (error) {
         console.error('Failed to get position:', error);
+        try {
+          placeholderWindow?.close();
+        } catch {
+          // ignore
+        }
+        toast.error('No se pudo obtener tu ubicación.');
         return;
       }
     }
@@ -101,13 +113,25 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
 
     // Open WhatsApp for community
     const message = option.whatsappMessage(lat, lng, userRole);
-    window.open(`https://wa.me/?text=${message}`, '_blank');
+    const waUrl = `https://wa.me/?text=${message}`;
+
+    try {
+      if (placeholderWindow) {
+        placeholderWindow.location.href = waUrl;
+      } else {
+        // Fallback: may still be blocked, but best effort
+        window.location.href = waUrl;
+      }
+    } catch (e) {
+      console.error('Failed to navigate to WhatsApp:', e);
+      toast.error('No se pudo abrir WhatsApp.');
+    }
 
     // Notify emergency contacts
     if (contacts.length > 0) {
       const sosMessage = `🆘 SOS - ${option.label.toUpperCase()}\n\n📍 Ubicación: ${getGoogleMapsLink(lat, lng)}\nGPS: ${formatCoordinates(lat, lng)}\n\n¡Necesito ayuda urgente!`;
       const contactUrls = getSOSWhatsAppUrls(sosMessage);
-      
+
       toast.success(`Alertando a ${contacts.length} contacto(s) de emergencia`, {
         action: {
           label: 'Abrir WhatsApp',
@@ -116,7 +140,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         duration: 10000,
       });
     }
-    
+
     setIsOpen(false);
     setSelectedType(null);
   };
