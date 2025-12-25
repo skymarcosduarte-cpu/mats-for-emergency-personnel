@@ -89,6 +89,87 @@ export type Database = {
         }
         Relationships: []
       }
+      community_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          message: string | null
+          target_user_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          message?: string | null
+          target_user_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          message?: string | null
+          target_user_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      emergency_contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          is_primary: boolean
+          name: string
+          phone: string
+          relationship: string | null
+          sort_order: number
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          name: string
+          phone: string
+          relationship?: string | null
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          name?: string
+          phone?: string
+          relationship?: string | null
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       help_requests: {
         Row: {
           created_at: string | null
@@ -276,6 +357,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          birthday: string | null
           can_provide_medical_assistance: boolean | null
           created_at: string | null
           full_name: string
@@ -287,6 +369,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          birthday?: string | null
           can_provide_medical_assistance?: boolean | null
           created_at?: string | null
           full_name: string
@@ -298,6 +381,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          birthday?: string | null
           can_provide_medical_assistance?: boolean | null
           created_at?: string | null
           full_name?: string
@@ -620,6 +704,15 @@ export type Database = {
       }
     }
     Functions: {
+      get_todays_birthdays: {
+        Args: never
+        Returns: {
+          birthday: string
+          full_name: string
+          nickname: string
+          user_id: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -634,6 +727,10 @@ export type Database = {
       is_rescatista: { Args: { _user_id: string }; Returns: boolean }
       unverify_report: { Args: { report_id: string }; Returns: boolean }
       use_invite_code: { Args: { invite_code: string }; Returns: boolean }
+      user_has_emergency_contacts: {
+        Args: { min_contacts?: number }
+        Returns: boolean
+      }
       verify_report: { Args: { report_id: string }; Returns: boolean }
     }
     Enums: {

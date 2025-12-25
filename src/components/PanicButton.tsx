@@ -1,7 +1,7 @@
 // Panic Button FAB Component for COMUNIDAD EX SOS
 
 import React, { useState } from 'react';
-import { AlertTriangle, X, Ambulance, Car, Shield, Wrench, HardHat } from 'lucide-react';
+import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/dialog';
 import type { PanicType, UserRole } from '@/types';
 import { useLocation, getGoogleMapsLink, formatCoordinates } from '@/hooks/useLocation';
+import { useEmergencyContactsDB } from '@/hooks/useEmergencyContactsDB';
+import { toast } from 'sonner';
 
 interface PanicOption {
   type: PanicType;
@@ -73,15 +75,14 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   const [internalOpen, setInternalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<PanicType | null>(null);
   const { position, getCurrentPosition, loading: locationLoading } = useLocation();
+  const { contacts, getSOSWhatsAppUrls, hasMinimumContacts } = useEmergencyContactsDB();
 
-  // Use controlled or internal state
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalOpen;
   const setIsOpen = onOpenChange || setInternalOpen;
 
   const handlePanicSelect = async (option: PanicOption) => {
     setSelectedType(option.type);
     
-    // Get fresh position
     let lat = position?.lat;
     let lng = position?.lng;
     
@@ -96,15 +97,25 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
       }
     }
 
-    // Trigger callback
     onPanicTriggered?.(option.type, lat, lng);
 
-    // Generate WhatsApp link
+    // Open WhatsApp for community
     const message = option.whatsappMessage(lat, lng, userRole);
-    const whatsappUrl = `https://wa.me/?text=${message}`;
-    
-    // Open WhatsApp
-    window.open(whatsappUrl, '_blank');
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+
+    // Notify emergency contacts
+    if (contacts.length > 0) {
+      const sosMessage = `🆘 SOS - ${option.label.toUpperCase()}\n\n📍 Ubicación: ${getGoogleMapsLink(lat, lng)}\nGPS: ${formatCoordinates(lat, lng)}\n\n¡Necesito ayuda urgente!`;
+      const contactUrls = getSOSWhatsAppUrls(sosMessage);
+      
+      toast.success(`Alertando a ${contacts.length} contacto(s) de emergencia`, {
+        action: {
+          label: 'Abrir WhatsApp',
+          onClick: () => contactUrls[0] && window.open(contactUrls[0].url, '_blank'),
+        },
+        duration: 10000,
+      });
+    }
     
     setIsOpen(false);
     setSelectedType(null);
@@ -134,9 +145,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
               </div>
               <div>
                 <div className="font-semibold text-foreground">{option.label}</div>
-                <div className="text-xs text-muted-foreground">
-                  Envía alerta con ubicación GPS
-                </div>
+                <div className="text-xs text-muted-foreground">Envía alerta con ubicación GPS</div>
               </div>
             </Button>
           ))}
@@ -144,15 +153,21 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
 
         {userRole === 'FAMILIAR' && (
           <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-sm text-warning">
-            ⚠️ FAMILIAR – NO PARAMÉDICO / NO EX PARAMÉDICO
+            ⚠️ FAMILIAR – NO PARAMÉDICO
           </div>
         )}
 
-        <Button
-          variant="ghost"
-          onClick={() => setIsOpen(false)}
-          className="mt-2"
-        >
+        <div className={`flex items-center gap-2 p-3 rounded-lg ${hasMinimumContacts ? 'bg-safe/10 text-safe' : 'bg-warning/10 text-warning'}`}>
+          <Users className="w-4 h-4" />
+          <span className="text-sm">
+            {hasMinimumContacts 
+              ? `${contacts.length} contacto(s) serán notificados`
+              : 'Agrega contactos de emergencia en Configuración'
+            }
+          </span>
+        </div>
+
+        <Button variant="ghost" onClick={() => setIsOpen(false)} className="mt-2">
           <X className="w-4 h-4 mr-2" />
           Cancelar
         </Button>

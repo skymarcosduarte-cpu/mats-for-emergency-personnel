@@ -55,6 +55,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     nickname: '',
     specialty: '',
     phone: '',
+    birthday: '',
     role: 'RESCATISTA' as 'RESCATISTA' | 'FAMILIAR',
   });
 
@@ -165,7 +166,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
   // Handle profile creation
   const handleProfileSubmit = async () => {
-    if (!profileForm.fullName.trim() || !profileForm.nickname.trim() || !profileForm.phone.trim()) {
+    if (!profileForm.fullName.trim() || !profileForm.nickname.trim() || !profileForm.phone.trim() || !profileForm.birthday) {
       setError('Completa todos los campos obligatorios');
       return;
     }
@@ -179,6 +180,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         nickname: profileForm.nickname,
         specialty: profileForm.specialty || null,
         phone: profileForm.phone,
+        birthday: profileForm.birthday,
         role: profileForm.role,
       });
 
@@ -344,6 +346,19 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
               </div>
 
               <div>
+                <Label>Fecha de nacimiento *</Label>
+                <Input
+                  type="date"
+                  value={profileForm.birthday}
+                  onChange={(e) => setProfileForm({ ...profileForm, birthday: e.target.value })}
+                  max={new Date().toISOString().split('T')[0]}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tu cumpleaños aparecerá en el tablero de la comunidad
+                </p>
+              </div>
+
+              <div>
                 <Label>Especialidad</Label>
                 <Select
                   value={profileForm.specialty}
@@ -398,7 +413,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
               <Button
                 onClick={handleProfileSubmit}
-                disabled={loading || !profileForm.fullName || !profileForm.nickname || !profileForm.phone}
+                disabled={loading || !profileForm.fullName || !profileForm.nickname || !profileForm.phone || !profileForm.birthday}
                 className="w-full"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}

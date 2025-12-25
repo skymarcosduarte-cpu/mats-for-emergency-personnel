@@ -10,6 +10,7 @@ interface Profile {
   nickname: string;
   specialty: string | null;
   phone: string;
+  birthday: string | null;
   can_provide_medical_assistance: boolean;
   has_first_aid_kit: boolean;
   created_at: string;
@@ -157,6 +158,7 @@ export function useAuth() {
     nickname: string;
     specialty: string | null;
     phone: string;
+    birthday?: string;
     role: 'RESCATISTA' | 'FAMILIAR';
   }) => {
     if (!state.user) {
@@ -172,6 +174,7 @@ export function useAuth() {
         nickname: profileData.nickname,
         specialty: profileData.specialty,
         phone: profileData.phone,
+        birthday: profileData.birthday || null,
       });
 
     if (profileError) {
