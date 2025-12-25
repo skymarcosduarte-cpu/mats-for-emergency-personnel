@@ -108,47 +108,54 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       return;
     }
 
-    if (!inviteCode.trim()) {
-      setError('Ingresa tu código de invitación');
-      return;
-    }
+    // Skip invite code validation during open beta
+    // Invite code is optional - if provided, validate it
+    if (inviteCode.trim()) {
+      // Accept EXS-XXXXXX format or any alphanumeric code for flexibility
+      if (!inviteCode.match(/^(EXS-[A-Z0-9]{6}|[A-Z0-9-]{4,20})$/i)) {
+        setError('Código de invitación inválido');
+        return;
+      }
 
-    // Accept EXS-XXXXXX format or any alphanumeric code for flexibility
-    if (!inviteCode.match(/^(EXS-[A-Z0-9]{6}|[A-Z0-9-]{4,20})$/i)) {
-      setError('Código de invitación inválido');
-      return;
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Check if invite exists and is valid
+        const { data: invite, error: inviteError } = await supabase
+          .from('invites')
+          .select('*')
+          .eq('code', inviteCode.toUpperCase())
+          .maybeSingle();
+
+        if (inviteError || !invite) {
+          setError('Código de invitación no encontrado');
+          setLoading(false);
+          return;
+        }
+
+        if (invite.used_count >= invite.max_uses) {
+          setError('Este código ya fue usado');
+          setLoading(false);
+          return;
+        }
+
+        if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+          setError('Este código ha expirado');
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        setError('Error al validar código');
+        setLoading(false);
+        return;
+      }
     }
 
     setLoading(true);
     setError(null);
 
     try {
-      // Check if invite exists and is valid
-      const { data: invite, error: inviteError } = await supabase
-        .from('invites')
-        .select('*')
-        .eq('code', inviteCode.toUpperCase())
-        .maybeSingle();
-
-      if (inviteError || !invite) {
-        setError('Código de invitación no encontrado');
-        setLoading(false);
-        return;
-      }
-
-      if (invite.used_count >= invite.max_uses) {
-        setError('Este código ya fue usado');
-        setLoading(false);
-        return;
-      }
-
-      if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-        setError('Este código ha expirado');
-        setLoading(false);
-        return;
-      }
-
-      // Create account
       const { error: signUpError } = await signUp(email, password);
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
@@ -262,14 +269,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
               <TabsContent value="signup" className="space-y-4 mt-4">
                 <div>
-                  <Label>Código de invitación *</Label>
+                  <Label>Código de invitación (opcional)</Label>
                   <Input
                     value={inviteCode}
                     onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                     placeholder="EXS-XXXXXX"
                     className="font-mono"
-                    maxLength={10}
+                    maxLength={20}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Durante la beta abierta, el código es opcional
+                  </p>
                 </div>
 
                 <div>
