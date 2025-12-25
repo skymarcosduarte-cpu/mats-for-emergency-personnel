@@ -35,6 +35,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { MatsLogo } from '@/components/MatsLogo';
+import { EmergencyContactsManager } from '@/components/EmergencyContactsManager';
 import { AppFooter } from '@/components/AppFooter';
 import { APP_VERSION, BUILD_TIME, getFullVersionString } from '@/lib/versionCheck';
 import { useAuth } from '@/hooks/useAuth';
@@ -526,6 +527,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </Button>
           </CardContent>
         </Card>
+
+        {/* Emergency Contacts Section */}
+        <EmergencyContactsManager />
 
         {/* Version Info */}
         <Card className="bg-card border-border">

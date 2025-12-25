@@ -2,7 +2,8 @@
 // USGS earthquakes + "4/10" quick report + "14" help + notifications
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation } from 'lucide-react';
+import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -23,19 +24,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 
-// Fetch USGS earthquakes
-async function fetchUSGSEarthquakes(): Promise<USGSEarthquake[]> {
-  try {
-    const response = await fetch(
-      'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson'
-    );
-    const data = await response.json();
-    return data.features.map((f: USGSEarthquake) => f);
-  } catch (error) {
-    console.error('Error fetching USGS data:', error);
-    return [];
-  }
-}
+// Removed - now using useEarthquakeHistory hook
 
 interface AlertsScreenProps {
   userRole?: UserRole;
@@ -44,9 +33,7 @@ interface AlertsScreenProps {
 export const AlertsScreen: React.FC<AlertsScreenProps> = ({ 
   userRole = 'RESCATISTA' 
 }) => {
-  const [earthquakes, setEarthquakes] = useState<USGSEarthquake[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedQuake, setSelectedQuake] = useState<USGSEarthquake | null>(null);
+  const [selectedQuake, setSelectedQuake] = useState<EarthquakeWithDistance | null>(null);
   const [showCheckinDialog, setShowCheckinDialog] = useState(false);
   const [showHelp14Dialog, setShowHelp14Dialog] = useState(false);
   const [checkinIntensity, setCheckinIntensity] = useState<QuakeIntensity>(4);
@@ -67,23 +54,17 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     deleteNotification 
   } = useNotifications();
 
-  // Fetch earthquakes on mount
-  const loadEarthquakes = useCallback(async () => {
-    setLoading(true);
-    const data = await fetchUSGSEarthquakes();
-    setEarthquakes(data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    loadEarthquakes();
-    // Refresh every 5 minutes
-    const interval = setInterval(loadEarthquakes, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [loadEarthquakes]);
+  // Use earthquake history hook with offline caching
+  const { 
+    earthquakes, 
+    loading, 
+    isOffline, 
+    lastUpdated, 
+    refresh: loadEarthquakes 
+  } = useEarthquakeHistory(position);
 
   // Handle quick "4 de 10" report
-  const handleQuickCheckin = async (quake: USGSEarthquake) => {
+  const handleQuickCheckin = async (quake: EarthquakeWithDistance) => {
     if (!position) {
       alert('Se requiere ubicación GPS');
       return;
@@ -198,6 +179,20 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
 
         {/* Earthquakes Tab */}
         <TabsContent value="earthquakes" className="space-y-3 mt-4">
+          {/* Offline/Cache status indicator */}
+          {(isOffline || lastUpdated) && (
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs",
+              isOffline ? "bg-warning/10 text-warning" : "bg-muted/50 text-muted-foreground"
+            )}>
+              {isOffline && <WifiOff className="w-4 h-4" />}
+              <span>
+                {isOffline ? 'Sin conexión - ' : ''}
+                {lastUpdated && `Actualizado: ${lastUpdated.toLocaleTimeString()}`}
+              </span>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -238,8 +233,15 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                         </span>
                         <span className="flex items-center gap-1">
                           <MapPin className="w-3 h-3" />
-                          {quake.geometry.coordinates[2].toFixed(0)}km
+                          {quake.geometry.coordinates[2].toFixed(0)}km prof.
                         </span>
+                        {/* Distance from user */}
+                        {quake.distanceMiles !== null && (
+                          <span className="flex items-center gap-1 text-primary font-medium">
+                            <Navigation className="w-3 h-3" />
+                            {quake.distanceMiles.toFixed(0)} mi
+                          </span>
+                        )}
                       </div>
                     </div>
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
