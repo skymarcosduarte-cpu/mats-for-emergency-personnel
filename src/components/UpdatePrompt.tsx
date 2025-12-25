@@ -98,6 +98,7 @@ export function UpdatePrompt() {
 export function UpdateButton() {
   const [checking, setChecking] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const [hasUpdate, setHasUpdate] = useState(false);
 
   const checkForUpdates = async () => {
     setChecking(true);
@@ -107,34 +108,86 @@ export function UpdateButton() {
         await reg.update();
         
         if (reg.waiting) {
-          reg.waiting.postMessage({ type: "SKIP_WAITING" });
-          toast.success("Actualizando a la nueva versión...");
+          setHasUpdate(true);
+          toast.info("Nueva versión disponible");
         } else {
+          setHasUpdate(false);
           toast.success("Ya tienes la última versión");
         }
       } else {
-        // Fallback: force reload
+        toast.info("Recargando página...");
         window.location.reload();
       }
       setLastChecked(new Date());
     } catch (error) {
+      console.error("Update check error:", error);
       toast.error("Error al buscar actualizaciones");
     } finally {
       setChecking(false);
     }
   };
 
+  const applyUpdate = async () => {
+    try {
+      if ("serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: "SKIP_WAITING" });
+          toast.success("Actualizando...");
+        } else {
+          window.location.reload();
+        }
+      } else {
+        window.location.reload();
+      }
+    } catch (error) {
+      window.location.reload();
+    }
+  };
+
+  const forceRefresh = () => {
+    toast.info("Recargando aplicación...");
+    // Clear caches and force reload
+    if ("caches" in window) {
+      caches.keys().then((names) => {
+        names.forEach((name) => caches.delete(name));
+      });
+    }
+    window.location.reload();
+  };
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      {hasUpdate ? (
+        <Button
+          className="w-full bg-primary hover:bg-primary/90"
+          onClick={applyUpdate}
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Instalar Actualización
+        </Button>
+      ) : (
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={checkForUpdates}
+          disabled={checking}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${checking ? "animate-spin" : ""}`} />
+          {checking ? "Buscando..." : "Buscar Actualizaciones"}
+        </Button>
+      )}
+      
       <Button
-        variant="outline"
-        className="w-full"
-        onClick={checkForUpdates}
-        disabled={checking}
+        variant="ghost"
+        size="sm"
+        className="w-full text-muted-foreground"
+        onClick={forceRefresh}
       >
-        <RefreshCw className={`h-4 w-4 mr-2 ${checking ? "animate-spin" : ""}`} />
-        {checking ? "Buscando..." : "Buscar Actualizaciones"}
+        <RefreshCw className="h-3 w-3 mr-2" />
+        Forzar Recarga
       </Button>
+      
       {lastChecked && (
         <p className="text-xs text-muted-foreground text-center">
           Última verificación: {lastChecked.toLocaleTimeString("es-MX")}
