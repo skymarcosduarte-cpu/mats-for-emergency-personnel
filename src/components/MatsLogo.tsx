@@ -13,6 +13,9 @@ export const MatsLogo: React.FC<MatsLogoProps> = ({
   className = '',
   showText = false 
 }) => {
+  // Responsive size classes based on size prop
+  const sizeClass = size <= 32 ? 'rounded-md' : size <= 64 ? 'rounded-lg' : 'rounded-xl';
+  
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <img
@@ -20,7 +23,12 @@ export const MatsLogo: React.FC<MatsLogoProps> = ({
         alt="M.A.T.S. Logo"
         width={size}
         height={size}
-        className="flex-shrink-0 rounded-lg"
+        className={`flex-shrink-0 ${sizeClass} object-contain`}
+        style={{ 
+          maxWidth: size, 
+          maxHeight: size,
+        }}
+        loading="lazy"
       />
       
       {showText && (
@@ -44,7 +52,9 @@ export const MatsMarkerIcon = ({ size = 32 }: { size?: number }) => (
     alt="M.A.T.S."
     width={size}
     height={size}
-    className="rounded"
+    className="rounded-md object-contain"
+    style={{ maxWidth: size, maxHeight: size }}
+    loading="lazy"
   />
 );
 
