@@ -128,6 +128,48 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_listings: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          images: string[] | null
+          is_active: boolean | null
+          price: number | null
+          title: string
+          updated_at: string
+          user_id: string
+          valid_until: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description: string
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          price?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+          valid_until: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          price?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          valid_until?: string
+        }
+        Relationships: []
+      }
       panic_events: {
         Row: {
           created_at: string | null
