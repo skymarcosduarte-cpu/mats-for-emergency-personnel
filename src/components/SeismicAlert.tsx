@@ -1,7 +1,7 @@
 // Seismic Alert Component for COMUNIDAD EX SOS
 // Shows alert when earthquake is detected near user's location
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertTriangle, MapPin, ThermometerSun, CheckCircle, AlertCircle, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { formatDistance, getGoogleMapsLink } from '@/hooks/useLocation';
+import { playAlertWithVibration } from '@/lib/alertSound';
 import type { USGSEarthquake, QuakeIntensity, QuakeDamage, GeoPosition, UserRole } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +45,11 @@ export function SeismicAlert({
   const [helpMessage, setHelpMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // Play alert sound and vibration when component mounts
+  useEffect(() => {
+    playAlertWithVibration();
+  }, []);
 
   const mag = earthquake.properties.mag;
   const place = earthquake.properties.place;
