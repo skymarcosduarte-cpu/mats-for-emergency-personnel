@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, ImagePlus, Calendar, Tag, DollarSign, Loader2, Trash2 } from 'lucide-react';
+import { Plus, X, ImagePlus, Calendar, Tag, DollarSign, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -57,6 +64,8 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
   const [listings, setListings] = useState<MarketListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedListing, setSelectedListing] = useState<MarketListing | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -219,6 +228,11 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
   const getDaysRemaining = (validUntil: string) => {
     const days = differenceInDays(new Date(validUntil), new Date());
     return days;
+  };
+
+  const handleListingClick = (listing: MarketListing) => {
+    setSelectedListing(listing);
+    setDetailOpen(true);
   };
 
   if (loading) {
@@ -418,7 +432,11 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
               const daysRemaining = getDaysRemaining(listing.valid_until);
               
               return (
-                <Card key={listing.id} className="overflow-hidden">
+                <Card 
+                  key={listing.id} 
+                  className="overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                  onClick={() => handleListingClick(listing)}
+                >
                   {/* Image */}
                   {listing.images.length > 0 ? (
                     <div className="aspect-video relative">
@@ -469,6 +487,103 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
             })}
           </div>
         )}
+
+        {/* Listing Detail Dialog */}
+        <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+            {selectedListing && (
+              <>
+                {/* Image Carousel */}
+                {selectedListing.images.length > 0 ? (
+                  <div className="relative">
+                    <Carousel className="w-full">
+                      <CarouselContent>
+                        {selectedListing.images.map((image, index) => (
+                          <CarouselItem key={index}>
+                            <div className="aspect-video">
+                              <img
+                                src={image}
+                                alt={`${selectedListing.title} - Imagen ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      {selectedListing.images.length > 1 && (
+                        <>
+                          <CarouselPrevious className="left-2" />
+                          <CarouselNext className="right-2" />
+                        </>
+                      )}
+                    </Carousel>
+                    
+                    {/* Image counter */}
+                    {selectedListing.images.length > 1 && (
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-sm">
+                        {selectedListing.images.length} fotos
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="aspect-video bg-muted flex items-center justify-center">
+                    <Tag className="w-16 h-16 text-muted-foreground" />
+                  </div>
+                )}
+
+                {/* Content */}
+                <div className="p-6 space-y-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-2xl font-bold text-foreground">
+                        {selectedListing.title}
+                      </h2>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="secondary">
+                          {getCategoryLabel(selectedListing.category)}
+                        </Badge>
+                        <span className={`text-sm ${getDaysRemaining(selectedListing.valid_until) <= 3 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                          {getDaysRemaining(selectedListing.valid_until)} días restantes
+                        </span>
+                      </div>
+                    </div>
+                    {selectedListing.price && (
+                      <div className="text-right">
+                        <span className="text-3xl font-bold text-primary">
+                          ${selectedListing.price.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-border pt-4">
+                    <h3 className="font-semibold text-foreground mb-2">Descripción</h3>
+                    <p className="text-muted-foreground whitespace-pre-wrap">
+                      {selectedListing.description}
+                    </p>
+                  </div>
+
+                  <div className="border-t border-border pt-4 flex items-center justify-between text-sm text-muted-foreground">
+                    <span>
+                      Publicado: {format(new Date(selectedListing.created_at), "d 'de' MMMM, yyyy", { locale: es })}
+                    </span>
+                    <span>
+                      Expira: {format(new Date(selectedListing.valid_until), "d 'de' MMMM, yyyy", { locale: es })}
+                    </span>
+                  </div>
+
+                  <Button 
+                    className="w-full" 
+                    size="lg"
+                    onClick={() => setDetailOpen(false)}
+                  >
+                    Cerrar
+                  </Button>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
