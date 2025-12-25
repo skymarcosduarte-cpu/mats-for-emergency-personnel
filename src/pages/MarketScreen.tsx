@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, X, ImagePlus, Calendar, Tag, DollarSign, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, X, ImagePlus, Calendar, Tag, DollarSign, Loader2, ChevronLeft, ChevronRight, Search, MessageCircle, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,6 +33,11 @@ import { format, addDays, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { UserRole } from '@/types';
 
+interface SellerProfile {
+  nickname: string;
+  phone: string;
+}
+
 interface MarketListing {
   id: string;
   user_id: string;
@@ -43,6 +48,7 @@ interface MarketListing {
   images: string[];
   valid_until: string;
   created_at: string;
+  profiles?: SellerProfile;
 }
 
 interface MarketScreenProps {
@@ -50,12 +56,15 @@ interface MarketScreenProps {
 }
 
 const CATEGORIES = [
+  { value: 'all', label: 'Todas' },
   { value: 'product', label: 'Producto' },
   { value: 'service', label: 'Servicio' },
   { value: 'equipment', label: 'Equipo' },
   { value: 'vehicle', label: 'Vehículo' },
   { value: 'other', label: 'Otro' },
 ];
+
+const FORM_CATEGORIES = CATEGORIES.filter(c => c.value !== 'all');
 
 const MAX_IMAGES = 5;
 const MAX_DAYS = 30;
@@ -68,6 +77,11 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
   const [selectedListing, setSelectedListing] = useState<MarketListing | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterMaxPrice, setFilterMaxPrice] = useState('');
 
   // Form state
   const [title, setTitle] = useState('');
@@ -84,13 +98,29 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
 
   const fetchListings = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: listingsData, error: listingsError } = await supabase
         .from('marketplace_listings')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setListings(data || []);
+      if (listingsError) throw listingsError;
+
+      // Fetch profiles for all unique user IDs
+      const userIds = [...new Set(listingsData?.map(l => l.user_id) || [])];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, nickname, phone')
+        .in('id', userIds);
+
+      // Map profiles to listings
+      const profilesMap = new Map(profilesData?.map(p => [p.id, { nickname: p.nickname, phone: p.phone }]) || []);
+      
+      const listingsWithProfiles = listingsData?.map(listing => ({
+        ...listing,
+        profiles: profilesMap.get(listing.user_id)
+      })) || [];
+
+      setListings(listingsWithProfiles);
     } catch (error) {
       console.error('Error fetching listings:', error);
       toast({
@@ -235,6 +265,49 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
     setDetailOpen(true);
   };
 
+  const handleContactSeller = (listing: MarketListing) => {
+    if (!listing.profiles?.phone) {
+      toast({
+        title: 'Sin contacto',
+        description: 'El vendedor no tiene número de teléfono registrado',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const phone = listing.profiles.phone.replace(/\D/g, '');
+    const message = encodeURIComponent(
+      `Hola ${listing.profiles.nickname || 'vendedor'}, estoy interesado en tu anuncio "${listing.title}" del Marketplace de MATS.${listing.price ? ` Precio: $${listing.price.toFixed(2)}` : ''}`
+    );
+    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+  };
+
+  // Filtered listings
+  const filteredListings = useMemo(() => {
+    return listings.filter(listing => {
+      // Search filter
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = !searchQuery || 
+        listing.title.toLowerCase().includes(searchLower) ||
+        listing.description.toLowerCase().includes(searchLower);
+
+      // Category filter
+      const matchesCategory = filterCategory === 'all' || listing.category === filterCategory;
+
+      // Price filter
+      const maxPrice = parseFloat(filterMaxPrice);
+      const matchesPrice = !filterMaxPrice || !listing.price || listing.price <= maxPrice;
+
+      return matchesSearch && matchesCategory && matchesPrice;
+    });
+  }, [listings, searchQuery, filterCategory, filterMaxPrice]);
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setFilterCategory('all');
+    setFilterMaxPrice('');
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
@@ -302,7 +375,7 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {CATEGORIES.map((cat) => (
+                        {FORM_CATEGORIES.map((cat) => (
                           <SelectItem key={cat.value} value={cat.value}>
                             {cat.label}
                           </SelectItem>
@@ -411,24 +484,85 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
           </Dialog>
         </div>
 
+        {/* Search & Filters */}
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar anuncios..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-[140px]">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="relative w-[140px]">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="number"
+                placeholder="Precio máx."
+                value={filterMaxPrice}
+                onChange={(e) => setFilterMaxPrice(e.target.value)}
+                className="pl-9"
+                min="0"
+              />
+            </div>
+
+            {(searchQuery || filterCategory !== 'all' || filterMaxPrice) && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="w-4 h-4 mr-1" />
+                Limpiar
+              </Button>
+            )}
+          </div>
+
+          {/* Results count */}
+          <p className="text-sm text-muted-foreground">
+            {filteredListings.length} {filteredListings.length === 1 ? 'anuncio' : 'anuncios'} encontrados
+          </p>
+        </div>
+
         {/* Listings Grid */}
-        {listings.length === 0 ? (
+        {filteredListings.length === 0 ? (
           <div className="text-center py-12">
             <Tag className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              No hay anuncios
+              {listings.length === 0 ? 'No hay anuncios' : 'Sin resultados'}
             </h3>
             <p className="text-muted-foreground mb-4">
-              Sé el primero en publicar un producto o servicio
+              {listings.length === 0 
+                ? 'Sé el primero en publicar un producto o servicio'
+                : 'Prueba con otros filtros de búsqueda'}
             </p>
-            <Button onClick={() => setDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Publicar anuncio
-            </Button>
+            {listings.length === 0 ? (
+              <Button onClick={() => setDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Publicar anuncio
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={clearFilters}>
+                Limpiar filtros
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {listings.map((listing) => {
+            {filteredListings.map((listing) => {
               const daysRemaining = getDaysRemaining(listing.valid_until);
               
               return (
@@ -563,6 +697,16 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                     </p>
                   </div>
 
+                  {/* Seller info */}
+                  {selectedListing.profiles && (
+                    <div className="border-t border-border pt-4">
+                      <h3 className="font-semibold text-foreground mb-2">Vendedor</h3>
+                      <p className="text-muted-foreground">
+                        {selectedListing.profiles.nickname || 'Usuario'}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="border-t border-border pt-4 flex items-center justify-between text-sm text-muted-foreground">
                     <span>
                       Publicado: {format(new Date(selectedListing.created_at), "d 'de' MMMM, yyyy", { locale: es })}
@@ -572,13 +716,24 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                     </span>
                   </div>
 
-                  <Button 
-                    className="w-full" 
-                    size="lg"
-                    onClick={() => setDetailOpen(false)}
-                  >
-                    Cerrar
-                  </Button>
+                  <div className="flex gap-2 pt-2">
+                    <Button 
+                      variant="outline"
+                      className="flex-1" 
+                      size="lg"
+                      onClick={() => setDetailOpen(false)}
+                    >
+                      Cerrar
+                    </Button>
+                    <Button 
+                      className="flex-1 gap-2" 
+                      size="lg"
+                      onClick={() => handleContactSeller(selectedListing)}
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      Contactar
+                    </Button>
+                  </div>
                 </div>
               </>
             )}
