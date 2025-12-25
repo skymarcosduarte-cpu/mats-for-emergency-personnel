@@ -2,7 +2,8 @@
 // Email/Password Auth + Invite Code + Profile Setup
 
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, ArrowRight, Loader2, Eye, EyeOff, UserPlus, LogIn } from 'lucide-react';
+import { ArrowRight, Loader2, Eye, EyeOff, UserPlus, LogIn } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,6 +49,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   
   // Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -81,7 +83,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     setError(null);
 
     try {
-      const { error: signInError } = await signIn(email, password);
+      const { error: signInError } = await signIn(email, password, rememberMe);
       if (signInError) {
         if (signInError.message.includes('Invalid login credentials')) {
           setError('Email o contraseña incorrectos');
@@ -259,6 +261,20 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember-me"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked === true)}
+                  />
+                  <label
+                    htmlFor="remember-me"
+                    className="text-sm text-muted-foreground cursor-pointer select-none"
+                  >
+                    Mantener sesión iniciada
+                  </label>
                 </div>
 
                 <Button onClick={handleLogin} disabled={loading} className="w-full">
