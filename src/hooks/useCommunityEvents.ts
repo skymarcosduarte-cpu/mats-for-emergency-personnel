@@ -1,0 +1,195 @@
+// Community Events Hook for COMUNIDAD EX SOS
+// Manages community message board for birthdays, health notices, etc.
+
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+export type CommunityEventType = 
+  | 'BIRTHDAY' 
+  | 'HEALTH_NOTICE' 
+  | 'HOSPITAL_SUPPORT' 
+  | 'DECEASE' 
+  | 'ANNOUNCEMENT';
+
+export interface CommunityEvent {
+  id: string;
+  user_id: string;
+  event_type: CommunityEventType;
+  title: string;
+  message: string | null;
+  target_user_id: string | null;
+  is_active: boolean;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined from profiles
+  author_name?: string;
+  author_nickname?: string;
+}
+
+export interface TodaysBirthday {
+  user_id: string;
+  full_name: string;
+  nickname: string;
+  birthday: string;
+}
+
+export function useCommunityEvents() {
+  const [events, setEvents] = useState<CommunityEvent[]>([]);
+  const [birthdays, setBirthdays] = useState<TodaysBirthday[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch all active events
+  const fetchEvents = useCallback(async () => {
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('community_events')
+        .select('*')
+        .eq('is_active', true)
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (fetchError) throw fetchError;
+      
+      setEvents((data || []) as CommunityEvent[]);
+    } catch (err) {
+      console.error('Error fetching community events:', err);
+      setError('Error al cargar eventos');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch today's birthdays
+  const fetchBirthdays = useCallback(async () => {
+    try {
+      const { data, error: fetchError } = await supabase
+        .rpc('get_todays_birthdays');
+
+      if (fetchError) throw fetchError;
+      
+      setBirthdays((data || []) as TodaysBirthday[]);
+    } catch (err) {
+      console.error('Error fetching birthdays:', err);
+    }
+  }, []);
+
+  // Create a new event
+  const createEvent = useCallback(async (event: {
+    event_type: CommunityEventType;
+    title: string;
+    message?: string;
+    target_user_id?: string;
+    expires_at?: string;
+  }) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error: createError } = await supabase
+      .from('community_events')
+      .insert({
+        user_id: user.id,
+        event_type: event.event_type,
+        title: event.title,
+        message: event.message || null,
+        target_user_id: event.target_user_id || null,
+        expires_at: event.expires_at || null,
+      })
+      .select()
+      .single();
+
+    if (createError) throw createError;
+    
+    await fetchEvents();
+    return data;
+  }, [fetchEvents]);
+
+  // Update an event
+  const updateEvent = useCallback(async (id: string, updates: Partial<{
+    title: string;
+    message: string;
+    is_active: boolean;
+  }>) => {
+    const { error: updateError } = await supabase
+      .from('community_events')
+      .update(updates)
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+    
+    await fetchEvents();
+  }, [fetchEvents]);
+
+  // Delete an event
+  const deleteEvent = useCallback(async (id: string) => {
+    const { error: deleteError } = await supabase
+      .from('community_events')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) throw deleteError;
+    
+    await fetchEvents();
+  }, [fetchEvents]);
+
+  // Get event type label
+  const getEventTypeLabel = (type: CommunityEventType) => {
+    const labels: Record<CommunityEventType, string> = {
+      'BIRTHDAY': '🎂 Cumpleaños',
+      'HEALTH_NOTICE': '🏥 Aviso de Salud',
+      'HOSPITAL_SUPPORT': '💊 Apoyo Hospitalario',
+      'DECEASE': '🕯️ Fallecimiento',
+      'ANNOUNCEMENT': '📢 Anuncio',
+    };
+    return labels[type] || type;
+  };
+
+  // Get event type color
+  const getEventTypeColor = (type: CommunityEventType) => {
+    const colors: Record<CommunityEventType, string> = {
+      'BIRTHDAY': 'bg-primary/10 text-primary border-primary/30',
+      'HEALTH_NOTICE': 'bg-warning/10 text-warning border-warning/30',
+      'HOSPITAL_SUPPORT': 'bg-safe/10 text-safe border-safe/30',
+      'DECEASE': 'bg-muted text-muted-foreground border-muted',
+      'ANNOUNCEMENT': 'bg-accent/10 text-accent border-accent/30',
+    };
+    return colors[type] || 'bg-muted text-muted-foreground';
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchEvents();
+    fetchBirthdays();
+
+    // Set up realtime subscription
+    const channel = supabase
+      .channel('community_events_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'community_events' },
+        () => {
+          fetchEvents();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchEvents, fetchBirthdays]);
+
+  return {
+    events,
+    birthdays,
+    loading,
+    error,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    refresh: fetchEvents,
+    getEventTypeLabel,
+    getEventTypeColor,
+  };
+}
