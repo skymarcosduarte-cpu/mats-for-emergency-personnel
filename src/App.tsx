@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,7 @@ import { AlertsScreen } from '@/pages/AlertsScreen';
 import { StatusScreen } from '@/pages/StatusScreen';
 import { MarketScreen } from '@/pages/MarketScreen';
 import { SettingsScreen } from '@/pages/SettingsScreen';
+import LandingPage from '@/pages/LandingPage';
 import { useAppState } from '@/hooks/useRealtime';
 import type { UserRole } from '@/types';
 
@@ -64,9 +66,16 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/auth" element={<AppContent />} />
+          <Route path="/" element={<Navigate to="/landing" replace />} />
+          <Route path="*" element={<Navigate to="/landing" replace />} />
+        </Routes>
+      </BrowserRouter>
       <Toaster />
       <Sonner />
-      <AppContent />
     </TooltipProvider>
   </QueryClientProvider>
 );
