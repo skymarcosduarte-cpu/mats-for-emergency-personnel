@@ -1,16 +1,59 @@
-// Realtime Hook for COMUNIDAD EX SOS - Simplified version
+// Realtime Hook for COMUNIDAD EX SOS
 
 import { useEffect, useState, useCallback } from 'react';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import type { UserLocation, HelpRequest, RoadReport, AppState } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+
+interface UserLocation {
+  user_id: string;
+  lat: number;
+  lng: number;
+  accuracy: number | null;
+  heading: number | null;
+  speed: number | null;
+  is_online: boolean;
+  updated_at: string;
+}
+
+interface HelpRequest {
+  id: string;
+  user_id: string;
+  kind: string;
+  quake_event_id: string | null;
+  lat: number;
+  lng: number;
+  message: string | null;
+  resolved: boolean;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+interface RoadReport {
+  id: string;
+  user_id: string;
+  trip_id: string | null;
+  category: string;
+  severity: number;
+  title: string;
+  description: string | null;
+  lat: number;
+  lng: number;
+  is_active: boolean;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+interface AppState {
+  id: string;
+  disaster_mode: boolean;
+  disaster_started_at: string | null;
+  updated_at: string;
+}
 
 // Hook for user locations
 export function useUserLocations() {
   const [locations, setLocations] = useState<UserLocation[]>([]);
 
   const fetchLocations = useCallback(async () => {
-    if (!isSupabaseConfigured()) return;
-
     const { data, error } = await supabase
       .from('user_locations')
       .select('*')
@@ -23,8 +66,19 @@ export function useUserLocations() {
 
   useEffect(() => {
     fetchLocations();
-    const interval = setInterval(fetchLocations, 10000);
-    return () => clearInterval(interval);
+
+    const channel = supabase
+      .channel('user_locations_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_locations' },
+        () => fetchLocations()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchLocations]);
 
   return { locations, refetch: fetchLocations };
@@ -36,8 +90,6 @@ export function useHelpRequests() {
   const [urgentHelp, setUrgentHelp] = useState<HelpRequest | null>(null);
 
   const fetchRequests = useCallback(async () => {
-    if (!isSupabaseConfigured()) return;
-
     const { data, error } = await supabase
       .from('help_requests')
       .select('*')
@@ -52,8 +104,31 @@ export function useHelpRequests() {
 
   useEffect(() => {
     fetchRequests();
-    const interval = setInterval(fetchRequests, 5000);
-    return () => clearInterval(interval);
+
+    const channel = supabase
+      .channel('help_requests_changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'help_requests' },
+        (payload) => {
+          const newRequest = payload.new as HelpRequest;
+          setRequests(prev => [newRequest, ...prev].slice(0, 50));
+          
+          if (newRequest.kind === 'SISMO_AYUDA_14') {
+            setUrgentHelp(newRequest);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'help_requests' },
+        () => fetchRequests()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchRequests]);
 
   const dismissUrgentHelp = useCallback(() => setUrgentHelp(null), []);
@@ -66,12 +141,10 @@ export function useAppState() {
   const [appState, setAppState] = useState<AppState | null>(null);
 
   const fetchAppState = useCallback(async () => {
-    if (!isSupabaseConfigured()) return;
-
     const { data, error } = await supabase
       .from('app_state')
       .select('*')
-      .single();
+      .maybeSingle();
 
     if (!error && data) {
       setAppState(data as AppState);
@@ -80,6 +153,19 @@ export function useAppState() {
 
   useEffect(() => {
     fetchAppState();
+
+    const channel = supabase
+      .channel('app_state_changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'app_state' },
+        (payload) => setAppState(payload.new as AppState)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchAppState]);
 
   return { appState, disasterMode: appState?.disaster_mode ?? false, refetch: fetchAppState };
@@ -90,8 +176,6 @@ export function useRoadReports() {
   const [reports, setReports] = useState<RoadReport[]>([]);
 
   const fetchReports = useCallback(async () => {
-    if (!isSupabaseConfigured()) return;
-
     const { data, error } = await supabase
       .from('road_reports')
       .select('*')
@@ -106,8 +190,19 @@ export function useRoadReports() {
 
   useEffect(() => {
     fetchReports();
-    const interval = setInterval(fetchReports, 15000);
-    return () => clearInterval(interval);
+
+    const channel = supabase
+      .channel('road_reports_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'road_reports' },
+        () => fetchReports()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchReports]);
 
   return { reports, refetch: fetchReports };

@@ -247,7 +247,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                     <div className="flex items-start gap-3">
                       <div className={cn(
                         'w-10 h-10 rounded-lg flex items-center justify-center text-xl',
-                        getSeverityColor(report.severity),
+                        getSeverityColor(report.severity as ReportSeverity),
                         'text-white'
                       )}>
                         {category?.emoji || '📍'}
