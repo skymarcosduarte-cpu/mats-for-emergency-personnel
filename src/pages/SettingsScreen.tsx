@@ -11,7 +11,8 @@ import {
   Info, 
   RefreshCw,
   ExternalLink,
-  Shield
+  Shield,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +27,7 @@ import {
 import { MatsLogo } from '@/components/MatsLogo';
 import { APP_VERSION, BUILD_TIME, getFullVersionString } from '@/lib/versionCheck';
 import { useAuth } from '@/hooks/useAuth';
+import { UpdateButton } from '@/components/UpdatePrompt';
 import type { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 import QRCode from 'qrcode';
@@ -166,6 +168,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 {new Date(BUILD_TIME).toLocaleDateString()}
               </span>
             </div>
+            
+            {/* Update Button */}
+            <div className="border-t border-border pt-3 mt-3">
+              <UpdateButton />
+            </div>
+
             <div className="border-t border-border pt-3 mt-3">
               <div className="flex items-center justify-center gap-2 text-mats-green">
                 <MatsLogo size={24} />
