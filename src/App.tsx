@@ -18,6 +18,7 @@ import LandingPage from '@/pages/LandingPage';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { SplashScreen } from '@/components/SplashScreen';
+import { EmergencyChat } from '@/components/EmergencyChat';
 import { useAppState } from '@/hooks/useRealtime';
 import type { UserRole } from '@/types';
 
@@ -80,6 +81,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <UpdatePrompt />
       <main className="flex-1 overflow-hidden">{renderScreen()}</main>
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} />
+      <EmergencyChat />
       <InstallPrompt />
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'RESCATISTA'} disasterMode={disasterMode} />
     </div>
