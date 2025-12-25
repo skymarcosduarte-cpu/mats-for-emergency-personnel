@@ -626,6 +626,7 @@ export type Database = {
         }[]
       }
       is_rescatista: { Args: { _user_id: string }; Returns: boolean }
+      use_invite_code: { Args: { invite_code: string }; Returns: boolean }
     }
     Enums: {
       app_role: "RESCATISTA" | "FAMILIAR"
