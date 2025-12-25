@@ -1,9 +1,10 @@
 // Map Screen with vanilla Leaflet for COMUNIDAD EX SOS
 // Using vanilla Leaflet to avoid react-leaflet context issues
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import DOMPurify from 'dompurify';
+import { Locate } from 'lucide-react';
 import { useLocation } from '@/hooks/useLocation';
 import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders } from '@/hooks/useRealtime';
 import { cn } from '@/lib/utils';
@@ -198,6 +199,12 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
 
   // Default center (Mexico City)
   const defaultCenter: [number, number] = [19.4326, -99.1332];
+
+  // Center map on user's location
+  const centerOnMe = useCallback(() => {
+    if (!mapInstanceRef.current || !position) return;
+    mapInstanceRef.current.setView([position.lat, position.lng], 16, { animate: true });
+  }, [position]);
 
   // Initialize map
   useEffect(() => {
@@ -461,14 +468,24 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
       {/* Map container */}
       <div ref={mapRef} className="w-full h-full" />
 
-      {/* Active users count */}
-      <div className="absolute top-4 left-4 z-[1000] bg-card/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-border">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-sm font-medium text-foreground">
-            {locations.length} {locations.length === 1 ? 'activo' : 'activos'}
-          </span>
+      {/* Active users count + center button */}
+      <div className="absolute top-4 left-4 z-[1000] flex items-center gap-2">
+        <div className="bg-card/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-border">
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-sm font-medium text-foreground">
+              {locations.length} {locations.length === 1 ? 'activo' : 'activos'}
+            </span>
+          </div>
         </div>
+        <button
+          onClick={centerOnMe}
+          disabled={!position}
+          className="bg-card/95 backdrop-blur-sm rounded-lg p-2.5 shadow-lg border border-border hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Centrar en mi ubicación"
+        >
+          <Locate className="w-5 h-5 text-primary" />
+        </button>
       </div>
 
       {/* Map legend */}
