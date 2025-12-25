@@ -19,7 +19,10 @@ import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { SplashScreen } from '@/components/SplashScreen';
 import { EmergencyChat } from '@/components/EmergencyChat';
+import { SeismicAlert } from '@/components/SeismicAlert';
 import { useAppState } from '@/hooks/useRealtime';
+import { useLocation } from '@/hooks/useLocation';
+import { useEarthquakeDetection } from '@/hooks/useEarthquakeDetection';
 import type { UserRole } from '@/types';
 
 const queryClient = new QueryClient();
@@ -62,6 +65,10 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 }) {
   const { disasterMode } = useAppState();
   const [panicOpen, setPanicOpen] = useState(false);
+  
+  // Location and earthquake detection
+  const { position } = useLocation();
+  const { nearbyQuake, distanceKm, dismissAlert, markAsReported } = useEarthquakeDetection(position);
 
   const renderScreen = () => {
     switch (activeTab) {
@@ -84,6 +91,18 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <EmergencyChat />
       <InstallPrompt />
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'RESCATISTA'} disasterMode={disasterMode} />
+      
+      {/* Seismic Alert Dialog */}
+      {nearbyQuake && position && distanceKm !== null && (
+        <SeismicAlert
+          earthquake={nearbyQuake}
+          distanceKm={distanceKm}
+          position={position}
+          userRole={userRole}
+          onDismiss={dismissAlert}
+          onReported={markAsReported}
+        />
+      )}
     </div>
   );
 }
