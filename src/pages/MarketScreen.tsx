@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, X, ImagePlus, Calendar, Tag, DollarSign, Loader2, ChevronLeft, ChevronRight, Search, MessageCircle, Filter } from 'lucide-react';
+import { Plus, X, ImagePlus, Calendar, Tag, DollarSign, Loader2, ChevronLeft, ChevronRight, Search, MessageCircle, Filter, Pencil, Trash2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -76,6 +76,11 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedListing, setSelectedListing] = useState<MarketListing | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'all' | 'my'>('all');
+  const [editingListing, setEditingListing] = useState<MarketListing | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [listingToDelete, setListingToDelete] = useState<MarketListing | null>(null);
   const { toast } = useToast();
 
   // Search & Filter state
@@ -91,10 +96,17 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
   const [validDays, setValidDays] = useState('7');
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
 
   useEffect(() => {
     fetchListings();
+    fetchCurrentUser();
   }, []);
+
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id || null);
+  };
 
   const fetchListings = async () => {
     try {
@@ -167,6 +179,25 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
     setValidDays('7');
     setImages([]);
     setImagePreviews([]);
+    setExistingImages([]);
+    setEditingListing(null);
+  };
+
+  const openEditDialog = (listing: MarketListing) => {
+    setEditingListing(listing);
+    setTitle(listing.title);
+    setDescription(listing.description);
+    setCategory(listing.category);
+    setPrice(listing.price?.toString() || '');
+    setValidDays('7');
+    setExistingImages(listing.images);
+    setImages([]);
+    setImagePreviews([]);
+    setDialogOpen(true);
+  };
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages(existingImages.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -182,7 +213,7 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
     }
 
     const days = parseInt(validDays);
-    if (days < 1 || days > MAX_DAYS) {
+    if (!editingListing && (days < 1 || days > MAX_DAYS)) {
       toast({
         title: 'Fecha inválida',
         description: `La vigencia debe ser entre 1 y ${MAX_DAYS} días`,
@@ -197,8 +228,8 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Upload images
-      const imageUrls: string[] = [];
+      // Upload new images
+      const newImageUrls: string[] = [];
       for (const image of images) {
         const fileExt = image.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -213,41 +244,99 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
           .from('marketplace_images')
           .getPublicUrl(fileName);
 
-        imageUrls.push(publicUrl);
+        newImageUrls.push(publicUrl);
       }
 
-      // Create listing
-      const { error } = await supabase
-        .from('marketplace_listings')
-        .insert({
-          user_id: user.id,
-          title: title.trim(),
-          description: description.trim(),
-          category,
-          price: price ? parseFloat(price) : null,
-          images: imageUrls,
-          valid_until: addDays(new Date(), days).toISOString(),
+      const allImages = [...existingImages, ...newImageUrls];
+
+      if (editingListing) {
+        // Update existing listing
+        const { error } = await supabase
+          .from('marketplace_listings')
+          .update({
+            title: title.trim(),
+            description: description.trim(),
+            category,
+            price: price ? parseFloat(price) : null,
+            images: allImages,
+          })
+          .eq('id', editingListing.id);
+
+        if (error) throw error;
+
+        toast({
+          title: 'Anuncio actualizado',
+          description: 'Tu anuncio ha sido actualizado exitosamente',
         });
+      } else {
+        // Create new listing
+        const { error } = await supabase
+          .from('marketplace_listings')
+          .insert({
+            user_id: user.id,
+            title: title.trim(),
+            description: description.trim(),
+            category,
+            price: price ? parseFloat(price) : null,
+            images: allImages,
+            valid_until: addDays(new Date(), days).toISOString(),
+          });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: 'Anuncio publicado',
-        description: 'Tu anuncio ha sido publicado exitosamente',
-      });
+        toast({
+          title: 'Anuncio publicado',
+          description: 'Tu anuncio ha sido publicado exitosamente',
+        });
+      }
 
       resetForm();
       setDialogOpen(false);
       fetchListings();
     } catch (error) {
-      console.error('Error creating listing:', error);
+      console.error('Error saving listing:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo publicar el anuncio',
+        description: editingListing ? 'No se pudo actualizar el anuncio' : 'No se pudo publicar el anuncio',
         variant: 'destructive',
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteClick = (listing: MarketListing) => {
+    setListingToDelete(listing);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!listingToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('marketplace_listings')
+        .delete()
+        .eq('id', listingToDelete.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Anuncio eliminado',
+        description: 'Tu anuncio ha sido eliminado exitosamente',
+      });
+
+      setDeleteConfirmOpen(false);
+      setListingToDelete(null);
+      setDetailOpen(false);
+      fetchListings();
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo eliminar el anuncio',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -282,9 +371,16 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
   };
 
-  // Filtered listings
+  // My listings
+  const myListings = useMemo(() => {
+    return listings.filter(listing => listing.user_id === currentUserId);
+  }, [listings, currentUserId]);
+
+  // Filtered listings based on view mode
   const filteredListings = useMemo(() => {
-    return listings.filter(listing => {
+    const baseListings = viewMode === 'my' ? myListings : listings;
+    
+    return baseListings.filter(listing => {
       // Search filter
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch = !searchQuery || 
@@ -300,13 +396,15 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
 
       return matchesSearch && matchesCategory && matchesPrice;
     });
-  }, [listings, searchQuery, filterCategory, filterMaxPrice]);
+  }, [listings, myListings, viewMode, searchQuery, filterCategory, filterMaxPrice]);
 
   const clearFilters = () => {
     setSearchQuery('');
     setFilterCategory('all');
     setFilterMaxPrice('');
   };
+
+  const isOwnListing = (listing: MarketListing) => listing.user_id === currentUserId;
 
   if (loading) {
     return (
@@ -328,16 +426,19 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
             </p>
           </div>
           
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog open={dialogOpen} onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (!open) resetForm();
+          }}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={() => resetForm()}>
                 <Plus className="w-4 h-4" />
                 Publicar
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Nuevo Anuncio</DialogTitle>
+                <DialogTitle>{editingListing ? 'Editar Anuncio' : 'Nuevo Anuncio'}</DialogTitle>
               </DialogHeader>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -402,32 +503,53 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                   </div>
                 </div>
 
-                {/* Valid Days */}
-                <div className="space-y-2">
-                  <Label htmlFor="validDays">Vigencia (días)</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="validDays"
-                      type="number"
-                      value={validDays}
-                      onChange={(e) => setValidDays(e.target.value)}
-                      className="pl-9"
-                      min="1"
-                      max={MAX_DAYS}
-                    />
+                {/* Valid Days - only for new listings */}
+                {!editingListing && (
+                  <div className="space-y-2">
+                    <Label htmlFor="validDays">Vigencia (días)</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="validDays"
+                        type="number"
+                        value={validDays}
+                        onChange={(e) => setValidDays(e.target.value)}
+                        className="pl-9"
+                        min="1"
+                        max={MAX_DAYS}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Máximo {MAX_DAYS} días. El anuncio expirará automáticamente.
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Máximo {MAX_DAYS} días. El anuncio expirará automáticamente.
-                  </p>
-                </div>
+                )}
 
                 {/* Images */}
                 <div className="space-y-2">
-                  <Label>Imágenes ({images.length}/{MAX_IMAGES})</Label>
+                  <Label>Imágenes ({existingImages.length + images.length}/{MAX_IMAGES})</Label>
                   <div className="grid grid-cols-5 gap-2">
+                    {/* Existing images */}
+                    {existingImages.map((url, index) => (
+                      <div key={`existing-${index}`} className="relative aspect-square">
+                        <img
+                          src={url}
+                          alt={`Existing ${index + 1}`}
+                          className="w-full h-full object-cover rounded-lg border border-border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingImage(index)}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    
+                    {/* New image previews */}
                     {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative aspect-square">
+                      <div key={`new-${index}`} className="relative aspect-square">
                         <img
                           src={preview}
                           alt={`Preview ${index + 1}`}
@@ -443,7 +565,7 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                       </div>
                     ))}
                     
-                    {images.length < MAX_IMAGES && (
+                    {existingImages.length + images.length < MAX_IMAGES && (
                       <label className="aspect-square border-2 border-dashed border-border rounded-lg flex items-center justify-center cursor-pointer hover:border-primary transition-colors">
                         <input
                           type="file"
@@ -472,16 +594,36 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                     {submitting ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Publicando...
+                        {editingListing ? 'Guardando...' : 'Publicando...'}
                       </>
                     ) : (
-                      'Publicar'
+                      editingListing ? 'Guardar cambios' : 'Publicar'
                     )}
                   </Button>
                 </div>
               </form>
             </DialogContent>
           </Dialog>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('all')}
+          >
+            <Tag className="w-4 h-4 mr-2" />
+            Todos
+          </Button>
+          <Button
+            variant={viewMode === 'my' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('my')}
+          >
+            <User className="w-4 h-4 mr-2" />
+            Mis anuncios ({myListings.length})
+          </Button>
         </div>
 
         {/* Search & Filters */}
@@ -716,27 +858,91 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                     </span>
                   </div>
 
-                  <div className="flex gap-2 pt-2">
-                    <Button 
-                      variant="outline"
-                      className="flex-1" 
-                      size="lg"
-                      onClick={() => setDetailOpen(false)}
-                    >
-                      Cerrar
-                    </Button>
-                    <Button 
-                      className="flex-1 gap-2" 
-                      size="lg"
-                      onClick={() => handleContactSeller(selectedListing)}
-                    >
-                      <MessageCircle className="w-5 h-5" />
-                      Contactar
-                    </Button>
-                  </div>
+                  {/* Action buttons */}
+                  {isOwnListing(selectedListing) ? (
+                    <div className="flex gap-2 pt-2">
+                      <Button 
+                        variant="outline"
+                        className="flex-1" 
+                        size="lg"
+                        onClick={() => setDetailOpen(false)}
+                      >
+                        Cerrar
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        className="gap-2" 
+                        size="lg"
+                        onClick={() => {
+                          setDetailOpen(false);
+                          openEditDialog(selectedListing);
+                        }}
+                      >
+                        <Pencil className="w-4 h-4" />
+                        Editar
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        className="gap-2" 
+                        size="lg"
+                        onClick={() => handleDeleteClick(selectedListing)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Eliminar
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2 pt-2">
+                      <Button 
+                        variant="outline"
+                        className="flex-1" 
+                        size="lg"
+                        onClick={() => setDetailOpen(false)}
+                      >
+                        Cerrar
+                      </Button>
+                      <Button 
+                        className="flex-1 gap-2" 
+                        size="lg"
+                        onClick={() => handleContactSeller(selectedListing)}
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        Contactar
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-destructive">Eliminar anuncio</DialogTitle>
+            </DialogHeader>
+            <p className="text-muted-foreground">
+              ¿Estás seguro de que deseas eliminar el anuncio "{listingToDelete?.title}"? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setDeleteConfirmOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleDeleteConfirm}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Eliminar
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
