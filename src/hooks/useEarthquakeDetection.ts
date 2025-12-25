@@ -7,7 +7,7 @@ import { calculateDistance } from '@/hooks/useLocation';
 import { getEarthquakeRadiusMiles, getEarthquakeRadiusKm } from '@/hooks/useAlertSettings';
 
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
-const CHECK_INTERVAL_MS = 60 * 1000; // Check every minute
+const CHECK_INTERVAL_MS = 15 * 1000; // Check every 15 seconds
 
 interface EarthquakeDetectionState {
   nearbyQuake: USGSEarthquake | null;
