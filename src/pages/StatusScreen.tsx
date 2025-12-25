@@ -7,17 +7,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocation } from '@/hooks/useLocation';
 import { useAppState } from '@/hooks/useRealtime';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { getMeshTransport, createMeshEnvelope, getMeshStatusMessage, isMeshAvailable } from '@/lib/meshTransport';
 import type { UserRole, StatusType } from '@/types';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface StatusScreenProps {
-  userId?: string;
   userRole?: UserRole;
 }
 
 export const StatusScreen: React.FC<StatusScreenProps> = ({
-  userId = 'demo-user',
   userRole = 'RESCATISTA'
 }) => {
   const [currentStatus, setCurrentStatus] = useState<StatusType>('UNKNOWN');
@@ -27,29 +28,44 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
   
   const { position } = useLocation();
   const { disasterMode } = useAppState();
+  const { user } = useAuth();
   const meshTransport = getMeshTransport();
 
   // Handle status update
   const handleStatusUpdate = async (status: StatusType) => {
     if (!position) {
-      alert('Se requiere ubicación GPS');
+      toast.error('Se requiere ubicación GPS');
+      return;
+    }
+
+    if (!user?.id) {
+      toast.error('Debes iniciar sesión');
       return;
     }
 
     setSubmitting(true);
     try {
-      // Submit to backend
-      console.log('Status update:', {
-        userId,
-        status,
+      // Save status to database
+      const { error } = await supabase.from('status_messages').insert({
+        user_id: user.id,
+        status: status,
         lat: position.lat,
         lng: position.lng,
       });
 
+      if (error) {
+        console.error('Error saving status:', error);
+        toast.error('Error al guardar estado');
+        return;
+      }
+
+      console.log('Status saved:', status, position.lat, position.lng);
+      toast.success(status === 'OK' ? '✅ Estado "Estoy Bien" enviado' : '🆘 Alerta de ayuda enviada');
+
       // If disaster mode, also broadcast via mesh
       if (disasterMode && meshTransport.isActive()) {
         const messageType = status === 'OK' ? 'STATUS_OK' : 'STATUS_NEED_HELP';
-        const envelope = createMeshEnvelope(messageType, userId, {
+        const envelope = createMeshEnvelope(messageType, user.id, {
           lat: position.lat,
           lng: position.lng,
         });
@@ -60,6 +76,7 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
       setLastStatusTime(new Date());
     } catch (error) {
       console.error('Error updating status:', error);
+      toast.error('Error al actualizar estado');
     } finally {
       setSubmitting(false);
     }
@@ -67,13 +84,18 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
 
   // Handle monthly test
   const handleMonthlyTest = async () => {
+    if (!user?.id) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
+
     setTestInProgress(true);
     try {
       console.log('Monthly test initiated');
 
       // Broadcast test message via mesh
       if (meshTransport.isActive()) {
-        const envelope = createMeshEnvelope('DRILL_TEST', userId, {
+        const envelope = createMeshEnvelope('DRILL_TEST', user.id, {
           timestamp: Date.now(),
         });
         meshTransport.broadcast(envelope);
@@ -84,16 +106,16 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
 
       // Send acknowledgment
       if (meshTransport.isActive()) {
-        const envelope = createMeshEnvelope('DRILL_ACK', userId, {
+        const envelope = createMeshEnvelope('DRILL_ACK', user.id, {
           timestamp: Date.now(),
         });
         meshTransport.broadcast(envelope);
       }
 
-      alert('✅ Test mensual completado exitosamente');
+      toast.success('✅ Test mensual completado exitosamente');
     } catch (error) {
       console.error('Error in monthly test:', error);
-      alert('❌ Error en test mensual');
+      toast.error('❌ Error en test mensual');
     } finally {
       setTestInProgress(false);
     }

@@ -28,7 +28,10 @@ import { useLocation } from '@/hooks/useLocation';
 import { useEarthquakeDetection } from '@/hooks/useEarthquakeDetection';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useStatusCheckin } from '@/hooks/useStatusCheckin';
-import type { UserRole, USGSEarthquake } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import type { UserRole, USGSEarthquake, PanicType } from '@/types';
 
 const queryClient = new QueryClient();
 
@@ -91,6 +94,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 }) {
   const { disasterMode } = useAppState();
   const [panicOpen, setPanicOpen] = useState(false);
+  const { user } = useAuth();
   
   // Push notifications
   const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
@@ -136,6 +140,33 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     setPanicOpen(true); // Open panic button to request help
   };
 
+  // Handle panic button trigger - save to database
+  const handlePanicTriggered = useCallback(async (type: PanicType, lat: number, lng: number) => {
+    if (!user?.id) {
+      console.error('No user ID for panic event');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('panic_events').insert({
+        user_id: user.id,
+        panic_type: type,
+        lat,
+        lng,
+      });
+
+      if (error) {
+        console.error('Error saving panic event:', error);
+        toast.error('Error al guardar alerta');
+      } else {
+        console.log('Panic event saved successfully:', type, lat, lng);
+        toast.success('Alerta enviada a la comunidad');
+      }
+    } catch (err) {
+      console.error('Failed to save panic event:', err);
+    }
+  }, [user?.id]);
+
   const renderScreen = () => {
     switch (activeTab) {
       case 'map': return <MapScreen className="h-[calc(100vh-120px)]" />;
@@ -154,7 +185,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <AppHeader onPanicClick={() => setPanicOpen(true)} />
       <UpdatePrompt />
       <main className="flex-1 overflow-hidden">{renderScreen()}</main>
-      <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} />
+      <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} onPanicTriggered={handlePanicTriggered} />
       <EmergencyChat />
       <InstallPrompt />
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'RESCATISTA'} disasterMode={disasterMode} />
