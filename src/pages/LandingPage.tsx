@@ -292,6 +292,22 @@ function FeedbackForm() {
 export default function LandingPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [qrDialogCode, setQrDialogCode] = useState<string | null>(null);
+  const [userCount, setUserCount] = useState<number | null>(null);
+
+  // Fetch beta user count
+  useEffect(() => {
+    const fetchUserCount = async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_beta_user_count');
+        if (!error && data !== null) {
+          setUserCount(data);
+        }
+      } catch (err) {
+        console.error('Error fetching user count:', err);
+      }
+    };
+    fetchUserCount();
+  }, []);
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -316,6 +332,11 @@ export default function LandingPage() {
         <p className="text-sm md:text-base font-medium flex items-center justify-center gap-2 flex-wrap">
           <span className="animate-pulse">🎉</span>
           <span>¡Registro abierto! Durante la beta puedes registrarte sin código de invitación</span>
+          {userCount !== null && userCount > 0 && (
+            <span className="bg-primary-foreground/20 px-2 py-0.5 rounded-full text-xs font-bold">
+              {userCount} {userCount === 1 ? 'usuario registrado' : 'usuarios registrados'}
+            </span>
+          )}
           <a href="/auth" className="underline font-bold hover:no-underline ml-1">
             Regístrate ahora →
           </a>

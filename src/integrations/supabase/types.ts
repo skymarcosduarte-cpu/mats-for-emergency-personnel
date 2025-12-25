@@ -704,6 +704,7 @@ export type Database = {
       }
     }
     Functions: {
+      get_beta_user_count: { Args: never; Returns: number }
       get_todays_birthdays: {
         Args: never
         Returns: {
