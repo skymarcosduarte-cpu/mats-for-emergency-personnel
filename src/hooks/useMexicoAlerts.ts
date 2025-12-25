@@ -308,8 +308,8 @@ export function useMexicoAlerts(
   useEffect(() => {
     fetchAlerts();
 
-    // Refresh every 15 minutes
-    const interval = setInterval(fetchAlerts, 15 * 60 * 1000);
+    // Refresh every 1 minute
+    const interval = setInterval(fetchAlerts, 60 * 1000);
 
     return () => clearInterval(interval);
   }, [fetchAlerts]);
