@@ -480,12 +480,23 @@ export default function LandingPage() {
                 <div className="text-3xl font-bold text-green-600">{stats.help_requests_resolved}</div>
                 <p className="text-sm text-muted-foreground mt-1">Solicitudes de ayuda resueltas</p>
               </Card>
-              <Card className="text-center p-6 bg-background border-blue-500/30">
+              <Card 
+                className="text-center p-6 bg-background border-blue-500/30 cursor-pointer hover:border-blue-500 hover:shadow-lg transition-all"
+                onClick={() => {
+                  toast.info("Inicia sesión para ver los reportes de carretera en el mapa", {
+                    action: {
+                      label: "Iniciar Sesión",
+                      onClick: () => window.location.href = "/auth"
+                    }
+                  });
+                }}
+              >
                 <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-3">
                   <AlertTriangle className="h-6 w-6 text-blue-500" />
                 </div>
                 <div className="text-3xl font-bold text-blue-600">{stats.road_reports_total}</div>
                 <p className="text-sm text-muted-foreground mt-1">Reportes de carretera activos</p>
+                <p className="text-xs text-blue-500 mt-2">Toca para ver detalles →</p>
               </Card>
               <Card className="text-center p-6 bg-background border-pink-500/30">
                 <div className="w-12 h-12 rounded-full bg-pink-500/10 flex items-center justify-center mx-auto mb-3">
