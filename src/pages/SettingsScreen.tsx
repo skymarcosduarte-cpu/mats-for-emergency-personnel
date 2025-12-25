@@ -39,6 +39,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { UpdateButton } from '@/components/UpdatePrompt';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useAlertSettings } from '@/hooks/useAlertSettings';
+import { playSubtleAlert, playUrgentAlert } from '@/lib/alertSound';
 import type { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 import QRCode from 'qrcode';
@@ -439,6 +440,30 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   checked={helpRequestSounds}
                   onCheckedChange={setHelpRequestSounds}
                 />
+              </div>
+
+              {/* Test sound buttons */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => playSubtleAlert()}
+                  className="flex-1"
+                  disabled={!helpRequestSounds}
+                >
+                  <Volume2 className="w-4 h-4 mr-2" />
+                  Sonido lejano
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => playUrgentAlert()}
+                  className="flex-1"
+                  disabled={!helpRequestSounds}
+                >
+                  <Volume2 className="w-4 h-4 mr-2" />
+                  Sonido cercano
+                </Button>
               </div>
             </div>
           </CardContent>
