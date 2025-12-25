@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BottomNavigation, type TabId } from '@/components/BottomNavigation';
 import { PanicButton } from '@/components/PanicButton';
+import { AppHeader } from '@/components/AppHeader';
 import { AuthGate } from '@/pages/AuthGate';
 import { MapScreen } from '@/pages/MapScreen';
 import { TransitScreen } from '@/pages/TransitScreen';
@@ -35,22 +36,24 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   activeTab: TabId; setActiveTab: (tab: TabId) => void; userRole: UserRole; handleLogout: () => void;
 }) {
   const { disasterMode } = useAppState();
+  const [panicOpen, setPanicOpen] = useState(false);
 
   const renderScreen = () => {
     switch (activeTab) {
-      case 'map': return <MapScreen className="h-[calc(100vh-64px)]" />;
+      case 'map': return <MapScreen className="h-[calc(100vh-120px)]" />;
       case 'transit': return <TransitScreen userRole={userRole} />;
       case 'alerts': return <AlertsScreen userRole={userRole} />;
       case 'status': return <StatusScreen userRole={userRole} />;
       case 'settings': return <SettingsScreen onLogout={handleLogout} />;
-      default: return <MapScreen className="h-[calc(100vh-64px)]" />;
+      default: return <MapScreen className="h-[calc(100vh-120px)]" />;
     }
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <AppHeader onPanicClick={() => setPanicOpen(true)} />
       <main className="flex-1 overflow-hidden">{renderScreen()}</main>
-      <PanicButton userRole={userRole} />
+      <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} />
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'RESCATISTA'} disasterMode={disasterMode} />
     </div>
   );
