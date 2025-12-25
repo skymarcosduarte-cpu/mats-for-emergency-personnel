@@ -2,7 +2,7 @@
 // Road + Flight transit tracking with incident reports
 
 import React, { useState } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2 } from 'lucide-react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,8 @@ import { MediaCapture } from '@/components/MediaCapture';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { useLocation, getGoogleMapsLink } from '@/hooks/useLocation';
 import { useRoadReports } from '@/hooks/useRealtime';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import type { TransitType, ReportCategory, ReportSeverity, UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -74,9 +76,32 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   });
   const [reportImages, setReportImages] = useState<File[]>([]);
   const [reportAudio, setReportAudio] = useState<{ blob: Blob; duration: number } | null>(null);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   const { position } = useLocation();
-  const { reports } = useRoadReports();
+  const { reports, refetch: refetchReports } = useRoadReports();
+
+  // Handle report verification (upvote)
+  const handleVerifyReport = async (reportId: string) => {
+    setVerifyingId(reportId);
+    try {
+      const { data, error } = await supabase.rpc('verify_report', { report_id: reportId });
+      
+      if (error) throw error;
+      
+      if (data) {
+        toast.success('¡Reporte verificado!');
+        refetchReports();
+      } else {
+        toast.info('Ya verificaste este reporte');
+      }
+    } catch (error) {
+      console.error('Error verifying report:', error);
+      toast.error('Error al verificar');
+    } finally {
+      setVerifyingId(null);
+    }
+  };
 
   // Handle trip submission
   const handleTripSubmit = async () => {
@@ -241,6 +266,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           ) : (
             reports.map((report) => {
               const category = REPORT_CATEGORIES.find(c => c.value === report.category);
+              const verificationCount = (report as unknown as { verification_count?: number }).verification_count || 0;
               return (
                 <Card key={report.id} className="bg-card border-border">
                   <CardContent className="p-4">
@@ -258,15 +284,40 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                           <span>{category?.label}</span>
                           <span>•</span>
                           <span>Severidad {report.severity}/4</span>
+                          {verificationCount > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="flex items-center gap-1 text-safe">
+                                <ThumbsUp className="w-3 h-3" />
+                                {verificationCount} verificado{verificationCount > 1 ? 's' : ''}
+                              </span>
+                            </>
+                          )}
                         </div>
                         {report.description && (
                           <p className="text-sm text-muted-foreground mt-2">
                             {report.description}
                           </p>
                         )}
-                        <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
-                          <Clock className="w-3 h-3" />
-                          {new Date(report.created_at).toLocaleString()}
+                        <div className="flex items-center justify-between mt-3">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Clock className="w-3 h-3" />
+                            {new Date(report.created_at).toLocaleString()}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() => handleVerifyReport(report.id)}
+                            disabled={verifyingId === report.id}
+                          >
+                            {verifyingId === report.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                            ) : (
+                              <ThumbsUp className="w-3 h-3 mr-1" />
+                            )}
+                            Verificar
+                          </Button>
                         </div>
                       </div>
                     </div>

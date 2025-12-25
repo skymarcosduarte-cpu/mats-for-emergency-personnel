@@ -20,10 +20,12 @@ import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { SplashScreen } from '@/components/SplashScreen';
 import { EmergencyChat } from '@/components/EmergencyChat';
 import { SeismicAlert } from '@/components/SeismicAlert';
+import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { useAppState } from '@/hooks/useRealtime';
 import { useLocation } from '@/hooks/useLocation';
 import { useEarthquakeDetection } from '@/hooks/useEarthquakeDetection';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useStatusCheckin } from '@/hooks/useStatusCheckin';
 import type { UserRole, USGSEarthquake } from '@/types';
 
 const queryClient = new QueryClient();
@@ -70,6 +72,15 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   // Push notifications
   const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
   
+  // Status check-in timer
+  const { 
+    shouldPrompt: showCheckinPrompt, 
+    recordEarthquakeAlert, 
+    confirmSafe, 
+    dismissPrompt,
+    getTimeSinceEarthquake 
+  } = useStatusCheckin();
+  
   // Request notification permission on mount
   useEffect(() => {
     if (permission === 'default') {
@@ -81,7 +92,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   const handleEarthquakeDetected = useCallback((earthquake: USGSEarthquake, distanceKm: number) => {
     // Show push notification (works even in background tabs)
     showEarthquakeNotification(earthquake, distanceKm);
-  }, [showEarthquakeNotification]);
+    // Record for status check-in timer
+    recordEarthquakeAlert(earthquake.id);
+  }, [showEarthquakeNotification, recordEarthquakeAlert]);
   
   // Location and earthquake detection
   const { position } = useLocation();
@@ -89,6 +102,16 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     position,
     handleEarthquakeDetected
   );
+
+  // Handle check-in prompt actions
+  const handleConfirmSafe = () => {
+    confirmSafe();
+  };
+
+  const handleNeedHelp = () => {
+    dismissPrompt();
+    setPanicOpen(true); // Open panic button to request help
+  };
 
   const renderScreen = () => {
     switch (activeTab) {
@@ -123,6 +146,15 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
           onReported={markAsReported}
         />
       )}
+
+      {/* Status Check-in Prompt (5 minutes after earthquake) */}
+      <StatusCheckinPrompt
+        open={showCheckinPrompt}
+        timeSinceEarthquake={getTimeSinceEarthquake()}
+        onConfirmSafe={handleConfirmSafe}
+        onNeedHelp={handleNeedHelp}
+        onDismiss={dismissPrompt}
+      />
     </div>
   );
 }

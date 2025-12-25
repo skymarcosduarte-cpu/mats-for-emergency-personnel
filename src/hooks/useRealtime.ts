@@ -43,6 +43,8 @@ interface RoadReport {
   is_active: boolean;
   created_at: string;
   resolved_at: string | null;
+  verification_count: number;
+  verified_by: string[];
 }
 
 interface AppState {
