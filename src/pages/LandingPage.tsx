@@ -28,7 +28,8 @@ import {
   QrCode,
   MessageSquare,
   Send,
-  Loader2
+  Loader2,
+  UserPlus
 } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
@@ -310,13 +311,24 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Open Beta Banner */}
+      <div className="bg-primary text-primary-foreground py-3 px-4 text-center">
+        <p className="text-sm md:text-base font-medium flex items-center justify-center gap-2 flex-wrap">
+          <span className="animate-pulse">🎉</span>
+          <span>¡Registro abierto! Durante la beta puedes registrarte sin código de invitación</span>
+          <a href="/auth" className="underline font-bold hover:no-underline ml-1">
+            Regístrate ahora →
+          </a>
+        </p>
+      </div>
+
       {/* Hero Section */}
       <header className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-background" />
         <div className="relative container mx-auto px-4 py-16 md:py-24">
           <div className="flex flex-col items-center text-center space-y-6">
             <Badge variant="secondary" className="text-sm">
-              🚀 Beta Abierta
+              🚀 Beta Abierta - Sin código requerido
             </Badge>
             <MatsLogo size={96} />
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
@@ -327,12 +339,15 @@ export default function LandingPage() {
               recibe alertas y mantente seguro junto a tu comunidad.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
-              <Button size="lg" onClick={() => scrollToSection("install")}>
-                <Download className="mr-2 h-5 w-5" />
-                Instalar App
+              <Button size="lg" asChild>
+                <a href="/auth">
+                  <UserPlus className="mr-2 h-5 w-5" />
+                  Registrarme Gratis
+                </a>
               </Button>
-              <Button size="lg" variant="outline" onClick={() => scrollToSection("codes")}>
-                Obtener Código Beta
+              <Button size="lg" variant="outline" onClick={() => scrollToSection("install")}>
+                <Download className="mr-2 h-5 w-5" />
+                Cómo Instalar
               </Button>
             </div>
           </div>
