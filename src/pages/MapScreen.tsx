@@ -185,7 +185,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
 
   const { position, error: locationError } = useLocation();
   const { locations } = useUserLocations();
-  const { requests: helpRequests } = useHelpRequests();
+  const { requests: helpRequests } = useHelpRequests(position);
   const { reports } = useRoadReports();
   const { providers: medicalProviders } = useMedicalProviders();
 

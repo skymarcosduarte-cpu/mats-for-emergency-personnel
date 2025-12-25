@@ -1,7 +1,9 @@
 // Realtime Hook for COMUNIDAD EX SOS
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { calculateDistance } from '@/hooks/useLocation';
+import { playSubtleAlert, playUrgentAlert } from '@/lib/alertSound';
 
 interface UserLocation {
   user_id: string;
@@ -84,10 +86,13 @@ export function useUserLocations() {
   return { locations, refetch: fetchLocations };
 }
 
-// Hook for help requests
-export function useHelpRequests() {
+// Hook for help requests with distance-based alert sounds
+export function useHelpRequests(userPosition?: { lat: number; lng: number } | null) {
   const [requests, setRequests] = useState<HelpRequest[]>([]);
   const [urgentHelp, setUrgentHelp] = useState<HelpRequest | null>(null);
+  const alertedRequestsRef = useRef<Set<string>>(new Set());
+
+  const NEARBY_THRESHOLD_KM = 30 * 1.60934; // 30 miles in km
 
   const fetchRequests = useCallback(async () => {
     const { data, error } = await supabase
@@ -102,6 +107,34 @@ export function useHelpRequests() {
     }
   }, []);
 
+  // Play alert sound based on distance
+  const playHelpAlert = useCallback((request: HelpRequest) => {
+    // Skip if already alerted for this request
+    if (alertedRequestsRef.current.has(request.id)) return;
+    alertedRequestsRef.current.add(request.id);
+
+    if (!userPosition) {
+      // No position available, play subtle sound
+      playSubtleAlert();
+      return;
+    }
+
+    const distanceKm = calculateDistance(
+      userPosition.lat,
+      userPosition.lng,
+      request.lat,
+      request.lng
+    );
+
+    if (distanceKm <= NEARBY_THRESHOLD_KM) {
+      // Nearby - play urgent sound
+      playUrgentAlert();
+    } else {
+      // Distant - play subtle sound
+      playSubtleAlert();
+    }
+  }, [userPosition]);
+
   useEffect(() => {
     fetchRequests();
 
@@ -113,6 +146,9 @@ export function useHelpRequests() {
         (payload) => {
           const newRequest = payload.new as HelpRequest;
           setRequests(prev => [newRequest, ...prev].slice(0, 50));
+          
+          // Play distance-based alert sound
+          playHelpAlert(newRequest);
           
           if (newRequest.kind === 'SISMO_AYUDA_14') {
             setUrgentHelp(newRequest);
@@ -129,7 +165,7 @@ export function useHelpRequests() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchRequests]);
+  }, [fetchRequests, playHelpAlert]);
 
   const dismissUrgentHelp = useCallback(() => setUrgentHelp(null), []);
 
