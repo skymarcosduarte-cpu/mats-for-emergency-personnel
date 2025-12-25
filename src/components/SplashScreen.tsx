@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import matsLogo from "@/assets/mats-logo-transparent.png";
+import matsLogo from "@/assets/mats-logo.png";
 
 interface SplashScreenProps {
   onComplete: () => void;
