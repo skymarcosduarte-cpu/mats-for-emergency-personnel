@@ -207,3 +207,53 @@ export function useRoadReports() {
 
   return { reports, refetch: fetchReports };
 }
+
+// Hook for medical providers
+interface MedicalProvider {
+  user_id: string;
+  lat: number;
+  lng: number;
+  is_online: boolean;
+  updated_at: string;
+  can_provide_medical_assistance: boolean;
+  has_first_aid_kit: boolean;
+}
+
+export function useMedicalProviders() {
+  const [providers, setProviders] = useState<MedicalProvider[]>([]);
+
+  const fetchProviders = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('medical_providers')
+      .select('*');
+
+    if (!error && data) {
+      setProviders(data as MedicalProvider[]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProviders();
+
+    // Subscribe to changes in user_locations (underlying table)
+    const channel = supabase
+      .channel('medical_providers_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_locations' },
+        () => fetchProviders()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        () => fetchProviders()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchProviders]);
+
+  return { providers, refetch: fetchProviders };
+}

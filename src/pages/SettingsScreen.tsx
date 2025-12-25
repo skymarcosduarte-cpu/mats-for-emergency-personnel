@@ -12,12 +12,16 @@ import {
   RefreshCw,
   ExternalLink,
   Shield,
-  Download
+  Download,
+  HeartPulse,
+  Cross,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -40,12 +44,54 @@ interface SettingsScreenProps {
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onLogout
 }) => {
-  const { profile, role, signOut } = useAuth();
+  const { profile, role, signOut, updateProfile } = useAuth();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [savingMedical, setSavingMedical] = useState(false);
+
+  // Medical assistance state
+  const [canProvideMedical, setCanProvideMedical] = useState(
+    profile?.can_provide_medical_assistance ?? false
+  );
+  const [hasFirstAidKit, setHasFirstAidKit] = useState(
+    profile?.has_first_aid_kit ?? false
+  );
+
+  // Sync state when profile loads
+  React.useEffect(() => {
+    if (profile) {
+      setCanProvideMedical(profile.can_provide_medical_assistance ?? false);
+      setHasFirstAidKit(profile.has_first_aid_kit ?? false);
+    }
+  }, [profile]);
+
+  // Update medical assistance settings
+  const handleMedicalToggle = async (field: 'can_provide_medical_assistance' | 'has_first_aid_kit', value: boolean) => {
+    setSavingMedical(true);
+    
+    if (field === 'can_provide_medical_assistance') {
+      setCanProvideMedical(value);
+    } else {
+      setHasFirstAidKit(value);
+    }
+
+    try {
+      await updateProfile({ [field]: value });
+    } catch (error) {
+      console.error('Error updating medical settings:', error);
+      // Revert on error
+      if (field === 'can_provide_medical_assistance') {
+        setCanProvideMedical(!value);
+      } else {
+        setHasFirstAidKit(!value);
+      }
+    } finally {
+      setSavingMedical(false);
+    }
+  };
 
   // Generate invite code
   const generateInviteCode = useCallback(async () => {
@@ -120,6 +166,76 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 </span>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Medical Assistance Section */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <HeartPulse className="w-5 h-5 text-safe" />
+              Asistencia Médica
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Indica si puedes brindar asistencia médica en emergencias. Tu ubicación se mostrará con un icono especial (sin tu nombre).
+            </p>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-safe/10 flex items-center justify-center">
+                    <HeartPulse className="w-5 h-5 text-safe" />
+                  </div>
+                  <div>
+                    <Label htmlFor="medical-toggle" className="text-foreground font-medium">
+                      Puedo dar asistencia médica
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Tengo conocimientos médicos o paramédicos
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="medical-toggle"
+                  checked={canProvideMedical}
+                  onCheckedChange={(value) => handleMedicalToggle('can_provide_medical_assistance', value)}
+                  disabled={savingMedical}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-safe/10 flex items-center justify-center">
+                    <Cross className="w-5 h-5 text-safe" />
+                  </div>
+                  <div>
+                    <Label htmlFor="kit-toggle" className="text-foreground font-medium">
+                      Tengo botiquín disponible
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Cuento con kit de primeros auxilios
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="kit-toggle"
+                  checked={hasFirstAidKit}
+                  onCheckedChange={(value) => handleMedicalToggle('has_first_aid_kit', value)}
+                  disabled={savingMedical}
+                />
+              </div>
+            </div>
+
+            {(canProvideMedical || hasFirstAidKit) && (
+              <div className="mt-4 p-3 bg-safe/10 rounded-lg border border-safe/20">
+                <p className="text-xs text-safe flex items-center gap-2">
+                  <HeartPulse className="w-4 h-4" />
+                  Tu icono en el mapa mostrará que puedes asistir
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -10,6 +10,8 @@ interface Profile {
   nickname: string;
   specialty: string | null;
   phone: string;
+  can_provide_medical_assistance: boolean;
+  has_first_aid_kit: boolean;
   created_at: string;
   updated_at: string;
 }
