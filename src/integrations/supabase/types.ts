@@ -59,6 +59,36 @@ export type Database = {
         }
         Relationships: []
       }
+      beta_feedback: {
+        Row: {
+          category: string
+          created_at: string
+          email: string
+          id: string
+          invite_code: string | null
+          message: string
+          name: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          email: string
+          id?: string
+          invite_code?: string | null
+          message: string
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          email?: string
+          id?: string
+          invite_code?: string | null
+          message?: string
+          name?: string
+        }
+        Relationships: []
+      }
       help_requests: {
         Row: {
           created_at: string | null
