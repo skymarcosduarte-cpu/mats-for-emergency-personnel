@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -17,18 +17,37 @@ import { SettingsScreen } from '@/pages/SettingsScreen';
 import LandingPage from '@/pages/LandingPage';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
+import { SplashScreen } from '@/components/SplashScreen';
 import { useAppState } from '@/hooks/useRealtime';
 import type { UserRole } from '@/types';
 
 const queryClient = new QueryClient();
 
 function AppContent() {
+  const [showSplash, setShowSplash] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('map');
   const [userRole] = useState<UserRole>('RESCATISTA');
 
   const handleAuthComplete = () => setIsAuthenticated(true);
   const handleLogout = () => setIsAuthenticated(false);
+
+  // Check if splash was shown recently (within session)
+  useEffect(() => {
+    const splashShown = sessionStorage.getItem('splash-shown');
+    if (splashShown) {
+      setShowSplash(false);
+    }
+  }, []);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    sessionStorage.setItem('splash-shown', 'true');
+  };
+
+  if (showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} />;
+  }
 
   if (!isAuthenticated) {
     return <AuthGate onAuthComplete={handleAuthComplete} />;

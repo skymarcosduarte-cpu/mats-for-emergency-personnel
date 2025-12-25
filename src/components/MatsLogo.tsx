@@ -1,6 +1,6 @@
-// M.A.T.S. Logo Component using uploaded image
+// M.A.T.S. Logo Component using transparent background image
 import React from 'react';
-import matsLogo from '@/assets/mats-logo.png';
+import matsLogo from '@/assets/mats-logo-transparent.png';
 
 interface MatsLogoProps {
   size?: number;
