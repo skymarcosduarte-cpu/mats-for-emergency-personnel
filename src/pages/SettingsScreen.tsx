@@ -19,13 +19,15 @@ import {
   Bell,
   BellOff,
   Volume2,
-  VolumeX
+  VolumeX,
+  Radar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
 import {
   Dialog,
   DialogContent,
@@ -53,7 +55,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 }) => {
   const { profile, role, signOut, updateProfile } = useAuth();
   const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
-  const { helpRequestSounds, earthquakeSounds, setHelpRequestSounds, setEarthquakeSounds } = useAlertSettings();
+  const { helpRequestSounds, earthquakeSounds, earthquakeRadiusMiles, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusMiles } = useAlertSettings();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState('');
@@ -411,7 +413,39 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   id="earthquake-sounds"
                   checked={earthquakeSounds}
                   onCheckedChange={setEarthquakeSounds}
+              />
+              </div>
+
+              {/* Earthquake radius slider */}
+              <div className="space-y-3 p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
+                    <Radar className="w-5 h-5 text-warning" />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-foreground font-medium">
+                      Radio de detección
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Distancia para alertas sísmicas
+                    </p>
+                  </div>
+                  <span className="text-lg font-bold text-warning">
+                    {earthquakeRadiusMiles} mi
+                  </span>
+                </div>
+                <Slider
+                  value={[earthquakeRadiusMiles]}
+                  onValueChange={(v) => setEarthquakeRadiusMiles(v[0])}
+                  min={10}
+                  max={100}
+                  step={5}
+                  className="w-full"
                 />
+                <div className="flex justify-between text-xs text-muted-foreground px-1">
+                  <span>10 millas</span>
+                  <span>100 millas</span>
+                </div>
               </div>
 
               <div className="flex items-center justify-between">

@@ -4,11 +4,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { USGSEarthquake, GeoPosition } from '@/types';
 import { calculateDistance } from '@/hooks/useLocation';
+import { getEarthquakeRadiusMiles, getEarthquakeRadiusKm } from '@/hooks/useAlertSettings';
 
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
 const CHECK_INTERVAL_MS = 60 * 1000; // Check every minute
-const ALERT_RADIUS_MILES = 30;
-const ALERT_RADIUS_KM = ALERT_RADIUS_MILES * 1.60934; // ~48.28 km
 
 interface EarthquakeDetectionState {
   nearbyQuake: USGSEarthquake | null;
@@ -51,6 +50,9 @@ export function useEarthquakeDetection(
   const checkForNearbyQuakes = useCallback(async (): Promise<NearbyEarthquake | null> => {
     if (!position) return null;
 
+    // Get current radius setting
+    const alertRadiusKm = getEarthquakeRadiusKm();
+
     try {
       const response = await fetch(USGS_FEED_URL);
       const data = await response.json();
@@ -66,7 +68,7 @@ export function useEarthquakeDetection(
         const [lng, lat] = quake.geometry.coordinates;
         const distanceKm = calculateDistance(position.lat, position.lng, lat, lng);
 
-        if (distanceKm <= ALERT_RADIUS_KM) {
+        if (distanceKm <= alertRadiusKm) {
           // Found a nearby earthquake
           return { earthquake: quake, distanceKm };
         }
@@ -150,7 +152,7 @@ export function useEarthquakeDetection(
     dismissAlert,
     markAsReported,
     refresh,
-    alertRadiusMiles: ALERT_RADIUS_MILES,
-    alertRadiusKm: ALERT_RADIUS_KM,
+    alertRadiusMiles: getEarthquakeRadiusMiles(),
+    alertRadiusKm: getEarthquakeRadiusKm(),
   };
 }

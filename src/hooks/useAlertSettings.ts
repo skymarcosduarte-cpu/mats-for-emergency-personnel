@@ -5,14 +5,18 @@ import { useState, useEffect, useCallback } from 'react';
 
 const STORAGE_KEY = 'mats-alert-settings';
 
+const DEFAULT_EARTHQUAKE_RADIUS_MILES = 30;
+
 interface AlertSettings {
   helpRequestSounds: boolean;
   earthquakeSounds: boolean;
+  earthquakeRadiusMiles: number;
 }
 
 const DEFAULT_SETTINGS: AlertSettings = {
   helpRequestSounds: true,
   earthquakeSounds: true,
+  earthquakeRadiusMiles: DEFAULT_EARTHQUAKE_RADIUS_MILES,
 };
 
 export function useAlertSettings() {
@@ -54,11 +58,18 @@ export function useAlertSettings() {
     saveSettings({ earthquakeSounds: enabled });
   }, [saveSettings]);
 
+  const setEarthquakeRadiusMiles = useCallback((radius: number) => {
+    // Clamp between 10 and 100 miles
+    const clampedRadius = Math.max(10, Math.min(100, radius));
+    saveSettings({ earthquakeRadiusMiles: clampedRadius });
+  }, [saveSettings]);
+
   return {
     ...settings,
     loaded,
     setHelpRequestSounds,
     setEarthquakeSounds,
+    setEarthquakeRadiusMiles,
   };
 }
 
@@ -88,4 +99,23 @@ export function areEarthquakeSoundsEnabled(): boolean {
     // Ignore
   }
   return true;
+}
+
+// Standalone function to get earthquake radius in miles
+export function getEarthquakeRadiusMiles(): number {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed.earthquakeRadiusMiles ?? DEFAULT_EARTHQUAKE_RADIUS_MILES;
+    }
+  } catch (e) {
+    // Ignore
+  }
+  return DEFAULT_EARTHQUAKE_RADIUS_MILES;
+}
+
+// Get earthquake radius in kilometers
+export function getEarthquakeRadiusKm(): number {
+  return getEarthquakeRadiusMiles() * 1.60934;
 }
