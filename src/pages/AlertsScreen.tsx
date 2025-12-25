@@ -1,8 +1,8 @@
 // Alerts Screen for COMUNIDAD EX SOS
-// USGS earthquakes + "4/10" quick report + "14" help
+// USGS earthquakes + "4/10" quick report + "14" help + notifications
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -16,8 +16,12 @@ import { MediaCapture } from '@/components/MediaCapture';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { useLocation, getGoogleMapsLink } from '@/hooks/useLocation';
 import { useHelpRequests } from '@/hooks/useRealtime';
+import { useNotifications } from '@/hooks/useNotifications';
 import type { USGSEarthquake, QuakeIntensity, QuakeDamage, UserRole, MediaRef } from '@/types';
 import { cn } from '@/lib/utils';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
 
 // Fetch USGS earthquakes
 async function fetchUSGSEarthquakes(): Promise<USGSEarthquake[]> {
@@ -54,6 +58,14 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   
   const { position } = useLocation();
   const { requests: helpRequests } = useHelpRequests();
+  const { 
+    notifications, 
+    unreadCount, 
+    loading: notificationsLoading, 
+    markAsRead, 
+    markAllAsRead, 
+    deleteNotification 
+  } = useNotifications();
 
   // Fetch earthquakes on mount
   const loadEarthquakes = useCallback(async () => {
@@ -168,9 +180,20 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       </div>
 
       <Tabs defaultValue="earthquakes" className="p-4">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="earthquakes">Sismos</TabsTrigger>
-          <TabsTrigger value="help">Ayuda Activa</TabsTrigger>
+          <TabsTrigger value="help">Ayuda</TabsTrigger>
+          <TabsTrigger value="notifications" className="relative">
+            Notificaciones
+            {unreadCount > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+              >
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* Earthquakes Tab */}
@@ -295,6 +318,102 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                   </CardContent>
                 </Card>
               ))
+          )}
+        </TabsContent>
+
+        {/* Notifications Tab */}
+        <TabsContent value="notifications" className="space-y-3 mt-4">
+          {notifications.length > 0 && (
+            <div className="flex justify-end mb-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={markAllAsRead}
+                className="text-xs"
+              >
+                <Check className="w-3 h-3 mr-1" />
+                Marcar todo como leído
+              </Button>
+            </div>
+          )}
+          
+          {notificationsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No tienes notificaciones</p>
+            </div>
+          ) : (
+            notifications.map((notification) => (
+              <Card 
+                key={notification.id} 
+                className={cn(
+                  "bg-card border-border transition-colors",
+                  !notification.read && "border-l-4 border-l-primary"
+                )}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className={cn(
+                        "p-2 rounded-full",
+                        notification.type === 'marketplace_contact' 
+                          ? "bg-primary/10 text-primary"
+                          : "bg-muted text-muted-foreground"
+                      )}>
+                        {notification.type === 'marketplace_contact' ? (
+                          <ShoppingBag className="w-4 h-4" />
+                        ) : (
+                          <Bell className="w-4 h-4" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          "text-sm",
+                          !notification.read && "font-semibold"
+                        )}>
+                          {notification.title}
+                        </p>
+                        {notification.message && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {notification.message}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {formatDistanceToNow(new Date(notification.created_at), { 
+                            addSuffix: true,
+                            locale: es 
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      {!notification.read && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => markAsRead(notification.id)}
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => deleteNotification(notification.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
           )}
         </TabsContent>
       </Tabs>

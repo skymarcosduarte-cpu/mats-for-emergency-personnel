@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, X, ImagePlus, Calendar, Tag, DollarSign, Loader2, ChevronLeft, ChevronRight, Search, MessageCircle, Filter, Pencil, Trash2, User } from 'lucide-react';
+import { Plus, X, ImagePlus, Calendar, Tag, DollarSign, Loader2, ChevronLeft, ChevronRight, Search, MessageCircle, Filter, Pencil, Trash2, User, Bell } from 'lucide-react';
+import { createNotification } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -354,7 +355,7 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
     setDetailOpen(true);
   };
 
-  const handleContactSeller = (listing: MarketListing) => {
+  const handleContactSeller = async (listing: MarketListing) => {
     if (!listing.profiles?.phone) {
       toast({
         title: 'Sin contacto',
@@ -363,6 +364,31 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
       });
       return;
     }
+
+    // Get current user's profile for the notification message
+    const { data: { user } } = await supabase.auth.getUser();
+    let buyerName = 'Alguien';
+    
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('nickname')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile?.nickname) {
+        buyerName = profile.nickname;
+      }
+    }
+
+    // Create notification for the seller
+    await createNotification({
+      userId: listing.user_id,
+      type: 'marketplace_contact',
+      title: 'Alguien está interesado en tu anuncio',
+      message: `${buyerName} te contactó por "${listing.title}"`,
+      listingId: listing.id,
+    });
 
     const phone = listing.profiles.phone.replace(/\D/g, '');
     const message = encodeURIComponent(
