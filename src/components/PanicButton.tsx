@@ -66,6 +66,17 @@ interface PanicButtonProps {
   onOpenChange?: (open: boolean) => void;
 }
 
+// Vibrate helper (checks for support)
+const vibrate = (pattern: number | number[]) => {
+  if ('vibrate' in navigator) {
+    try {
+      navigator.vibrate(pattern);
+    } catch {
+      // Ignore errors
+    }
+  }
+};
+
 export const PanicButton: React.FC<PanicButtonProps> = ({ 
   userRole = 'RESCATISTA',
   onPanicTriggered,
@@ -78,10 +89,33 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   const { contacts, getSOSWhatsAppUrls, hasMinimumContacts } = useEmergencyContactsDB();
 
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalOpen;
-  const setIsOpen = onOpenChange || setInternalOpen;
+  
+  const setIsOpen = (open: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(open);
+    } else {
+      setInternalOpen(open);
+    }
+    
+    // Show feedback when dialog opens
+    if (open) {
+      vibrate([100, 50, 100]); // Double short vibration
+      toast.warning('Selecciona el tipo de emergencia', {
+        duration: 3000,
+        icon: '⚠️',
+      });
+    }
+  };
 
   const handlePanicSelect = async (option: PanicOption) => {
     setSelectedType(option.type);
+
+    // Immediate feedback: vibration + toast
+    vibrate([200, 100, 200, 100, 300]); // SOS-style pattern
+    toast.info(`Enviando alerta: ${option.label}`, {
+      duration: 4000,
+      icon: '🚨',
+    });
 
     // IMPORTANT: Open a window synchronously to avoid popup blockers (mobile Safari/Chrome)
     const placeholderWindow = window.open('about:blank', '_blank');
