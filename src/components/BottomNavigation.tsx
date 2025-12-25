@@ -11,6 +11,7 @@ import {
   Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUpdateAvailable } from '@/hooks/useUpdateCheck';
 
 export type TabId = 'map' | 'transit' | 'alerts' | 'community' | 'market' | 'status' | 'settings';
 
@@ -53,6 +54,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   disasterMode = false,
   alertCount = 0,
 }) => {
+  const updateAvailable = useUpdateAvailable();
+  
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (item.requiresRescatista && !isRescatista) return false;
     if (item.hideInDisaster && disasterMode) return false;
@@ -64,6 +67,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
       <div className="flex items-center justify-around h-16 px-2">
         {visibleItems.map((item) => {
           const isActive = activeTab === item.id;
+          const showUpdateBadge = item.id === 'settings' && updateAvailable;
           
           return (
             <button
@@ -85,6 +89,11 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
                     {alertCount > 9 ? '9+' : alertCount}
                   </span>
+                )}
+                
+                {/* Update available badge on settings */}
+                {showUpdateBadge && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse" />
                 )}
               </div>
               

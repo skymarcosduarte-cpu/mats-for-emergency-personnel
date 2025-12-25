@@ -1,89 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, X, Download, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { useUpdateCheck } from "@/hooks/useUpdateCheck";
 
 export function UpdatePrompt() {
-  const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
-  const [isChecking, setIsChecking] = useState(true);
-
-  useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      // Check for service worker updates on launch
-      navigator.serviceWorker.ready.then(async (reg) => {
-        setRegistration(reg);
-        
-        // Immediate update check on launch
-        try {
-          await reg.update();
-          if (reg.waiting) {
-            setUpdateAvailable(true);
-          }
-        } catch (error) {
-          console.log("Update check error:", error);
-        } finally {
-          setIsChecking(false);
-        }
-        
-        // Check for updates periodically (every 2 minutes)
-        const checkForUpdates = async () => {
-          try {
-            await reg.update();
-            if (reg.waiting) {
-              setUpdateAvailable(true);
-            }
-          } catch {
-            // Ignore errors
-          }
-        };
-        
-        const interval = setInterval(checkForUpdates, 2 * 60 * 1000);
-        
-        // Listen for new service worker
-        reg.addEventListener("updatefound", () => {
-          const newWorker = reg.installing;
-          if (newWorker) {
-            newWorker.addEventListener("statechange", () => {
-              if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                setUpdateAvailable(true);
-              }
-            });
-          }
-        });
-
-        return () => clearInterval(interval);
-      });
-
-      // Listen for controller change (when skipWaiting is called)
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (!refreshing) {
-          refreshing = true;
-          window.location.reload();
-        }
-      });
-    } else {
-      setIsChecking(false);
-    }
-  }, []);
-
-  const handleUpdate = () => {
-    if (registration?.waiting) {
-      // Tell the waiting service worker to take over
-      registration.waiting.postMessage({ type: "SKIP_WAITING" });
-      toast.success("Actualizando...");
-    } else {
-      // Force refresh if no waiting worker
-      window.location.reload();
-    }
-  };
-
-  const dismissUpdate = () => {
-    setUpdateAvailable(false);
-    // Remember dismissal for this session
-    sessionStorage.setItem("update-dismissed", "true");
-  };
+  const { updateAvailable, applyUpdate, dismissUpdate } = useUpdateCheck();
 
   // Don't show if dismissed this session
   const wasDismissed = sessionStorage.getItem("update-dismissed") === "true";
@@ -91,6 +13,11 @@ export function UpdatePrompt() {
   if (!updateAvailable || wasDismissed) {
     return null;
   }
+
+  const handleUpdate = () => {
+    toast.success("Actualizando...");
+    applyUpdate();
+  };
 
   return (
     <div className="fixed top-14 left-0 right-0 z-50 px-3 animate-in slide-in-from-top-4 duration-300">
