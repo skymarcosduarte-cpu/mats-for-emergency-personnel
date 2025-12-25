@@ -74,12 +74,7 @@ const features = [
   }
 ];
 
-const betaCodes = [
-  { code: "BETA2025", uses: "50 usos", expires: "1 Mar 2025" },
-  { code: "RESCATE01", uses: "20 usos", expires: "1 Mar 2025" },
-  { code: "FAMILIA01", uses: "30 usos", expires: "1 Mar 2025" },
-  { code: "COMUNIDAD", uses: "100 usos", expires: "1 Jun 2025" }
-];
+// Beta codes removed during open beta period
 
 const installSteps = [
   { step: 1, title: "Abre la app", description: "Visita la app desde tu navegador móvil (Safari en iPhone, Chrome en Android)" },
@@ -371,51 +366,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Beta Codes Section */}
-      <section id="codes" className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <Badge variant="outline" className="mb-4">Acceso Limitado</Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Códigos de Invitación Beta</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Usa uno de estos códigos para registrarte en la app
-            </p>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
-            {betaCodes.map((item) => (
-              <Card 
-                key={item.code} 
-                className="bg-card hover:bg-accent/50 transition-colors cursor-pointer group"
-                onClick={() => copyCode(item.code)}
-              >
-                <CardContent className="p-6 text-center space-y-3">
-                  <div className="font-mono text-xl font-bold text-primary flex items-center justify-center gap-2">
-                    {item.code}
-                    {copiedCode === item.code ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <Copy className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={(e) => showQR(e, item.code)}
-                  >
-                    <QrCode className="h-4 w-4 mr-2" />
-                    Ver QR
-                  </Button>
-                  <div className="text-sm text-muted-foreground">
-                    <p>{item.uses}</p>
-                    <p className="text-xs">Expira: {item.expires}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Beta Codes Section - Hidden during open beta */}
 
       {/* QR Code Dialog */}
       <Dialog open={!!qrDialogCode} onOpenChange={() => setQrDialogCode(null)}>
