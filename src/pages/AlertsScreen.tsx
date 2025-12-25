@@ -469,15 +469,71 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             <p className="text-sm text-muted-foreground">
               Alertas federales mexicanas (NHC + CONABIO)
             </p>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={refreshMexico}
-              disabled={mexicoLoading}
-            >
-              <RefreshCw className={cn('w-4 h-4', mexicoLoading && 'animate-spin')} />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={refreshMexico}
+                disabled={mexicoLoading}
+              >
+                <RefreshCw className={cn('w-4 h-4', mexicoLoading && 'animate-spin')} />
+              </Button>
+            </div>
           </div>
+
+          {/* Test notification buttons */}
+          {notifPermission === 'granted' && (
+            <div className="flex gap-2 p-3 rounded-lg bg-muted/50 border border-border">
+              <p className="text-xs text-muted-foreground flex-1">Probar notificaciones:</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs h-7"
+                onClick={() => {
+                  const testCyclone: TropicalCycloneAlert = {
+                    id: 'test-cyclone-' + Date.now(),
+                    name: 'Huracán Test',
+                    type: 'hurricane',
+                    category: 3,
+                    basin: 'atlantic',
+                    headline: 'Huracán de prueba para verificar notificaciones',
+                    description: 'Este es un ciclón de prueba generado para verificar que las notificaciones funcionan correctamente.',
+                    link: '',
+                    pubDate: new Date().toISOString(),
+                    windSpeed: 120,
+                    distanceKm: 150,
+                  };
+                  showCycloneNotification(testCyclone);
+                }}
+              >
+                <Wind className="w-3 h-3 mr-1" />
+                Ciclón
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs h-7"
+                onClick={() => {
+                  const testFires: FireHotspot[] = [{
+                    id: 'test-fire-' + Date.now(),
+                    lat: position?.lat || 19.4326,
+                    lng: position?.lng || -99.1332,
+                    brightness: 350,
+                    confidence: 'high',
+                    acqDate: new Date().toISOString().split('T')[0],
+                    acqTime: new Date().toTimeString().slice(0, 5).replace(':', ''),
+                    satellite: 'TEST',
+                    distanceKm: 25,
+                    frp: 50,
+                  }];
+                  showFireNotification(testFires, 25);
+                }}
+              >
+                <Flame className="w-3 h-3 mr-1" />
+                Incendio
+              </Button>
+            </div>
+          )}
 
           {mexicoLoading ? (
             <div className="flex items-center justify-center py-12">
