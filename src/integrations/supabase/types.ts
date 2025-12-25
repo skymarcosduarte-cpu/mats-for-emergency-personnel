@@ -14,16 +14,454 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_releases: {
+        Row: {
+          id: string
+          min_supported: string
+          release_notes: string | null
+          released_at: string | null
+          version: string
+        }
+        Insert: {
+          id?: string
+          min_supported: string
+          release_notes?: string | null
+          released_at?: string | null
+          version: string
+        }
+        Update: {
+          id?: string
+          min_supported?: string
+          release_notes?: string | null
+          released_at?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
+      app_state: {
+        Row: {
+          disaster_mode: boolean | null
+          disaster_started_at: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          disaster_mode?: boolean | null
+          disaster_started_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          disaster_mode?: boolean | null
+          disaster_started_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      help_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          kind: string
+          lat: number
+          lng: number
+          message: string | null
+          quake_event_id: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          kind: string
+          lat: number
+          lng: number
+          message?: string | null
+          quake_event_id?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          kind?: string
+          lat?: number
+          lng?: number
+          message?: string | null
+          quake_event_id?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      invites: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string
+          expires_at: string | null
+          id: string
+          max_uses: number | null
+          used_count: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          used_count?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          used_count?: number | null
+        }
+        Relationships: []
+      }
+      panic_events: {
+        Row: {
+          created_at: string | null
+          id: string
+          lat: number
+          lng: number
+          panic_type: string
+          resolved: boolean | null
+          resolved_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lat: number
+          lng: number
+          panic_type: string
+          resolved?: boolean | null
+          resolved_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lat?: number
+          lng?: number
+          panic_type?: string
+          resolved?: boolean | null
+          resolved_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string
+          id: string
+          nickname: string
+          phone: string
+          specialty: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          full_name: string
+          id: string
+          nickname: string
+          phone: string
+          specialty?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          nickname?: string
+          phone?: string
+          specialty?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      quake_checkins: {
+        Row: {
+          created_at: string | null
+          damage_report: string
+          id: string
+          intensity: number
+          lat: number
+          lng: number
+          user_id: string
+          usgs_event_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          damage_report: string
+          id?: string
+          intensity: number
+          lat: number
+          lng: number
+          user_id: string
+          usgs_event_id: string
+        }
+        Update: {
+          created_at?: string | null
+          damage_report?: string
+          id?: string
+          intensity?: number
+          lat?: number
+          lng?: number
+          user_id?: string
+          usgs_event_id?: string
+        }
+        Relationships: []
+      }
+      report_media: {
+        Row: {
+          created_at: string | null
+          duration_ms: number | null
+          id: string
+          media_type: string
+          mime_type: string
+          report_id: string
+          report_type: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration_ms?: number | null
+          id?: string
+          media_type: string
+          mime_type: string
+          report_id: string
+          report_type: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string | null
+          duration_ms?: number | null
+          id?: string
+          media_type?: string
+          mime_type?: string
+          report_id?: string
+          report_type?: string
+          storage_path?: string
+        }
+        Relationships: []
+      }
+      road_reports: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          lat: number
+          lng: number
+          resolved_at: string | null
+          severity: number
+          title: string
+          trip_id: string | null
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          lat: number
+          lng: number
+          resolved_at?: string | null
+          severity: number
+          title: string
+          trip_id?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          lat?: number
+          lng?: number
+          resolved_at?: string | null
+          severity?: number
+          title?: string
+          trip_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      status_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          message: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          message?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          message?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transit_trips: {
+        Row: {
+          airline: string | null
+          arrival_airport: string | null
+          arrival_time: string | null
+          arrived_at: string | null
+          companions: string | null
+          created_at: string | null
+          departure_airport: string | null
+          departure_time: string | null
+          destination: string
+          eta: string
+          flight_number: string | null
+          id: string
+          origin: string
+          plates: string | null
+          status: string
+          transit_type: string
+          user_id: string
+          vehicle_type: string | null
+        }
+        Insert: {
+          airline?: string | null
+          arrival_airport?: string | null
+          arrival_time?: string | null
+          arrived_at?: string | null
+          companions?: string | null
+          created_at?: string | null
+          departure_airport?: string | null
+          departure_time?: string | null
+          destination: string
+          eta: string
+          flight_number?: string | null
+          id?: string
+          origin: string
+          plates?: string | null
+          status?: string
+          transit_type: string
+          user_id: string
+          vehicle_type?: string | null
+        }
+        Update: {
+          airline?: string | null
+          arrival_airport?: string | null
+          arrival_time?: string | null
+          arrived_at?: string | null
+          companions?: string | null
+          created_at?: string | null
+          departure_airport?: string | null
+          departure_time?: string | null
+          destination?: string
+          eta?: string
+          flight_number?: string | null
+          id?: string
+          origin?: string
+          plates?: string | null
+          status?: string
+          transit_type?: string
+          user_id?: string
+          vehicle_type?: string | null
+        }
+        Relationships: []
+      }
+      user_locations: {
+        Row: {
+          accuracy: number | null
+          heading: number | null
+          is_online: boolean | null
+          lat: number
+          lng: number
+          speed: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          heading?: number | null
+          is_online?: boolean | null
+          lat: number
+          lng: number
+          speed?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          heading?: number | null
+          is_online?: boolean | null
+          lat?: number
+          lng?: number
+          speed?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      is_rescatista: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "RESCATISTA" | "FAMILIAR"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +588,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["RESCATISTA", "FAMILIAR"],
+    },
   },
 } as const
