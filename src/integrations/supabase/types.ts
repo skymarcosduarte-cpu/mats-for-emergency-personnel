@@ -276,8 +276,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          can_provide_medical_assistance: boolean | null
           created_at: string | null
           full_name: string
+          has_first_aid_kit: boolean | null
           id: string
           nickname: string
           phone: string
@@ -285,8 +287,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          can_provide_medical_assistance?: boolean | null
           created_at?: string | null
           full_name: string
+          has_first_aid_kit?: boolean | null
           id: string
           nickname: string
           phone: string
@@ -294,8 +298,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          can_provide_medical_assistance?: boolean | null
           created_at?: string | null
           full_name?: string
+          has_first_aid_kit?: boolean | null
           id?: string
           nickname?: string
           phone?: string
@@ -594,7 +600,18 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      medical_providers: {
+        Row: {
+          can_provide_medical_assistance: boolean | null
+          has_first_aid_kit: boolean | null
+          is_online: boolean | null
+          lat: number | null
+          lng: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_role: {
