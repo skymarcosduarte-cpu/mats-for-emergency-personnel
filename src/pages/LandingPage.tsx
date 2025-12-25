@@ -3,6 +3,16 @@ import { MatsLogo } from "@/components/MatsLogo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Shield, 
   MapPin, 
@@ -15,7 +25,10 @@ import {
   CheckCircle2,
   Copy,
   ArrowRight,
-  QrCode
+  QrCode,
+  MessageSquare,
+  Send,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
@@ -25,6 +38,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
 
 const features = [
   {
@@ -92,6 +107,177 @@ function InviteQRCode({ code }: { code: string }) {
   }, [code]);
 
   return <canvas ref={canvasRef} className="rounded-lg" />;
+}
+
+// Feedback form validation schema
+const feedbackSchema = z.object({
+  name: z.string().trim().min(2, "El nombre debe tener al menos 2 caracteres").max(100, "El nombre es muy largo"),
+  email: z.string().trim().email("Ingresa un email válido").max(255, "El email es muy largo"),
+  category: z.enum(["bug", "suggestion", "question", "other"], { required_error: "Selecciona una categoría" }),
+  message: z.string().trim().min(10, "El mensaje debe tener al menos 10 caracteres").max(2000, "El mensaje es muy largo"),
+  inviteCode: z.string().optional()
+});
+
+type FeedbackFormData = z.infer<typeof feedbackSchema>;
+
+function FeedbackForm() {
+  const [formData, setFormData] = useState<Partial<FeedbackFormData>>({
+    name: "",
+    email: "",
+    category: undefined,
+    message: "",
+    inviteCode: ""
+  });
+  const [errors, setErrors] = useState<Partial<Record<keyof FeedbackFormData, string>>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+
+    const result = feedbackSchema.safeParse(formData);
+    if (!result.success) {
+      const fieldErrors: Partial<Record<keyof FeedbackFormData, string>> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as keyof FeedbackFormData] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from("beta_feedback").insert({
+        name: result.data.name,
+        email: result.data.email,
+        category: result.data.category,
+        message: result.data.message,
+        invite_code: result.data.inviteCode || null
+      });
+
+      if (error) throw error;
+
+      setSubmitted(true);
+      toast.success("¡Gracias por tu feedback!");
+    } catch (error) {
+      toast.error("Error al enviar. Intenta de nuevo.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <Card className="max-w-lg mx-auto">
+        <CardContent className="p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="h-8 w-8 text-green-500" />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">¡Feedback Enviado!</h3>
+          <p className="text-muted-foreground">
+            Gracias por ayudarnos a mejorar la app. Revisaremos tu mensaje pronto.
+          </p>
+          <Button className="mt-6" variant="outline" onClick={() => setSubmitted(false)}>
+            Enviar otro mensaje
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="max-w-lg mx-auto">
+      <CardContent className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nombre *</Label>
+              <Input
+                id="name"
+                placeholder="Tu nombre"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className={errors.name ? "border-destructive" : ""}
+              />
+              {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="tu@email.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className={errors.email ? "border-destructive" : ""}
+              />
+              {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoría *</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => setFormData({ ...formData, category: value as FeedbackFormData["category"] })}
+              >
+                <SelectTrigger className={errors.category ? "border-destructive" : ""}>
+                  <SelectValue placeholder="Selecciona..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bug">🐛 Bug / Error</SelectItem>
+                  <SelectItem value="suggestion">💡 Sugerencia</SelectItem>
+                  <SelectItem value="question">❓ Pregunta</SelectItem>
+                  <SelectItem value="other">📝 Otro</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.category && <p className="text-xs text-destructive">{errors.category}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="inviteCode">Código de invitación</Label>
+              <Input
+                id="inviteCode"
+                placeholder="Opcional"
+                value={formData.inviteCode}
+                onChange={(e) => setFormData({ ...formData, inviteCode: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="message">Mensaje *</Label>
+            <Textarea
+              id="message"
+              placeholder="Describe el bug o comparte tu sugerencia..."
+              rows={4}
+              value={formData.message}
+              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+              className={errors.message ? "border-destructive" : ""}
+            />
+            {errors.message && <p className="text-xs text-destructive">{errors.message}</p>}
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Enviando...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-2" />
+                Enviar Feedback
+              </>
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function LandingPage() {
@@ -301,6 +487,22 @@ export default function LandingPage() {
               </Button>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Feedback Section */}
+      <section id="feedback" className="py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+              <MessageSquare className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Envíanos tu Feedback</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Ayúdanos a mejorar la app reportando bugs o compartiendo tus sugerencias
+            </p>
+          </div>
+          <FeedbackForm />
         </div>
       </section>
 
