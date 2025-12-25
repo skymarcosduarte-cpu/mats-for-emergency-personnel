@@ -705,6 +705,14 @@ export type Database = {
     }
     Functions: {
       get_beta_user_count: { Args: never; Returns: number }
+      get_recent_activity: {
+        Args: { limit_count?: number }
+        Returns: {
+          activity_message: string
+          activity_type: string
+          created_at: string
+        }[]
+      }
       get_todays_birthdays: {
         Args: never
         Returns: {
