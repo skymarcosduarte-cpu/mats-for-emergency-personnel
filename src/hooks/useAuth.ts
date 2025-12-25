@@ -70,6 +70,18 @@ export function useAuth() {
 
   // Initialize auth state
   useEffect(() => {
+    // Check if we should clear session (user chose not to remember)
+    const shouldClearSession = sessionStorage.getItem('clear-session-on-close');
+    
+    // Handle page unload for "don't remember me" sessions
+    const handleBeforeUnload = () => {
+      if (sessionStorage.getItem('clear-session-on-close')) {
+        supabase.auth.signOut();
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -112,7 +124,10 @@ export function useAuth() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [fetchProfile, fetchRole]);
 
   // Sign up with email
@@ -137,8 +152,17 @@ export function useAuth() {
   };
 
   // Sign in with email
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe: boolean = true) => {
     setState(prev => ({ ...prev, error: null }));
+
+    // Set session persistence based on rememberMe
+    // When rememberMe is false, we'll clear the session on browser close
+    if (!rememberMe) {
+      // Store a flag to clear session on page unload
+      sessionStorage.setItem('clear-session-on-close', 'true');
+    } else {
+      sessionStorage.removeItem('clear-session-on-close');
+    }
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
