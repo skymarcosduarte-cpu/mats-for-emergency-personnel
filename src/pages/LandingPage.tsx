@@ -507,14 +507,27 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 border-t border-border">
+      <footer className="py-12 border-t border-border bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col items-center gap-6 text-center">
             <div className="flex items-center gap-2">
-              <MatsLogo size={32} />
-              <span className="font-semibold">COMUNIDAD EX SOS</span>
+              <MatsLogo size={40} />
+              <span className="font-bold text-lg">COMUNIDAD EX SOS</span>
             </div>
-            <p className="text-sm text-muted-foreground">
+            
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              APP gratuita, sin fines de lucro, creada para mantener el contacto y apoyo 
+              entre los miembros y familiares de la comunidad EX SOS global.
+            </p>
+            
+            <Button variant="outline" asChild>
+              <a href="mailto:contacto@businessfirstaid.online">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Contáctanos
+              </a>
+            </Button>
+            
+            <p className="text-xs text-muted-foreground">
               © 2025 M.A.T.S. - Mutual Aid & Tactical Support
             </p>
           </div>
