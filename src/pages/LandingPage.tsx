@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   Copy,
   ArrowRight,
+  LogIn,
   QrCode,
   MessageSquare,
   Send,
@@ -385,6 +386,22 @@ export default function LandingPage() {
           </a>
         </p>
       </div>
+
+      {/* Navigation Header */}
+      <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MatsLogo size={32} />
+            <span className="font-bold text-lg hidden sm:inline">COMUNIDAD EX SOS</span>
+          </div>
+          <Button asChild>
+            <a href="/auth">
+              <LogIn className="mr-2 h-4 w-4" />
+              Iniciar Sesión
+            </a>
+          </Button>
+        </div>
+      </nav>
 
       {/* Hero Section */}
       <header className="relative overflow-hidden">
