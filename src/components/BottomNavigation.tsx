@@ -7,11 +7,12 @@ import {
   Bell, 
   Heart, 
   Settings,
-  ShoppingBag 
+  ShoppingBag,
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type TabId = 'map' | 'transit' | 'alerts' | 'market' | 'status' | 'settings';
+export type TabId = 'map' | 'transit' | 'alerts' | 'community' | 'market' | 'status' | 'settings';
 
 interface NavItem {
   id: TabId;
@@ -25,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'map', label: 'Mapa', icon: <Map className="w-5 h-5" /> },
   { id: 'transit', label: 'Tránsito', icon: <Car className="w-5 h-5" /> },
   { id: 'alerts', label: 'Alertas', icon: <Bell className="w-5 h-5" /> },
+  { id: 'community', label: 'Comunidad', icon: <Users className="w-5 h-5" /> },
   { 
     id: 'market', 
     label: 'Market', 
