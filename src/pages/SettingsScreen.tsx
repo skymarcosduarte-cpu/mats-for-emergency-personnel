@@ -37,7 +37,7 @@ interface SettingsScreenProps {
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onLogout
 }) => {
-  const { profile, signOut } = useAuth();
+  const { profile, role, signOut } = useAuth();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState('');
@@ -109,11 +109,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 </p>
                 <span className={cn(
                   'inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium',
-                  profile?.role === 'RESCATISTA'
+                  role === 'RESCATISTA'
                     ? 'bg-mats-green/20 text-mats-green'
                     : 'bg-muted text-muted-foreground'
                 )}>
-                  {profile?.role || 'RESCATISTA'}
+                  {role || 'RESCATISTA'}
                 </span>
               </div>
             </div>

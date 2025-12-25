@@ -2,13 +2,23 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import type { Profile } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Profile {
+  id: string;
+  full_name: string;
+  nickname: string;
+  specialty: string | null;
+  phone: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface AuthState {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  role: 'RESCATISTA' | 'FAMILIAR' | null;
   loading: boolean;
   error: string | null;
 }
@@ -18,35 +28,45 @@ export function useAuth() {
     user: null,
     session: null,
     profile: null,
+    role: null,
     loading: true,
     error: null,
   });
 
   // Fetch user profile
   const fetchProfile = useCallback(async (userId: string) => {
-    if (!isSupabaseConfigured()) return null;
-    
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
       
     if (error) {
       console.error('Error fetching profile:', error);
       return null;
     }
     
-    return data as Profile;
+    return data as Profile | null;
+  }, []);
+
+  // Fetch user role
+  const fetchRole = useCallback(async (userId: string) => {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .maybeSingle();
+      
+    if (error) {
+      console.error('Error fetching role:', error);
+      return null;
+    }
+    
+    return data?.role as 'RESCATISTA' | 'FAMILIAR' | null;
   }, []);
 
   // Initialize auth state
   useEffect(() => {
-    if (!isSupabaseConfigured()) {
-      setState(prev => ({ ...prev, loading: false }));
-      return;
-    }
-
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -56,21 +76,23 @@ export function useAuth() {
           user: session?.user ?? null,
         }));
 
-        // Fetch profile on auth change (deferred)
+        // Fetch profile and role on auth change (deferred)
         if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id).then(profile => {
-              setState(prev => ({ ...prev, profile }));
-            });
+          setTimeout(async () => {
+            const [profile, role] = await Promise.all([
+              fetchProfile(session.user.id),
+              fetchRole(session.user.id),
+            ]);
+            setState(prev => ({ ...prev, profile, role }));
           }, 0);
         } else {
-          setState(prev => ({ ...prev, profile: null }));
+          setState(prev => ({ ...prev, profile: null, role: null }));
         }
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setState(prev => ({
         ...prev,
         session,
@@ -79,25 +101,29 @@ export function useAuth() {
       }));
 
       if (session?.user) {
-        fetchProfile(session.user.id).then(profile => {
-          setState(prev => ({ ...prev, profile }));
-        });
+        const [profile, role] = await Promise.all([
+          fetchProfile(session.user.id),
+          fetchRole(session.user.id),
+        ]);
+        setState(prev => ({ ...prev, profile, role }));
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile]);
+  }, [fetchProfile, fetchRole]);
 
-  // Sign in with OTP
-  const signInWithOTP = async (phone: string) => {
-    if (!isSupabaseConfigured()) {
-      return { error: new Error('Backend not configured') };
-    }
-
+  // Sign up with email
+  const signUp = async (email: string, password: string) => {
     setState(prev => ({ ...prev, error: null }));
 
-    const { error } = await supabase.auth.signInWithOtp({
-      phone,
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
     });
 
     if (error) {
@@ -107,18 +133,13 @@ export function useAuth() {
     return { error };
   };
 
-  // Verify OTP
-  const verifyOTP = async (phone: string, token: string) => {
-    if (!isSupabaseConfigured()) {
-      return { error: new Error('Backend not configured') };
-    }
-
+  // Sign in with email
+  const signIn = async (email: string, password: string) => {
     setState(prev => ({ ...prev, error: null }));
 
-    const { error } = await supabase.auth.verifyOtp({
-      phone,
-      token,
-      type: 'sms',
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
 
     if (error) {
@@ -129,32 +150,53 @@ export function useAuth() {
   };
 
   // Create profile after registration
-  const createProfile = async (profileData: Omit<Profile, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!isSupabaseConfigured() || !state.user) {
+  const createProfile = async (profileData: {
+    full_name: string;
+    nickname: string;
+    specialty: string | null;
+    phone: string;
+    role: 'RESCATISTA' | 'FAMILIAR';
+  }) => {
+    if (!state.user) {
       return { error: new Error('Not authenticated') };
     }
 
-    const { error } = await supabase
+    // Insert profile (trigger will create FAMILIAR role by default)
+    const { error: profileError } = await supabase
       .from('profiles')
       .insert({
         id: state.user.id,
-        ...profileData,
+        full_name: profileData.full_name,
+        nickname: profileData.nickname,
+        specialty: profileData.specialty,
+        phone: profileData.phone,
       });
 
-    if (error) {
-      return { error: new Error(error.message) };
+    if (profileError) {
+      return { error: new Error(profileError.message) };
     }
 
-    // Refetch profile
-    const profile = await fetchProfile(state.user.id);
-    setState(prev => ({ ...prev, profile }));
+    // If role should be RESCATISTA, update it
+    if (profileData.role === 'RESCATISTA') {
+      await supabase
+        .from('user_roles')
+        .update({ role: 'RESCATISTA' })
+        .eq('user_id', state.user.id);
+    }
+
+    // Refetch profile and role
+    const [profile, role] = await Promise.all([
+      fetchProfile(state.user.id),
+      fetchRole(state.user.id),
+    ]);
+    setState(prev => ({ ...prev, profile, role }));
 
     return { error: null };
   };
 
   // Update profile
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!isSupabaseConfigured() || !state.user) {
+    if (!state.user) {
       return { error: new Error('Not authenticated') };
     }
 
@@ -167,7 +209,6 @@ export function useAuth() {
       return { error: new Error(error.message) };
     }
 
-    // Refetch profile
     const profile = await fetchProfile(state.user.id);
     setState(prev => ({ ...prev, profile }));
 
@@ -176,13 +217,12 @@ export function useAuth() {
 
   // Sign out
   const signOut = async () => {
-    if (!isSupabaseConfigured()) return;
-
     await supabase.auth.signOut();
     setState({
       user: null,
       session: null,
       profile: null,
+      role: null,
       loading: false,
       error: null,
     });
@@ -192,8 +232,8 @@ export function useAuth() {
     ...state,
     isAuthenticated: !!state.user,
     isProfileComplete: !!state.profile,
-    signInWithOTP,
-    verifyOTP,
+    signUp,
+    signIn,
     createProfile,
     updateProfile,
     signOut,

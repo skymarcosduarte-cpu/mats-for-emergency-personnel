@@ -1,8 +1,8 @@
 // Auth Gate Screen for COMUNIDAD EX SOS
-// Phone OTP + Invite Code
+// Email/Password Auth + Invite Code + Profile Setup
 
-import React, { useState } from 'react';
-import { Phone, Key, ArrowRight, Loader2, QrCode, Camera } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, Lock, ArrowRight, Loader2, Eye, EyeOff, UserPlus, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,13 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MatsLogo } from '@/components/MatsLogo';
 import { useAuth } from '@/hooks/useAuth';
-import { isSupabaseConfigured } from '@/lib/supabase';
-import type { UserRole } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
-type AuthStep = 'invite' | 'phone' | 'otp' | 'profile';
+type AuthStep = 'auth' | 'profile';
 
 const SPECIALTIES = [
   'Paramédico',
@@ -38,31 +38,80 @@ interface AuthGateProps {
 }
 
 export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
-  const [step, setStep] = useState<AuthStep>('invite');
+  const [step, setStep] = useState<AuthStep>('auth');
+  const [authTab, setAuthTab] = useState<'login' | 'signup'>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   
-  // Form state
+  // Auth form state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
+  
+  // Profile form state
   const [profileForm, setProfileForm] = useState({
     fullName: '',
     nickname: '',
     specialty: '',
-    role: 'RESCATISTA' as UserRole,
+    phone: '',
+    role: 'RESCATISTA' as 'RESCATISTA' | 'FAMILIAR',
   });
 
-  const { signInWithOTP, verifyOTP, createProfile } = useAuth();
+  const { signUp, signIn, createProfile, user, isProfileComplete } = useAuth();
 
-  // Validate invite code
-  const handleInviteSubmit = async () => {
-    if (!inviteCode.trim()) {
-      setError('Ingresa un código de invitación');
+  // Check if user needs to complete profile
+  useEffect(() => {
+    if (user && !isProfileComplete) {
+      setStep('profile');
+    } else if (user && isProfileComplete) {
+      onAuthComplete?.();
+    }
+  }, [user, isProfileComplete, onAuthComplete]);
+
+  // Handle login
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      setError('Ingresa email y contraseña');
       return;
     }
 
-    // Validate format
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { error: signInError } = await signIn(email, password);
+      if (signInError) {
+        if (signInError.message.includes('Invalid login credentials')) {
+          setError('Email o contraseña incorrectos');
+        } else {
+          setError(signInError.message);
+        }
+      }
+    } catch (err) {
+      setError('Error al iniciar sesión');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle signup
+  const handleSignup = async () => {
+    if (!email.trim() || !password.trim()) {
+      setError('Ingresa email y contraseña');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    if (!inviteCode.trim()) {
+      setError('Ingresa tu código de invitación');
+      return;
+    }
+
     if (!inviteCode.match(/^EXS-[A-Z0-9]{6}$/i)) {
       setError('Código de invitación inválido');
       return;
@@ -72,67 +121,50 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     setError(null);
 
     try {
-      // In production, validate against backend
-      console.log('Validating invite:', inviteCode);
-      
-      // For demo, accept any valid-format code
-      setStep('phone');
-    } catch (err) {
-      setError('Código de invitación no válido o expirado');
-    } finally {
-      setLoading(false);
-    }
-  };
+      // Check if invite exists and is valid
+      const { data: invite, error: inviteError } = await supabase
+        .from('invites')
+        .select('*')
+        .eq('code', inviteCode.toUpperCase())
+        .maybeSingle();
 
-  // Send OTP
-  const handlePhoneSubmit = async () => {
-    if (!phone.trim() || phone.length < 10) {
-      setError('Ingresa un número de teléfono válido');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      if (isSupabaseConfigured()) {
-        const { error: otpError } = await signInWithOTP(`+52${phone}`);
-        if (otpError) throw otpError;
+      if (inviteError || !invite) {
+        setError('Código de invitación no encontrado');
+        setLoading(false);
+        return;
       }
-      setStep('otp');
-    } catch (err) {
-      setError('Error al enviar código. Intenta de nuevo.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  // Verify OTP
-  const handleOtpSubmit = async () => {
-    if (!otp.trim() || otp.length !== 6) {
-      setError('Ingresa el código de 6 dígitos');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      if (isSupabaseConfigured()) {
-        const { error: verifyError } = await verifyOTP(`+52${phone}`, otp);
-        if (verifyError) throw verifyError;
+      if (invite.used_count >= invite.max_uses) {
+        setError('Este código ya fue usado');
+        setLoading(false);
+        return;
       }
-      setStep('profile');
+
+      if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+        setError('Este código ha expirado');
+        setLoading(false);
+        return;
+      }
+
+      // Create account
+      const { error: signUpError } = await signUp(email, password);
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          setError('Este email ya está registrado. Intenta iniciar sesión.');
+        } else {
+          setError(signUpError.message);
+        }
+      }
     } catch (err) {
-      setError('Código incorrecto. Intenta de nuevo.');
+      setError('Error al crear cuenta');
     } finally {
       setLoading(false);
     }
   };
 
-  // Create profile
+  // Handle profile creation
   const handleProfileSubmit = async () => {
-    if (!profileForm.fullName.trim() || !profileForm.nickname.trim()) {
+    if (!profileForm.fullName.trim() || !profileForm.nickname.trim() || !profileForm.phone.trim()) {
       setError('Completa todos los campos obligatorios');
       return;
     }
@@ -141,202 +173,144 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     setError(null);
 
     try {
-      if (isSupabaseConfigured()) {
-        const { error: profileError } = await createProfile({
-          full_name: profileForm.fullName,
-          nickname: profileForm.nickname,
-          specialty: profileForm.specialty || null,
-          phone: `+52${phone}`,
-          role: profileForm.role,
-        });
-        if (profileError) throw profileError;
+      const { error: profileError } = await createProfile({
+        full_name: profileForm.fullName,
+        nickname: profileForm.nickname,
+        specialty: profileForm.specialty || null,
+        phone: profileForm.phone,
+        role: profileForm.role,
+      });
+
+      if (profileError) {
+        setError(profileError.message);
+        return;
       }
+
+      // Update invite used_count
+      if (inviteCode) {
+        await supabase
+          .from('invites')
+          .update({ used_count: (await supabase.from('invites').select('used_count').eq('code', inviteCode.toUpperCase()).single()).data?.used_count + 1 || 1 })
+          .eq('code', inviteCode.toUpperCase());
+      }
+
       onAuthComplete?.();
     } catch (err) {
-      setError('Error al crear perfil. Intenta de nuevo.');
+      setError('Error al crear perfil');
     } finally {
       setLoading(false);
     }
   };
 
-  // Demo mode bypass
-  const handleDemoMode = () => {
-    onAuthComplete?.();
-  };
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <MatsLogo size={80} showText className="mb-8" />
 
         <div className="w-full max-w-sm space-y-6">
-          {/* Error Display */}
           {error && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
               {error}
             </div>
           )}
 
-          {/* Step: Invite Code */}
-          {step === 'invite' && (
-            <div className="space-y-4">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-foreground">Bienvenido</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Ingresa tu código de invitación
-                </p>
-              </div>
+          {step === 'auth' && (
+            <Tabs value={authTab} onValueChange={(v) => setAuthTab(v as 'login' | 'signup')}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
+                <TabsTrigger value="signup">Registrarse</TabsTrigger>
+              </TabsList>
 
-              <div>
-                <Label>Código de invitación</Label>
-                <Input
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  placeholder="EXS-XXXXXX"
-                  className="font-mono text-center text-lg"
-                  maxLength={10}
-                />
-              </div>
-
-              <Button
-                onClick={handleInviteSubmit}
-                disabled={loading}
-                className="w-full"
-              >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Key className="w-4 h-4 mr-2" />
-                )}
-                Validar Código
-              </Button>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">o</span>
-                </div>
-              </div>
-
-              <Button
-                variant="outline"
-                className="w-full"
-                disabled
-              >
-                <QrCode className="w-4 h-4 mr-2" />
-                Escanear QR
-              </Button>
-
-              {/* Demo Mode */}
-              {!isSupabaseConfigured() && (
-                <Button
-                  variant="ghost"
-                  className="w-full text-muted-foreground"
-                  onClick={handleDemoMode}
-                >
-                  Entrar en modo demo
-                </Button>
-              )}
-            </div>
-          )}
-
-          {/* Step: Phone Number */}
-          {step === 'phone' && (
-            <div className="space-y-4">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-foreground">Tu Teléfono</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Te enviaremos un código de verificación
-                </p>
-              </div>
-
-              <div>
-                <Label>Número de teléfono</Label>
-                <div className="flex gap-2">
-                  <div className="w-20">
-                    <Input value="+52" disabled className="text-center" />
-                  </div>
+              <TabsContent value="login" className="space-y-4 mt-4">
+                <div>
+                  <Label>Email</Label>
                   <Input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                    placeholder="55 1234 5678"
-                    maxLength={10}
-                    className="flex-1"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tu@email.com"
                   />
                 </div>
-              </div>
 
-              <Button
-                onClick={handlePhoneSubmit}
-                disabled={loading || phone.length < 10}
-                className="w-full"
-              >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Phone className="w-4 h-4 mr-2" />
-                )}
-                Enviar Código
-              </Button>
-            </div>
+                <div>
+                  <Label>Contraseña</Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button onClick={handleLogin} disabled={loading} className="w-full">
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <LogIn className="w-4 h-4 mr-2" />}
+                  Iniciar Sesión
+                </Button>
+              </TabsContent>
+
+              <TabsContent value="signup" className="space-y-4 mt-4">
+                <div>
+                  <Label>Código de invitación *</Label>
+                  <Input
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                    placeholder="EXS-XXXXXX"
+                    className="font-mono"
+                    maxLength={10}
+                  />
+                </div>
+
+                <div>
+                  <Label>Email *</Label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tu@email.com"
+                  />
+                </div>
+
+                <div>
+                  <Label>Contraseña *</Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button onClick={handleSignup} disabled={loading} className="w-full">
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
+                  Crear Cuenta
+                </Button>
+              </TabsContent>
+            </Tabs>
           )}
 
-          {/* Step: OTP Verification */}
-          {step === 'otp' && (
-            <div className="space-y-4">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-foreground">Verificación</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Ingresa el código de 6 dígitos enviado a +52 {phone}
-                </p>
-              </div>
-
-              <div>
-                <Input
-                  type="text"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                  placeholder="000000"
-                  maxLength={6}
-                  className="font-mono text-center text-2xl tracking-widest"
-                />
-              </div>
-
-              <Button
-                onClick={handleOtpSubmit}
-                disabled={loading || otp.length !== 6}
-                className="w-full"
-              >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <ArrowRight className="w-4 h-4 mr-2" />
-                )}
-                Verificar
-              </Button>
-
-              <Button
-                variant="ghost"
-                className="w-full text-muted-foreground"
-                onClick={() => setStep('phone')}
-              >
-                Usar otro número
-              </Button>
-            </div>
-          )}
-
-          {/* Step: Profile Setup */}
           {step === 'profile' && (
             <div className="space-y-4">
               <div className="text-center">
                 <h1 className="text-2xl font-bold text-foreground">Tu Perfil</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Completa tu información
-                </p>
+                <p className="text-sm text-muted-foreground mt-1">Completa tu información</p>
               </div>
 
               <div>
@@ -358,6 +332,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
               </div>
 
               <div>
+                <Label>Teléfono *</Label>
+                <Input
+                  type="tel"
+                  value={profileForm.phone}
+                  onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value.replace(/\D/g, '') })}
+                  placeholder="5512345678"
+                  maxLength={10}
+                />
+              </div>
+
+              <div>
                 <Label>Especialidad</Label>
                 <Select
                   value={profileForm.specialty}
@@ -368,9 +353,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                   </SelectTrigger>
                   <SelectContent>
                     {SPECIALTIES.map((spec) => (
-                      <SelectItem key={spec} value={spec}>
-                        {spec}
-                      </SelectItem>
+                      <SelectItem key={spec} value={spec}>{spec}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -389,15 +372,10 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                     )}
                   >
                     <div className="text-2xl mb-1">🏥</div>
-                    <div className={cn(
-                      'font-medium text-sm',
-                      profileForm.role === 'RESCATISTA' ? 'text-mats-green' : 'text-foreground'
-                    )}>
+                    <div className={cn('font-medium text-sm', profileForm.role === 'RESCATISTA' ? 'text-mats-green' : 'text-foreground')}>
                       Rescatista
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Paramédico / Ex-paramédico
-                    </div>
+                    <div className="text-xs text-muted-foreground">Paramédico / Ex-paramédico</div>
                   </button>
                   <button
                     onClick={() => setProfileForm({ ...profileForm, role: 'FAMILIAR' })}
@@ -409,29 +387,20 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                     )}
                   >
                     <div className="text-2xl mb-1">👨‍👩‍👧</div>
-                    <div className={cn(
-                      'font-medium text-sm',
-                      profileForm.role === 'FAMILIAR' ? 'text-accent' : 'text-foreground'
-                    )}>
+                    <div className={cn('font-medium text-sm', profileForm.role === 'FAMILIAR' ? 'text-accent' : 'text-foreground')}>
                       Familiar
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Funciones básicas
-                    </div>
+                    <div className="text-xs text-muted-foreground">Funciones básicas</div>
                   </button>
                 </div>
               </div>
 
               <Button
                 onClick={handleProfileSubmit}
-                disabled={loading || !profileForm.fullName || !profileForm.nickname}
+                disabled={loading || !profileForm.fullName || !profileForm.nickname || !profileForm.phone}
                 className="w-full"
               >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <ArrowRight className="w-4 h-4 mr-2" />
-                )}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
                 Completar Registro
               </Button>
             </div>
@@ -439,7 +408,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         </div>
       </div>
 
-      {/* Footer */}
       <div className="p-4 text-center text-xs text-muted-foreground">
         COMUNIDAD EX SOS • M.A.T.S.
       </div>
