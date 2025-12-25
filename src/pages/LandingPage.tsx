@@ -121,6 +121,7 @@ const feedbackSchema = z.object({
 type FeedbackFormData = z.infer<typeof feedbackSchema>;
 
 function FeedbackForm() {
+  const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<FeedbackFormData>>({
     name: "",
     email: "",
@@ -180,11 +181,23 @@ function FeedbackForm() {
           <p className="text-muted-foreground">
             Gracias por ayudarnos a mejorar la app. Revisaremos tu mensaje pronto.
           </p>
-          <Button className="mt-6" variant="outline" onClick={() => setSubmitted(false)}>
-            Enviar otro mensaje
+          <Button className="mt-6" variant="outline" onClick={() => { setSubmitted(false); setIsOpen(false); }}>
+            Cerrar
           </Button>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Initial state - just show button
+  if (!isOpen) {
+    return (
+      <div className="max-w-lg mx-auto text-center">
+        <Button size="lg" onClick={() => setIsOpen(true)}>
+          <MessageSquare className="h-5 w-5 mr-2" />
+          Enviar Feedback
+        </Button>
+      </div>
     );
   }
 
