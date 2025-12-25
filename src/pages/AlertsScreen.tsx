@@ -2,9 +2,10 @@
 // USGS earthquakes + "4/10" quick report + "14" help + notifications
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind } from 'lucide-react';
 import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
 import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
+import { useMexicoAlerts } from '@/hooks/useMexicoAlerts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -71,6 +72,18 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     error: weatherError,
     refresh: refreshWeather
   } = useWeatherAlerts(position);
+
+  // Mexico federal alerts (NHC tropical cyclones + fire hotspots)
+  const {
+    cyclones,
+    fires,
+    loading: mexicoLoading,
+    error: mexicoError,
+    refresh: refreshMexico,
+    getCycloneIcon,
+    getCycloneSeverityColor,
+    getFireConfidenceColor
+  } = useMexicoAlerts(position);
 
   // Handle quick "4 de 10" report
   const handleQuickCheckin = async (quake: EarthquakeWithDistance) => {
@@ -170,26 +183,37 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       </div>
 
       <Tabs defaultValue="earthquakes" className="p-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="earthquakes">Sismos</TabsTrigger>
-          <TabsTrigger value="weather" className="relative">
-            Clima
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="earthquakes" className="text-xs px-1">Sismos</TabsTrigger>
+          <TabsTrigger value="mexico" className="relative text-xs px-1">
+            México
+            {(cyclones.length > 0 || fires.length > 0) && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
+              >
+                {cyclones.length + fires.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="weather" className="relative text-xs px-1">
+            NOAA
             {weatherAlerts.length > 0 && (
               <Badge 
                 variant="destructive" 
-                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
               >
                 {weatherAlerts.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="help">Ayuda</TabsTrigger>
-          <TabsTrigger value="notifications" className="relative">
+          <TabsTrigger value="help" className="text-xs px-1">Ayuda</TabsTrigger>
+          <TabsTrigger value="notifications" className="relative text-xs px-1">
             Avisos
             {unreadCount > 0 && (
               <Badge 
                 variant="destructive" 
-                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
               >
                 {unreadCount > 9 ? '9+' : unreadCount}
               </Badge>
@@ -392,6 +416,185 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 </CardContent>
               </Card>
             ))
+          )}
+        </TabsContent>
+
+        {/* Mexico Federal Alerts Tab - NHC Cyclones + Fire Hotspots */}
+        <TabsContent value="mexico" className="space-y-3 mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-muted-foreground">
+              Alertas federales mexicanas (NHC + CONABIO)
+            </p>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={refreshMexico}
+              disabled={mexicoLoading}
+            >
+              <RefreshCw className={cn('w-4 h-4', mexicoLoading && 'animate-spin')} />
+            </Button>
+          </div>
+
+          {mexicoLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : mexicoError ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">{mexicoError}</p>
+            </div>
+          ) : cyclones.length === 0 && fires.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Wind className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No hay alertas activas</p>
+              <p className="text-xs mt-1">Ciclones tropicales e incendios forestales</p>
+            </div>
+          ) : (
+            <>
+              {/* Tropical Cyclones Section */}
+              {cyclones.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Wind className="w-4 h-4" />
+                    Ciclones Tropicales ({cyclones.length})
+                  </h3>
+                  {cyclones.map((cyclone) => (
+                    <Card 
+                      key={cyclone.id} 
+                      className={cn(
+                        "bg-card border-border",
+                        cyclone.type === 'hurricane' && "border-l-4 border-l-destructive",
+                        cyclone.type === 'tropical_storm' && "border-l-4 border-l-panic",
+                        cyclone.type === 'tropical_depression' && "border-l-4 border-l-warning"
+                      )}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className={cn(
+                            "p-2 rounded-full shrink-0 text-2xl",
+                            getCycloneSeverityColor(cyclone.type, cyclone.category)
+                          )}>
+                            {getCycloneIcon(cyclone.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span className={cn(
+                                "px-2 py-0.5 rounded-full text-xs font-bold uppercase",
+                                cyclone.type === 'hurricane' && "bg-destructive text-destructive-foreground",
+                                cyclone.type === 'tropical_storm' && "bg-panic text-white",
+                                cyclone.type === 'tropical_depression' && "bg-warning text-warning-foreground",
+                                cyclone.type === 'disturbance' && "bg-muted text-muted-foreground"
+                              )}>
+                                {cyclone.type === 'hurricane' ? `HURACÁN${cyclone.category ? ` CAT ${cyclone.category}` : ''}` :
+                                 cyclone.type === 'tropical_storm' ? 'TORMENTA TROPICAL' :
+                                 cyclone.type === 'tropical_depression' ? 'DEPRESIÓN TROPICAL' : 'PERTURBACIÓN'}
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {cyclone.basin === 'atlantic' ? 'Atlántico' : 'Pacífico'}
+                              </Badge>
+                              {cyclone.distanceKm && (
+                                <span className="text-xs text-primary font-medium flex items-center gap-1">
+                                  <Navigation className="w-3 h-3" />
+                                  {cyclone.distanceKm.toFixed(0)} km
+                                </span>
+                              )}
+                            </div>
+                            <h3 className="font-semibold text-foreground">{cyclone.name}</h3>
+                            {cyclone.windSpeed && (
+                              <p className="text-sm text-foreground mt-1">
+                                Vientos: {cyclone.windSpeed} mph ({Math.round(cyclone.windSpeed * 1.60934)} km/h)
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                              {cyclone.description.substring(0, 150)}...
+                            </p>
+                            {cyclone.link && (
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="p-0 h-auto mt-2 text-xs"
+                                onClick={() => window.open(cyclone.link, '_blank')}
+                              >
+                                Ver detalles completos →
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Fire Hotspots Section */}
+              {fires.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-panic" />
+                    Incendios Forestales Cercanos ({fires.length})
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Puntos de calor detectados en las últimas 24h (VIIRS/NASA)
+                  </p>
+                  <div className="grid gap-2">
+                    {fires.slice(0, 10).map((fire) => (
+                      <Card key={fire.id} className="bg-card border-border">
+                        <CardContent className="p-3">
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "p-2 rounded-full shrink-0",
+                              getFireConfidenceColor(fire.confidence)
+                            )}>
+                              <Flame className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={cn(
+                                  "px-2 py-0.5 rounded-full text-xs font-bold",
+                                  fire.confidence === 'high' && "bg-destructive text-destructive-foreground",
+                                  fire.confidence === 'nominal' && "bg-warning text-warning-foreground",
+                                  fire.confidence === 'low' && "bg-muted text-muted-foreground"
+                                )}>
+                                  {fire.confidence === 'high' ? 'ALTA' : fire.confidence === 'nominal' ? 'MEDIA' : 'BAJA'} CONF.
+                                </span>
+                                {fire.distanceKm && (
+                                  <span className="text-xs text-primary font-medium flex items-center gap-1">
+                                    <Navigation className="w-3 h-3" />
+                                    {fire.distanceKm.toFixed(1)} km
+                                  </span>
+                                )}
+                                <span className="text-xs text-muted-foreground">
+                                  FRP: {fire.frp.toFixed(1)} MW
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                <MapPin className="w-3 h-3" />
+                                <span>{fire.lat.toFixed(4)}, {fire.lng.toFixed(4)}</span>
+                                <span>•</span>
+                                <span>{fire.acqDate} {fire.acqTime}</span>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(`https://maps.google.com/?q=${fire.lat},${fire.lng}`, '_blank')}
+                            >
+                              <MapPin className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  {fires.length > 10 && (
+                    <p className="text-xs text-center text-muted-foreground">
+                      +{fires.length - 10} puntos de calor más
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </TabsContent>
 
