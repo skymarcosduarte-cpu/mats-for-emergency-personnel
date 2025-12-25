@@ -14,6 +14,7 @@ import { AlertsScreen } from '@/pages/AlertsScreen';
 import { StatusScreen } from '@/pages/StatusScreen';
 import { MarketScreen } from '@/pages/MarketScreen';
 import { SettingsScreen } from '@/pages/SettingsScreen';
+import { CommunityScreen } from '@/pages/CommunityScreen';
 import LandingPage from '@/pages/LandingPage';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
@@ -118,6 +119,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       case 'map': return <MapScreen className="h-[calc(100vh-120px)]" />;
       case 'transit': return <TransitScreen userRole={userRole} />;
       case 'alerts': return <AlertsScreen userRole={userRole} />;
+      case 'community': return <CommunityScreen />;
       case 'market': return <MarketScreen userRole={userRole} />;
       case 'status': return <StatusScreen userRole={userRole} />;
       case 'settings': return <SettingsScreen onLogout={handleLogout} />;

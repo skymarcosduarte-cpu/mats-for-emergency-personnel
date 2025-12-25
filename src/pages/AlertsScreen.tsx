@@ -2,8 +2,9 @@
 // USGS earthquakes + "4/10" quick report + "14" help + notifications
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain } from 'lucide-react';
 import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
+import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -62,6 +63,14 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     lastUpdated, 
     refresh: loadEarthquakes 
   } = useEarthquakeHistory(position);
+
+  // Weather alerts (hurricanes, storms within 100 miles)
+  const {
+    alerts: weatherAlerts,
+    loading: weatherLoading,
+    error: weatherError,
+    refresh: refreshWeather
+  } = useWeatherAlerts(position);
 
   // Handle quick "4 de 10" report
   const handleQuickCheckin = async (quake: EarthquakeWithDistance) => {
@@ -161,11 +170,22 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       </div>
 
       <Tabs defaultValue="earthquakes" className="p-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="earthquakes">Sismos</TabsTrigger>
+          <TabsTrigger value="weather" className="relative">
+            Clima
+            {weatherAlerts.length > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+              >
+                {weatherAlerts.length}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="help">Ayuda</TabsTrigger>
           <TabsTrigger value="notifications" className="relative">
-            Notificaciones
+            Avisos
             {unreadCount > 0 && (
               <Badge 
                 variant="destructive" 
@@ -272,6 +292,102 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                     >
                       14 AYUDA
                     </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
+        {/* Weather Alerts Tab */}
+        <TabsContent value="weather" className="space-y-3 mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-muted-foreground">
+              Alertas de clima severo en un radio de 100 millas
+            </p>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={refreshWeather}
+              disabled={weatherLoading}
+            >
+              <RefreshCw className={cn('w-4 h-4', weatherLoading && 'animate-spin')} />
+            </Button>
+          </div>
+
+          {weatherLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : weatherError ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">{weatherError}</p>
+            </div>
+          ) : weatherAlerts.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <CloudRain className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No hay alertas de clima severo</p>
+              <p className="text-xs mt-1">Huracanes, tormentas tropicales</p>
+            </div>
+          ) : (
+            weatherAlerts.map((alert) => (
+              <Card 
+                key={alert.id} 
+                className={cn(
+                  "bg-card border-border",
+                  alert.severity === 'Extreme' && "border-l-4 border-l-destructive",
+                  alert.severity === 'Severe' && "border-l-4 border-l-panic",
+                  alert.severity === 'Moderate' && "border-l-4 border-l-warning"
+                )}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "p-2 rounded-full shrink-0",
+                      alert.severity === 'Extreme' && "bg-destructive/10 text-destructive",
+                      alert.severity === 'Severe' && "bg-panic/10 text-panic",
+                      alert.severity === 'Moderate' && "bg-warning/10 text-warning",
+                      !['Extreme', 'Severe', 'Moderate'].includes(alert.severity) && "bg-muted text-muted-foreground"
+                    )}>
+                      <CloudRain className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={cn(
+                          "px-2 py-0.5 rounded-full text-xs font-bold",
+                          alert.severity === 'Extreme' && "bg-destructive text-destructive-foreground",
+                          alert.severity === 'Severe' && "bg-panic text-white",
+                          alert.severity === 'Moderate' && "bg-warning text-warning-foreground"
+                        )}>
+                          {alert.severity === 'Extreme' ? 'EXTREMO' : 
+                           alert.severity === 'Severe' ? 'SEVERO' : 
+                           alert.severity === 'Moderate' ? 'MODERADO' : alert.severity}
+                        </span>
+                        {alert.distanceMiles !== null && (
+                          <span className="text-xs text-primary font-medium flex items-center gap-1">
+                            <Navigation className="w-3 h-3" />
+                            {alert.distanceMiles.toFixed(0)} mi
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-semibold text-foreground">{alert.event}</h3>
+                      <p className="text-sm text-foreground mt-1">{alert.headline}</p>
+                      <p className="text-xs text-muted-foreground mt-2 line-clamp-3">
+                        {alert.description}
+                      </p>
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Efectivo: {new Date(alert.effective).toLocaleDateString()}
+                        </span>
+                        {alert.expires && (
+                          <span>
+                            Expira: {new Date(alert.expires).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
