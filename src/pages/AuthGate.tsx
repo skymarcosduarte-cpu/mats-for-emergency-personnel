@@ -112,7 +112,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       return;
     }
 
-    if (!inviteCode.match(/^EXS-[A-Z0-9]{6}$/i)) {
+    // Accept EXS-XXXXXX format or any alphanumeric code for flexibility
+    if (!inviteCode.match(/^(EXS-[A-Z0-9]{6}|[A-Z0-9-]{4,20})$/i)) {
       setError('Código de invitación inválido');
       return;
     }
