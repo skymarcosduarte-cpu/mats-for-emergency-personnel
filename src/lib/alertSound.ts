@@ -1,5 +1,5 @@
 // Alert Sound Utility for COMUNIDAD EX SOS
-// Plays a short, non-disturbing notification sound using Web Audio API
+// Plays notification sounds using Web Audio API
 
 let audioContext: AudioContext | null = null;
 
@@ -18,14 +18,13 @@ function getAudioContext(): AudioContext | null {
 }
 
 /**
- * Play a short, gentle notification tone
+ * Play a short, gentle notification tone (for earthquakes)
  * Uses two soft tones (like a gentle "ding-dong")
  */
 export function playAlertSound(): void {
   const ctx = getAudioContext();
   if (!ctx) return;
 
-  // Resume context if suspended (required after user interaction)
   if (ctx.state === 'suspended') {
     ctx.resume();
   }
@@ -45,7 +44,7 @@ export function playAlertSound(): void {
   osc1.start(now);
   osc1.stop(now + 0.15);
 
-  // Second tone - lower pitch (after small delay)
+  // Second tone - lower pitch
   const osc2 = ctx.createOscillator();
   const gain2 = ctx.createGain();
   osc2.connect(gain2);
@@ -60,13 +59,73 @@ export function playAlertSound(): void {
 }
 
 /**
- * Trigger a short vibration pattern
- * Pattern: short-pause-short (gentle double tap)
+ * Play a subtle, non-disturbing notification sound
+ * For distant help requests (>30 miles)
+ */
+export function playSubtleSound(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
+
+  const now = ctx.currentTime;
+  
+  // Single soft chime
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.frequency.value = 523; // C5
+  osc.type = 'sine';
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.08, now + 0.02);
+  gain.gain.linearRampToValueAtTime(0, now + 0.25);
+  osc.start(now);
+  osc.stop(now + 0.25);
+}
+
+/**
+ * Play a more prominent urgent alert sound
+ * For nearby help requests (<30 miles)
+ */
+export function playUrgentSound(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
+
+  const now = ctx.currentTime;
+  
+  // Three-tone urgent sequence
+  const frequencies = [784, 988, 784]; // G5, B5, G5
+  const delays = [0, 0.12, 0.24];
+  
+  frequencies.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    osc.type = 'sine';
+    const startTime = now + delays[i];
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(0.2, startTime + 0.02);
+    gain.gain.linearRampToValueAtTime(0, startTime + 0.1);
+    osc.start(startTime);
+    osc.stop(startTime + 0.1);
+  });
+}
+
+/**
+ * Trigger a short vibration pattern (gentle double tap)
  */
 export function triggerVibration(): void {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
-      // Double tap pattern: 100ms vibrate, 50ms pause, 100ms vibrate
       navigator.vibrate([100, 50, 100]);
     } catch (e) {
       console.warn('Vibration not supported');
@@ -75,9 +134,38 @@ export function triggerVibration(): void {
 }
 
 /**
- * Play alert sound and vibration together
+ * Trigger a longer vibration pattern for urgent alerts
+ */
+export function triggerUrgentVibration(): void {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate([150, 75, 150, 75, 150]);
+    } catch (e) {
+      console.warn('Vibration not supported');
+    }
+  }
+}
+
+/**
+ * Play alert sound and vibration together (for earthquakes)
  */
 export function playAlertWithVibration(): void {
   playAlertSound();
   triggerVibration();
+}
+
+/**
+ * Play subtle alert for distant help requests
+ */
+export function playSubtleAlert(): void {
+  playSubtleSound();
+  triggerVibration();
+}
+
+/**
+ * Play urgent alert for nearby help requests
+ */
+export function playUrgentAlert(): void {
+  playUrgentSound();
+  triggerUrgentVibration();
 }

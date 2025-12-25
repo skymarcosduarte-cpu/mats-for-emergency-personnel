@@ -57,7 +57,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   const [submitting, setSubmitting] = useState(false);
   
   const { position } = useLocation();
-  const { requests: helpRequests } = useHelpRequests();
+  const { requests: helpRequests } = useHelpRequests(position);
   const { 
     notifications, 
     unreadCount, 
