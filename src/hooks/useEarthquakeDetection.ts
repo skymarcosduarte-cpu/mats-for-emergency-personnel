@@ -22,7 +22,13 @@ interface NearbyEarthquake {
   distanceKm: number;
 }
 
-export function useEarthquakeDetection(position: GeoPosition | null) {
+// Callback type for push notifications
+type NotifyCallback = (earthquake: USGSEarthquake, distanceKm: number) => void;
+
+export function useEarthquakeDetection(
+  position: GeoPosition | null,
+  onEarthquakeDetected?: NotifyCallback
+) {
   const [state, setState] = useState<EarthquakeDetectionState>({
     nearbyQuake: null,
     distanceKm: null,
@@ -34,6 +40,13 @@ export function useEarthquakeDetection(position: GeoPosition | null) {
   const alertedQuakesRef = useRef<Set<string>>(new Set());
   // Store dismissed quakes for the session
   const dismissedQuakesRef = useRef<Set<string>>(new Set());
+  // Store callback ref to avoid stale closures
+  const notifyCallbackRef = useRef<NotifyCallback | undefined>(onEarthquakeDetected);
+
+  // Update callback ref when it changes
+  useEffect(() => {
+    notifyCallbackRef.current = onEarthquakeDetected;
+  }, [onEarthquakeDetected]);
 
   const checkForNearbyQuakes = useCallback(async (): Promise<NearbyEarthquake | null> => {
     if (!position) return null;
@@ -76,6 +89,11 @@ export function useEarthquakeDetection(position: GeoPosition | null) {
     if (nearby) {
       // Mark as alerted so we don't show again
       alertedQuakesRef.current.add(nearby.earthquake.id);
+      
+      // Trigger push notification callback
+      if (notifyCallbackRef.current) {
+        notifyCallbackRef.current(nearby.earthquake, nearby.distanceKm);
+      }
       
       setState({
         nearbyQuake: nearby.earthquake,

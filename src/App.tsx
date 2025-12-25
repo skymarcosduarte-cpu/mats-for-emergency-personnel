@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -23,7 +23,8 @@ import { SeismicAlert } from '@/components/SeismicAlert';
 import { useAppState } from '@/hooks/useRealtime';
 import { useLocation } from '@/hooks/useLocation';
 import { useEarthquakeDetection } from '@/hooks/useEarthquakeDetection';
-import type { UserRole } from '@/types';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
+import type { UserRole, USGSEarthquake } from '@/types';
 
 const queryClient = new QueryClient();
 
@@ -66,9 +67,28 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   const { disasterMode } = useAppState();
   const [panicOpen, setPanicOpen] = useState(false);
   
+  // Push notifications
+  const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
+  
+  // Request notification permission on mount
+  useEffect(() => {
+    if (permission === 'default') {
+      requestPermission();
+    }
+  }, [permission, requestPermission]);
+  
+  // Callback for when earthquake is detected
+  const handleEarthquakeDetected = useCallback((earthquake: USGSEarthquake, distanceKm: number) => {
+    // Show push notification (works even in background tabs)
+    showEarthquakeNotification(earthquake, distanceKm);
+  }, [showEarthquakeNotification]);
+  
   // Location and earthquake detection
   const { position } = useLocation();
-  const { nearbyQuake, distanceKm, dismissAlert, markAsReported } = useEarthquakeDetection(position);
+  const { nearbyQuake, distanceKm, dismissAlert, markAsReported } = useEarthquakeDetection(
+    position,
+    handleEarthquakeDetected
+  );
 
   const renderScreen = () => {
     switch (activeTab) {
