@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MatsLogo } from "@/components/MatsLogo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,9 +14,17 @@ import {
   Smartphone,
   CheckCircle2,
   Copy,
-  ArrowRight
+  ArrowRight,
+  QrCode
 } from "lucide-react";
 import { toast } from "sonner";
+import QRCode from "qrcode";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const features = [
   {
@@ -65,14 +73,41 @@ const installSteps = [
   { step: 4, title: "Confirmar", description: "Toca 'Agregar' y la app aparecerá en tu pantalla de inicio" }
 ];
 
+// QR Code component for each invite code
+function InviteQRCode({ code }: { code: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  useEffect(() => {
+    if (canvasRef.current) {
+      const appUrl = `${window.location.origin}/auth?invite=${code}`;
+      QRCode.toCanvas(canvasRef.current, appUrl, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#16a34a',
+          light: '#ffffff'
+        }
+      });
+    }
+  }, [code]);
+
+  return <canvas ref={canvasRef} className="rounded-lg" />;
+}
+
 export default function LandingPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [qrDialogCode, setQrDialogCode] = useState<string | null>(null);
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
     toast.success(`Código ${code} copiado`);
     setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const showQR = (e: React.MouseEvent, code: string) => {
+    e.stopPropagation();
+    setQrDialogCode(code);
   };
 
   const scrollToSection = (id: string) => {
@@ -147,15 +182,15 @@ export default function LandingPage() {
               Usa uno de estos códigos para registrarte en la app
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
             {betaCodes.map((item) => (
               <Card 
                 key={item.code} 
                 className="bg-card hover:bg-accent/50 transition-colors cursor-pointer group"
                 onClick={() => copyCode(item.code)}
               >
-                <CardContent className="p-6 text-center">
-                  <div className="font-mono text-2xl font-bold text-primary mb-2 flex items-center justify-center gap-2">
+                <CardContent className="p-6 text-center space-y-3">
+                  <div className="font-mono text-xl font-bold text-primary flex items-center justify-center gap-2">
                     {item.code}
                     {copiedCode === item.code ? (
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -163,14 +198,70 @@ export default function LandingPage() {
                       <Copy className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">{item.uses}</p>
-                  <p className="text-xs text-muted-foreground">Expira: {item.expires}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={(e) => showQR(e, item.code)}
+                  >
+                    <QrCode className="h-4 w-4 mr-2" />
+                    Ver QR
+                  </Button>
+                  <div className="text-sm text-muted-foreground">
+                    <p>{item.uses}</p>
+                    <p className="text-xs">Expira: {item.expires}</p>
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
       </section>
+
+      {/* QR Code Dialog */}
+      <Dialog open={!!qrDialogCode} onOpenChange={() => setQrDialogCode(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">Código de Invitación</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            {qrDialogCode && <InviteQRCode code={qrDialogCode} />}
+            <div className="text-center">
+              <p className="font-mono text-2xl font-bold text-primary">{qrDialogCode}</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Escanea el QR o comparte el código para invitar a nuevos usuarios
+              </p>
+            </div>
+            <div className="flex gap-2 w-full">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => {
+                  if (qrDialogCode) {
+                    navigator.clipboard.writeText(qrDialogCode);
+                    toast.success("Código copiado");
+                  }
+                }}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copiar Código
+              </Button>
+              <Button 
+                className="flex-1"
+                onClick={() => {
+                  if (qrDialogCode) {
+                    const url = `${window.location.origin}/auth?invite=${qrDialogCode}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success("Enlace copiado");
+                  }
+                }}
+              >
+                Copiar Enlace
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Install Section */}
       <section id="install" className="py-16 md:py-24 bg-muted/30">
