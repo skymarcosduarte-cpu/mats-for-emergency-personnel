@@ -5,6 +5,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 interface ActiveResponse {
   requestId: string;
@@ -27,6 +28,7 @@ export function useEmergencyResponse() {
   const [activeResponse, setActiveResponse] = useState<ActiveResponse | null>(null);
   const [responderLocations, setResponderLocations] = useState<Map<string, ResponderLocation>>(new Map());
   const watchIdRef = useRef<number | null>(null);
+  const { showGenericNotification } = usePushNotifications();
 
   // Start responding to a help request
   const startResponding = useCallback(async (
@@ -86,6 +88,27 @@ export function useEmergencyResponse() {
       return false;
     }
   }, [user]);
+
+  // Notify the alert creator that help is on the way (called from realtime subscription)
+  const notifyAlertCreator = useCallback((
+    creatorUserId: string,
+    requestId: string
+  ) => {
+    // Only notify if we're the alert creator
+    if (user?.id === creatorUserId) {
+      showGenericNotification(
+        '🚨 ¡Ayuda en camino!',
+        'Un rescatista ha respondido a tu alerta y está en camino a tu ubicación.',
+        `response-${requestId}`
+      );
+      
+      // Also show a toast for in-app notification
+      toast.success('¡Un rescatista está en camino!', {
+        description: 'Puedes ver su ubicación en el mapa',
+        duration: 8000,
+      });
+    }
+  }, [user, showGenericNotification]);
 
   // Stop responding
   const stopResponding = useCallback(async () => {
@@ -195,8 +218,19 @@ export function useEmergencyResponse() {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'help_requests' },
         (payload) => {
-          const updated = payload.new as { id: string; responding_by: string | null };
-          if (updated.responding_by) {
+          const updated = payload.new as { 
+            id: string; 
+            responding_by: string | null;
+            user_id: string;
+          };
+          const previous = payload.old as { responding_by: string | null };
+          
+          // Check if someone just started responding (responding_by changed from null to a value)
+          if (updated.responding_by && !previous.responding_by) {
+            // Notify the alert creator
+            notifyAlertCreator(updated.user_id, updated.id);
+            fetchResponders(updated.id);
+          } else if (updated.responding_by) {
             fetchResponders(updated.id);
           } else {
             setResponderLocations(prev => {
@@ -213,7 +247,7 @@ export function useEmergencyResponse() {
       supabase.removeChannel(channel);
       stopLocationTracking();
     };
-  }, [fetchResponders, stopLocationTracking]);
+  }, [fetchResponders, stopLocationTracking, notifyAlertCreator]);
 
   // Check if user is already responding to something
   useEffect(() => {
