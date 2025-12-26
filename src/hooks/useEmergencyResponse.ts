@@ -1,5 +1,5 @@
 // Emergency Response Hook for tracking responders and routing
-// Handles responding to alerts and route tracking
+// Handles responding to alerts and route tracking - supports multiple responders
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,19 +18,38 @@ interface ActiveResponse {
 }
 
 interface ResponderLocation {
+  id: string;
   userId: string;
   lat: number;
   lng: number;
   updatedAt: string;
+  arrivedAt: string | null;
 }
+
+// Maximum distance in meters to allow joining a response (10km)
+const MAX_RESPONSE_RADIUS = 10000;
 
 export function useEmergencyResponse() {
   const { user } = useAuth();
   const [activeResponse, setActiveResponse] = useState<ActiveResponse | null>(null);
-  const [responderLocations, setResponderLocations] = useState<Map<string, ResponderLocation>>(new Map());
+  const [responderLocations, setResponderLocations] = useState<Map<string, ResponderLocation[]>>(new Map());
   const [showThankYou, setShowThankYou] = useState(false);
   const watchIdRef = useRef<number | null>(null);
   const { showGenericNotification } = usePushNotifications();
+
+  // Calculate distance between two points in meters
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
 
   // Start responding to a help request
   const startResponding = useCallback(async (
@@ -55,20 +74,46 @@ export function useEmergencyResponse() {
       const responderLat = position.coords.latitude;
       const responderLng = position.coords.longitude;
 
-      // Update the help request with responding_by
-      const { error } = await supabase
+      // Check if user is within radius
+      const distance = calculateDistance(responderLat, responderLng, requestLat, requestLng);
+      if (distance > MAX_RESPONSE_RADIUS) {
+        toast.error('Estás demasiado lejos para responder a esta alerta', {
+          description: `Distancia: ${(distance / 1000).toFixed(1)} km (máximo ${MAX_RESPONSE_RADIUS / 1000} km)`,
+        });
+        return false;
+      }
+
+      // Insert into the responders table
+      const { error: responderError } = await supabase
+        .from('help_request_responders')
+        .insert({
+          request_id: requestId,
+          user_id: user.id,
+          lat: responderLat,
+          lng: responderLng,
+        });
+
+      if (responderError) {
+        // Check if already responding
+        if (responderError.code === '23505') {
+          toast.error('Ya estás respondiendo a esta alerta');
+          return false;
+        }
+        console.error('Error starting response:', responderError);
+        toast.error('Error al iniciar respuesta');
+        return false;
+      }
+
+      // Also update the legacy responding_by field for backward compatibility
+      // (only if no one else is responding yet)
+      await supabase
         .from('help_requests')
         .update({
           responding_by: user.id,
           responding_started_at: new Date().toISOString(),
         })
-        .eq('id', requestId);
-
-      if (error) {
-        console.error('Error starting response:', error);
-        toast.error('Error al iniciar respuesta');
-        return false;
-      }
+        .eq('id', requestId)
+        .is('responding_by', null);
 
       setActiveResponse({
         requestId,
@@ -80,7 +125,7 @@ export function useEmergencyResponse() {
       });
 
       // Start tracking location
-      startLocationTracking();
+      startLocationTracking(requestId);
 
       toast.success('¡En camino! Tu ubicación está siendo compartida');
       return true;
@@ -94,28 +139,33 @@ export function useEmergencyResponse() {
   // Notify the alert creator that help is on the way (called from realtime subscription)
   const notifyAlertCreator = useCallback((
     creatorUserId: string,
-    requestId: string
+    requestId: string,
+    responderCount: number = 1
   ) => {
     // Only notify if we're the alert creator
     if (user?.id === creatorUserId) {
       // Play positive sound and vibration for reassurance
       playPositiveAlert();
       
+      const message = responderCount > 1 
+        ? `${responderCount} rescatistas están respondiendo a tu alerta.`
+        : 'Un rescatista ha respondido a tu alerta y está en camino a tu ubicación.';
+      
       showGenericNotification(
         '🚨 ¡Ayuda en camino!',
-        'Un rescatista ha respondido a tu alerta y está en camino a tu ubicación.',
+        message,
         `response-${requestId}`
       );
       
       // Also show a toast for in-app notification
-      toast.success('¡Un rescatista está en camino!', {
+      toast.success(responderCount > 1 ? `¡${responderCount} rescatistas en camino!` : '¡Un rescatista está en camino!', {
         description: 'Puedes ver su ubicación en el mapa',
         duration: 8000,
       });
     }
   }, [user, showGenericNotification]);
 
-  // Notify the alert creator that the responder has arrived
+  // Notify the alert creator that a responder has arrived
   const notifyResponderArrived = useCallback((
     creatorUserId: string,
     requestId: string
@@ -165,19 +215,29 @@ export function useEmergencyResponse() {
     if (!activeResponse || !user) return false;
 
     try {
+      // Update in the responders table
       const { error } = await supabase
-        .from('help_requests')
+        .from('help_request_responders')
         .update({
           arrived_at: new Date().toISOString(),
         })
-        .eq('id', activeResponse.requestId)
-        .eq('responding_by', user.id);
+        .eq('request_id', activeResponse.requestId)
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Error marking as arrived:', error);
         toast.error('Error al marcar llegada');
         return false;
       }
+
+      // Also update the legacy field if this user is the primary responder
+      await supabase
+        .from('help_requests')
+        .update({
+          arrived_at: new Date().toISOString(),
+        })
+        .eq('id', activeResponse.requestId)
+        .eq('responding_by', user.id);
 
       toast.success('¡Llegaste al lugar!', {
         description: 'Marca como resuelto cuando termines',
@@ -195,15 +255,40 @@ export function useEmergencyResponse() {
     if (!activeResponse || !user) return;
 
     try {
-      // Clear responding_by from the request
+      // Remove from responders table
       await supabase
-        .from('help_requests')
-        .update({
-          responding_by: null,
-          responding_started_at: null,
-        })
-        .eq('id', activeResponse.requestId)
-        .eq('responding_by', user.id);
+        .from('help_request_responders')
+        .delete()
+        .eq('request_id', activeResponse.requestId)
+        .eq('user_id', user.id);
+
+      // If this user was the primary responder, try to assign another
+      const { data: otherResponders } = await supabase
+        .from('help_request_responders')
+        .select('user_id')
+        .eq('request_id', activeResponse.requestId)
+        .limit(1);
+
+      if (otherResponders && otherResponders.length > 0) {
+        // Assign the next responder as primary
+        await supabase
+          .from('help_requests')
+          .update({
+            responding_by: otherResponders[0].user_id,
+          })
+          .eq('id', activeResponse.requestId)
+          .eq('responding_by', user.id);
+      } else {
+        // No other responders, clear the field
+        await supabase
+          .from('help_requests')
+          .update({
+            responding_by: null,
+            responding_started_at: null,
+          })
+          .eq('id', activeResponse.requestId)
+          .eq('responding_by', user.id);
+      }
 
       stopLocationTracking();
       setActiveResponse(null);
@@ -214,7 +299,7 @@ export function useEmergencyResponse() {
   }, [activeResponse, user]);
 
   // Track location while responding
-  const startLocationTracking = useCallback(() => {
+  const startLocationTracking = useCallback((requestId?: string) => {
     if (watchIdRef.current !== null) return;
 
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -238,6 +323,19 @@ export function useEmergencyResponse() {
             updated_at: new Date().toISOString(),
           });
 
+        // Also update the responder record with current location
+        if (requestId || activeResponse?.requestId) {
+          await supabase
+            .from('help_request_responders')
+            .update({
+              lat,
+              lng,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('request_id', requestId || activeResponse?.requestId)
+            .eq('user_id', user.id);
+        }
+
         setActiveResponse(prev => prev ? {
           ...prev,
           responderLat: lat,
@@ -251,7 +349,7 @@ export function useEmergencyResponse() {
         timeout: 10000,
       }
     );
-  }, [user]);
+  }, [user, activeResponse]);
 
   const stopLocationTracking = useCallback(() => {
     if (watchIdRef.current !== null) {
@@ -272,14 +370,19 @@ export function useEmergencyResponse() {
           resolved_at: new Date().toISOString(),
           resolved_by: user.id,
         })
-        .eq('id', activeResponse.requestId)
-        .eq('responding_by', user.id);
+        .eq('id', activeResponse.requestId);
 
       if (error) {
         console.error('Error resolving alert:', error);
         toast.error('Error al resolver alerta');
         return false;
       }
+
+      // Remove all responders for this request (cleanup)
+      await supabase
+        .from('help_request_responders')
+        .delete()
+        .eq('request_id', activeResponse.requestId);
 
       // Stop location tracking
       stopLocationTracking();
@@ -296,39 +399,69 @@ export function useEmergencyResponse() {
     }
   }, [activeResponse, user, stopLocationTracking]);
 
-  // Fetch responders for a specific request
+  // Fetch all responders for a specific request
   const fetchResponders = useCallback(async (requestId: string) => {
-    const { data: request } = await supabase
-      .from('help_requests')
-      .select('responding_by')
-      .eq('id', requestId)
-      .maybeSingle();
+    const { data: responders } = await supabase
+      .from('help_request_responders')
+      .select('id, user_id, lat, lng, updated_at, arrived_at')
+      .eq('request_id', requestId);
 
-    if (request?.responding_by) {
-      const { data: location } = await supabase
-        .from('user_locations')
-        .select('*')
-        .eq('user_id', request.responding_by)
+    if (responders && responders.length > 0) {
+      const locations: ResponderLocation[] = responders.map(r => ({
+        id: r.id,
+        userId: r.user_id,
+        lat: r.lat || 0,
+        lng: r.lng || 0,
+        updatedAt: r.updated_at,
+        arrivedAt: r.arrived_at,
+      }));
+
+      setResponderLocations(prev => {
+        const newMap = new Map(prev);
+        newMap.set(requestId, locations);
+        return newMap;
+      });
+    } else {
+      // Fallback to legacy responding_by field
+      const { data: request } = await supabase
+        .from('help_requests')
+        .select('responding_by')
+        .eq('id', requestId)
         .maybeSingle();
 
-      if (location) {
-        setResponderLocations(prev => {
-          const newMap = new Map(prev);
-          newMap.set(requestId, {
-            userId: request.responding_by,
-            lat: location.lat,
-            lng: location.lng,
-            updatedAt: location.updated_at,
+      if (request?.responding_by) {
+        const { data: location } = await supabase
+          .from('user_locations')
+          .select('*')
+          .eq('user_id', request.responding_by)
+          .maybeSingle();
+
+        if (location) {
+          setResponderLocations(prev => {
+            const newMap = new Map(prev);
+            newMap.set(requestId, [{
+              id: `legacy-${request.responding_by}`,
+              userId: request.responding_by,
+              lat: location.lat,
+              lng: location.lng,
+              updatedAt: location.updated_at || new Date().toISOString(),
+              arrivedAt: null,
+            }]);
+            return newMap;
           });
-          return newMap;
-        });
+        }
       }
     }
   }, []);
 
-  // Subscribe to help request updates for responder tracking
+  // Get responder count for a request
+  const getResponderCount = useCallback((requestId: string): number => {
+    return responderLocations.get(requestId)?.length || 0;
+  }, [responderLocations]);
+
+  // Subscribe to help request and responder updates
   useEffect(() => {
-    const channel = supabase
+    const helpRequestChannel = supabase
       .channel('responder_tracking')
       .on(
         'postgres_changes',
@@ -355,7 +488,8 @@ export function useEmergencyResponse() {
           // Check if someone just started responding (responding_by changed from null to a value)
           else if (updated.responding_by && !previous.responding_by) {
             // Notify the alert creator
-            notifyAlertCreator(updated.user_id, updated.id);
+            const count = getResponderCount(updated.id);
+            notifyAlertCreator(updated.user_id, updated.id, Math.max(count, 1));
             fetchResponders(updated.id);
           } 
           // Check if responder just arrived (arrived_at changed from null to a value)
@@ -376,17 +510,86 @@ export function useEmergencyResponse() {
       )
       .subscribe();
 
+    // Also subscribe to the responders table for real-time updates
+    const respondersChannel = supabase
+      .channel('responders_updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'help_request_responders' },
+        async (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const data = payload.new as { request_id: string; user_id: string };
+            fetchResponders(data.request_id);
+            
+            // If this is a new responder for an alert we created, notify us
+            if (payload.eventType === 'INSERT') {
+              const { data: request } = await supabase
+                .from('help_requests')
+                .select('user_id')
+                .eq('id', data.request_id)
+                .maybeSingle();
+              
+              if (request && request.user_id === user?.id) {
+                const count = getResponderCount(data.request_id) + 1;
+                notifyAlertCreator(request.user_id, data.request_id, count);
+              }
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const data = payload.old as { request_id: string };
+            fetchResponders(data.request_id);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(helpRequestChannel);
+      supabase.removeChannel(respondersChannel);
       stopLocationTracking();
     };
-  }, [fetchResponders, stopLocationTracking, notifyAlertCreator, notifyResponderArrived, notifyAlertResolved]);
+  }, [fetchResponders, stopLocationTracking, notifyAlertCreator, notifyResponderArrived, notifyAlertResolved, getResponderCount, user]);
 
   // Check if user is already responding to something
   useEffect(() => {
     if (!user) return;
 
     const checkExistingResponse = async () => {
+      // First check the new responders table
+      const { data: responderData } = await supabase
+        .from('help_request_responders')
+        .select('request_id, started_at')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (responderData && responderData.length > 0) {
+        const { data: request } = await supabase
+          .from('help_requests')
+          .select('id, lat, lng')
+          .eq('id', responderData[0].request_id)
+          .eq('resolved', false)
+          .maybeSingle();
+
+        if (request) {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+          }).catch(() => null);
+
+          if (position) {
+            setActiveResponse({
+              requestId: request.id,
+              requestLat: request.lat,
+              requestLng: request.lng,
+              startedAt: new Date(responderData[0].started_at),
+              responderLat: position.coords.latitude,
+              responderLng: position.coords.longitude,
+            });
+            startLocationTracking(request.id);
+          }
+          return;
+        }
+      }
+
+      // Fallback to legacy check
       const { data } = await supabase
         .from('help_requests')
         .select('id, lat, lng, responding_started_at')
@@ -408,7 +611,7 @@ export function useEmergencyResponse() {
             responderLat: position.coords.latitude,
             responderLng: position.coords.longitude,
           });
-          startLocationTracking();
+          startLocationTracking(data.id);
         }
       }
     };
@@ -428,6 +631,7 @@ export function useEmergencyResponse() {
     markAsArrived,
     markAsResolved,
     fetchResponders,
+    getResponderCount,
     isResponding: activeResponse !== null,
     showThankYou,
     dismissThankYou,
