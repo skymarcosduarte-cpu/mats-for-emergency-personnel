@@ -117,15 +117,10 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
       icon: '🚨',
     });
 
-    // IMPORTANT: Open a window synchronously to avoid popup blockers (mobile Safari/Chrome)
-    const placeholderWindow = window.open('about:blank', '_blank');
-    if (!placeholderWindow) {
-      toast.error('No se pudo abrir WhatsApp (bloqueador de ventanas emergentes).');
-    }
-
     let lat = position?.lat;
     let lng = position?.lng;
 
+    // Get position first before attempting to open any windows
     if (!lat || !lng) {
       try {
         const pos = await getCurrentPosition();
@@ -133,33 +128,39 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         lng = pos.lng;
       } catch (error) {
         console.error('Failed to get position:', error);
-        try {
-          placeholderWindow?.close();
-        } catch {
-          // ignore
-        }
         toast.error('No se pudo obtener tu ubicación.');
+        setSelectedType(null);
         return;
       }
     }
 
+    // Notify parent component
     onPanicTriggered?.(option.type, lat, lng);
 
-    // Open WhatsApp for community
+    // Build WhatsApp URL
     const message = option.whatsappMessage(lat, lng, userRole);
     const waUrl = `https://wa.me/?text=${message}`;
 
-    try {
-      if (placeholderWindow) {
-        placeholderWindow.location.href = waUrl;
-      } else {
-        // Fallback: may still be blocked, but best effort
+    // Close dialog first to prevent UI freeze
+    setIsOpen(false);
+    setSelectedType(null);
+
+    // Use setTimeout to ensure dialog closes before navigation
+    // This helps prevent Android Chrome from freezing
+    setTimeout(() => {
+      // Try to open WhatsApp - use location.href as fallback for Android
+      try {
+        const newWindow = window.open(waUrl, '_blank');
+        if (!newWindow || newWindow.closed) {
+          // Fallback for popup blockers - navigate directly
+          window.location.href = waUrl;
+        }
+      } catch (e) {
+        console.error('Failed to open WhatsApp:', e);
+        // Fallback: navigate directly
         window.location.href = waUrl;
       }
-    } catch (e) {
-      console.error('Failed to navigate to WhatsApp:', e);
-      toast.error('No se pudo abrir WhatsApp.');
-    }
+    }, 100);
 
     // Notify emergency contacts
     if (contacts.length > 0) {
@@ -174,9 +175,6 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         duration: 10000,
       });
     }
-
-    setIsOpen(false);
-    setSelectedType(null);
   };
 
   return (
