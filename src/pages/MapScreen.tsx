@@ -278,28 +278,43 @@ const createCurrentLocationIcon = () => L.divIcon({
   iconAnchor: [9, 9],
 });
 
-const createReportIcon = (severity: number) => {
+const createReportIcon = (severity: number, category?: string) => {
   const colors: Record<number, string> = {
     1: '#22c55e',
     2: '#eab308',
     3: '#f97316',
     4: '#ef4444',
   };
+  
+  // Category emojis
+  const categoryEmojis: Record<string, string> = {
+    'BLOCKADE': '🚧',
+    'ACCIDENT': '🚨',
+    'PROTEST': '✊',
+    'HAZARD': '⚠️',
+    'OTHER': '📍',
+  };
+  const emoji = category ? (categoryEmojis[category] || '📍') : '⚠️';
+  
   return L.divIcon({
     className: 'report-marker',
     html: `
       <div style="
-        width: 20px;
-        height: 20px;
+        width: 32px;
+        height: 32px;
         background: ${colors[severity] || colors[2]};
         border: 2px solid white;
         border-radius: 50%;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      "></div>
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+      ">${emoji}</div>
     `,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-    popupAnchor: [0, -10],
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -16],
   });
 };
 
@@ -1045,17 +1060,27 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       if (existingMarker) {
         existingMarker.setLatLng([report.lat, report.lng]);
       } else {
+        const categoryLabels: Record<string, string> = {
+          'BLOCKADE': 'Bloqueo',
+          'ACCIDENT': 'Accidente',
+          'PROTEST': 'Manifestación',
+          'HAZARD': 'Peligro',
+          'OTHER': 'Otro',
+        };
+        const categoryLabel = categoryLabels[report.category] || report.category;
+        
         const marker = L.marker([report.lat, report.lng], {
-          icon: createReportIcon(report.severity),
+          icon: createReportIcon(report.severity, report.category),
         })
           .addTo(map)
           .bindPopup(`
-            <div style="max-width: 180px;">
-              <div style="font-weight: 500;">${sanitize(report.title)}</div>
-              <div style="font-size: 11px; color: #666; margin-top: 4px;">
-                ${sanitize(report.category)} • Severidad ${report.severity}/4
+            <div style="max-width: 200px;">
+              <div style="font-weight: 600; font-size: 14px;">${sanitize(report.title)}</div>
+              <div style="font-size: 11px; color: #888; margin-top: 4px;">
+                ${categoryLabel} • Severidad ${report.severity}/4
               </div>
-              ${report.description ? `<div style="font-size: 12px; margin-top: 8px;">${sanitize(report.description)}</div>` : ''}
+              ${report.description ? `<div style="font-size: 12px; margin-top: 8px; color: #ccc;">${sanitize(report.description)}</div>` : ''}
+              <a href="https://maps.google.com/?q=${report.lat},${report.lng}" target="_blank" style="display: inline-block; margin-top: 8px; font-size: 11px; color: #3b82f6; text-decoration: none;">📍 Ver en Google Maps</a>
             </div>
           `);
         markersRef.current.set(key, marker);
