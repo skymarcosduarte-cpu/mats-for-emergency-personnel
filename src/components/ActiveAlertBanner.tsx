@@ -28,11 +28,13 @@ const PANIC_TYPE_LABELS: Record<string, { label: string; emoji: string }> = {
 interface ActiveAlertBannerProps {
   testAlert?: TestPanicAlert | null;
   onClearTestAlert?: () => void;
+  refreshTrigger?: number; // Trigger refetch when this changes
 }
 
 export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
   testAlert,
   onClearTestAlert,
+  refreshTrigger,
 }) => {
   const { user } = useAuth();
   const [activeAlert, setActiveAlert] = useState<ActivePanicEvent | null>(null);
@@ -186,11 +188,11 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
     }
   };
 
-  // Initial fetch
+  // Initial fetch and refetch on trigger
   useEffect(() => {
     setLoading(true);
     fetchActiveAlert();
-  }, [fetchActiveAlert]);
+  }, [fetchActiveAlert, refreshTrigger]);
 
   // Subscribe to real-time updates for user's panic events
   useEffect(() => {
