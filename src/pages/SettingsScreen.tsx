@@ -23,7 +23,10 @@ import {
   Radar,
   UserCog,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  KeyRound,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,6 +48,7 @@ import { AppFooter } from '@/components/AppFooter';
 import { APP_VERSION, BUILD_TIME, getFullVersionString } from '@/lib/versionCheck';
 import { useAuth } from '@/hooks/useAuth';
 import { UpdateButton } from '@/components/UpdatePrompt';
+import { supabase } from '@/integrations/supabase/client';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useAlertSettings } from '@/hooks/useAlertSettings';
 import { playSubtleAlert, playUrgentAlert } from '@/lib/alertSound';
@@ -74,6 +78,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [changingRole, setChangingRole] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   // Handle notification permission request
   const handleRequestPermission = async () => {
@@ -233,6 +244,38 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     }
   };
 
+  // Handle password change
+  const handlePasswordChange = async () => {
+    setPasswordError('');
+    
+    if (newPassword.length < 6) {
+      setPasswordError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Las contraseñas no coinciden');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      
+      if (error) {
+        console.error('Error changing password:', error);
+        setPasswordError(error.message);
+      } else {
+        setShowPasswordDialog(false);
+        setNewPassword('');
+        setConfirmPassword('');
+        alert('Contraseña actualizada correctamente');
+      }
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   // Handle logout
   const handleLogout = async () => {
     if (confirm('¿Seguro que deseas cerrar sesión?')) {
@@ -313,6 +356,30 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               >
                 Cambiar
               </Button>
+            </div>
+
+            {/* Password Change */}
+            <div className="border-t border-border pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <KeyRound className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Cambiar contraseña</p>
+                    <p className="text-xs text-muted-foreground">
+                      Actualiza tu contraseña de acceso
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPasswordDialog(true)}
+                >
+                  Cambiar
+                </Button>
+              </div>
             </div>
 
             {/* Delete Account */}
@@ -902,6 +969,124 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <>
                   <Trash2 className="w-4 h-4 mr-2" />
                   Eliminar Cuenta
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Change Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={(open) => {
+        setShowPasswordDialog(open);
+        if (!open) {
+          setNewPassword('');
+          setConfirmPassword('');
+          setPasswordError('');
+          setShowNewPassword(false);
+          setShowConfirmPassword(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-sm bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5" />
+              Cambiar Contraseña
+            </DialogTitle>
+            <DialogDescription>
+              Ingresa tu nueva contraseña. Debe tener al menos 6 caracteres.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password" className="text-sm text-foreground">
+                Nueva contraseña
+              </Label>
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password" className="text-sm text-foreground">
+                Confirmar contraseña
+              </Label>
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {passwordError && (
+              <p className="text-sm text-destructive">{passwordError}</p>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowPasswordDialog(false);
+                setNewPassword('');
+                setConfirmPassword('');
+                setPasswordError('');
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handlePasswordChange}
+              disabled={!newPassword || !confirmPassword || changingPassword}
+            >
+              {changingPassword ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <KeyRound className="w-4 h-4 mr-2" />
+                  Guardar
                 </>
               )}
             </Button>
