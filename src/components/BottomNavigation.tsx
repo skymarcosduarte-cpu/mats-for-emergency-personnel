@@ -5,15 +5,16 @@ import {
   Map, 
   Car, 
   Bell, 
-  Heart, 
   Settings,
   ShoppingBag,
-  Users
+  Users,
+  Star,
+  Cross
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUpdateAvailable } from '@/hooks/useUpdateCheck';
 
-export type TabId = 'map' | 'transit' | 'alerts' | 'community' | 'market' | 'status' | 'settings';
+export type TabId = 'map' | 'transit' | 'alerts' | 'community' | 'market' | 'settings';
 
 interface NavItem {
   id: TabId;
@@ -23,11 +24,27 @@ interface NavItem {
   hideInDisaster?: boolean;
 }
 
+// Star of Life icon for RESCATISTA users (6-pointed star with rod of asclepius style)
+const StarOfLifeIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+    className={className}
+  >
+    {/* 6-pointed star of life */}
+    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
 const NAV_ITEMS: NavItem[] = [
   { id: 'map', label: 'Mapa', icon: <Map className="w-5 h-5" /> },
-  { id: 'transit', label: 'Tránsito', icon: <Car className="w-5 h-5" /> },
   { id: 'alerts', label: 'Alertas', icon: <Bell className="w-5 h-5" /> },
-  { id: 'community', label: 'Comunidad', icon: <Users className="w-5 h-5" /> },
+  { id: 'transit', label: 'Tránsito', icon: <Car className="w-5 h-5" /> },
   { 
     id: 'market', 
     label: 'Market', 
@@ -35,7 +52,7 @@ const NAV_ITEMS: NavItem[] = [
     requiresRescatista: true,
     hideInDisaster: true,
   },
-  { id: 'status', label: 'Estado', icon: <Heart className="w-5 h-5" /> },
+  { id: 'community', label: 'Comunidad', icon: <Users className="w-5 h-5" /> },
   { id: 'settings', label: 'Config', icon: <Settings className="w-5 h-5" /> },
 ];
 
