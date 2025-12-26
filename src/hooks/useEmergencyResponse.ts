@@ -28,6 +28,7 @@ export function useEmergencyResponse() {
   const { user } = useAuth();
   const [activeResponse, setActiveResponse] = useState<ActiveResponse | null>(null);
   const [responderLocations, setResponderLocations] = useState<Map<string, ResponderLocation>>(new Map());
+  const [showThankYou, setShowThankYou] = useState(false);
   const watchIdRef = useRef<number | null>(null);
   const { showGenericNotification } = usePushNotifications();
 
@@ -135,6 +136,27 @@ export function useEmergencyResponse() {
         description: 'La ayuda está en tu ubicación',
         duration: 8000,
       });
+    }
+  }, [user, showGenericNotification]);
+
+  // Notify the alert creator that their alert was resolved and show thank you
+  const notifyAlertResolved = useCallback((
+    creatorUserId: string,
+    requestId: string
+  ) => {
+    // Only notify if we're the alert creator
+    if (user?.id === creatorUserId) {
+      // Play positive sound and vibration
+      playPositiveAlert();
+      
+      showGenericNotification(
+        '🎉 ¡Alerta resuelta!',
+        'Tu solicitud de ayuda ha sido atendida exitosamente.',
+        `resolved-${requestId}`
+      );
+      
+      // Show thank you dialog
+      setShowThankYou(true);
     }
   }, [user, showGenericNotification]);
 
@@ -317,14 +339,21 @@ export function useEmergencyResponse() {
             responding_by: string | null;
             user_id: string;
             arrived_at: string | null;
+            resolved: boolean;
           };
           const previous = payload.old as { 
             responding_by: string | null;
             arrived_at: string | null;
+            resolved: boolean;
           };
           
+          // Check if alert was just resolved
+          if (updated.resolved && !previous.resolved) {
+            // Notify the alert creator with thank you dialog
+            notifyAlertResolved(updated.user_id, updated.id);
+          }
           // Check if someone just started responding (responding_by changed from null to a value)
-          if (updated.responding_by && !previous.responding_by) {
+          else if (updated.responding_by && !previous.responding_by) {
             // Notify the alert creator
             notifyAlertCreator(updated.user_id, updated.id);
             fetchResponders(updated.id);
@@ -351,7 +380,7 @@ export function useEmergencyResponse() {
       supabase.removeChannel(channel);
       stopLocationTracking();
     };
-  }, [fetchResponders, stopLocationTracking, notifyAlertCreator, notifyResponderArrived]);
+  }, [fetchResponders, stopLocationTracking, notifyAlertCreator, notifyResponderArrived, notifyAlertResolved]);
 
   // Check if user is already responding to something
   useEffect(() => {
@@ -387,6 +416,10 @@ export function useEmergencyResponse() {
     checkExistingResponse();
   }, [user, startLocationTracking]);
 
+  const dismissThankYou = useCallback(() => {
+    setShowThankYou(false);
+  }, []);
+
   return {
     activeResponse,
     responderLocations,
@@ -396,5 +429,7 @@ export function useEmergencyResponse() {
     markAsResolved,
     fetchResponders,
     isResponding: activeResponse !== null,
+    showThankYou,
+    dismissThankYou,
   };
 }
