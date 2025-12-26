@@ -9,14 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer';
 import type { PanicType, UserRole } from '@/types';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useLocation } from '@/hooks/useLocation';
 import { toast } from 'sonner';
 
@@ -91,7 +84,6 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [gpsTimeout, setGpsTimeout] = useState(false);
   const { position, getCurrentPosition, loading: locationLoading } = useLocation();
-  const isMobile = useIsMobile();
   const openedAtRef = useRef<number>(0);
 
   const GPS_TIMEOUT_MS = 10000; // 10 seconds
@@ -236,21 +228,12 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         </div>
       )}
 
-      {isMobile ? (
-        <DrawerHeader>
-          <DrawerTitle className="flex items-center gap-2 text-foreground">
-            <AlertTriangle className="w-5 h-5 text-panic" />
-            Selecciona tipo de emergencia
-          </DrawerTitle>
-        </DrawerHeader>
-      ) : (
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-foreground">
-            <AlertTriangle className="w-5 h-5 text-panic" />
-            Selecciona tipo de emergencia
-          </DialogTitle>
-        </DialogHeader>
-      )}
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2 text-foreground">
+          <AlertTriangle className="w-5 h-5 text-panic" />
+          Selecciona tipo de emergencia
+        </DialogTitle>
+      </DialogHeader>
 
       <div className="grid gap-3 py-4 px-4 sm:px-0">
         {PANIC_OPTIONS.map((option) => {
@@ -332,16 +315,6 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
       </div>
     </>
   );
-
-  if (isMobile) {
-    return (
-      <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-        <DrawerContent className="bg-card border-border relative max-h-[85vh] overflow-y-auto">
-          {content}
-        </DrawerContent>
-      </Drawer>
-    );
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
