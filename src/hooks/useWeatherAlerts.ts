@@ -1,7 +1,7 @@
 // NOAA Weather Alerts Hook for COMUNIDAD EX SOS
 // Fetches hurricane, storm, and severe weather alerts within radius
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { calculateDistance } from '@/hooks/useLocation';
 import type { GeoPosition } from '@/types';
 
@@ -53,12 +53,21 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  
+  // Use refs for values that change frequently to avoid recreating callbacks
+  const positionRef = useRef(position);
+  const radiusMilesRef = useRef(radiusMiles);
+  
+  useEffect(() => {
+    positionRef.current = position;
+    radiusMilesRef.current = radiusMiles;
+  }, [position, radiusMiles]);
 
-  // Parse NOAA alert response
+  // Parse NOAA alert response - stable callback using ref for radiusMiles
   const parseAlerts = useCallback((data: any, userPosition: GeoPosition): NOAAAlert[] => {
     if (!data?.features) return [];
 
-    const radiusKm = radiusMiles * 1.60934;
+    const radiusKm = radiusMilesRef.current * 1.60934;
 
     return data.features
       .map((feature: any) => {
@@ -116,7 +125,7 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
         );
         
         // Filter by distance (if we have coordinates)
-        const isWithinRadius = alert.distanceMiles === null || alert.distanceMiles <= radiusMiles;
+        const isWithinRadius = alert.distanceMiles === null || alert.distanceMiles <= radiusMilesRef.current;
         
         // Filter out expired alerts
         const isActive = new Date(alert.expires) > new Date();
@@ -136,11 +145,12 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
         }
         return 0;
       });
-  }, [radiusMiles]);
+  }, []); // No dependencies - uses ref for radiusMiles
 
-  // Fetch alerts from NOAA
+  // Fetch alerts from NOAA - stable callback using refs
   const fetchAlerts = useCallback(async () => {
-    if (!position) return;
+    const currentPosition = positionRef.current;
+    if (!currentPosition) return;
 
     setLoading(true);
     setError(null);
@@ -148,7 +158,7 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
     try {
       // NOAA API allows filtering by point and radius
       const response = await fetch(
-        `${NOAA_ALERTS_API}?point=${position.lat},${position.lng}&status=actual`,
+        `${NOAA_ALERTS_API}?point=${currentPosition.lat},${currentPosition.lng}&status=actual`,
         {
           headers: {
             'User-Agent': 'COMUNIDAD-EX-SOS-App',
@@ -171,11 +181,11 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
         }
         
         const data = await fallbackResponse.json();
-        const parsed = parseAlerts(data, position);
+        const parsed = parseAlerts(data, currentPosition);
         setAlerts(parsed);
       } else {
         const data = await response.json();
-        const parsed = parseAlerts(data, position);
+        const parsed = parseAlerts(data, currentPosition);
         setAlerts(parsed);
       }
 
@@ -186,19 +196,24 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
     } finally {
       setLoading(false);
     }
-  }, [position, parseAlerts]);
+  }, [parseAlerts]); // Only depends on parseAlerts which is stable
 
-  // Initial fetch and refresh interval
+  // Initial fetch and refresh interval - runs only once
   useEffect(() => {
-    if (position) {
+    // Initial fetch
+    if (positionRef.current) {
       fetchAlerts();
-      
-      // Refresh every 1 minute
-      const interval = setInterval(fetchAlerts, 60 * 1000);
-      
-      return () => clearInterval(interval);
     }
-  }, [position, fetchAlerts]);
+    
+    // Refresh every 1 minute
+    const interval = setInterval(() => {
+      if (positionRef.current) {
+        fetchAlerts();
+      }
+    }, 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [fetchAlerts]);
 
   // Get severity color
   const getSeverityColor = (severity: NOAAAlert['severity']) => {

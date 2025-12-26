@@ -199,17 +199,27 @@ export function useMexicoAlerts(
   const seenFireIds = useRef<Set<string>>(new Set());
   const isFirstLoad = useRef(true);
   
-  // Store callbacks in refs to avoid recreating fetchAlerts on every render
+  // Store callbacks and params in refs to avoid recreating fetchAlerts
   const onNewCycloneRef = useRef(options.onNewCyclone);
   const onNewFiresRef = useRef(options.onNewFires);
+  const positionRef = useRef(position);
+  const radiusKmRef = useRef(radiusKm);
   
-  // Update refs when callbacks change
+  // Update refs when values change (without triggering re-renders)
   useEffect(() => {
     onNewCycloneRef.current = options.onNewCyclone;
     onNewFiresRef.current = options.onNewFires;
   }, [options.onNewCyclone, options.onNewFires]);
 
+  useEffect(() => {
+    positionRef.current = position;
+    radiusKmRef.current = radiusKm;
+  }, [position, radiusKm]);
+
   const fetchAlerts = useCallback(async () => {
+    const currentPosition = positionRef.current;
+    const currentRadiusKm = radiusKmRef.current;
+    
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
@@ -224,12 +234,12 @@ export function useMexicoAlerts(
       let allCyclones = [...atlanticCyclones, ...pacificCyclones];
 
       // Calculate distances if we have user position
-      if (position) {
+      if (currentPosition) {
         allCyclones = allCyclones.map(cyclone => {
           if (cyclone.coordinates) {
             const distanceKm = calculateDistance(
-              position.lat,
-              position.lng,
+              currentPosition.lat,
+              currentPosition.lng,
               cyclone.coordinates[0],
               cyclone.coordinates[1]
             );
@@ -239,15 +249,15 @@ export function useMexicoAlerts(
         });
 
         // Filter by radius
-        allCyclones = allCyclones.filter(c => !c.distanceKm || c.distanceKm <= radiusKm);
+        allCyclones = allCyclones.filter(c => !c.distanceKm || c.distanceKm <= currentRadiusKm);
       }
 
       // Process fire hotspots with distance
       let processedFires = fires;
-      if (position) {
+      if (currentPosition) {
         processedFires = fires.map(fire => ({
           ...fire,
-          distanceKm: calculateDistance(position.lat, position.lng, fire.lat, fire.lng),
+          distanceKm: calculateDistance(currentPosition.lat, currentPosition.lng, fire.lat, fire.lng),
         }));
 
         // Filter by radius (100km for fires - they're more localized)
@@ -312,7 +322,7 @@ export function useMexicoAlerts(
         error: 'Error al obtener alertas de México',
       }));
     }
-  }, [position, radiusKm]); // Removed options dependency - using refs instead
+  }, []); // No dependencies - uses refs
 
   // Initial fetch and periodic refresh
   useEffect(() => {
