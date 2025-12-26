@@ -9,6 +9,7 @@ import { useLocation } from '@/hooks/useLocation';
 import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders, usePanicEvents, useActiveResponders } from '@/hooks/useRealtime';
 import { AlertsPanel } from '@/components/AlertsPanel';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 import 'leaflet/dist/leaflet.css';
 
 // Sanitize user content for safe HTML rendering
@@ -288,12 +289,15 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
   const [mapReady, setMapReady] = useState(false);
 
   const { position, error: locationError } = useLocation();
+  const { role } = useAuth();
   const { locations } = useUserLocations();
   const { requests: helpRequests } = useHelpRequests(position);
   const { reports } = useRoadReports();
   const { providers: medicalProviders } = useMedicalProviders();
   const { events: panicEvents } = usePanicEvents();
   const { responders: activeResponders } = useActiveResponders();
+  
+  const isRescatista = role === 'RESCATISTA';
 
   // Default center (Mexico City)
   const defaultCenter: [number, number] = [19.4326, -99.1332];
@@ -772,6 +776,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
           panicEvents={panicEvents}
           helpRequests={helpRequests}
           onViewLocation={handleViewLocation}
+          isRescatista={isRescatista}
         />
       </div>
 

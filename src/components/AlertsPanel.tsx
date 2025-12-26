@@ -15,6 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { MedicalInfoBadge } from './MedicalInfoBadge';
 
 interface PanicEvent {
   id: string;
@@ -41,6 +42,7 @@ interface AlertsPanelProps {
   panicEvents: PanicEvent[];
   helpRequests: HelpRequest[];
   onViewLocation: (lat: number, lng: number) => void;
+  isRescatista?: boolean;
 }
 
 const PANIC_TYPE_CONFIG: Record<string, { label: string; emoji: string; color: string; icon: React.ReactNode }> = {
@@ -61,6 +63,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
   panicEvents,
   helpRequests,
   onViewLocation,
+  isRescatista = false,
 }) => {
   const totalAlerts = panicEvents.length + helpRequests.filter(r => r.kind === 'SISMO_AYUDA_14').length;
 
@@ -142,7 +145,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-2 mt-3">
+                        <div className="flex flex-wrap gap-2 mt-3">
                           <Button
                             size="sm"
                             variant="secondary"
@@ -160,6 +163,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                           >
                             <ExternalLink className="w-3 h-3" />
                           </Button>
+                          <MedicalInfoBadge userId={event.user_id} isRescatista={isRescatista} />
                         </div>
                       </div>
                     );
@@ -205,7 +209,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                               )}
                             </div>
                           </div>
-                          <div className="flex gap-2 mt-3">
+                          <div className="flex flex-wrap gap-2 mt-3">
                             <Button
                               size="sm"
                               variant="secondary"
@@ -223,6 +227,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                             >
                               <ExternalLink className="w-3 h-3" />
                             </Button>
+                            <MedicalInfoBadge userId={request.user_id} isRescatista={isRescatista} />
                           </div>
                         </div>
                       );
