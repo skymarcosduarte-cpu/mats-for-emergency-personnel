@@ -131,8 +131,8 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   // Real-time panic alerts from other users
   const { recentAlerts, unreadCount } = usePanicAlerts();
   
-  // Listen for responders to user's own alerts
-  useMyAlertResponders();
+  // Listen for responders to user's own alerts and track their location
+  const { respondersToMyAlerts } = useMyAlertResponders();
   
   // Push notifications
   const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
@@ -230,14 +230,14 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 
   const renderScreen = () => {
     switch (activeTab) {
-      case 'map': return <MapScreen className="h-[calc(100vh-120px)]" />;
+      case 'map': return <MapScreen className="h-[calc(100vh-120px)]" respondersToMyAlerts={respondersToMyAlerts} />;
       case 'transit': return <TransitScreen userRole={userRole} />;
       case 'alerts': return <AlertsScreen userRole={userRole} />;
       case 'community': return <CommunityScreen />;
       case 'market': return <MarketScreen userRole={userRole} />;
       case 'status': return <StatusScreen userRole={userRole} />;
       case 'settings': return <SettingsScreen onLogout={handleLogout} onSimulatePanicAlert={simulatePanicAlert} />;
-      default: return <MapScreen className="h-[calc(100vh-120px)]" />;
+      default: return <MapScreen className="h-[calc(100vh-120px)]" respondersToMyAlerts={respondersToMyAlerts} />;
     }
   };
 
