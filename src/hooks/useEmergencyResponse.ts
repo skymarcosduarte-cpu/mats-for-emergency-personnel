@@ -114,6 +114,30 @@ export function useEmergencyResponse() {
     }
   }, [user, showGenericNotification]);
 
+  // Notify the alert creator that the responder has arrived
+  const notifyResponderArrived = useCallback((
+    creatorUserId: string,
+    requestId: string
+  ) => {
+    // Only notify if we're the alert creator
+    if (user?.id === creatorUserId) {
+      // Play positive sound and vibration
+      playPositiveAlert();
+      
+      showGenericNotification(
+        '✅ ¡Rescatista llegó!',
+        'El rescatista ha llegado a tu ubicación. La ayuda está aquí.',
+        `arrived-${requestId}`
+      );
+      
+      // Also show a toast for in-app notification
+      toast.success('¡El rescatista llegó!', {
+        description: 'La ayuda está en tu ubicación',
+        duration: 8000,
+      });
+    }
+  }, [user, showGenericNotification]);
+
   // Mark as arrived at the emergency location
   const markAsArrived = useCallback(async () => {
     if (!activeResponse || !user) return false;
@@ -256,15 +280,25 @@ export function useEmergencyResponse() {
             id: string; 
             responding_by: string | null;
             user_id: string;
+            arrived_at: string | null;
           };
-          const previous = payload.old as { responding_by: string | null };
+          const previous = payload.old as { 
+            responding_by: string | null;
+            arrived_at: string | null;
+          };
           
           // Check if someone just started responding (responding_by changed from null to a value)
           if (updated.responding_by && !previous.responding_by) {
             // Notify the alert creator
             notifyAlertCreator(updated.user_id, updated.id);
             fetchResponders(updated.id);
-          } else if (updated.responding_by) {
+          } 
+          // Check if responder just arrived (arrived_at changed from null to a value)
+          else if (updated.arrived_at && !previous.arrived_at) {
+            // Notify the alert creator that responder has arrived
+            notifyResponderArrived(updated.user_id, updated.id);
+          }
+          else if (updated.responding_by) {
             fetchResponders(updated.id);
           } else {
             setResponderLocations(prev => {
@@ -281,7 +315,7 @@ export function useEmergencyResponse() {
       supabase.removeChannel(channel);
       stopLocationTracking();
     };
-  }, [fetchResponders, stopLocationTracking, notifyAlertCreator]);
+  }, [fetchResponders, stopLocationTracking, notifyAlertCreator, notifyResponderArrived]);
 
   // Check if user is already responding to something
   useEffect(() => {
