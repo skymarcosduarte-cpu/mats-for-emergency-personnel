@@ -33,6 +33,7 @@ interface HelpRequest {
   responding_started_at: string | null;
   audio_url: string | null;
   audio_duration_ms: number | null;
+  arrived_at: string | null;
 }
 
 interface RoadReport {

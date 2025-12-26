@@ -2,7 +2,7 @@
 // USGS earthquakes + "4/10" quick report + "14" help + notifications
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind, Route, X } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind, Route, X, CheckCircle2 } from 'lucide-react';
 import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
 import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
 import { useMexicoAlerts, TropicalCycloneAlert, FireHotspot } from '@/hooks/useMexicoAlerts';
@@ -73,7 +73,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     activeResponse, 
     isResponding, 
     startResponding, 
-    stopResponding 
+    stopResponding,
+    markAsArrived 
   } = useEmergencyResponse();
   const { responders } = useActiveResponders();
   const { 
@@ -830,8 +831,21 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                           <p className="text-sm text-foreground">{req.message}</p>
                         )}
                         
-                        {/* ETA Countdown - show when there's an active responder */}
+                        {/* ETA Countdown or Arrived badge */}
                         {(() => {
+                          // Show "Arrived" badge if responder has arrived
+                          if ((req as any).arrived_at) {
+                            return (
+                              <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-success/10 border border-success/30">
+                                <CheckCircle2 className="w-5 h-5 text-success" />
+                                <span className="text-sm font-medium text-success">
+                                  Rescatista en el lugar
+                                </span>
+                              </div>
+                            );
+                          }
+                          
+                          // Show ETA if responder is on the way
                           const responderData = responders.find(r => r.request_id === req.id);
                           if (responderData) {
                             return (
@@ -870,8 +884,20 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                             <>
                               {activeResponse?.requestId === req.id ? (
                                 <>
+                                  {/* Mark as Arrived button - show if not already arrived */}
+                                  {!(req as any).arrived_at && (
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      className="bg-success hover:bg-success/90"
+                                      onClick={markAsArrived}
+                                    >
+                                      <CheckCircle2 className="w-4 h-4 mr-1" />
+                                      Llegué
+                                    </Button>
+                                  )}
                                   <Button
-                                    variant="default"
+                                    variant="outline"
                                     size="sm"
                                     onClick={() => setShowRouteMap({ requestId: req.id, lat: req.lat, lng: req.lng })}
                                   >

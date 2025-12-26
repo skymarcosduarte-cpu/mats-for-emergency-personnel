@@ -172,6 +172,7 @@ export type Database = {
       }
       help_requests: {
         Row: {
+          arrived_at: string | null
           audio_duration_ms: number | null
           audio_url: string | null
           created_at: string | null
@@ -189,6 +190,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          arrived_at?: string | null
           audio_duration_ms?: number | null
           audio_url?: string | null
           created_at?: string | null
@@ -206,6 +208,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          arrived_at?: string | null
           audio_duration_ms?: number | null
           audio_url?: string | null
           created_at?: string | null
