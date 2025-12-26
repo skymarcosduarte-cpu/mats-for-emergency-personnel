@@ -60,6 +60,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     phone: '',
     birthday: '',
     role: 'SOS_ACTIVO' as 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR',
+    canProvideMedicalAssistance: false,
+    hasFirstAidKit: false,
   });
 
   const { signUp, signIn, createProfile, user, isProfileComplete } = useAuth();
@@ -195,6 +197,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         phone: profileForm.phone,
         birthday: profileForm.birthday,
         role: profileForm.role,
+        can_provide_medical_assistance: profileForm.canProvideMedicalAssistance,
+        has_first_aid_kit: profileForm.hasFirstAidKit,
       });
 
       if (profileError) {
@@ -409,53 +413,135 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
               </div>
 
               <div>
-                <Label>Tipo de usuario *</Label>
-                <div className="grid grid-cols-3 gap-2 mt-2">
+                <Label>Tipo de perfil *</Label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Todos los perfiles tienen acceso completo y pueden atender alertas y emergencias.
+                </p>
+                <div className="grid grid-cols-1 gap-3 mt-2">
                   <button
+                    type="button"
                     onClick={() => setProfileForm({ ...profileForm, role: 'SOS_ACTIVO' })}
                     className={cn(
-                      'p-3 rounded-lg border-2 text-center transition-all',
+                      'p-4 rounded-lg border-2 text-left transition-all',
                       profileForm.role === 'SOS_ACTIVO'
                         ? 'border-mats-green bg-mats-green/10'
                         : 'border-border hover:border-mats-green/50'
                     )}
                   >
-                    <div className="text-2xl mb-1">🏥</div>
-                    <div className={cn('font-medium text-sm', profileForm.role === 'SOS_ACTIVO' ? 'text-mats-green' : 'text-foreground')}>
-                      SOS Activo
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl">🏥</div>
+                      <div className="flex-1">
+                        <div className={cn('font-medium', profileForm.role === 'SOS_ACTIVO' ? 'text-mats-green' : 'text-foreground')}>
+                          SOS Activo
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Paramédico, bombero o rescatista actualmente en servicio
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">Paramédico activo</div>
                   </button>
                   <button
+                    type="button"
                     onClick={() => setProfileForm({ ...profileForm, role: 'EX_SOS' })}
                     className={cn(
-                      'p-3 rounded-lg border-2 text-center transition-all',
+                      'p-4 rounded-lg border-2 text-left transition-all',
                       profileForm.role === 'EX_SOS'
                         ? 'border-primary bg-primary/10'
                         : 'border-border hover:border-primary/50'
                     )}
                   >
-                    <div className="text-2xl mb-1">🎖️</div>
-                    <div className={cn('font-medium text-sm', profileForm.role === 'EX_SOS' ? 'text-primary' : 'text-foreground')}>
-                      EX-SOS
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl">🎖️</div>
+                      <div className="flex-1">
+                        <div className={cn('font-medium', profileForm.role === 'EX_SOS' ? 'text-primary' : 'text-foreground')}>
+                          EX-SOS
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Ex-paramédico, ex-bombero o rescatista retirado con experiencia
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">Ex-paramédico</div>
                   </button>
                   <button
+                    type="button"
                     onClick={() => setProfileForm({ ...profileForm, role: 'FAMILIAR' })}
                     className={cn(
-                      'p-3 rounded-lg border-2 text-center transition-all',
+                      'p-4 rounded-lg border-2 text-left transition-all',
                       profileForm.role === 'FAMILIAR'
                         ? 'border-accent bg-accent/10'
                         : 'border-border hover:border-accent/50'
                     )}
                   >
-                    <div className="text-2xl mb-1">👨‍👩‍👧</div>
-                    <div className={cn('font-medium text-sm', profileForm.role === 'FAMILIAR' ? 'text-accent' : 'text-foreground')}>
-                      Familiar
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl">👨‍👩‍👧</div>
+                      <div className="flex-1">
+                        <div className={cn('font-medium', profileForm.role === 'FAMILIAR' ? 'text-accent' : 'text-foreground')}>
+                          Familiar / Ciudadano
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Miembro de la comunidad sin experiencia formal en rescate
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">Funciones básicas</div>
                   </button>
+                </div>
+              </div>
+
+              {/* Medical Assistance Section */}
+              <div className="space-y-4 p-4 rounded-lg bg-muted/50 border border-border">
+                <div>
+                  <Label className="flex items-center gap-2 text-base font-semibold">
+                    <span>🩺</span> Capacidad de asistencia médica
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Esta información ayuda a coordinar mejor las emergencias
+                  </p>
+                </div>
+                
+                <div className="space-y-3">
+                  <label 
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                      profileForm.canProvideMedicalAssistance
+                        ? "border-safe bg-safe/10"
+                        : "border-border hover:border-safe/50"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={profileForm.canProvideMedicalAssistance}
+                      onChange={(e) => setProfileForm({ ...profileForm, canProvideMedicalAssistance: e.target.checked })}
+                      className="w-5 h-5 rounded accent-safe"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-foreground">Puedo brindar asistencia médica</div>
+                      <div className="text-xs text-muted-foreground">
+                        Tengo conocimientos de primeros auxilios o medicina
+                      </div>
+                    </div>
+                  </label>
+                  
+                  <label 
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                      profileForm.hasFirstAidKit
+                        ? "border-safe bg-safe/10"
+                        : "border-border hover:border-safe/50"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={profileForm.hasFirstAidKit}
+                      onChange={(e) => setProfileForm({ ...profileForm, hasFirstAidKit: e.target.checked })}
+                      className="w-5 h-5 rounded accent-safe"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-foreground">Tengo botiquín disponible</div>
+                      <div className="text-xs text-muted-foreground">
+                        Cuento con equipo de primeros auxilios en mi ubicación
+                      </div>
+                    </div>
+                  </label>
                 </div>
               </div>
 

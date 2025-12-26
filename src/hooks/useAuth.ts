@@ -190,6 +190,8 @@ export function useAuth() {
     phone: string;
     birthday?: string;
     role: 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR';
+    can_provide_medical_assistance?: boolean;
+    has_first_aid_kit?: boolean;
   }) => {
     if (!state.user) {
       return { error: new Error('Not authenticated') };
@@ -205,6 +207,8 @@ export function useAuth() {
         specialty: profileData.specialty,
         phone: profileData.phone,
         birthday: profileData.birthday || null,
+        can_provide_medical_assistance: profileData.can_provide_medical_assistance ?? false,
+        has_first_aid_kit: profileData.has_first_aid_kit ?? false,
       });
 
     if (profileError) {
