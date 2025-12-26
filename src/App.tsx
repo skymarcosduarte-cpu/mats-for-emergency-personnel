@@ -37,6 +37,7 @@ import { usePanicAlerts } from '@/hooks/usePanicAlerts';
 import { useMyAlertResponders } from '@/hooks/useMyAlertResponders';
 import { useTestMode } from '@/hooks/useTestMode';
 import { useOverdueTrips } from '@/hooks/useOverdueTrips';
+import { useEmergencyNotification } from '@/hooks/useEmergencyNotification';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { UserRole, USGSEarthquake, PanicType } from '@/types';
@@ -139,6 +140,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   // Monitor for overdue trips (30+ minutes past ETA)
   useOverdueTrips();
   
+  // Emergency contact notification
+  const { notifyEmergencyContacts } = useEmergencyNotification();
+
   // Push notifications
   const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
   
@@ -234,6 +238,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
             duration: 5000,
           });
           setAlertRefreshTrigger(prev => prev + 1);
+          
+          // Notify emergency contacts via WhatsApp
+          notifyEmergencyContacts(type, lat, lng, message);
         }
       } else {
         // Simple panic event without context
@@ -258,6 +265,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
             duration: 5000,
           });
           setAlertRefreshTrigger(prev => prev + 1);
+          
+          // Notify emergency contacts via WhatsApp
+          notifyEmergencyContacts(type, lat, lng);
         }
       }
     } catch (err) {
@@ -269,7 +279,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     } finally {
       setIsSavingAlert(false);
     }
-  }, [user?.id]);
+  }, [user?.id, notifyEmergencyContacts]);
 
   const renderScreen = () => {
     const screens: Record<string, React.ReactNode> = {

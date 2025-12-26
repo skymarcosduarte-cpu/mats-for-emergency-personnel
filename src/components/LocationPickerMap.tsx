@@ -203,9 +203,9 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[30000] bg-background">
+    <div className="fixed inset-0 z-[50000] bg-background">
       {/* Header */}
-      <header className="absolute top-0 left-0 right-0 z-[30010] bg-card/95 backdrop-blur-sm border-b border-border p-3 safe-area-inset-top">
+      <header className="absolute top-0 left-0 right-0 z-[50010] bg-card/95 backdrop-blur-sm border-b border-border p-3 safe-area-inset-top">
         <div className="flex items-center gap-2 mb-3">
           <button
             onClick={onClose}
@@ -253,7 +253,7 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
       <div ref={mapContainerRef} className="w-full h-full" />
 
       {/* Selected location info & confirm button */}
-      <footer className="absolute bottom-0 left-0 right-0 z-[30010] bg-card/95 backdrop-blur-sm border-t border-border p-4 safe-area-inset-bottom">
+      <footer className="absolute bottom-0 left-0 right-0 z-[50010] bg-card/95 backdrop-blur-sm border-t border-border p-4 safe-area-inset-bottom">
         {selectedLat !== null && selectedLng !== null ? (
           <div className="space-y-3">
             <div className="bg-muted/50 rounded-lg p-3">
