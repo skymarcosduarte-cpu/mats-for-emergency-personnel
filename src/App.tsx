@@ -179,7 +179,14 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   };
 
   // Handle panic button trigger - save to database and notify other users
-  const handlePanicTriggered = useCallback(async (type: PanicType, lat: number, lng: number) => {
+  const handlePanicTriggered = useCallback(async (
+    type: PanicType, 
+    lat: number, 
+    lng: number,
+    message?: string,
+    audioUrl?: string,
+    audioDurationMs?: number
+  ) => {
     if (!user?.id) {
       console.error('No user ID for panic event');
       return;
@@ -190,35 +197,66 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     
     // Show immediate feedback toast
     const savingToastId = toast.loading('Enviando alerta a la comunidad...', {
-      description: 'Guardando tu ubicación GPS',
+      description: message ? 'Guardando tu mensaje y ubicación' : 'Guardando tu ubicación GPS',
     });
 
     try {
-      const { error } = await supabase.from('panic_events').insert({
-        user_id: user.id,
-        panic_type: type,
-        lat,
-        lng,
-      });
+      // Create help_request instead of panic_event if there's a message or audio
+      // This allows for more context and responder tracking
+      if (message || audioUrl) {
+        const { error } = await supabase.from('help_requests').insert({
+          user_id: user.id,
+          kind: type.toLowerCase(),
+          lat,
+          lng,
+          message: message || null,
+          audio_url: audioUrl || null,
+          audio_duration_ms: audioDurationMs || null,
+          resolved: false,
+        });
 
-      if (error) {
-        console.error('Error saving panic event:', error);
-        toast.error('Error al guardar alerta', {
-          id: savingToastId,
-          description: 'Intenta de nuevo',
-        });
+        if (error) {
+          console.error('Error saving help request:', error);
+          toast.error('Error al guardar alerta', {
+            id: savingToastId,
+            description: 'Intenta de nuevo',
+          });
+        } else {
+          console.log('Help request saved with context:', type, lat, lng, message?.slice(0, 50));
+          toast.success('Alerta enviada correctamente', {
+            id: savingToastId,
+            description: 'Todos los usuarios han sido notificados con tu mensaje',
+            duration: 5000,
+          });
+          setAlertRefreshTrigger(prev => prev + 1);
+        }
       } else {
-        console.log('Panic event saved and broadcasted:', type, lat, lng);
-        toast.success('Alerta enviada correctamente', {
-          id: savingToastId,
-          description: 'Todos los usuarios de la comunidad han sido notificados',
-          duration: 5000,
+        // Simple panic event without context
+        const { error } = await supabase.from('panic_events').insert({
+          user_id: user.id,
+          panic_type: type,
+          lat,
+          lng,
         });
-        // Trigger banner refresh
-        setAlertRefreshTrigger(prev => prev + 1);
+
+        if (error) {
+          console.error('Error saving panic event:', error);
+          toast.error('Error al guardar alerta', {
+            id: savingToastId,
+            description: 'Intenta de nuevo',
+          });
+        } else {
+          console.log('Panic event saved and broadcasted:', type, lat, lng);
+          toast.success('Alerta enviada correctamente', {
+            id: savingToastId,
+            description: 'Todos los usuarios de la comunidad han sido notificados',
+            duration: 5000,
+          });
+          setAlertRefreshTrigger(prev => prev + 1);
+        }
       }
     } catch (err) {
-      console.error('Failed to save panic event:', err);
+      console.error('Failed to save alert:', err);
       toast.error('Error de conexión', {
         id: savingToastId,
         description: 'Verifica tu conexión a internet',

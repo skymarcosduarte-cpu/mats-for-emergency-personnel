@@ -45,10 +45,25 @@ const HELP_KIND_LABELS: Record<string, { label: string; emoji: string }> = {
   'other': { label: 'Ayuda General', emoji: '🤝' },
 };
 
+export interface EmergencyAlertData {
+  id: string;
+  type: 'panic' | 'help';
+  panicType?: string;
+  kind?: string;
+  lat: number;
+  lng: number;
+  message?: string | null;
+  audioUrl?: string | null;
+  audioDurationMs?: number | null;
+  createdAt: string;
+  userId: string;
+}
+
 export function usePanicAlerts() {
   const { user } = useAuth();
   const [recentAlerts, setRecentAlerts] = useState<(PanicEvent | HelpRequest)[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [latestEmergencyAlert, setLatestEmergencyAlert] = useState<EmergencyAlertData | null>(null);
   const notifiedIds = useRef<Set<string>>(new Set());
 
   // Request notification permission on mount
@@ -128,6 +143,17 @@ export function usePanicAlerts() {
     const typeInfo = PANIC_TYPE_LABELS[event.panic_type] || { label: 'Emergencia', emoji: '🆘' };
     const mapsLink = getGoogleMapsLink(event.lat, event.lng);
     
+    // Set latest emergency alert for prominent overlay
+    setLatestEmergencyAlert({
+      id: event.id,
+      type: 'panic',
+      panicType: event.panic_type,
+      lat: event.lat,
+      lng: event.lng,
+      createdAt: event.created_at,
+      userId: event.user_id,
+    });
+    
     // Vibrate urgently
     vibrate([300, 100, 300, 100, 300]);
     
@@ -204,6 +230,11 @@ export function usePanicAlerts() {
     setUnreadCount(0);
   }, []);
 
+  // Dismiss the prominent overlay
+  const dismissLatestAlert = useCallback(() => {
+    setLatestEmergencyAlert(null);
+  }, []);
+
   // Subscribe to real-time panic events and help requests
   useEffect(() => {
     if (!user?.id) return;
@@ -266,5 +297,7 @@ export function usePanicAlerts() {
     recentAlerts,
     unreadCount,
     clearAlerts,
+    latestEmergencyAlert,
+    dismissLatestAlert,
   };
 }
