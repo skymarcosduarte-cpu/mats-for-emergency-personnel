@@ -659,10 +659,14 @@ export type Database = {
           departure_airport: string | null
           departure_time: string | null
           destination: string
+          destination_lat: number | null
+          destination_lng: number | null
           eta: string
           flight_number: string | null
           id: string
           origin: string
+          origin_lat: number | null
+          origin_lng: number | null
           plates: string | null
           status: string
           transit_type: string
@@ -679,10 +683,14 @@ export type Database = {
           departure_airport?: string | null
           departure_time?: string | null
           destination: string
+          destination_lat?: number | null
+          destination_lng?: number | null
           eta: string
           flight_number?: string | null
           id?: string
           origin: string
+          origin_lat?: number | null
+          origin_lng?: number | null
           plates?: string | null
           status?: string
           transit_type: string
@@ -699,10 +707,14 @@ export type Database = {
           departure_airport?: string | null
           departure_time?: string | null
           destination?: string
+          destination_lat?: number | null
+          destination_lng?: number | null
           eta?: string
           flight_number?: string | null
           id?: string
           origin?: string
+          origin_lat?: number | null
+          origin_lng?: number | null
           plates?: string | null
           status?: string
           transit_type?: string
@@ -792,6 +804,8 @@ export type Database = {
           show_name_on_map: boolean | null
           speed: number | null
           transit_destination: string | null
+          transit_destination_lat: number | null
+          transit_destination_lng: number | null
           updated_at: string | null
           user_id: string | null
         }

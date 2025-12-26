@@ -714,6 +714,107 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     });
   }, [locations, mapReady]);
 
+  // Draw transit routes for users in transit with destination coordinates
+  const transitRoutesRef = useRef<Map<string, L.Polyline>>(new Map());
+  
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady) return;
+    const map = mapInstanceRef.current;
+
+    // Get users in transit with valid destination coordinates
+    const transitUsers = locations.filter(
+      loc => loc.is_in_transit && 
+             loc.transit_destination_lat && 
+             loc.transit_destination_lng
+    );
+
+    // Remove old transit routes
+    transitRoutesRef.current.forEach((polyline, key) => {
+      if (!transitUsers.find(u => `transit-route-${u.user_id}` === key)) {
+        map.removeLayer(polyline);
+        transitRoutesRef.current.delete(key);
+      }
+    });
+
+    // Add/update transit routes
+    transitUsers.forEach((loc) => {
+      const key = `transit-route-${loc.user_id}`;
+      const existingRoute = transitRoutesRef.current.get(key);
+      
+      const userPos: [number, number] = [loc.lat, loc.lng];
+      const destPos: [number, number] = [loc.transit_destination_lat!, loc.transit_destination_lng!];
+
+      if (existingRoute) {
+        existingRoute.setLatLngs([userPos, destPos]);
+      } else {
+        // Create dashed line from current position to destination
+        const polyline = L.polyline([userPos, destPos], {
+          color: '#f59e0b',
+          weight: 3,
+          opacity: 0.7,
+          dashArray: '10, 10',
+          lineCap: 'round',
+        }).addTo(map);
+
+        // Add destination marker
+        const destMarker = L.marker(destPos, {
+          icon: L.divIcon({
+            className: 'transit-destination-marker',
+            html: `
+              <div style="
+                width: 24px;
+                height: 24px;
+                background: #f59e0b;
+                border: 2px solid #0a0a0a;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+              ">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3" fill="#fff"/>
+                </svg>
+              </div>
+            `,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+          }),
+          zIndexOffset: 100,
+        }).addTo(map);
+
+        const displayName = loc.display_name ? sanitize(loc.display_name) : 'Usuario';
+        const destName = loc.transit_destination ? sanitize(loc.transit_destination) : 'Destino';
+        
+        destMarker.bindPopup(`
+          <div style="text-align: center; padding: 4px;">
+            <div style="font-size: 12px; font-weight: 600; color: #f59e0b;">📍 Destino</div>
+            <div style="font-size: 14px; font-weight: 500; margin-top: 4px;">${destName}</div>
+            <div style="font-size: 11px; color: #666; margin-top: 2px;">
+              Viaje de ${displayName}
+            </div>
+          </div>
+        `);
+
+        // Store polyline and marker together (use polyline as main reference)
+        transitRoutesRef.current.set(key, polyline);
+        markersRef.current.set(`${key}-dest`, destMarker);
+      }
+    });
+
+    // Clean up destination markers for removed routes
+    markersRef.current.forEach((marker, key) => {
+      if (key.includes('transit-route-') && key.endsWith('-dest')) {
+        const routeKey = key.replace('-dest', '');
+        if (!transitRoutesRef.current.has(routeKey)) {
+          map.removeLayer(marker);
+          markersRef.current.delete(key);
+        }
+      }
+    });
+  }, [locations, mapReady]);
+
   // Update help 14 markers
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;

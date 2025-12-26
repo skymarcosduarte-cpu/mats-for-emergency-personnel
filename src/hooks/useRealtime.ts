@@ -20,6 +20,8 @@ interface UserLocation {
   show_name_on_map: boolean | null;
   is_in_transit: boolean;
   transit_destination: string | null;
+  transit_destination_lat: number | null;
+  transit_destination_lng: number | null;
 }
 
 interface HelpRequest {
