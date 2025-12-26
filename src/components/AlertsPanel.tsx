@@ -38,6 +38,8 @@ interface PanicEvent {
   lng: number;
   resolved: boolean;
   created_at: string;
+  audio_url?: string | null;
+  audio_duration_ms?: number | null;
 }
 
 interface HelpRequest {

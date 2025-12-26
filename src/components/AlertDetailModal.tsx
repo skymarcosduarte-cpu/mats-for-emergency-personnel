@@ -47,6 +47,8 @@ interface PanicEvent {
   responding_started_at?: string | null;
   arrived_at?: string | null;
   message?: string | null;
+  audio_url?: string | null;
+  audio_duration_ms?: number | null;
 }
 
 interface HelpRequest {
@@ -469,31 +471,31 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
           </Button>
         </section>
 
-        {/* Message (for help requests) */}
-        {!isPanic && (alert as HelpRequest).message && (
+        {/* Message (for both panic events and help requests) */}
+        {(alert as PanicEvent | HelpRequest).message && (
           <section className="bg-card rounded-lg p-4 border border-border">
             <h2 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" />
+              <MessageCircle className="w-4 h-4" />
               Mensaje
             </h2>
-            <p className="text-foreground">{(alert as HelpRequest).message}</p>
+            <p className="text-foreground">{(alert as PanicEvent | HelpRequest).message}</p>
           </section>
         )}
 
-        {/* Voice Recording (for help requests with audio) */}
-        {!isPanic && (alert as HelpRequest).audio_url && (
+        {/* Voice Recording (for alerts with audio) */}
+        {(alert as PanicEvent | HelpRequest).audio_url && (
           <section className="bg-card rounded-lg p-4 border border-border">
             <h2 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
               <Mic className="w-4 h-4" />
               Nota de Voz
-              {(alert as HelpRequest).audio_duration_ms && (
+              {(alert as PanicEvent | HelpRequest).audio_duration_ms && (
                 <Badge variant="secondary" className="text-xs">
-                  {Math.round((alert as HelpRequest).audio_duration_ms! / 1000)}s
+                  {Math.round((alert as PanicEvent | HelpRequest).audio_duration_ms! / 1000)}s
                 </Badge>
               )}
             </h2>
             <AudioPlayer 
-              storagePath={(alert as HelpRequest).audio_url!} 
+              storagePath={(alert as PanicEvent | HelpRequest).audio_url!} 
               className="w-full"
             />
           </section>

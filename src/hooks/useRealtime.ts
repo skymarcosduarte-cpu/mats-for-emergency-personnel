@@ -421,6 +421,8 @@ interface PanicEvent {
   resolved: boolean;
   created_at: string;
   resolved_at: string | null;
+  audio_url: string | null;
+  audio_duration_ms: number | null;
 }
 
 export function usePanicEvents() {
@@ -479,7 +481,7 @@ export function usePanicEvents() {
   return { events, resolveEvent, refetch: fetchEvents };
 }
 
-// Hook for tracking responders - gets location of users who are responding to help requests
+// Hook for tracking responders - gets location of users who are responding to help requests AND panic events
 interface ActiveResponder {
   request_id: string;
   responder_id: string;
@@ -498,33 +500,113 @@ export function useActiveResponders() {
   const [responders, setResponders] = useState<ActiveResponder[]>([]);
 
   const fetchResponders = useCallback(async () => {
-    // First, try to get responders from the new table
-    const { data: respondersData } = await supabase
+    const activeRespondersList: ActiveResponder[] = [];
+
+    // ====== HELP REQUESTS RESPONDERS ======
+    const { data: helpRespondersData } = await supabase
       .from('help_request_responders')
       .select('request_id, user_id, lat, lng, started_at, arrived_at, updated_at');
 
-    // Get help request details for active (unresolved) requests
-    const { data: helpData, error: helpError } = await supabase
+    const { data: helpData } = await supabase
       .from('help_requests')
       .select('id, lat, lng, responding_by, responding_started_at')
       .eq('resolved', false);
 
-    if (helpError || !helpData) return;
+    if (helpData) {
+      // Process responders from the help_request_responders table
+      if (helpRespondersData && helpRespondersData.length > 0) {
+        const activeRequestIds = helpData.map(h => h.id);
+        const activeResponders = helpRespondersData.filter(r => activeRequestIds.includes(r.request_id));
+        const responderIds = activeResponders.map(r => r.user_id);
 
-    const activeRespondersList: ActiveResponder[] = [];
+        if (responderIds.length > 0) {
+          const { data: locData } = await supabase
+            .from('user_locations')
+            .select('user_id, lat, lng, speed')
+            .in('user_id', responderIds);
 
-    // Process responders from the new table
-    if (respondersData && respondersData.length > 0) {
-      // Get active request IDs
-      const activeRequestIds = helpData.map(h => h.id);
-      
-      // Filter responders to only those for active requests
-      const activeResponders = respondersData.filter(r => 
-        activeRequestIds.includes(r.request_id)
+          for (const responder of activeResponders) {
+            const helpRequest = helpData.find(h => h.id === responder.request_id);
+            if (!helpRequest) continue;
+
+            const loc = locData?.find(l => l.user_id === responder.user_id);
+            const responderLat = responder.lat || loc?.lat;
+            const responderLng = responder.lng || loc?.lng;
+
+            if (responderLat == null || responderLng == null) continue;
+
+            const distanceKm = calculateDistance(responderLat, responderLng, helpRequest.lat, helpRequest.lng);
+            const speedKmh = loc?.speed ? (loc.speed * 3.6) : 30;
+            const etaMinutes = speedKmh > 0 ? (distanceKm / speedKmh) * 60 : null;
+
+            activeRespondersList.push({
+              request_id: responder.request_id,
+              responder_id: responder.user_id,
+              responder_lat: responderLat,
+              responder_lng: responderLng,
+              emergency_lat: helpRequest.lat,
+              emergency_lng: helpRequest.lng,
+              responding_started_at: responder.started_at,
+              speed: loc?.speed || null,
+              distance_km: distanceKm,
+              eta_minutes: etaMinutes,
+              arrived_at: responder.arrived_at,
+            });
+          }
+        }
+      }
+
+      // Fallback: legacy responding_by field
+      const legacyResponders = helpData.filter(h => 
+        h.responding_by && !activeRespondersList.some(ar => ar.request_id === h.id && ar.responder_id === h.responding_by)
       );
 
-      // Get responder user IDs for location lookup
-      const responderIds = activeResponders.map(r => r.user_id);
+      if (legacyResponders.length > 0) {
+        const legacyIds = legacyResponders.map(h => h.responding_by).filter(Boolean) as string[];
+        const { data: locData } = await supabase
+          .from('user_locations')
+          .select('user_id, lat, lng, speed')
+          .in('user_id', legacyIds);
+
+        for (const h of legacyResponders) {
+          const loc = locData?.find(l => l.user_id === h.responding_by);
+          if (!loc) continue;
+
+          const distanceKm = calculateDistance(loc.lat, loc.lng, h.lat, h.lng);
+          const speedKmh = loc.speed ? (loc.speed * 3.6) : 30;
+          const etaMinutes = speedKmh > 0 ? (distanceKm / speedKmh) * 60 : null;
+
+          activeRespondersList.push({
+            request_id: h.id,
+            responder_id: h.responding_by!,
+            responder_lat: loc.lat,
+            responder_lng: loc.lng,
+            emergency_lat: h.lat,
+            emergency_lng: h.lng,
+            responding_started_at: h.responding_started_at!,
+            speed: loc.speed,
+            distance_km: distanceKm,
+            eta_minutes: etaMinutes,
+            arrived_at: null,
+          });
+        }
+      }
+    }
+
+    // ====== PANIC EVENTS RESPONDERS ======
+    const { data: panicRespondersData } = await supabase
+      .from('panic_event_responders')
+      .select('panic_id, user_id, lat, lng, started_at, arrived_at, updated_at');
+
+    const { data: panicData } = await supabase
+      .from('panic_events')
+      .select('id, lat, lng, responding_by, responding_started_at')
+      .eq('resolved', false);
+
+    if (panicData && panicRespondersData && panicRespondersData.length > 0) {
+      const activePanicIds = panicData.map(p => p.id);
+      const activePanicResponders = panicRespondersData.filter(r => activePanicIds.includes(r.panic_id));
+      const responderIds = activePanicResponders.map(r => r.user_id);
 
       if (responderIds.length > 0) {
         const { data: locData } = await supabase
@@ -532,34 +614,27 @@ export function useActiveResponders() {
           .select('user_id, lat, lng, speed')
           .in('user_id', responderIds);
 
-        for (const responder of activeResponders) {
-          const helpRequest = helpData.find(h => h.id === responder.request_id);
-          if (!helpRequest) continue;
+        for (const responder of activePanicResponders) {
+          const panicEvent = panicData.find(p => p.id === responder.panic_id);
+          if (!panicEvent) continue;
 
-          // Use responder table location first, fallback to user_locations
           const loc = locData?.find(l => l.user_id === responder.user_id);
           const responderLat = responder.lat || loc?.lat;
           const responderLng = responder.lng || loc?.lng;
 
           if (responderLat == null || responderLng == null) continue;
 
-          const distanceKm = calculateDistance(
-            responderLat,
-            responderLng,
-            helpRequest.lat,
-            helpRequest.lng
-          );
-
+          const distanceKm = calculateDistance(responderLat, responderLng, panicEvent.lat, panicEvent.lng);
           const speedKmh = loc?.speed ? (loc.speed * 3.6) : 30;
           const etaMinutes = speedKmh > 0 ? (distanceKm / speedKmh) * 60 : null;
 
           activeRespondersList.push({
-            request_id: responder.request_id,
+            request_id: responder.panic_id, // Using request_id field for both types
             responder_id: responder.user_id,
             responder_lat: responderLat,
             responder_lng: responderLng,
-            emergency_lat: helpRequest.lat,
-            emergency_lng: helpRequest.lng,
+            emergency_lat: panicEvent.lat,
+            emergency_lng: panicEvent.lng,
             responding_started_at: responder.started_at,
             speed: loc?.speed || null,
             distance_km: distanceKm,
@@ -570,41 +645,41 @@ export function useActiveResponders() {
       }
     }
 
-    // Fallback: Also check legacy responding_by field for backward compatibility
-    const legacyResponders = helpData.filter(h => 
-      h.responding_by && 
-      !activeRespondersList.some(ar => ar.request_id === h.id && ar.responder_id === h.responding_by)
-    );
+    // Fallback: legacy panic responding_by
+    if (panicData) {
+      const legacyPanicResponders = panicData.filter(p => 
+        p.responding_by && !activeRespondersList.some(ar => ar.request_id === p.id && ar.responder_id === p.responding_by)
+      );
 
-    if (legacyResponders.length > 0) {
-      const legacyIds = legacyResponders.map(h => h.responding_by).filter(Boolean) as string[];
-      
-      const { data: locData } = await supabase
-        .from('user_locations')
-        .select('user_id, lat, lng, speed')
-        .in('user_id', legacyIds);
+      if (legacyPanicResponders.length > 0) {
+        const legacyIds = legacyPanicResponders.map(p => p.responding_by).filter(Boolean) as string[];
+        const { data: locData } = await supabase
+          .from('user_locations')
+          .select('user_id, lat, lng, speed')
+          .in('user_id', legacyIds);
 
-      for (const h of legacyResponders) {
-        const loc = locData?.find(l => l.user_id === h.responding_by);
-        if (!loc) continue;
+        for (const p of legacyPanicResponders) {
+          const loc = locData?.find(l => l.user_id === p.responding_by);
+          if (!loc) continue;
 
-        const distanceKm = calculateDistance(loc.lat, loc.lng, h.lat, h.lng);
-        const speedKmh = loc.speed ? (loc.speed * 3.6) : 30;
-        const etaMinutes = speedKmh > 0 ? (distanceKm / speedKmh) * 60 : null;
+          const distanceKm = calculateDistance(loc.lat, loc.lng, p.lat, p.lng);
+          const speedKmh = loc.speed ? (loc.speed * 3.6) : 30;
+          const etaMinutes = speedKmh > 0 ? (distanceKm / speedKmh) * 60 : null;
 
-        activeRespondersList.push({
-          request_id: h.id,
-          responder_id: h.responding_by!,
-          responder_lat: loc.lat,
-          responder_lng: loc.lng,
-          emergency_lat: h.lat,
-          emergency_lng: h.lng,
-          responding_started_at: h.responding_started_at!,
-          speed: loc.speed,
-          distance_km: distanceKm,
-          eta_minutes: etaMinutes,
-          arrived_at: null,
-        });
+          activeRespondersList.push({
+            request_id: p.id,
+            responder_id: p.responding_by!,
+            responder_lat: loc.lat,
+            responder_lng: loc.lng,
+            emergency_lat: p.lat,
+            emergency_lng: p.lng,
+            responding_started_at: p.responding_started_at!,
+            speed: loc.speed,
+            distance_km: distanceKm,
+            eta_minutes: etaMinutes,
+            arrived_at: null,
+          });
+        }
       }
     }
 
@@ -614,34 +689,34 @@ export function useActiveResponders() {
   useEffect(() => {
     fetchResponders();
 
-    // Subscribe to help request updates (new responders)
+    // Subscribe to help request updates
     const helpChannel = supabase
       .channel('responders_help_changes')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'help_requests' },
-        () => fetchResponders()
-      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'help_requests' }, () => fetchResponders())
       .subscribe();
 
-    // Subscribe to user location updates (responder movement)
+    // Subscribe to user location updates
     const locationChannel = supabase
       .channel('responders_location_changes')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'user_locations' },
-        () => fetchResponders()
-      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user_locations' }, () => fetchResponders())
       .subscribe();
 
-    // Subscribe to the new responders table
-    const respondersChannel = supabase
+    // Subscribe to help_request_responders table
+    const helpRespondersChannel = supabase
       .channel('help_request_responders_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'help_request_responders' },
-        () => fetchResponders()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'help_request_responders' }, () => fetchResponders())
+      .subscribe();
+
+    // Subscribe to panic_events updates
+    const panicChannel = supabase
+      .channel('responders_panic_changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'panic_events' }, () => fetchResponders())
+      .subscribe();
+
+    // Subscribe to panic_event_responders table
+    const panicRespondersChannel = supabase
+      .channel('panic_event_responders_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'panic_event_responders' }, () => fetchResponders())
       .subscribe();
 
     // Refresh every 5 seconds for smoother updates
@@ -650,7 +725,9 @@ export function useActiveResponders() {
     return () => {
       supabase.removeChannel(helpChannel);
       supabase.removeChannel(locationChannel);
-      supabase.removeChannel(respondersChannel);
+      supabase.removeChannel(helpRespondersChannel);
+      supabase.removeChannel(panicChannel);
+      supabase.removeChannel(panicRespondersChannel);
       clearInterval(interval);
     };
   }, [fetchResponders]);

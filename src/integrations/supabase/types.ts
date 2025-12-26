@@ -425,6 +425,8 @@ export type Database = {
       panic_events: {
         Row: {
           arrived_at: string | null
+          audio_duration_ms: number | null
+          audio_url: string | null
           created_at: string | null
           id: string
           lat: number
@@ -440,6 +442,8 @@ export type Database = {
         }
         Insert: {
           arrived_at?: string | null
+          audio_duration_ms?: number | null
+          audio_url?: string | null
           created_at?: string | null
           id?: string
           lat: number
@@ -455,6 +459,8 @@ export type Database = {
         }
         Update: {
           arrived_at?: string | null
+          audio_duration_ms?: number | null
+          audio_url?: string | null
           created_at?: string | null
           id?: string
           lat?: number
