@@ -300,7 +300,7 @@ const createAmbulanceIcon = () => L.divIcon({
   popupAnchor: [0, -18],
 });
 
-// First aid kit icon for users with kit
+// First aid kit / Paramédico icon - GREEN for medical assistance
 const createFirstAidKitIcon = () => L.divIcon({
   className: 'firstaid-marker',
   html: `
@@ -316,21 +316,21 @@ const createFirstAidKitIcon = () => L.divIcon({
         position: absolute;
         width: 32px;
         height: 32px;
-        background: rgba(239, 68, 68, 0.2);
+        background: rgba(34, 197, 94, 0.3);
         border-radius: 50%;
         animation: pulseMedical 2s infinite;
       "></div>
       <div style="
         width: 24px;
         height: 24px;
-        background: #ef4444;
+        background: #22c55e;
         border: 2px solid white;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 1;
-        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
       ">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff">
           <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
@@ -640,7 +640,7 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
   const [isExpanded, setIsExpanded] = useState(false);
 
   const poiItems: { type: keyof POIVisibility; label: string; color: string; emoji: string }[] = [
-    { type: 'first_aid_kit', label: 'Botiquines', color: '#ef4444', emoji: '🩹' },
+    { type: 'first_aid_kit', label: 'Botiquines', color: '#22c55e', emoji: '🩹' },
     { type: 'ambulance', label: 'Ambulancias', color: '#ef4444', emoji: '🚑' },
     { type: 'hospital', label: 'Hospitales', color: '#ef4444', emoji: '🏥' },
     { type: 'gas_station', label: 'Gasolineras', color: '#f97316', emoji: '⛽' },
@@ -681,23 +681,33 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
             <span className="text-foreground">Paramédico/Botiquín</span>
           </div>
           
-          {/* Badge explanation */}
+          {/* Badge explanations */}
           <div className="flex items-start gap-2 bg-accent/30 p-2 rounded-md border border-border/50">
             <div className="relative flex-shrink-0 mt-0.5">
-              <div className="w-5 h-5 rounded-full" style={{ background: '#2e8b57' }} />
-              <div 
-                className="absolute -top-1 -right-1 w-3 h-3 rounded-full flex items-center justify-center" 
-                style={{ background: '#ef4444', border: '1px solid white' }}
-              >
-                <span style={{ fontSize: '8px' }}>🩹</span>
-              </div>
+              <div className="w-5 h-5 rounded-full" style={{ background: '#22c55e' }} />
+              <span style={{ fontSize: '10px', position: 'absolute', top: '-2px', right: '-2px' }}>🩹</span>
             </div>
             <div className="flex-1">
               <div className="text-[10px] font-medium text-foreground leading-tight">
-                Badge rojo con cruz = Botiquín disponible
+                Verde = Paramédico/Botiquín
               </div>
               <div className="text-[9px] text-muted-foreground leading-tight mt-0.5">
-                Indica que el usuario tiene kit de primeros auxilios
+                Puede brindar asistencia médica
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-start gap-2 bg-accent/30 p-2 rounded-md border border-border/50">
+            <div className="relative flex-shrink-0 mt-0.5">
+              <div className="w-5 h-5 rounded-full" style={{ background: '#ef4444' }} />
+              <span style={{ fontSize: '10px', position: 'absolute', top: '-2px', right: '-2px' }}>🚑</span>
+            </div>
+            <div className="flex-1">
+              <div className="text-[10px] font-medium text-foreground leading-tight">
+                Rojo = Ambulancia disponible
+              </div>
+              <div className="text-[9px] text-muted-foreground leading-tight mt-0.5">
+                Cuenta con vehículo de emergencia
               </div>
             </div>
           </div>
