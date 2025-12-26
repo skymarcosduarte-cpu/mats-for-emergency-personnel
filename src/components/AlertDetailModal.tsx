@@ -1,7 +1,7 @@
 // Full-screen Alert Detail Modal
 // Shows complete alert info with timestamp, location, and responder status
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   AlertTriangle, 
   X, 
@@ -12,7 +12,9 @@ import {
   User,
   Loader2,
   Trash2,
-  Phone
+  Phone,
+  HeartHandshake,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +22,8 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MedicalInfoBadge } from './MedicalInfoBadge';
 import { ResponderEtaCountdown } from './ResponderEtaCountdown';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface PanicEvent {
   id: string;
@@ -59,6 +63,12 @@ interface ActiveResponder {
   arrived_at: string | null;
 }
 
+interface GeoPosition {
+  lat: number;
+  lng: number;
+  accuracy?: number;
+}
+
 interface AlertDetailModalProps {
   alert: PanicEvent | HelpRequest | null;
   alertType: 'panic' | 'help' | null;
@@ -71,6 +81,9 @@ interface AlertDetailModalProps {
   isRescatista?: boolean;
   canDelete?: boolean;
   responders?: ActiveResponder[];
+  currentUserId?: string;
+  userPosition?: GeoPosition | null;
+  onRespond?: (requestId: string) => Promise<boolean>;
 }
 
 const PANIC_TYPE_CONFIG: Record<string, { label: string; emoji: string; color: string }> = {
@@ -87,6 +100,20 @@ const HELP_KIND_CONFIG: Record<string, { label: string; emoji: string; color: st
   'SISMO_DAMAGE': { label: 'Daños Reportados', emoji: '⚠️', color: 'bg-orange-500' },
 };
 
+// Calculate distance between two coordinates in km (Haversine formula)
+const calculateDistanceKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+const MAX_RESPONSE_RADIUS_KM = 10; // 10km radius
+
 export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   alert,
   alertType,
@@ -99,7 +126,37 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   isRescatista = false,
   canDelete = false,
   responders = [],
+  currentUserId,
+  userPosition,
+  onRespond,
 }) => {
+  const [isResponding, setIsResponding] = useState(false);
+  const [isWithinRadius, setIsWithinRadius] = useState<boolean | null>(null);
+  const [distanceToAlert, setDistanceToAlert] = useState<number | null>(null);
+
+  // Check if user is already responding
+  const isAlreadyResponding = currentUserId && responders.some(
+    r => r.responder_id === currentUserId && r.request_id === alert?.id
+  );
+
+  // Calculate distance when modal opens or position changes
+  useEffect(() => {
+    if (!alert || !userPosition) {
+      setIsWithinRadius(null);
+      setDistanceToAlert(null);
+      return;
+    }
+
+    const distance = calculateDistanceKm(
+      userPosition.lat,
+      userPosition.lng,
+      alert.lat,
+      alert.lng
+    );
+    setDistanceToAlert(distance);
+    setIsWithinRadius(distance <= MAX_RESPONSE_RADIUS_KM);
+  }, [alert, userPosition]);
+
   if (!isOpen || !alert) return null;
 
   const isPanic = alertType === 'panic';
@@ -119,10 +176,43 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
     window.location.href = `tel:${number}`;
   };
 
+  const handleRespond = async () => {
+    if (!onRespond || !alert || isPanic) return;
+    
+    setIsResponding(true);
+    try {
+      const success = await onRespond(alert.id);
+      if (success) {
+        toast({
+          title: "¡Respondiendo!",
+          description: "Has comenzado a responder a esta emergencia. Tu ubicación se compartirá con el solicitante.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo iniciar la respuesta. Verifica que estés dentro del radio de 10km.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('[AlertDetailModal] Error responding:', error);
+      toast({
+        title: "Error",
+        description: "Error al responder a la alerta",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResponding(false);
+    }
+  };
+
   // Get responders for this alert
   const alertResponders = responders.filter(r => r.request_id === alert.id);
   const hasResponders = alertResponders.length > 0;
   const arrivedResponders = alertResponders.filter(r => r.arrived_at);
+
+  // Show respond button for help requests if: is rescatista, not owner, not already responding, is within radius
+  const canRespond = !isPanic && isRescatista && !isOwner && !isAlreadyResponding && onRespond;
 
   return (
     <div 
@@ -350,8 +440,50 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
       </div>
 
       {/* Footer Actions */}
-      {canDelete && onDelete && (
-        <footer className="p-4 border-t border-border bg-card sticky bottom-0">
+      <footer className="p-4 border-t border-border bg-card sticky bottom-0 space-y-2">
+        {/* Respond Button for Rescatistas */}
+        {canRespond && (
+          <>
+            {isWithinRadius === false && (
+              <div className="flex items-center gap-2 text-warning bg-warning/10 rounded-lg p-3 mb-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span className="text-sm">
+                  Estás a {distanceToAlert?.toFixed(1)}km. Debes estar dentro de 10km para responder.
+                </span>
+              </div>
+            )}
+            <Button 
+              variant="default"
+              className="w-full touch-manipulation bg-primary hover:bg-primary/90"
+              onClick={handleRespond}
+              disabled={isResponding || !isWithinRadius || !userPosition}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              {isResponding ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <HeartHandshake className="w-4 h-4 mr-2" />
+              )}
+              {!userPosition 
+                ? 'Esperando ubicación...'
+                : isWithinRadius === false 
+                  ? 'Fuera de rango (10km)'
+                  : 'Responder a esta alerta'
+              }
+            </Button>
+          </>
+        )}
+
+        {/* Already Responding Badge */}
+        {isAlreadyResponding && (
+          <div className="flex items-center justify-center gap-2 text-primary bg-primary/10 rounded-lg p-3">
+            <HeartHandshake className="w-4 h-4" />
+            <span className="font-medium">Ya estás respondiendo a esta alerta</span>
+          </div>
+        )}
+
+        {/* Delete/Resolve Button */}
+        {canDelete && onDelete && (
           <Button 
             variant="destructive" 
             className="w-full touch-manipulation"
@@ -366,8 +498,8 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
             )}
             {isOwner ? 'Eliminar mi alerta' : 'Resolver alerta'}
           </Button>
-        </footer>
-      )}
+        )}
+      </footer>
     </div>
   );
 };

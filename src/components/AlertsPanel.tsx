@@ -68,6 +68,12 @@ interface ActiveResponder {
   arrived_at: string | null;
 }
 
+interface GeoPosition {
+  lat: number;
+  lng: number;
+  accuracy?: number;
+}
+
 interface AlertsPanelProps {
   panicEvents: PanicEvent[];
   helpRequests: HelpRequest[];
@@ -77,6 +83,8 @@ interface AlertsPanelProps {
   onResolveHelpRequest?: (requestId: string) => Promise<boolean>;
   onResolvePanicEvent?: (eventId: string) => Promise<boolean>;
   activeResponders?: ActiveResponder[];
+  userPosition?: GeoPosition | null;
+  onRespondToRequest?: (requestId: string) => Promise<boolean>;
 }
 
 const PANIC_TYPE_CONFIG: Record<string, { label: string; emoji: string; color: string; icon: React.ReactNode }> = {
@@ -102,6 +110,8 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
   onResolveHelpRequest,
   onResolvePanicEvent,
   activeResponders = [],
+  userPosition,
+  onRespondToRequest,
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -635,6 +645,9 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
         isRescatista={isRescatista}
         canDelete={selectedAlert ? canDelete(selectedAlert.user_id) : false}
         responders={activeResponders}
+        currentUserId={currentUserId}
+        userPosition={userPosition}
+        onRespond={onRespondToRequest}
       />
     </>
   );
