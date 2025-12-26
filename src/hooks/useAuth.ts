@@ -18,6 +18,7 @@ interface Profile {
   medical_conditions: string | null;
   current_medications: string | null;
   emergency_medical_notes: string | null;
+  show_name_on_map: boolean;
   created_at: string;
   updated_at: string;
 }

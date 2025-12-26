@@ -16,6 +16,8 @@ interface UserLocation {
   is_online: boolean;
   updated_at: string;
   role: 'RESCATISTA' | 'FAMILIAR';
+  display_name: string | null;
+  show_name_on_map: boolean | null;
 }
 
 interface HelpRequest {

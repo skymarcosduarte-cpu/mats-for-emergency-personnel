@@ -429,6 +429,7 @@ export type Database = {
           medical_conditions: string | null
           nickname: string
           phone: string
+          show_name_on_map: boolean
           specialty: string | null
           updated_at: string | null
         }
@@ -446,6 +447,7 @@ export type Database = {
           medical_conditions?: string | null
           nickname: string
           phone: string
+          show_name_on_map?: boolean
           specialty?: string | null
           updated_at?: string | null
         }
@@ -463,6 +465,7 @@ export type Database = {
           medical_conditions?: string | null
           nickname?: string
           phone?: string
+          show_name_on_map?: boolean
           specialty?: string | null
           updated_at?: string | null
         }
@@ -779,11 +782,13 @@ export type Database = {
       user_locations_with_roles: {
         Row: {
           accuracy: number | null
+          display_name: string | null
           heading: number | null
           is_online: boolean | null
           lat: number | null
           lng: number | null
           role: Database["public"]["Enums"]["app_role"] | null
+          show_name_on_map: boolean | null
           speed: number | null
           updated_at: string | null
           user_id: string | null

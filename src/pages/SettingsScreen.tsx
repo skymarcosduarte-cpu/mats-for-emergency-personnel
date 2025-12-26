@@ -895,7 +895,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </CardContent>
         </Card>
 
-        {/* Security Info */}
+        {/* Privacy Settings */}
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -903,12 +903,51 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               Privacidad
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Tu información personal (nombre, teléfono, apodo) nunca se muestra en el 
-              mapa ni es visible para otros usuarios. Solo se muestra tu icono M.A.T.S. 
-              sin identificadores personales.
-            </p>
+          <CardContent className="space-y-4">
+            {/* Show name on map toggle */}
+            <div className="flex items-center justify-between py-2">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center",
+                  profile?.show_name_on_map ? "bg-primary/10" : "bg-muted"
+                )}>
+                  {profile?.show_name_on_map ? (
+                    <Eye className="w-5 h-5 text-primary" />
+                  ) : (
+                    <EyeOff className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="show-name-map" className="text-foreground font-medium">
+                    Mostrar nombre en el mapa
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {profile?.show_name_on_map 
+                      ? 'Tu apodo es visible para otros usuarios'
+                      : 'Solo se ve tu icono, sin nombre'}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="show-name-map"
+                checked={profile?.show_name_on_map ?? true}
+                onCheckedChange={async (checked) => {
+                  await updateProfile({ show_name_on_map: checked });
+                }}
+              />
+            </div>
+
+            <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Shield className="w-4 h-4 text-primary" />
+                Ubicación siempre activa
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Tu ubicación se comparte en tiempo real con la red M.A.T.S. para tu seguridad. 
+                Esto permite que la comunidad pueda localizarte en caso de emergencia y protegerte 
+                de situaciones de riesgo como secuestros.
+              </p>
+            </div>
           </CardContent>
         </Card>
 
