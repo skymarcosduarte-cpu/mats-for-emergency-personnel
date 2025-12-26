@@ -15,7 +15,8 @@ import {
   Phone,
   HeartHandshake,
   AlertCircle,
-  XCircle
+  XCircle,
+  MapPinCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -86,6 +87,7 @@ interface AlertDetailModalProps {
   userPosition?: GeoPosition | null;
   onRespond?: (requestId: string) => Promise<boolean>;
   onCancelResponse?: () => Promise<void>;
+  onMarkAsArrived?: () => Promise<boolean>;
 }
 
 const PANIC_TYPE_CONFIG: Record<string, { label: string; emoji: string; color: string }> = {
@@ -132,15 +134,22 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   userPosition,
   onRespond,
   onCancelResponse,
+  onMarkAsArrived,
 }) => {
   const [isResponding, setIsResponding] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isMarkingArrived, setIsMarkingArrived] = useState(false);
   const [isWithinRadius, setIsWithinRadius] = useState<boolean | null>(null);
   const [distanceToAlert, setDistanceToAlert] = useState<number | null>(null);
 
   // Check if user is already responding
   const isAlreadyResponding = currentUserId && responders.some(
     r => r.responder_id === currentUserId && r.request_id === alert?.id
+  );
+
+  // Check if user has already arrived
+  const hasArrived = currentUserId && responders.some(
+    r => r.responder_id === currentUserId && r.request_id === alert?.id && r.arrived_at
   );
 
   // Calculate distance when modal opens or position changes
@@ -481,11 +490,60 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
         {/* Already Responding - Show status and cancel button */}
         {isAlreadyResponding && (
           <div className="space-y-2">
-            <div className="flex items-center justify-center gap-2 text-primary bg-primary/10 rounded-lg p-3">
-              <HeartHandshake className="w-4 h-4" />
-              <span className="font-medium">Ya estás respondiendo a esta alerta</span>
-            </div>
-            {onCancelResponse && (
+            {hasArrived ? (
+              <div className="flex items-center justify-center gap-2 text-green-600 bg-green-500/10 rounded-lg p-3">
+                <MapPinCheck className="w-4 h-4" />
+                <span className="font-medium">Ya llegaste al lugar</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-center gap-2 text-primary bg-primary/10 rounded-lg p-3">
+                  <HeartHandshake className="w-4 h-4" />
+                  <span className="font-medium">Ya estás respondiendo a esta alerta</span>
+                </div>
+                
+                {/* Mark as Arrived Button */}
+                {onMarkAsArrived && (
+                  <Button 
+                    variant="default"
+                    className="w-full touch-manipulation bg-green-600 hover:bg-green-700"
+                    onClick={async () => {
+                      setIsMarkingArrived(true);
+                      try {
+                        const success = await onMarkAsArrived();
+                        if (success) {
+                          toast({
+                            title: "¡Llegaste!",
+                            description: "Has marcado tu llegada al lugar de la emergencia.",
+                          });
+                        }
+                      } catch (error) {
+                        console.error('[AlertDetailModal] Error marking as arrived:', error);
+                        toast({
+                          title: "Error",
+                          description: "No se pudo marcar tu llegada",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIsMarkingArrived(false);
+                      }
+                    }}
+                    disabled={isMarkingArrived}
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
+                  >
+                    {isMarkingArrived ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <MapPinCheck className="w-4 h-4 mr-2" />
+                    )}
+                    Llegué al lugar
+                  </Button>
+                )}
+              </>
+            )}
+            
+            {/* Cancel Response Button */}
+            {onCancelResponse && !hasArrived && (
               <Button 
                 variant="outline"
                 className="w-full touch-manipulation border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
