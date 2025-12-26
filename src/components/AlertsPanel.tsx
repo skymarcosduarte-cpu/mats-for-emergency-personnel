@@ -344,6 +344,14 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                     <span className="w-2 h-2 rounded-full bg-panic animate-pulse" />
                     Alertas SOS Activas ({panicEvents.length})
                   </h3>
+                  
+                  {/* Hint for own alerts - swipe instruction */}
+                  {panicEvents.some(e => isOwner(e.user_id)) && (
+                    <div className="mb-2 px-2 py-1.5 bg-primary/10 rounded-lg border border-primary/20 flex items-center gap-2">
+                      <span className="text-xs text-primary">👈 Desliza tus alertas para eliminar o usa el botón 🗑️</span>
+                    </div>
+                  )}
+                  
                   <div className="space-y-2">
                     {panicEvents.map((event) => {
                       const config = PANIC_TYPE_CONFIG[event.panic_type] || {
@@ -357,7 +365,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                       const alertContent = (
                         <div
                           className={`border p-3 transition-colors cursor-pointer ${
-                            isMyAlert ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border'
+                            isMyAlert ? 'border-primary bg-primary/5 ring-2 ring-primary/30' : 'border-border'
                           } ${isMyAlert ? 'rounded-none' : 'rounded-lg bg-card hover:bg-accent/50 active:bg-accent'}`}
                           onClick={() => openAlertDetail(event, 'panic')}
                           onTouchEnd={(e) => {
@@ -421,21 +429,34 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                             </Button>
                             <MedicalInfoBadge userId={event.user_id} isRescatista={isRescatista} />
                             
-                            {/* Delete button fallback (owner + rescatistas) */}
+                            {/* Delete button - MORE PROMINENT for owner */}
                             {canDelete(event.user_id) && onResolvePanicEvent && (
                               <Button
                                 size="sm"
-                                variant="ghost"
-                                className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 touch-manipulation"
-                                onClick={() => handleDeleteClick(event.id, 'panic')}
+                                variant={isMyAlert ? "destructive" : "ghost"}
+                                className={`h-8 text-xs touch-manipulation ${
+                                  isMyAlert 
+                                    ? 'px-3 gap-1.5' 
+                                    : 'text-destructive hover:text-destructive hover:bg-destructive/10'
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(event.id, 'panic');
+                                }}
                                 onTouchEnd={(e) => {
                                   e.preventDefault();
+                                  e.stopPropagation();
                                   handleDeleteClick(event.id, 'panic');
                                 }}
                                 disabled={deletingId === event.id}
                                 style={{ WebkitTapHighlightColor: 'transparent' }}
                               >
-                                <Trash2 className="w-3 h-3" />
+                                {deletingId === event.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-3 h-3" />
+                                )}
+                                {isMyAlert && 'Eliminar'}
                               </Button>
                             )}
                           </div>
@@ -472,6 +493,14 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                     <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
                     Solicitudes de Ayuda ({helpRequests.filter(r => r.kind === 'SISMO_AYUDA_14').length})
                   </h3>
+                  
+                  {/* Hint for own alerts - swipe instruction */}
+                  {helpRequests.some(r => r.kind === 'SISMO_AYUDA_14' && isOwner(r.user_id)) && (
+                    <div className="mb-2 px-2 py-1.5 bg-primary/10 rounded-lg border border-primary/20 flex items-center gap-2">
+                      <span className="text-xs text-primary">👈 Desliza tus alertas para eliminar o usa el botón 🗑️</span>
+                    </div>
+                  )}
+                  
                   <div className="space-y-2">
                     {helpRequests
                       .filter(r => r.kind === 'SISMO_AYUDA_14')
@@ -486,7 +515,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                         const alertContent = (
                           <div
                             className={`border p-3 transition-colors cursor-pointer ${
-                              isMyAlert ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border'
+                              isMyAlert ? 'border-primary bg-primary/5 ring-2 ring-primary/30' : 'border-border'
                             } ${isMyAlert ? 'rounded-none' : 'rounded-lg bg-card hover:bg-accent/50 active:bg-accent'}`}
                             onClick={() => openAlertDetail(request, 'help')}
                             onTouchEnd={(e) => {
@@ -551,20 +580,34 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                               <MedicalInfoBadge userId={request.user_id} isRescatista={isRescatista} />
                               
                               {/* Delete button fallback (owner + rescatistas) */}
+                              {/* Delete button - MORE PROMINENT for owner */}
                               {canDelete(request.user_id) && onResolveHelpRequest && (
                                 <Button
                                   size="sm"
-                                  variant="ghost"
-                                  className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 touch-manipulation"
-                                  onClick={() => handleDeleteClick(request.id, 'help')}
+                                  variant={isMyAlert ? "destructive" : "ghost"}
+                                  className={`h-8 text-xs touch-manipulation ${
+                                    isMyAlert 
+                                      ? 'px-3 gap-1.5' 
+                                      : 'text-destructive hover:text-destructive hover:bg-destructive/10'
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteClick(request.id, 'help');
+                                  }}
                                   onTouchEnd={(e) => {
                                     e.preventDefault();
+                                    e.stopPropagation();
                                     handleDeleteClick(request.id, 'help');
                                   }}
                                   disabled={deletingId === request.id}
                                   style={{ WebkitTapHighlightColor: 'transparent' }}
                                 >
-                                  <Trash2 className="w-3 h-3" />
+                                  {deletingId === request.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-3 h-3" />
+                                  )}
+                                  {isMyAlert && 'Eliminar'}
                                 </Button>
                               )}
                             </div>
