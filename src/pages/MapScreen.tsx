@@ -593,6 +593,28 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
             <div className="w-4 h-4 rounded-full" style={{ background: '#22c55e' }} />
             <span className="text-foreground">Médico/Botiquín</span>
           </div>
+          
+          {/* Badge explanation */}
+          <div className="flex items-start gap-2 bg-accent/30 p-2 rounded-md border border-border/50">
+            <div className="relative flex-shrink-0 mt-0.5">
+              <div className="w-5 h-5 rounded-full" style={{ background: '#2e8b57' }} />
+              <div 
+                className="absolute -top-1 -right-1 w-3 h-3 rounded-full flex items-center justify-center" 
+                style={{ background: '#ef4444', border: '1px solid white' }}
+              >
+                <span style={{ fontSize: '8px' }}>🩹</span>
+              </div>
+            </div>
+            <div className="flex-1">
+              <div className="text-[10px] font-medium text-foreground leading-tight">
+                Badge rojo con cruz = Botiquín disponible
+              </div>
+              <div className="text-[9px] text-muted-foreground leading-tight mt-0.5">
+                Indica que el usuario tiene kit de primeros auxilios
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full animate-pulse" style={{ background: '#ef4444' }} />
             <span className="text-foreground">Alerta SOS</span>
