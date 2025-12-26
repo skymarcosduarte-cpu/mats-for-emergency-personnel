@@ -180,8 +180,8 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
 
   const isProcessingAny = isGettingLocation || selectedType !== null;
 
-  // Prevent Android/iOS "same-tap" from opening and immediately closing the Dialog
-  const handleDialogOpenChange = (open: boolean) => {
+  // Prevent Android/iOS "same-tap" from opening and immediately closing the Dialog/Drawer
+  const handleOpenChange = (open: boolean) => {
     if (isProcessingAny) return;
 
     if (!open) {
@@ -335,7 +335,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
 
   if (isMobile) {
     return (
-      <Drawer open={isOpen} onOpenChange={(open) => !isProcessingAny && setIsOpen(open)}>
+      <Drawer open={isOpen} onOpenChange={handleOpenChange}>
         <DrawerContent className="bg-card border-border relative max-h-[85vh] overflow-y-auto">
           {content}
         </DrawerContent>
@@ -344,7 +344,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md bg-card border-border relative max-h-[85vh] overflow-y-auto">
         {content}
       </DialogContent>
