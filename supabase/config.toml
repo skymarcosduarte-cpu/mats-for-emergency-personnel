@@ -1,1 +1,4 @@
 project_id = "vpanwarxvueuylfnipmd"
+
+[functions.notify-nearby-report]
+verify_jwt = true
