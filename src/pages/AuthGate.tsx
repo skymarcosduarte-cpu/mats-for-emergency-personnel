@@ -87,10 +87,25 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     }
   }, [user, isProfileComplete, onAuthComplete]);
 
+  // Email validation helper
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const forgotPasswordEmailError = forgotPasswordEmail.trim() && !isValidEmail(forgotPasswordEmail)
+    ? 'Ingresa un email válido (ej: usuario@dominio.com)'
+    : null;
+
   // Handle forgot password
   const handleForgotPassword = async () => {
     if (!forgotPasswordEmail.trim()) {
       setError('Ingresa tu email');
+      return;
+    }
+
+    if (!isValidEmail(forgotPasswordEmail)) {
+      setError('El formato del email no es válido');
       return;
     }
 
@@ -693,8 +708,12 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                   value={forgotPasswordEmail}
                   onChange={(e) => setForgotPasswordEmail(e.target.value)}
                   placeholder="tu@email.com"
-                  onKeyDown={(e) => e.key === 'Enter' && handleForgotPassword()}
+                  onKeyDown={(e) => e.key === 'Enter' && !forgotPasswordEmailError && handleForgotPassword()}
+                  className={forgotPasswordEmailError ? 'border-destructive' : ''}
                 />
+                {forgotPasswordEmailError && (
+                  <p className="text-xs text-destructive mt-1">{forgotPasswordEmailError}</p>
+                )}
               </div>
               
               <div className="flex gap-2">
@@ -707,7 +726,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                 </Button>
                 <Button 
                   onClick={handleForgotPassword} 
-                  disabled={forgotPasswordLoading}
+                  disabled={forgotPasswordLoading || !!forgotPasswordEmailError || !forgotPasswordEmail.trim()}
                   className="flex-1"
                 >
                   {forgotPasswordLoading ? (
