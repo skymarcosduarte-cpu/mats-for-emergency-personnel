@@ -316,7 +316,12 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
           
           {/* Mini Map Preview */}
           <div className="mb-4">
-            <MiniMap lat={alert.lat} lng={alert.lng} />
+            <MiniMap 
+              lat={alert.lat} 
+              lng={alert.lng} 
+              userLat={userPosition?.lat}
+              userLng={userPosition?.lng}
+            />
           </div>
           
           <div className="space-y-2 mb-4">
