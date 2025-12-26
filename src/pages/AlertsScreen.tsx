@@ -74,7 +74,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     isResponding, 
     startResponding, 
     stopResponding,
-    markAsArrived 
+    markAsArrived,
+    markAsResolved 
   } = useEmergencyResponse();
   const { responders } = useActiveResponders();
   const { 
@@ -884,8 +885,20 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                             <>
                               {activeResponse?.requestId === req.id ? (
                                 <>
-                                  {/* Mark as Arrived button - show if not already arrived */}
-                                  {!(req as any).arrived_at && (
+                                  {/* Show different buttons based on arrival status */}
+                                  {(req as any).arrived_at ? (
+                                    // After arrived: show Resolve button
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      className="bg-success hover:bg-success/90"
+                                      onClick={markAsResolved}
+                                    >
+                                      <Check className="w-4 h-4 mr-1" />
+                                      Resolver
+                                    </Button>
+                                  ) : (
+                                    // Before arrived: show Llegué button
                                     <Button
                                       variant="default"
                                       size="sm"
