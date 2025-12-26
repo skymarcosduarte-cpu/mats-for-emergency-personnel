@@ -41,6 +41,7 @@ export function useUpdateCheck() {
   const [checkFailed, setCheckFailed] = useState(false);
   const intervalRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
+  const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
 
   // Subscribe to global state changes
   useEffect(() => {
@@ -51,7 +52,7 @@ export function useUpdateCheck() {
     };
   }, []);
 
-  // Safe update check with timeout
+  // Safe update check with timeout - stable reference
   const performUpdateCheck = useCallback(async (reg: ServiceWorkerRegistration, showToastOnError = false) => {
     if (!isMountedRef.current) return;
     
@@ -78,7 +79,7 @@ export function useUpdateCheck() {
         }
       }
     }
-  }, []);
+  }, []); // Empty deps - relies only on refs and external functions
 
   // Initialize and check for updates with safe timeout
   useEffect(() => {
@@ -101,8 +102,8 @@ export function useUpdateCheck() {
         );
 
         if (!isMountedRef.current) return;
-
         setRegistration(reg);
+        registrationRef.current = reg;
 
         // Check for updates on mount with timeout
         await performUpdateCheck(reg, false);
@@ -160,7 +161,7 @@ export function useUpdateCheck() {
       }
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
     };
-  }, [performUpdateCheck]);
+  }, []); // Empty deps - only run once on mount
 
   const applyUpdate = useCallback(() => {
     // Always reload after attempting to activate the waiting worker.
