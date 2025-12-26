@@ -93,7 +93,7 @@ interface AlertsPanelProps {
 }
 
 const PANIC_TYPE_CONFIG: Record<string, { label: string; emoji: string; color: string; icon: React.ReactNode }> = {
-  'AMBULANCIA_PROPIA': { label: 'Ambulancia Propia', emoji: '🚑', color: 'bg-red-500', icon: <Ambulance className="w-4 h-4" /> },
+  'AMBULANCIA_PROPIA': { label: 'Ambulancia para mí', emoji: '🚑', color: 'bg-red-500', icon: <Ambulance className="w-4 h-4" /> },
   'AMBULANCIA_TERCERO': { label: 'Ambulancia Tercero', emoji: '🚑', color: 'bg-red-500', icon: <Ambulance className="w-4 h-4" /> },
   'PATRULLA': { label: 'Patrulla', emoji: '🚔', color: 'bg-blue-500', icon: <Shield className="w-4 h-4" /> },
   'MECANICO': { label: 'Mecánico', emoji: '🔧', color: 'bg-yellow-500', icon: <Wrench className="w-4 h-4" /> },

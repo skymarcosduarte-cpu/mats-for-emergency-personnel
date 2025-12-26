@@ -1191,7 +1191,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const existingMarker = markersRef.current.get(key);
 
       const typeLabels: Record<string, string> = {
-        'AMBULANCIA_PROPIA': '🚑 Ambulancia Propia',
+        'AMBULANCIA_PROPIA': '🚑 Ambulancia para mí',
         'AMBULANCIA_TERCERO': '🚑 Ambulancia Tercero',
         'PATRULLA': '🚔 Patrulla',
         'MECANICO': '🔧 Mecánico',

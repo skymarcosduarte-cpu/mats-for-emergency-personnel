@@ -19,7 +19,7 @@ interface ActiveAlert {
 }
 
 const PANIC_TYPE_LABELS: Record<string, { label: string; emoji: string }> = {
-  'AMBULANCIA_PROPIA': { label: 'Ambulancia', emoji: '🚑' },
+  'AMBULANCIA_PROPIA': { label: 'Ambulancia para mí', emoji: '🚑' },
   'AMBULANCIA_TERCERO': { label: 'Ambulancia', emoji: '🚑' },
   'PATRULLA': { label: 'Patrulla', emoji: '🚔' },
   'MECANICO': { label: 'Mecánico', emoji: '🔧' },

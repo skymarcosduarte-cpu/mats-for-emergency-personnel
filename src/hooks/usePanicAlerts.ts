@@ -30,7 +30,7 @@ interface HelpRequest {
 }
 
 const PANIC_TYPE_LABELS: Record<string, { label: string; emoji: string }> = {
-  'AMBULANCIA_PROPIA': { label: 'Ambulancia Propia', emoji: '🚑' },
+  'AMBULANCIA_PROPIA': { label: 'Ambulancia para mí', emoji: '🚑' },
   'AMBULANCIA_TERCERO': { label: 'Ambulancia Tercero', emoji: '🚑' },
   'PATRULLA': { label: 'Patrulla', emoji: '🚔' },
   'MECANICO': { label: 'Mecánico', emoji: '🔧' },
@@ -44,7 +44,7 @@ const HELP_KIND_LABELS: Record<string, { label: string; emoji: string }> = {
   'shelter': { label: 'Refugio', emoji: '🏠' },
   'other': { label: 'Ayuda General', emoji: '🤝' },
   'SISMO_AYUDA_14': { label: 'Ayuda por Sismo', emoji: '🏚️' },
-  'AMBULANCIA_PROPIA': { label: 'Ambulancia Propia', emoji: '🚑' },
+  'AMBULANCIA_PROPIA': { label: 'Ambulancia para mí', emoji: '🚑' },
   'AMBULANCIA_TERCERO': { label: 'Ambulancia Tercero', emoji: '🚑' },
   'PATRULLA': { label: 'Patrulla', emoji: '🚔' },
   'MECANICO': { label: 'Mecánico', emoji: '🔧' },
@@ -72,10 +72,19 @@ export function usePanicAlerts() {
   const [latestEmergencyAlert, setLatestEmergencyAlert] = useState<EmergencyAlertData | null>(null);
   const notifiedIds = useRef<Set<string>>(new Set());
 
-  // Request notification permission on mount
+  // Request notification permission on mount - log for debugging
   useEffect(() => {
+    console.log('[usePanicAlerts] Notification support check:', {
+      notificationSupported: 'Notification' in window,
+      permission: 'Notification' in window ? Notification.permission : 'N/A',
+      userAgent: navigator.userAgent,
+    });
+    
     if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+      console.log('[usePanicAlerts] Requesting notification permission...');
+      Notification.requestPermission().then(result => {
+        console.log('[usePanicAlerts] Permission result:', result);
+      });
     }
   }, []);
 
@@ -112,6 +121,12 @@ export function usePanicAlerts() {
     lat: number,
     lng: number
   ) => {
+    console.log('[usePanicAlerts] Attempting browser notification:', { 
+      title, 
+      notificationSupported: 'Notification' in window,
+      permission: 'Notification' in window ? Notification.permission : 'N/A'
+    });
+    
     if ('Notification' in window && Notification.permission === 'granted') {
       try {
         const notification = new Notification(title, {
@@ -131,11 +146,17 @@ export function usePanicAlerts() {
           notification.close();
         };
 
+        console.log('[usePanicAlerts] Notification created successfully');
         return true;
       } catch (error) {
-        console.error('Browser notification error:', error);
+        console.error('[usePanicAlerts] Browser notification error:', error);
         return false;
       }
+    } else {
+      console.warn('[usePanicAlerts] Notifications not available:', {
+        supported: 'Notification' in window,
+        permission: 'Notification' in window ? Notification.permission : 'N/A'
+      });
     }
     return false;
   }, [getGoogleMapsLink]);
