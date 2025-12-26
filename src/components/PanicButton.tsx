@@ -1,7 +1,7 @@
 // Panic Button FAB Component for COMUNIDAD EX SOS
 
 import React, { useState } from 'react';
-import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users } from 'lucide-react';
+import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users, MapPin, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -85,6 +85,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
 }) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<PanicType | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const { position, getCurrentPosition, loading: locationLoading } = useLocation();
   const { contacts, getSOSWhatsAppUrls, hasMinimumContacts } = useEmergencyContactsDB();
 
@@ -109,6 +110,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
 
   const handlePanicSelect = async (option: PanicOption) => {
     setSelectedType(option.type);
+    setIsGettingLocation(true);
 
     // Open a placeholder window immediately (user gesture) to bypass Android popup blockers.
     // We will redirect it once we have the GPS + message.
@@ -121,10 +123,6 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
 
     // Immediate feedback: vibration + toast
     vibrate([200, 100, 200, 100, 300]); // SOS-style pattern
-    toast.info(`Enviando alerta: ${option.label}`, {
-      duration: 4000,
-      icon: '🚨',
-    });
 
     let lat = position?.lat;
     let lng = position?.lng;
@@ -139,10 +137,13 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         console.error('Failed to get position:', error);
         toast.error('No se pudo obtener tu ubicación.');
         setSelectedType(null);
+        setIsGettingLocation(false);
         waWindow?.close();
         return;
       }
     }
+    
+    setIsGettingLocation(false);
 
     // Notify parent component
     onPanicTriggered?.(option.type, lat, lng);
@@ -184,9 +185,27 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
     }
   };
 
+  const isProcessingAny = isGettingLocation || selectedType !== null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md bg-card border-border">
+    <Dialog open={isOpen} onOpenChange={(open) => !isProcessingAny && setIsOpen(open)}>
+      <DialogContent className="sm:max-w-md bg-card border-border relative overflow-hidden">
+        {/* Full-screen loading overlay */}
+        {isGettingLocation && (
+          <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-200">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full bg-panic/20 flex items-center justify-center">
+                <MapPin className="w-10 h-10 text-panic animate-pulse" />
+              </div>
+              <div className="absolute inset-0 rounded-full border-4 border-panic border-t-transparent animate-spin" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-foreground">Obteniendo ubicación GPS...</p>
+              <p className="text-sm text-muted-foreground mt-1">Por favor espera un momento</p>
+            </div>
+          </div>
+        )}
+
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <AlertTriangle className="w-5 h-5 text-panic" />
