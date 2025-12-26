@@ -375,36 +375,51 @@ export type Database = {
       }
       profiles: {
         Row: {
+          allergies: string | null
           birthday: string | null
+          blood_type: string | null
           can_provide_medical_assistance: boolean | null
           created_at: string | null
+          current_medications: string | null
+          emergency_medical_notes: string | null
           full_name: string
           has_first_aid_kit: boolean | null
           id: string
+          medical_conditions: string | null
           nickname: string
           phone: string
           specialty: string | null
           updated_at: string | null
         }
         Insert: {
+          allergies?: string | null
           birthday?: string | null
+          blood_type?: string | null
           can_provide_medical_assistance?: boolean | null
           created_at?: string | null
+          current_medications?: string | null
+          emergency_medical_notes?: string | null
           full_name: string
           has_first_aid_kit?: boolean | null
           id: string
+          medical_conditions?: string | null
           nickname: string
           phone: string
           specialty?: string | null
           updated_at?: string | null
         }
         Update: {
+          allergies?: string | null
           birthday?: string | null
+          blood_type?: string | null
           can_provide_medical_assistance?: boolean | null
           created_at?: string | null
+          current_medications?: string | null
+          emergency_medical_notes?: string | null
           full_name?: string
           has_first_aid_kit?: boolean | null
           id?: string
+          medical_conditions?: string | null
           nickname?: string
           phone?: string
           specialty?: string | null

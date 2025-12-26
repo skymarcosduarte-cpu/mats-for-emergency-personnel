@@ -13,6 +13,11 @@ interface Profile {
   birthday: string | null;
   can_provide_medical_assistance: boolean;
   has_first_aid_kit: boolean;
+  blood_type: string | null;
+  allergies: string | null;
+  medical_conditions: string | null;
+  current_medications: string | null;
+  emergency_medical_notes: string | null;
   created_at: string;
   updated_at: string;
 }
