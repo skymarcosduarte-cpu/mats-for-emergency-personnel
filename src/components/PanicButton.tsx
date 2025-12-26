@@ -195,32 +195,39 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         </DialogHeader>
         
         <div className="grid gap-3 py-4">
-          {PANIC_OPTIONS.map((option) => (
-            <Button
-              key={option.type}
-              variant="outline"
-              className="h-16 justify-start gap-4 text-left border-border hover:bg-muted hover:border-panic/50 transition-all touch-manipulation active:scale-98"
-              onClick={() => {
-                console.log('[PanicButton] Option clicked:', option.type);
-                handlePanicSelect(option);
-              }}
-              onTouchEnd={(e) => {
-                console.log('[PanicButton] Option touchEnd:', option.type);
-                e.preventDefault();
-                handlePanicSelect(option);
-              }}
-              disabled={locationLoading && selectedType === option.type}
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <div className="w-12 h-12 rounded-lg bg-panic/10 flex items-center justify-center text-panic pointer-events-none">
-                {option.icon}
-              </div>
-              <div className="pointer-events-none">
-                <div className="font-semibold text-foreground">{option.label}</div>
-                <div className="text-xs text-muted-foreground">Envía alerta con ubicación GPS</div>
-              </div>
-            </Button>
-          ))}
+          {PANIC_OPTIONS.map((option) => {
+            const isProcessing = locationLoading && selectedType === option.type;
+            return (
+              <Button
+                key={option.type}
+                variant="outline"
+                className="h-16 justify-start gap-4 text-left border-border hover:bg-muted hover:border-panic/50 transition-all touch-manipulation active:scale-95"
+                onClick={() => {
+                  console.log('[PanicButton] Option clicked:', option.type);
+                  if (!isProcessing) handlePanicSelect(option);
+                }}
+                disabled={isProcessing}
+                style={{ 
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                }}
+              >
+                <div className="w-12 h-12 rounded-lg bg-panic/10 flex items-center justify-center text-panic pointer-events-none">
+                  {isProcessing ? (
+                    <div className="w-5 h-5 border-2 border-panic border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    option.icon
+                  )}
+                </div>
+                <div className="pointer-events-none">
+                  <div className="font-semibold text-foreground">{option.label}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {isProcessing ? 'Obteniendo ubicación...' : 'Envía alerta con ubicación GPS'}
+                  </div>
+                </div>
+              </Button>
+            );
+          })}
         </div>
 
         {userRole === 'FAMILIAR' && (
