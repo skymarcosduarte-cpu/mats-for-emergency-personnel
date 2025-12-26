@@ -19,7 +19,6 @@ interface AppHeaderProps {
 
 export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
   const lastActivatedAtRef = useRef(0);
-  const isProcessingRef = useRef(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
@@ -27,18 +26,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
     // Prevent double-triggers within 500ms
     const now = Date.now();
     if (now - lastActivatedAtRef.current < 500) {
-      return;
-    }
-    
-    if (isProcessingRef.current) {
+      console.log('[AppHeader] Trigger skipped - too soon');
       return;
     }
     
     lastActivatedAtRef.current = now;
-    isProcessingRef.current = true;
+    console.log('[AppHeader] Panic triggered');
     
     // Visual feedback only
     setShowFeedback(true);
+    setTimeout(() => setShowFeedback(false), 300);
     
     // Haptic feedback (non-blocking)
     try {
@@ -49,17 +46,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
       // Ignore vibration errors
     }
     
-    // Show confirmation dialog (sound will play on confirm)
+    // Show confirmation dialog
     setShowConfirmation(true);
-    
-    // Reset states after short delay
-    setTimeout(() => {
-      setShowFeedback(false);
-      isProcessingRef.current = false;
-    }, 300);
   }, []);
 
   const handleConfirm = useCallback(() => {
+    console.log('[AppHeader] Confirm clicked');
     // Close dialog first to prevent any blocking
     setShowConfirmation(false);
     
@@ -87,41 +79,26 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
   }, [onPanicClick]);
 
   const handleCancel = useCallback(() => {
+    console.log('[AppHeader] Cancel clicked');
     setShowConfirmation(false);
   }, []);
 
-  // Unified touch/pointer handler for cross-platform compatibility
-  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
-    console.log('[AppHeader] PointerDown:', e.pointerType);
-    // Mark the start time for all pointer types
-    lastActivatedAtRef.current = -Date.now(); // Negative to mark as "in progress"
-  }, []);
-
-  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
-    console.log('[AppHeader] PointerUp:', e.pointerType);
-    
-    // Only trigger if we had a corresponding pointerdown
-    if (lastActivatedAtRef.current >= 0) {
-      console.log('[AppHeader] No matching pointerdown, skipping');
-      return;
-    }
-    
-    e.preventDefault();
-    e.stopPropagation();
+  // Simple touch handler for iOS compatibility
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLButtonElement>) => {
+    console.log('[AppHeader] TouchEnd');
+    e.preventDefault(); // Prevent ghost clicks on iOS
     triggerPanic();
   }, [triggerPanic]);
 
-  // Fallback click handler for devices that don't support pointer events well
+  // Fallback click handler for non-touch devices
   const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    console.log('[AppHeader] Click detected, lastActivated:', lastActivatedAtRef.current);
-    
-    // If pointer events handled it, skip
-    const timeSinceLastActivation = Date.now() - Math.abs(lastActivatedAtRef.current);
-    if (lastActivatedAtRef.current !== 0 && timeSinceLastActivation < 1000) {
-      console.log('[AppHeader] Click skipped - recent pointer/activation detected');
+    // Check if this was from a touch (if so, touchend already handled it)
+    const now = Date.now();
+    if (now - lastActivatedAtRef.current < 300) {
+      console.log('[AppHeader] Click skipped - touchend just handled it');
       return;
     }
-    
+    console.log('[AppHeader] Click');
     e.preventDefault();
     triggerPanic();
   }, [triggerPanic]);
@@ -132,9 +109,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
         <MatsLogo size={36} showText />
         
         <button
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={() => { lastActivatedAtRef.current = 0; }}
+          onTouchEnd={handleTouchEnd}
           onClick={handleClick}
           className="relative flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-panic to-red-600 text-white shadow-lg shadow-panic/40 touch-manipulation select-none active:scale-95 transition-all hover:shadow-panic/60"
           aria-label="Botón de pánico - SOS"
