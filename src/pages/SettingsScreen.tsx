@@ -29,7 +29,8 @@ import {
   EyeOff,
   Droplets,
   Pill,
-  FileHeart
+  FileHeart,
+  Wifi
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,6 +49,7 @@ import {
 import { MatsLogo } from '@/components/MatsLogo';
 import { EmergencyContactsManager } from '@/components/EmergencyContactsManager';
 import { AppFooter } from '@/components/AppFooter';
+import { ConnectionStatusIndicator } from '@/components/ConnectionStatusIndicator';
 import { APP_VERSION, BUILD_TIME, getFullVersionString } from '@/lib/versionCheck';
 import { useAuth } from '@/hooks/useAuth';
 import { UpdateButton } from '@/components/UpdatePrompt';
@@ -357,6 +359,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 </span>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Connection Status */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wifi className="w-5 h-5" />
+              Estado de Conexión
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ConnectionStatusIndicator />
           </CardContent>
         </Card>
 
