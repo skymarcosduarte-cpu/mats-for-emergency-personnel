@@ -2,6 +2,7 @@ import React, { useRef, useCallback, useState } from 'react';
 import { MatsLogo } from './MatsLogo';
 import { AlertTriangle, Phone } from 'lucide-react';
 import { playUrgentSound } from '@/lib/alertSound';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +42,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
     } catch {
       // Ignore vibration errors
     }
+
+    // Brief toast to confirm touch was detected
+    toast('SOS: confirmar', {
+      duration: 1500,
+      icon: '🆘',
+    });
 
     // Show confirmation dialog
     setShowConfirmation(true);
