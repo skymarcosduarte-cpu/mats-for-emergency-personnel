@@ -322,8 +322,19 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         )}
       </div>
 
-      <Tabs defaultValue="earthquakes" className="p-4">
+      <Tabs defaultValue="help" className="p-4">
         <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="help" className="relative text-xs px-1 font-semibold">
+            🆘 Comunidad
+            {helpRequests.filter(r => !r.resolved).length > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] animate-pulse"
+              >
+                {helpRequests.filter(r => !r.resolved).length}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="earthquakes" className="text-xs px-1">Sismos</TabsTrigger>
           <TabsTrigger value="mexico" className="relative text-xs px-1">
             México
@@ -347,7 +358,6 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="help" className="text-xs px-1">Ayuda</TabsTrigger>
           <TabsTrigger value="notifications" className="relative text-xs px-1">
             Avisos
             {unreadCount > 0 && (
