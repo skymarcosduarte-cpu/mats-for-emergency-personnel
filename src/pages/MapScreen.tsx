@@ -310,7 +310,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
       console.error('[MapScreen] Help request not found:', requestId);
       return false;
     }
-    return await startResponding(requestId, request.lat, request.lng);
+    return await startResponding(requestId, request.lat, request.lng, isRescatista);
   }, [helpRequests, startResponding]);
 
   // Default center (Mexico City)

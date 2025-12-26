@@ -934,7 +934,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                                 <Button
                                   variant="secondary"
                                   size="sm"
-                                  onClick={() => startResponding(req.id, req.lat, req.lng)}
+                                  onClick={() => startResponding(req.id, req.lat, req.lng, userRole === 'RESCATISTA')}
                                 >
                                   <Navigation className="w-4 h-4 mr-1" />
                                   Responder

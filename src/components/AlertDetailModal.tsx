@@ -172,9 +172,10 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   );
 
   // Calculate distance when modal opens or position changes
+  // RESCATISTAS can respond regardless of distance
   useEffect(() => {
     if (!alert || !userPosition) {
-      setIsWithinRadius(null);
+      setIsWithinRadius(isRescatista ? true : null);
       setDistanceToAlert(null);
       return;
     }
@@ -186,8 +187,9 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
       alert.lng
     );
     setDistanceToAlert(distance);
-    setIsWithinRadius(distance <= MAX_RESPONSE_RADIUS_KM);
-  }, [alert, userPosition]);
+    // RESCATISTAS can always respond, regardless of distance
+    setIsWithinRadius(isRescatista ? true : distance <= MAX_RESPONSE_RADIUS_KM);
+  }, [alert, userPosition, isRescatista]);
 
   if (!isOpen || !alert) return null;
 
@@ -506,7 +508,7 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
         {/* Respond Button for Rescatistas */}
         {canRespond && (
           <>
-            {isWithinRadius === false && (
+            {!isRescatista && isWithinRadius === false && (
               <div className="flex items-center gap-2 text-warning bg-warning/10 rounded-lg p-3 mb-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span className="text-sm">
@@ -514,11 +516,19 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
                 </span>
               </div>
             )}
+            {isRescatista && distanceToAlert && distanceToAlert > MAX_RESPONSE_RADIUS_KM && (
+              <div className="flex items-center gap-2 text-muted-foreground bg-muted/50 rounded-lg p-3 mb-2">
+                <MapPin className="w-4 h-4 flex-shrink-0" />
+                <span className="text-sm">
+                  Distancia: {distanceToAlert.toFixed(1)}km (sin límite para RESCATISTAS)
+                </span>
+              </div>
+            )}
             <Button 
               variant="default"
               className="w-full touch-manipulation bg-primary hover:bg-primary/90"
               onClick={handleRespond}
-              disabled={isResponding || !isWithinRadius || !userPosition}
+              disabled={isResponding || (!isRescatista && !isWithinRadius) || !userPosition}
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               {isResponding ? (
@@ -528,7 +538,7 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
               )}
               {!userPosition 
                 ? 'Esperando ubicación...'
-                : isWithinRadius === false 
+                : !isRescatista && isWithinRadius === false 
                   ? 'Fuera de rango (10km)'
                   : 'Responder a esta alerta'
               }

@@ -52,10 +52,12 @@ export function useEmergencyResponse() {
   };
 
   // Start responding to a help request
+  // skipRadiusCheck: if true, allows responding regardless of distance (for RESCATISTAS)
   const startResponding = useCallback(async (
     requestId: string, 
     requestLat: number, 
-    requestLng: number
+    requestLng: number,
+    skipRadiusCheck: boolean = false
   ) => {
     if (!user) {
       toast.error('Debes iniciar sesión para responder');
@@ -74,13 +76,15 @@ export function useEmergencyResponse() {
       const responderLat = position.coords.latitude;
       const responderLng = position.coords.longitude;
 
-      // Check if user is within radius
-      const distance = calculateDistance(responderLat, responderLng, requestLat, requestLng);
-      if (distance > MAX_RESPONSE_RADIUS) {
-        toast.error('Estás demasiado lejos para responder a esta alerta', {
-          description: `Distancia: ${(distance / 1000).toFixed(1)} km (máximo ${MAX_RESPONSE_RADIUS / 1000} km)`,
-        });
-        return false;
+      // Check if user is within radius (skip for RESCATISTAS)
+      if (!skipRadiusCheck) {
+        const distance = calculateDistance(responderLat, responderLng, requestLat, requestLng);
+        if (distance > MAX_RESPONSE_RADIUS) {
+          toast.error('Estás demasiado lejos para responder a esta alerta', {
+            description: `Distancia: ${(distance / 1000).toFixed(1)} km (máximo ${MAX_RESPONSE_RADIUS / 1000} km)`,
+          });
+          return false;
+        }
       }
 
       // Insert into the responders table
