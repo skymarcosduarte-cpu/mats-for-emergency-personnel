@@ -644,7 +644,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   } = usePanicResponse();
   const { pois, loading: poisLoading, fetchPOIs } = usePOIs();
   
-  const isRescatista = role === 'RESCATISTA';
+  const isRescatista = role === 'SOS_ACTIVO' || role === 'EX_SOS';
   const currentUserId = user?.id;
 
   // Check if any POI type is enabled
@@ -838,11 +838,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     activeLocations.forEach((loc) => {
       const key = `user-${loc.user_id}`;
       const existingMarker = markersRef.current.get(key);
-      const isRescatista = loc.role === 'RESCATISTA';
+      const isSosActivo = loc.role === 'SOS_ACTIVO' || loc.role === 'EX_SOS';
       const isInTransit = loc.is_in_transit;
       const isMe = loc.user_id === currentUserId;
       
-      // Priority: Transit > Rescatista > Familiar
+      // Priority: Transit > SOS Activo/EX-SOS > Familiar
       let icon;
       let roleLabel;
       let bgColor;
@@ -853,11 +853,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         roleLabel = 'En tránsito';
         bgColor = '#f59e0b';
         badgeColor = '#f59e0b';
-      } else if (isRescatista) {
+      } else if (isSosActivo) {
         icon = createRescatistaIcon(isMe);
-        roleLabel = 'RESCATISTA';
-        bgColor = '#3b82f6';
-        badgeColor = '#3b82f6';
+        roleLabel = loc.role === 'SOS_ACTIVO' ? 'SOS ACTIVO' : 'EX-SOS';
+        bgColor = loc.role === 'SOS_ACTIVO' ? '#22c55e' : '#3b82f6';
+        badgeColor = loc.role === 'SOS_ACTIVO' ? '#22c55e' : '#3b82f6';
       } else {
         icon = createFamiliarIcon(isMe);
         roleLabel = 'FAMILIAR';

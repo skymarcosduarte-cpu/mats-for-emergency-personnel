@@ -15,7 +15,7 @@ interface UserLocation {
   speed: number | null;
   is_online: boolean;
   updated_at: string;
-  role: 'RESCATISTA' | 'FAMILIAR';
+  role: 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR';
   display_name: string | null;
   show_name_on_map: boolean | null;
   is_in_transit: boolean;

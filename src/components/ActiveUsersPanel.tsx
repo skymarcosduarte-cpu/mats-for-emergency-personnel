@@ -11,7 +11,7 @@ interface UserLocationSummary {
   user_id: string;
   lat: number;
   lng: number;
-  role: 'RESCATISTA' | 'FAMILIAR' | null;
+  role: 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR' | null;
   is_in_transit: boolean;
   transit_destination: string | null;
   updated_at: string | null;
@@ -46,7 +46,7 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
     return `${diffHrs}h`;
   };
 
-  const getRoleBadge = (role: 'RESCATISTA' | 'FAMILIAR' | null, isInTransit: boolean) => {
+  const getRoleBadge = (role: 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR' | null, isInTransit: boolean) => {
     if (isInTransit) {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white">
@@ -54,10 +54,17 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
         </span>
       );
     }
-    if (role === 'RESCATISTA') {
+    if (role === 'SOS_ACTIVO') {
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500 text-white">
-          ☆ RESCATISTA
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-mats-green text-white">
+          ☆ SOS ACTIVO
+        </span>
+      );
+    }
+    if (role === 'EX_SOS') {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-primary text-white">
+          🎖️ EX-SOS
         </span>
       );
     }
@@ -68,9 +75,10 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
     );
   };
 
-  const getRoleIcon = (role: 'RESCATISTA' | 'FAMILIAR' | null, isInTransit: boolean) => {
+  const getRoleIcon = (role: 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR' | null, isInTransit: boolean) => {
     if (isInTransit) return '🚗';
-    if (role === 'RESCATISTA') return '☆';
+    if (role === 'SOS_ACTIVO') return '☆';
+    if (role === 'EX_SOS') return '🎖️';
     return '👤';
   };
 
@@ -83,17 +91,19 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
     return (now - updatedMs) < STALE_THRESHOLD_MS;
   });
 
-  // Sort: Rescatistas first, then transit, then familiar
+  // Sort: SOS Activo first, then EX-SOS, then transit, then familiar
   const sortedUsers = [...activeUsers].sort((a, b) => {
     const getPriority = (u: UserLocationSummary) => {
-      if (u.role === 'RESCATISTA') return 0;
-      if (u.is_in_transit) return 1;
-      return 2;
+      if (u.role === 'SOS_ACTIVO') return 0;
+      if (u.role === 'EX_SOS') return 1;
+      if (u.is_in_transit) return 2;
+      return 3;
     };
     return getPriority(a) - getPriority(b);
   });
 
-  const rescatistaCount = activeUsers.filter(u => u.role === 'RESCATISTA').length;
+  const sosActivoCount = activeUsers.filter(u => u.role === 'SOS_ACTIVO').length;
+  const exSosCount = activeUsers.filter(u => u.role === 'EX_SOS').length;
   const transitCount = activeUsers.filter(u => u.is_in_transit).length;
   const familiarCount = activeUsers.filter(u => u.role === 'FAMILIAR' && !u.is_in_transit).length;
 
@@ -135,10 +145,14 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                 </div>
                 <span className="font-semibold text-sm">{users.length} usuarios activos</span>
               </div>
-              <div className="flex gap-2 text-[10px] text-muted-foreground">
+              <div className="flex gap-2 text-[10px] text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-blue-500" />
-                  {rescatistaCount} Rescatistas
+                  <span className="w-2 h-2 rounded-full bg-mats-green" />
+                  {sosActivoCount} SOS Activo
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-primary" />
+                  {exSosCount} EX-SOS
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-amber-500" />

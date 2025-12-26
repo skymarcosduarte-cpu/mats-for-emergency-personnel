@@ -27,7 +27,7 @@ interface AuthState {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
-  role: 'RESCATISTA' | 'FAMILIAR' | null;
+  role: 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR' | null;
   loading: boolean;
   error: string | null;
 }
@@ -71,7 +71,7 @@ export function useAuth() {
       return null;
     }
     
-    return data?.role as 'RESCATISTA' | 'FAMILIAR' | null;
+    return data?.role as 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR' | null;
   }, []);
 
   // Initialize auth state
@@ -189,7 +189,7 @@ export function useAuth() {
     specialty: string | null;
     phone: string;
     birthday?: string;
-    role: 'RESCATISTA' | 'FAMILIAR';
+    role: 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR';
   }) => {
     if (!state.user) {
       return { error: new Error('Not authenticated') };
@@ -211,11 +211,11 @@ export function useAuth() {
       return { error: new Error(profileError.message) };
     }
 
-    // If role should be RESCATISTA, update it
-    if (profileData.role === 'RESCATISTA') {
+    // Update role if not FAMILIAR (default)
+    if (profileData.role !== 'FAMILIAR') {
       await supabase
         .from('user_roles')
-        .update({ role: 'RESCATISTA' })
+        .update({ role: profileData.role })
         .eq('user_id', state.user.id);
     }
 
@@ -251,7 +251,7 @@ export function useAuth() {
   };
 
   // Update user role
-  const updateRole = async (newRole: 'RESCATISTA' | 'FAMILIAR') => {
+  const updateRole = async (newRole: 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR') => {
     if (!state.user) {
       return { error: new Error('Not authenticated') };
     }

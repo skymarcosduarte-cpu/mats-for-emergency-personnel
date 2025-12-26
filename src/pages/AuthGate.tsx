@@ -59,7 +59,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     specialty: '',
     phone: '',
     birthday: '',
-    role: 'RESCATISTA' as 'RESCATISTA' | 'FAMILIAR',
+    role: 'SOS_ACTIVO' as 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR',
   });
 
   const { signUp, signIn, createProfile, user, isProfileComplete } = useAuth();
@@ -410,21 +410,36 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
               <div>
                 <Label>Tipo de usuario *</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="grid grid-cols-3 gap-2 mt-2">
                   <button
-                    onClick={() => setProfileForm({ ...profileForm, role: 'RESCATISTA' })}
+                    onClick={() => setProfileForm({ ...profileForm, role: 'SOS_ACTIVO' })}
                     className={cn(
                       'p-3 rounded-lg border-2 text-center transition-all',
-                      profileForm.role === 'RESCATISTA'
+                      profileForm.role === 'SOS_ACTIVO'
                         ? 'border-mats-green bg-mats-green/10'
                         : 'border-border hover:border-mats-green/50'
                     )}
                   >
                     <div className="text-2xl mb-1">🏥</div>
-                    <div className={cn('font-medium text-sm', profileForm.role === 'RESCATISTA' ? 'text-mats-green' : 'text-foreground')}>
-                      Rescatista
+                    <div className={cn('font-medium text-sm', profileForm.role === 'SOS_ACTIVO' ? 'text-mats-green' : 'text-foreground')}>
+                      SOS Activo
                     </div>
-                    <div className="text-xs text-muted-foreground">Paramédico / Ex-paramédico</div>
+                    <div className="text-xs text-muted-foreground">Paramédico activo</div>
+                  </button>
+                  <button
+                    onClick={() => setProfileForm({ ...profileForm, role: 'EX_SOS' })}
+                    className={cn(
+                      'p-3 rounded-lg border-2 text-center transition-all',
+                      profileForm.role === 'EX_SOS'
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-primary/50'
+                    )}
+                  >
+                    <div className="text-2xl mb-1">🎖️</div>
+                    <div className={cn('font-medium text-sm', profileForm.role === 'EX_SOS' ? 'text-primary' : 'text-foreground')}>
+                      EX-SOS
+                    </div>
+                    <div className="text-xs text-muted-foreground">Ex-paramédico</div>
                   </button>
                   <button
                     onClick={() => setProfileForm({ ...profileForm, role: 'FAMILIAR' })}

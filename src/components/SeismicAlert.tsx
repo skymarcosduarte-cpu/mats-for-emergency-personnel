@@ -35,7 +35,7 @@ export function SeismicAlert({
   earthquake,
   distanceKm,
   position,
-  userRole = 'RESCATISTA',
+  userRole = 'SOS_ACTIVO',
   onDismiss,
   onReported,
 }: SeismicAlertProps) {

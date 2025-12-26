@@ -912,7 +912,9 @@ export type Database = {
           user_id: string
         }[]
       }
+      is_ex_sos: { Args: { _user_id: string }; Returns: boolean }
       is_rescatista: { Args: { _user_id: string }; Returns: boolean }
+      is_sos_activo: { Args: { _user_id: string }; Returns: boolean }
       is_within_radius_of_panic: {
         Args: {
           panic_id: string
@@ -940,7 +942,7 @@ export type Database = {
       verify_report: { Args: { report_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "RESCATISTA" | "FAMILIAR"
+      app_role: "RESCATISTA" | "FAMILIAR" | "SOS_ACTIVO" | "EX_SOS"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1068,7 +1070,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["RESCATISTA", "FAMILIAR"],
+      app_role: ["RESCATISTA", "FAMILIAR", "SOS_ACTIVO", "EX_SOS"],
     },
   },
 } as const
