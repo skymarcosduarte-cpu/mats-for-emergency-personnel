@@ -126,7 +126,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
 
   return (
     <>
-      <header className="app-header sticky top-0 z-50">
+      <header className="app-header sticky top-0 z-[100]">
         <MatsLogo size={36} showText />
 
         <button
