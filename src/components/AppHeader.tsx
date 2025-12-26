@@ -1,6 +1,16 @@
 import React, { useRef, useCallback, useState } from 'react';
 import { MatsLogo } from './MatsLogo';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Phone } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface AppHeaderProps {
   onPanicClick: () => void;
@@ -10,6 +20,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
   const lastActivatedAtRef = useRef(0);
   const isProcessingRef = useRef(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const triggerPanic = useCallback(() => {
     // Prevent double-triggers within 500ms
@@ -35,20 +46,37 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
     // Immediate haptic feedback
     if ('vibrate' in navigator) {
       try {
-        navigator.vibrate(100);
+        navigator.vibrate([100, 50, 100]);
       } catch (e) {
         console.log('[AppHeader] Vibrate failed:', e);
       }
     }
     
-    // Call the callback
-    onPanicClick();
+    // Show confirmation dialog
+    setShowConfirmation(true);
     
     // Reset processing state after a delay
     setTimeout(() => {
       isProcessingRef.current = false;
     }, 500);
+  }, []);
+
+  const handleConfirm = useCallback(() => {
+    setShowConfirmation(false);
+    // Vibrate on confirm
+    if ('vibrate' in navigator) {
+      try {
+        navigator.vibrate([200, 100, 200]);
+      } catch (e) {
+        // Ignore
+      }
+    }
+    onPanicClick();
   }, [onPanicClick]);
+
+  const handleCancel = useCallback(() => {
+    setShowConfirmation(false);
+  }, []);
 
   // Unified touch handler for Android
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLButtonElement>) => {
@@ -77,30 +105,70 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
   }, [triggerPanic]);
 
   return (
-    <header className="app-header sticky top-0 z-50">
-      <MatsLogo size={36} showText />
-      
-      <button
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onClick={handleClick}
-        className="relative w-12 h-12 rounded-full bg-panic text-primary-foreground shadow-panic flex items-center justify-center touch-manipulation select-none active:scale-95 transition-transform"
-        aria-label="Botón de pánico"
-        type="button"
-        style={{ 
-          WebkitTapHighlightColor: 'transparent',
-          touchAction: 'manipulation',
-          userSelect: 'none',
-        }}
-      >
-        <AlertTriangle className="w-6 h-6 pointer-events-none" />
-        <span className="absolute inset-0 rounded-full border-2 border-panic animate-ping opacity-30 pointer-events-none" />
-        {/* Visual feedback overlay */}
-        {showFeedback && (
-          <span className="absolute inset-0 rounded-full bg-white/50 pointer-events-none animate-pulse" />
-        )}
-      </button>
-    </header>
+    <>
+      <header className="app-header sticky top-0 z-50">
+        <MatsLogo size={36} showText />
+        
+        <button
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onClick={handleClick}
+          className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-panic to-red-600 text-white shadow-lg shadow-panic/40 touch-manipulation select-none active:scale-95 transition-all hover:shadow-panic/60"
+          aria-label="Botón de pánico - SOS"
+          type="button"
+          style={{ 
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation',
+            userSelect: 'none',
+          }}
+        >
+          <AlertTriangle className="w-5 h-5 pointer-events-none" />
+          <span className="font-bold text-sm pointer-events-none">SOS</span>
+          
+          {/* Pulsing border effect */}
+          <span className="absolute inset-0 rounded-full border-2 border-white/50 animate-ping opacity-40 pointer-events-none" />
+          
+          {/* Visual feedback overlay */}
+          {showFeedback && (
+            <span className="absolute inset-0 rounded-full bg-white/30 pointer-events-none animate-pulse" />
+          )}
+        </button>
+      </header>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-panic/20 flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-panic" />
+              </div>
+            </div>
+            <AlertDialogTitle className="text-center text-xl">
+              ¿Necesitas ayuda de emergencia?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              Esto alertará a la comunidad y a tus contactos de emergencia con tu ubicación GPS.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <AlertDialogAction 
+              onClick={handleConfirm}
+              className="w-full bg-panic hover:bg-panic/90 text-white font-bold py-3"
+            >
+              <Phone className="w-4 h-4 mr-2" />
+              Sí, necesito ayuda
+            </AlertDialogAction>
+            <AlertDialogCancel 
+              onClick={handleCancel}
+              className="w-full"
+            >
+              Cancelar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
