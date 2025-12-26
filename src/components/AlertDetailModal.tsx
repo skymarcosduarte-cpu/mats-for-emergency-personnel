@@ -16,13 +16,15 @@ import {
   HeartHandshake,
   AlertCircle,
   XCircle,
-  MapPinCheck
+  MapPinCheck,
+  Mic
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MedicalInfoBadge } from './MedicalInfoBadge';
+import { AudioPlayer } from './AudioPlayer';
 import { ResponderEtaCountdown } from './ResponderEtaCountdown';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -49,6 +51,8 @@ interface HelpRequest {
   responding_by?: string | null;
   responding_started_at?: string | null;
   arrived_at?: string | null;
+  audio_url?: string | null;
+  audio_duration_ms?: number | null;
 }
 
 interface ActiveResponder {
@@ -347,6 +351,25 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
               Mensaje
             </h2>
             <p className="text-foreground">{(alert as HelpRequest).message}</p>
+          </section>
+        )}
+
+        {/* Voice Recording (for help requests with audio) */}
+        {!isPanic && (alert as HelpRequest).audio_url && (
+          <section className="bg-card rounded-lg p-4 border border-border">
+            <h2 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+              <Mic className="w-4 h-4" />
+              Nota de Voz
+              {(alert as HelpRequest).audio_duration_ms && (
+                <Badge variant="secondary" className="text-xs">
+                  {Math.round((alert as HelpRequest).audio_duration_ms! / 1000)}s
+                </Badge>
+              )}
+            </h2>
+            <AudioPlayer 
+              storagePath={(alert as HelpRequest).audio_url!} 
+              className="w-full"
+            />
           </section>
         )}
 

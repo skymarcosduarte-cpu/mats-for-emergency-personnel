@@ -52,6 +52,8 @@ interface HelpRequest {
   responding_by?: string | null;
   responding_started_at?: string | null;
   arrived_at?: string | null;
+  audio_url?: string | null;
+  audio_duration_ms?: number | null;
 }
 
 interface ActiveResponder {
