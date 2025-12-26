@@ -169,3 +169,58 @@ export function playUrgentAlert(): void {
   playUrgentSound();
   triggerUrgentVibration();
 }
+
+/**
+ * Play a positive, reassuring sound for good news (e.g., help is on the way)
+ * Uses ascending tones to convey hope/relief
+ */
+export function playPositiveSound(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
+
+  const now = ctx.currentTime;
+  
+  // Ascending three-tone sequence (hopeful/positive)
+  const frequencies = [523, 659, 784]; // C5, E5, G5 (major chord arpeggio)
+  const delays = [0, 0.15, 0.3];
+  
+  frequencies.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    osc.type = 'sine';
+    const startTime = now + delays[i];
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(0.18, startTime + 0.03);
+    gain.gain.linearRampToValueAtTime(0, startTime + 0.2);
+    osc.start(startTime);
+    osc.stop(startTime + 0.2);
+  });
+}
+
+/**
+ * Trigger a gentle reassuring vibration pattern
+ */
+export function triggerPositiveVibration(): void {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate([80, 80, 80, 80, 150]);
+    } catch (e) {
+      console.warn('Vibration not supported');
+    }
+  }
+}
+
+/**
+ * Play positive alert for good news (help arriving, resolved, etc.)
+ */
+export function playPositiveAlert(): void {
+  playPositiveSound();
+  triggerPositiveVibration();
+}
