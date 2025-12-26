@@ -17,7 +17,9 @@ import {
   AlertCircle,
   XCircle,
   MapPinCheck,
-  Mic
+  Mic,
+  CheckCircle2,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -92,7 +94,16 @@ interface AlertDetailModalProps {
   onRespond?: (requestId: string) => Promise<boolean>;
   onCancelResponse?: () => Promise<void>;
   onMarkAsArrived?: () => Promise<boolean>;
+  onResolve?: () => Promise<boolean>;
 }
+
+const CANCELLATION_REASONS = [
+  { value: 'help_arrived', label: 'Ya llegó ayuda', emoji: '✅' },
+  { value: 'not_needed', label: 'Ya no necesito ayuda', emoji: '👍' },
+  { value: 'moved', label: 'Me moví del lugar', emoji: '🚗' },
+  { value: 'false_alarm', label: 'Falsa alarma', emoji: '❌' },
+  { value: 'other', label: 'Otra razón', emoji: '📝' },
+];
 
 const PANIC_TYPE_CONFIG: Record<string, { label: string; emoji: string; color: string }> = {
   'AMBULANCIA_PROPIA': { label: 'Ambulancia Propia', emoji: '🚑', color: 'bg-red-500' },
@@ -139,10 +150,13 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   onRespond,
   onCancelResponse,
   onMarkAsArrived,
+  onResolve,
 }) => {
   const [isResponding, setIsResponding] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isMarkingArrived, setIsMarkingArrived] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
+  const [showCancelReasons, setShowCancelReasons] = useState(false);
   const [isWithinRadius, setIsWithinRadius] = useState<boolean | null>(null);
   const [distanceToAlert, setDistanceToAlert] = useState<number | null>(null);
 
@@ -514,9 +528,50 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
         {isAlreadyResponding && (
           <div className="space-y-2">
             {hasArrived ? (
-              <div className="flex items-center justify-center gap-2 text-green-600 bg-green-500/10 rounded-lg p-3">
-                <MapPinCheck className="w-4 h-4" />
-                <span className="font-medium">Ya llegaste al lugar</span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2 text-green-600 bg-green-500/10 rounded-lg p-3">
+                  <MapPinCheck className="w-4 h-4" />
+                  <span className="font-medium">Ya llegaste al lugar</span>
+                </div>
+                
+                {/* Resolve Button for arrived responders */}
+                {onResolve && (
+                  <Button 
+                    variant="default"
+                    className="w-full touch-manipulation bg-green-600 hover:bg-green-700"
+                    onClick={async () => {
+                      setIsResolving(true);
+                      try {
+                        const success = await onResolve();
+                        if (success) {
+                          toast({
+                            title: "¡Alerta resuelta!",
+                            description: "La emergencia ha sido marcada como resuelta.",
+                          });
+                          onClose();
+                        }
+                      } catch (error) {
+                        console.error('[AlertDetailModal] Error resolving:', error);
+                        toast({
+                          title: "Error",
+                          description: "No se pudo resolver la alerta",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIsResolving(false);
+                      }
+                    }}
+                    disabled={isResolving}
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
+                  >
+                    {isResolving ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                    )}
+                    Marcar como resuelta
+                  </Button>
+                )}
               </div>
             ) : (
               <>
@@ -603,8 +658,60 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
           </div>
         )}
 
-        {/* Delete/Resolve Button */}
-        {canDelete && onDelete && (
+        {/* Owner Cancel/Resolve Section */}
+        {isOwner && onDelete && (
+          <div className="space-y-2">
+            {!showCancelReasons ? (
+              <Button 
+                variant="outline"
+                className="w-full touch-manipulation border-destructive text-destructive hover:bg-destructive/10"
+                onClick={() => setShowCancelReasons(true)}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                <XCircle className="w-4 h-4 mr-2" />
+                Cancelar mi alerta
+                <ChevronDown className="w-4 h-4 ml-auto" />
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground text-center">¿Por qué cancelas?</p>
+                <div className="grid grid-cols-1 gap-2">
+                  {CANCELLATION_REASONS.map((reason) => (
+                    <Button
+                      key={reason.value}
+                      variant="outline"
+                      className="w-full justify-start touch-manipulation text-left"
+                      onClick={async () => {
+                        console.log('[AlertDetailModal] Cancelling with reason:', reason.value);
+                        await onDelete();
+                      }}
+                      disabled={isDeleting}
+                      style={{ WebkitTapHighlightColor: 'transparent' }}
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <span className="mr-2">{reason.emoji}</span>
+                      )}
+                      {reason.label}
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-muted-foreground"
+                  onClick={() => setShowCancelReasons(false)}
+                >
+                  Volver
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Rescatista Resolve Button (not owner) */}
+        {!isOwner && canDelete && onDelete && (
           <Button 
             variant="destructive" 
             className="w-full touch-manipulation"
@@ -615,9 +722,9 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
             {isDeleting ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
-              <Trash2 className="w-4 h-4 mr-2" />
+              <CheckCircle2 className="w-4 h-4 mr-2" />
             )}
-            {isOwner ? 'Eliminar mi alerta' : 'Resolver alerta'}
+            Resolver alerta
           </Button>
         )}
       </footer>
