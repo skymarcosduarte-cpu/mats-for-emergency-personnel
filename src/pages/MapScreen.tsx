@@ -34,27 +34,43 @@ L.Icon.Default.mergeOptions({
 // Custom icons
 // Star icon for FAMILIAR users (5-pointed star)
 const createFamiliarIcon = (isCurrentUser: boolean = false) => L.divIcon({
-  className: 'mats-marker familiar-marker',
+  className: `mats-marker familiar-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
   html: `
-    <div style="
-      width: 32px;
-      height: 32px;
-      background: #2e8b57;
-      border: 2px solid ${isCurrentUser ? '#fbbf24' : '#0a0a0a'};
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)'};
-      position: relative;
-    ">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M12 2L14 8H20L15 12L17 18L12 14L7 18L9 12L4 8H10L12 2Z" fill="#0a0a0a"/>
-      </svg>
+    <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : '32px'};">
       ${isCurrentUser ? `
         <div style="
           position: absolute;
-          bottom: -8px;
+          top: 0;
+          left: 0;
+          width: 32px;
+          height: 32px;
+          background: rgba(251, 191, 36, 0.4);
+          border-radius: 50%;
+          animation: pulse-current-user 1.5s ease-out infinite;
+        "></div>
+      ` : ''}
+      <div style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 32px;
+        height: 32px;
+        background: #2e8b57;
+        border: 2px solid ${isCurrentUser ? '#fbbf24' : '#0a0a0a'};
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)'};
+      ">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L14 8H20L15 12L17 18L12 14L7 18L9 12L4 8H10L12 2Z" fill="#0a0a0a"/>
+        </svg>
+      </div>
+      ${isCurrentUser ? `
+        <div style="
+          position: absolute;
+          bottom: 0;
           left: 50%;
           transform: translateX(-50%);
           background: #fbbf24;
@@ -76,40 +92,56 @@ const createFamiliarIcon = (isCurrentUser: boolean = false) => L.divIcon({
 
 // Star of Life icon for RESCATISTA users (proper 6-pointed paramedic star)
 const createRescatistaIcon = (isCurrentUser: boolean = false) => L.divIcon({
-  className: 'mats-marker rescatista-marker',
+  className: `mats-marker rescatista-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
   html: `
-    <div style="
-      width: 34px;
-      height: 34px;
-      background: #3b82f6;
-      border: 2px solid ${isCurrentUser ? '#fbbf24' : '#1e40af'};
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(59,130,246,0.5)' : '0 2px 8px rgba(59,130,246,0.5)'};
-      position: relative;
-    ">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff">
-        <!-- Star of Life - 6-pointed medical emergency symbol -->
-        <path d="M12 0 L14 4 L10 4 Z" transform="rotate(0 12 12)"/>
-        <path d="M12 0 L14 4 L10 4 Z" transform="rotate(60 12 12)"/>
-        <path d="M12 0 L14 4 L10 4 Z" transform="rotate(120 12 12)"/>
-        <path d="M12 0 L14 4 L10 4 Z" transform="rotate(180 12 12)"/>
-        <path d="M12 0 L14 4 L10 4 Z" transform="rotate(240 12 12)"/>
-        <path d="M12 0 L14 4 L10 4 Z" transform="rotate(300 12 12)"/>
-        <rect x="10" y="3" width="4" height="18" rx="0.5" fill="#fff"/>
-        <rect x="3" y="10" width="18" height="4" rx="0.5" fill="#fff"/>
-        <rect x="10" y="3" width="4" height="18" rx="0.5" fill="#fff" transform="rotate(60 12 12)"/>
-        <rect x="3" y="10" width="18" height="4" rx="0.5" fill="#fff" transform="rotate(60 12 12)"/>
-        <rect x="10" y="3" width="4" height="18" rx="0.5" fill="#fff" transform="rotate(-60 12 12)"/>
-        <rect x="3" y="10" width="18" height="4" rx="0.5" fill="#fff" transform="rotate(-60 12 12)"/>
-        <circle cx="12" cy="12" r="3" fill="#3b82f6"/>
-      </svg>
+    <div style="position: relative; width: 34px; height: ${isCurrentUser ? '42px' : '34px'};">
       ${isCurrentUser ? `
         <div style="
           position: absolute;
-          bottom: -8px;
+          top: 0;
+          left: 0;
+          width: 34px;
+          height: 34px;
+          background: rgba(251, 191, 36, 0.4);
+          border-radius: 50%;
+          animation: pulse-current-user 1.5s ease-out infinite;
+        "></div>
+      ` : ''}
+      <div style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 34px;
+        height: 34px;
+        background: #3b82f6;
+        border: 2px solid ${isCurrentUser ? '#fbbf24' : '#1e40af'};
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(59,130,246,0.5)' : '0 2px 8px rgba(59,130,246,0.5)'};
+      ">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff">
+          <!-- Star of Life - 6-pointed medical emergency symbol -->
+          <path d="M12 0 L14 4 L10 4 Z" transform="rotate(0 12 12)"/>
+          <path d="M12 0 L14 4 L10 4 Z" transform="rotate(60 12 12)"/>
+          <path d="M12 0 L14 4 L10 4 Z" transform="rotate(120 12 12)"/>
+          <path d="M12 0 L14 4 L10 4 Z" transform="rotate(180 12 12)"/>
+          <path d="M12 0 L14 4 L10 4 Z" transform="rotate(240 12 12)"/>
+          <path d="M12 0 L14 4 L10 4 Z" transform="rotate(300 12 12)"/>
+          <rect x="10" y="3" width="4" height="18" rx="0.5" fill="#fff"/>
+          <rect x="3" y="10" width="18" height="4" rx="0.5" fill="#fff"/>
+          <rect x="10" y="3" width="4" height="18" rx="0.5" fill="#fff" transform="rotate(60 12 12)"/>
+          <rect x="3" y="10" width="18" height="4" rx="0.5" fill="#fff" transform="rotate(60 12 12)"/>
+          <rect x="10" y="3" width="4" height="18" rx="0.5" fill="#fff" transform="rotate(-60 12 12)"/>
+          <rect x="3" y="10" width="18" height="4" rx="0.5" fill="#fff" transform="rotate(-60 12 12)"/>
+          <circle cx="12" cy="12" r="3" fill="#3b82f6"/>
+        </svg>
+      </div>
+      ${isCurrentUser ? `
+        <div style="
+          position: absolute;
+          bottom: 0;
           left: 50%;
           transform: translateX(-50%);
           background: #fbbf24;
@@ -131,30 +163,46 @@ const createRescatistaIcon = (isCurrentUser: boolean = false) => L.divIcon({
 
 // Transit icon for users with active road trips (orange/amber color with car icon)
 const createTransitIcon = (isCurrentUser: boolean = false) => L.divIcon({
-  className: 'mats-marker transit-marker',
+  className: `mats-marker transit-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
   html: `
-    <div style="
-      width: 32px;
-      height: 32px;
-      background: #f59e0b;
-      border: 2px solid ${isCurrentUser ? '#fbbf24' : '#0a0a0a'};
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)'};
-      animation: pulse-transit 2s ease-in-out infinite;
-      position: relative;
-    ">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.3 1 12.1 1 13v3c0 .6.4 1 1 1h2"/>
-        <circle cx="7" cy="17" r="2"/>
-        <circle cx="17" cy="17" r="2"/>
-      </svg>
+    <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : '32px'};">
       ${isCurrentUser ? `
         <div style="
           position: absolute;
-          bottom: -8px;
+          top: 0;
+          left: 0;
+          width: 32px;
+          height: 32px;
+          background: rgba(251, 191, 36, 0.4);
+          border-radius: 50%;
+          animation: pulse-current-user 1.5s ease-out infinite;
+        "></div>
+      ` : ''}
+      <div style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 32px;
+        height: 32px;
+        background: #f59e0b;
+        border: 2px solid ${isCurrentUser ? '#fbbf24' : '#0a0a0a'};
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)'};
+        animation: pulse-transit 2s ease-in-out infinite;
+      ">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.3 1 12.1 1 13v3c0 .6.4 1 1 1h2"/>
+          <circle cx="7" cy="17" r="2"/>
+          <circle cx="17" cy="17" r="2"/>
+        </svg>
+      </div>
+      ${isCurrentUser ? `
+        <div style="
+          position: absolute;
+          bottom: 0;
           left: 50%;
           transform: translateX(-50%);
           background: #fbbf24;
@@ -645,6 +693,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       @keyframes pulseResponder {
         0%, 100% { transform: scale(1); opacity: 0.5; }
         50% { transform: scale(1.3); opacity: 0.2; }
+      }
+      @keyframes pulse-current-user {
+        0% { transform: scale(1); opacity: 0.6; }
+        50% { transform: scale(1.8); opacity: 0; }
+        100% { transform: scale(1); opacity: 0; }
       }
     `;
     document.head.appendChild(style);
