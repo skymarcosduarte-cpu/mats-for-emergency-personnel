@@ -82,7 +82,7 @@ export default function InstallPage() {
           </div>
           <h1 className="text-2xl font-bold">¡Ya está instalada!</h1>
           <p className="text-muted-foreground">
-            La aplicación COMUNIDAD EX ya está instalada en tu dispositivo.
+            La aplicación COMUNIDAD SOS ya está instalada en tu dispositivo.
           </p>
           <Link to="/landing">
             <Button>
@@ -345,7 +345,7 @@ export default function InstallPage() {
                 <InstallStep
                   number={2}
                   title="Haz clic en 'Instalar'"
-                  description="O usa el menú ⋮ → 'Instalar COMUNIDAD EX...'"
+                  description="O usa el menú ⋮ → 'Instalar COMUNIDAD SOS...'"
                   icon={<Plus className="h-5 w-5" />}
                 />
                 <InstallStep

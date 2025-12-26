@@ -74,7 +74,7 @@ export function SplashScreen({ onComplete, minDuration = 2500 }: SplashScreenPro
           }`}
         >
           <h1 className="text-2xl md:text-3xl font-bold tracking-wider text-foreground">
-            COMUNIDAD <span className="text-primary">EX SOS</span>
+            COMUNIDAD <span className="text-primary">SOS</span>
           </h1>
           <p className="text-sm text-muted-foreground">
             Sistema de Respuesta a Emergencias

@@ -37,7 +37,7 @@ export const MatsLogo: React.FC<MatsLogoProps> = ({
             M.A.T.S.
           </span>
           <span className="text-xs text-muted-foreground">
-            COMUNIDAD EX SOS
+            COMUNIDAD SOS
           </span>
         </div>
       )}
