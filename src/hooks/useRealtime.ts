@@ -142,6 +142,26 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
     }
   }, [userPosition]);
 
+  // Resolve (eliminate) a help request
+  const resolveRequest = useCallback(async (requestId: string) => {
+    const { error } = await supabase
+      .from('help_requests')
+      .update({ 
+        resolved: true, 
+        resolved_at: new Date().toISOString() 
+      })
+      .eq('id', requestId);
+
+    if (error) {
+      console.error('Error resolving help request:', error);
+      return false;
+    }
+
+    // Update local state
+    setRequests(prev => prev.filter(r => r.id !== requestId));
+    return true;
+  }, []);
+
   useEffect(() => {
     fetchRequests();
 
@@ -176,7 +196,7 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
 
   const dismissUrgentHelp = useCallback(() => setUrgentHelp(null), []);
 
-  return { requests, urgentHelp, dismissUrgentHelp, refetch: fetchRequests };
+  return { requests, urgentHelp, dismissUrgentHelp, resolveRequest, refetch: fetchRequests };
 }
 
 // Hook for app state
@@ -329,6 +349,26 @@ export function usePanicEvents() {
     }
   }, []);
 
+  // Resolve (eliminate) a panic event
+  const resolveEvent = useCallback(async (eventId: string) => {
+    const { error } = await supabase
+      .from('panic_events')
+      .update({ 
+        resolved: true, 
+        resolved_at: new Date().toISOString() 
+      })
+      .eq('id', eventId);
+
+    if (error) {
+      console.error('Error resolving panic event:', error);
+      return false;
+    }
+
+    // Update local state
+    setEvents(prev => prev.filter(e => e.id !== eventId));
+    return true;
+  }, []);
+
   useEffect(() => {
     fetchEvents();
 
@@ -346,5 +386,5 @@ export function usePanicEvents() {
     };
   }, [fetchEvents]);
 
-  return { events, refetch: fetchEvents };
+  return { events, resolveEvent, refetch: fetchEvents };
 }
