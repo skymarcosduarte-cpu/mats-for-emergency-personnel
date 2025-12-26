@@ -112,7 +112,18 @@ export function useEmergencyContactsDB() {
 
   // Delete contact
   const deleteContact = useCallback(async (id: string) => {
-    if (contacts.length <= MIN_EMERGENCY_CONTACTS) {
+    // Fetch current count to avoid stale closure
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { count, error: countError } = await supabase
+      .from('emergency_contacts')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+
+    if (countError) throw countError;
+
+    if ((count || 0) <= MIN_EMERGENCY_CONTACTS) {
       throw new Error(`Se requiere al menos ${MIN_EMERGENCY_CONTACTS} contacto de emergencia`);
     }
 
@@ -124,7 +135,7 @@ export function useEmergencyContactsDB() {
     if (deleteError) throw deleteError;
     
     await fetchContacts();
-  }, [contacts, fetchContacts]);
+  }, [fetchContacts]);
 
   // Set primary contact
   const setPrimaryContact = useCallback(async (id: string) => {

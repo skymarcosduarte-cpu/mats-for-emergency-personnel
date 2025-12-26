@@ -1,5 +1,5 @@
-// Floating banner for user's active panic alerts
-// Shows when user has an unresolved panic event and allows instant cancellation
+// Floating banner for user's active panic alerts and help requests
+// Shows when user has an unresolved alert and allows instant cancellation
 // Also supports test mode for simulating alerts without database
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -11,9 +11,10 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { TestPanicAlert } from '@/hooks/useTestMode';
 
-interface ActivePanicEvent {
+interface ActiveAlert {
   id: string;
-  panic_type: string;
+  type: 'panic' | 'help';
+  alert_type: string; // panic_type or kind
   created_at: string;
 }
 
@@ -23,6 +24,7 @@ const PANIC_TYPE_LABELS: Record<string, { label: string; emoji: string }> = {
   'PATRULLA': { label: 'Patrulla', emoji: '🚔' },
   'MECANICO': { label: 'Mecánico', emoji: '🔧' },
   'PROTECCION_CIVIL': { label: 'Protección Civil', emoji: '🆘' },
+  'SISMO_AYUDA_14': { label: 'Ayuda por Sismo', emoji: '🏚️' },
 };
 
 interface ActiveAlertBannerProps {
@@ -37,29 +39,63 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
   refreshTrigger,
 }) => {
   const { user } = useAuth();
-  const [activeAlert, setActiveAlert] = useState<ActivePanicEvent | null>(null);
+  const [activeAlert, setActiveAlert] = useState<ActiveAlert | null>(null);
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
-  // Fetch user's active panic events
+  // Fetch user's active panic events AND help requests
   const fetchActiveAlert = useCallback(async () => {
     if (!user?.id) return;
 
     try {
-      const { data, error } = await supabase
+      // Check panic_events first
+      const { data: panicData, error: panicError } = await supabase
         .from('panic_events')
         .select('id, panic_type, created_at')
         .eq('user_id', user.id)
         .eq('resolved', false)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-        console.error('[ActiveAlertBanner] Error fetching:', error);
+      if (panicError) {
+        console.error('[ActiveAlertBanner] Error fetching panic:', panicError);
       }
 
-      setActiveAlert(data || null);
+      if (panicData) {
+        setActiveAlert({
+          id: panicData.id,
+          type: 'panic',
+          alert_type: panicData.panic_type,
+          created_at: panicData.created_at,
+        });
+        return;
+      }
+
+      // Check help_requests if no panic event found
+      const { data: helpData, error: helpError } = await supabase
+        .from('help_requests')
+        .select('id, kind, created_at')
+        .eq('user_id', user.id)
+        .eq('resolved', false)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (helpError) {
+        console.error('[ActiveAlertBanner] Error fetching help:', helpError);
+      }
+
+      if (helpData) {
+        setActiveAlert({
+          id: helpData.id,
+          type: 'help',
+          alert_type: helpData.kind,
+          created_at: helpData.created_at,
+        });
+      } else {
+        setActiveAlert(null);
+      }
     } catch (err) {
       console.error('[ActiveAlertBanner] Fetch error:', err);
     } finally {
@@ -117,12 +153,15 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
 
     if (!activeAlert) return;
 
-    console.log('[ActiveAlertBanner] Cancelling alert:', activeAlert.id);
+    console.log('[ActiveAlertBanner] Cancelling alert:', activeAlert.id, activeAlert.type);
     setCancelling(true);
 
     try {
+      // Cancel from the correct table based on alert type
+      const tableName = activeAlert.type === 'panic' ? 'panic_events' : 'help_requests';
+      
       const { error } = await supabase
-        .from('panic_events')
+        .from(tableName)
         .update({ 
           resolved: true, 
           resolved_at: new Date().toISOString() 
@@ -138,6 +177,7 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
           errorAudio.playbackRate = 0.7;
           errorAudio.play().catch(() => {});
         } catch {}
+        setCancelling(false);
         return;
       }
 
@@ -194,12 +234,12 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
     fetchActiveAlert();
   }, [fetchActiveAlert, refreshTrigger]);
 
-  // Subscribe to real-time updates for user's panic events
+  // Subscribe to real-time updates for user's panic events and help requests
   useEffect(() => {
     if (!user?.id) return;
 
     const channel = supabase
-      .channel(`user-panic-events-${user.id}`)
+      .channel(`user-alerts-${user.id}`)
       .on(
         'postgres_changes',
         { 
@@ -210,6 +250,19 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
         },
         () => {
           console.log('[ActiveAlertBanner] Panic event change detected');
+          fetchActiveAlert();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'help_requests',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('[ActiveAlertBanner] Help request change detected');
           fetchActiveAlert();
         }
       )
@@ -228,7 +281,8 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
   if (loading && !testAlert) return null;
   if (!displayAlert) return null;
 
-  const typeInfo = PANIC_TYPE_LABELS[displayAlert.panic_type] || { label: 'Emergencia', emoji: '🆘' };
+  const alertType = isTestAlert ? (testAlert as TestPanicAlert).panic_type : (activeAlert as ActiveAlert).alert_type;
+  const typeInfo = PANIC_TYPE_LABELS[alertType] || { label: 'Emergencia', emoji: '🆘' };
   const createdAt = new Date(displayAlert.created_at);
   const timeAgo = Math.round((Date.now() - createdAt.getTime()) / 60000);
 
