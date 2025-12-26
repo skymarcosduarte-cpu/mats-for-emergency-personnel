@@ -23,6 +23,7 @@ import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { SplashScreen } from '@/components/SplashScreen';
 import { EmergencyChat } from '@/components/EmergencyChat';
 import { SeismicAlert } from '@/components/SeismicAlert';
+import { ActiveAlertBanner } from '@/components/ActiveAlertBanner';
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import { useAppState } from '@/hooks/useRealtime';
@@ -212,6 +213,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <AppHeader onPanicClick={() => setPanicOpen(true)} />
+      <ActiveAlertBanner />
       <UpdatePrompt />
       <main className="flex-1 overflow-hidden">{renderScreen()}</main>
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} onPanicTriggered={handlePanicTriggered} />
