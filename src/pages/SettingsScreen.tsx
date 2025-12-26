@@ -839,53 +839,49 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         {/* Emergency Contacts Section */}
         <EmergencyContactsManager />
 
-        {/* Install App */}
+        {/* Application (Install + Version + Update) */}
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Download className="w-5 h-5" />
-              Instalar Aplicación
+              Aplicación
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">
-              Instala la app en tu dispositivo para acceder más rápido y recibir notificaciones.
-            </p>
-            <InstallButton />
-          </CardContent>
-        </Card>
-
-        {/* Version Info */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Info className="w-5 h-5" />
-              Información de la App
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Versión</span>
-              <span className="font-mono text-sm text-foreground">
-                {getFullVersionString()}
-              </span>
+          <CardContent className="space-y-4">
+            {/* Install section */}
+            <div>
+              <p className="text-sm text-muted-foreground mb-3">
+                Instala la app para acceder más rápido y recibir notificaciones.
+              </p>
+              <InstallButton />
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Build</span>
-              <span className="font-mono text-xs text-muted-foreground">
-                {new Date(BUILD_TIME).toLocaleDateString()}
-              </span>
+
+            {/* Version info */}
+            <div className="border-t border-border pt-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Versión</span>
+                <span className="font-mono text-sm text-foreground">
+                  {getFullVersionString()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Build</span>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {new Date(BUILD_TIME).toLocaleDateString()}
+                </span>
+              </div>
             </div>
             
             {/* Update Button */}
-            <div className="border-t border-border pt-3 mt-3">
+            <div className="border-t border-border pt-4">
               <p className="text-xs text-muted-foreground mb-2">
-                Busca nuevas versiones o fuerza una recarga si tienes problemas.
+                Busca actualizaciones o limpia caché si tienes problemas.
               </p>
               <UpdateButton />
             </div>
 
-            <div className="border-t border-border pt-3 mt-3">
+            {/* Branding */}
+            <div className="border-t border-border pt-4">
               <div className="flex items-center justify-center gap-2 text-mats-green">
                 <MatsLogo size={24} />
                 <span className="font-bold">COMUNIDAD EX SOS</span>
