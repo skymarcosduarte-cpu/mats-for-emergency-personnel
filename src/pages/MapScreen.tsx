@@ -297,7 +297,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
   const { providers: medicalProviders } = useMedicalProviders();
   const { events: panicEvents, resolveEvent } = usePanicEvents();
   const { responders: activeResponders } = useActiveResponders();
-  const { startResponding, stopResponding } = useEmergencyResponse();
+  const { startResponding, stopResponding, markAsArrived } = useEmergencyResponse();
   
   const isRescatista = role === 'RESCATISTA';
   const currentUserId = user?.id;
@@ -819,6 +819,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
           userPosition={position}
           onRespondToRequest={handleRespondToRequest}
           onCancelResponse={stopResponding}
+          onMarkAsArrived={markAsArrived}
         />
       </div>
 
