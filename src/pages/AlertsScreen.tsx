@@ -15,6 +15,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MediaCapture } from '@/components/MediaCapture';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
@@ -47,6 +57,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   const [help14Images, setHelp14Images] = useState<File[]>([]);
   const [help14Audio, setHelp14Audio] = useState<{ blob: Blob; duration: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   
   const { position } = useLocation();
   const { requests: helpRequests, resolveRequest } = useHelpRequests(position);
@@ -746,12 +757,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                               variant="ghost"
                               size="sm"
                               className="text-muted-foreground hover:text-destructive"
-                              onClick={async () => {
-                                const success = await resolveRequest(req.id);
-                                if (success) {
-                                  // Optionally show toast
-                                }
-                              }}
+                              onClick={() => setDeleteConfirmId(req.id)}
                             >
                               <Trash2 className="w-4 h-4 mr-1" />
                               Eliminar
@@ -765,6 +771,32 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               ))
           )}
         </TabsContent>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Eliminar esta alerta?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción marcará la alerta como resuelta y ya no será visible para otros usuarios. Esta acción no se puede deshacer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async () => {
+                  if (deleteConfirmId) {
+                    await resolveRequest(deleteConfirmId);
+                    setDeleteConfirmId(null);
+                  }
+                }}
+              >
+                Eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Notifications Tab */}
         <TabsContent value="notifications" className="space-y-3 mt-4">
