@@ -60,25 +60,30 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
   }, []);
 
   const handleConfirm = useCallback(() => {
+    // Close dialog first to prevent any blocking
     setShowConfirmation(false);
     
-    // Play urgent sound on confirmation
-    try {
-      playUrgentSound();
-    } catch (e) {
-      // Ignore sound errors
-    }
-    
-    // Vibrate on confirm
-    try {
-      if ('vibrate' in navigator) {
-        navigator.vibrate([200, 100, 200]);
+    // Use setTimeout to ensure dialog closes before other operations
+    setTimeout(() => {
+      // Play urgent sound (non-blocking)
+      try {
+        playUrgentSound();
+      } catch (e) {
+        // Ignore sound errors
       }
-    } catch (e) {
-      // Ignore vibration errors
-    }
-    
-    onPanicClick();
+      
+      // Vibrate on confirm (non-blocking)
+      try {
+        if ('vibrate' in navigator) {
+          navigator.vibrate([200, 100, 200]);
+        }
+      } catch (e) {
+        // Ignore vibration errors
+      }
+      
+      // Open panic options dialog
+      onPanicClick();
+    }, 50);
   }, [onPanicClick]);
 
   const handleCancel = useCallback(() => {
