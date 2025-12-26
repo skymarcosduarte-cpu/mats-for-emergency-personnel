@@ -1,5 +1,5 @@
 // Full-screen interactive map overlay
-// Shows an interactive map with the alert location
+// Shows an interactive map with the alert location and user's current position
 
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 interface FullScreenMapProps {
   lat: number;
   lng: number;
+  userLat?: number;
+  userLng?: number;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -17,6 +19,8 @@ interface FullScreenMapProps {
 export const FullScreenMap: React.FC<FullScreenMapProps> = ({ 
   lat, 
   lng, 
+  userLat,
+  userLng,
   isOpen,
   onClose 
 }) => {
@@ -45,7 +49,7 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
         attribution: '© OpenStreetMap contributors',
       }).addTo(map);
 
-      // Create custom red marker icon
+      // Create custom red marker icon for alert location
       const redIcon = L.divIcon({
         className: 'custom-marker',
         html: `
@@ -63,11 +67,38 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
         iconAnchor: [20, 48],
       });
 
-      // Add marker with popup
+      // Add alert marker with popup
       L.marker([lat, lng], { icon: redIcon })
         .addTo(map)
         .bindPopup(`<strong>Ubicación de la alerta</strong><br/>Lat: ${lat.toFixed(6)}<br/>Lng: ${lng.toFixed(6)}`)
         .openPopup();
+
+      // Add user location marker if available
+      if (userLat !== undefined && userLng !== undefined) {
+        const userIcon = L.divIcon({
+          className: 'user-location-marker',
+          html: `
+            <div class="relative flex items-center justify-center">
+              <div class="absolute w-8 h-8 bg-blue-500/30 rounded-full animate-ping"></div>
+              <div class="absolute w-6 h-6 bg-blue-500/20 rounded-full animate-pulse"></div>
+              <div class="relative w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg"></div>
+            </div>
+          `,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        });
+
+        L.marker([userLat, userLng], { icon: userIcon })
+          .addTo(map)
+          .bindPopup('<strong>Tu ubicación</strong>');
+
+        // Fit bounds to show both markers
+        const bounds = L.latLngBounds([
+          [lat, lng],
+          [userLat, userLng]
+        ]);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+      }
 
       // Force resize after a moment
       setTimeout(() => map.invalidateSize(), 100);
@@ -81,7 +112,7 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
         mapRef.current = null;
       }
     };
-  }, [isOpen, lat, lng]);
+  }, [isOpen, lat, lng, userLat, userLng]);
 
   const handleZoomIn = () => {
     mapRef.current?.zoomIn();

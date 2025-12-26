@@ -10,6 +10,8 @@ import { FullScreenMap } from './FullScreenMap';
 interface MiniMapProps {
   lat: number;
   lng: number;
+  userLat?: number;
+  userLng?: number;
   className?: string;
   zoom?: number;
 }
@@ -17,6 +19,8 @@ interface MiniMapProps {
 export const MiniMap: React.FC<MiniMapProps> = ({ 
   lat, 
   lng, 
+  userLat,
+  userLng,
   className = '',
   zoom = 15 
 }) => {
@@ -104,6 +108,8 @@ export const MiniMap: React.FC<MiniMapProps> = ({
       <FullScreenMap
         lat={lat}
         lng={lng}
+        userLat={userLat}
+        userLng={userLng}
         isOpen={isExpanded}
         onClose={() => setIsExpanded(false)}
       />
