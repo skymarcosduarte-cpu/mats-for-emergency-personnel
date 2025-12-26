@@ -163,11 +163,24 @@ export function useUpdateCheck() {
   }, [performUpdateCheck]);
 
   const applyUpdate = useCallback(() => {
+    // Always reload after attempting to activate the waiting worker.
+    // Some environments (iframes/strict browsers) can ignore controllerchange.
     if (registration?.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    } else {
-      window.location.reload();
+      try {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      } catch {
+        // ignore
+      }
     }
+
+    // Hard reload fallback
+    setTimeout(() => {
+      try {
+        window.location.reload();
+      } catch {
+        window.location.href = window.location.href;
+      }
+    }, 300);
   }, [registration]);
 
   const dismissUpdate = useCallback(() => {
