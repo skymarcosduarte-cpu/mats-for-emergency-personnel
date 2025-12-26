@@ -1,10 +1,10 @@
 // Full-screen interactive map overlay
 // Shows an interactive map with the alert location and user's current position
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { X, ZoomIn, ZoomOut, Locate } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, Locate, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface FullScreenMapProps {
@@ -16,6 +16,26 @@ interface FullScreenMapProps {
   onClose: () => void;
 }
 
+// Calculate distance between two coordinates in km (Haversine formula)
+const calculateDistanceKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+// Format distance for display
+const formatDistance = (distanceKm: number): string => {
+  if (distanceKm < 1) {
+    return `${Math.round(distanceKm * 1000)} m`;
+  }
+  return `${distanceKm.toFixed(1)} km`;
+};
+
 export const FullScreenMap: React.FC<FullScreenMapProps> = ({ 
   lat, 
   lng, 
@@ -26,6 +46,12 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+
+  // Calculate distance between user and alert
+  const distance = useMemo(() => {
+    if (userLat === undefined || userLng === undefined) return null;
+    return calculateDistanceKm(userLat, userLng, lat, lng);
+  }, [lat, lng, userLat, userLng]);
 
   useEffect(() => {
     if (!isOpen || !mapContainerRef.current) return;
@@ -177,6 +203,21 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
             <Locate className="w-4 h-4" />
           </Button>
         </div>
+
+        {/* Distance Indicator */}
+        {distance !== null && (
+          <div className="absolute left-4 top-4 bg-card/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg z-[1000]">
+            <div className="flex items-center gap-2">
+              <Navigation className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">
+                {formatDistance(distance)}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              de distancia
+            </p>
+          </div>
+        )}
 
         {/* Coordinates Badge */}
         <div className="absolute left-4 bottom-4 bg-card/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg z-[1000]">
