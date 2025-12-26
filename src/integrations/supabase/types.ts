@@ -784,12 +784,14 @@ export type Database = {
           accuracy: number | null
           display_name: string | null
           heading: number | null
+          is_in_transit: boolean | null
           is_online: boolean | null
           lat: number | null
           lng: number | null
           role: Database["public"]["Enums"]["app_role"] | null
           show_name_on_map: boolean | null
           speed: number | null
+          transit_destination: string | null
           updated_at: string | null
           user_id: string | null
         }

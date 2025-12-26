@@ -80,6 +80,34 @@ const createRescatistaIcon = () => L.divIcon({
   popupAnchor: [0, -16],
 });
 
+// Transit icon for users with active road trips (orange/amber color with car icon)
+const createTransitIcon = () => L.divIcon({
+  className: 'mats-marker transit-marker',
+  html: `
+    <div style="
+      width: 32px;
+      height: 32px;
+      background: #f59e0b;
+      border: 2px solid #0a0a0a;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      animation: pulse-transit 2s ease-in-out infinite;
+    ">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.3 1 12.1 1 13v3c0 .6.4 1 1 1h2"/>
+        <circle cx="7" cy="17" r="2"/>
+        <circle cx="17" cy="17" r="2"/>
+      </svg>
+    </div>
+  `,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+  popupAnchor: [0, -16],
+});
+
 // Default icon for users (uses FAMILIAR style - green with star)
 const createMatsIcon = () => createFamiliarIcon();
 
@@ -623,15 +651,36 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       }
     });
 
-    // Add/update markers with role-based icons and name visibility
+    // Add/update markers with role-based icons, transit status, and name visibility
     locations.forEach((loc) => {
       const key = `user-${loc.user_id}`;
       const existingMarker = markersRef.current.get(key);
       const isRescatista = loc.role === 'RESCATISTA';
-      const icon = isRescatista ? createRescatistaIcon() : createFamiliarIcon();
-      const roleLabel = isRescatista ? 'Rescatista' : 'Miembro';
-      const bgColor = isRescatista ? '#3b82f6' : '#2e8b57';
+      const isInTransit = loc.is_in_transit;
+      
+      // Priority: Transit > Rescatista > Familiar
+      let icon;
+      let roleLabel;
+      let bgColor;
+      
+      if (isInTransit) {
+        icon = createTransitIcon();
+        roleLabel = 'En tránsito';
+        bgColor = '#f59e0b';
+      } else if (isRescatista) {
+        icon = createRescatistaIcon();
+        roleLabel = 'Rescatista';
+        bgColor = '#3b82f6';
+      } else {
+        icon = createFamiliarIcon();
+        roleLabel = 'Miembro';
+        bgColor = '#2e8b57';
+      }
+      
       const displayName = loc.display_name ? sanitize(loc.display_name) : null;
+      const transitInfo = isInTransit && loc.transit_destination 
+        ? `<div style="font-size: 10px; color: #f59e0b; margin-top: 2px;">🚗 → ${sanitize(loc.transit_destination)}</div>`
+        : '';
 
       const popupContent = displayName
         ? `<div style="display: flex; align-items: center; gap: 8px;">
@@ -639,11 +688,15 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
             <div>
               <div style="font-weight: 600;">${displayName}</div>
               <div style="font-size: 11px; color: #666;">${roleLabel} activo</div>
+              ${transitInfo}
             </div>
           </div>`
         : `<div style="display: flex; align-items: center; gap: 8px;">
             <div style="width: 24px; height: 24px; background: ${bgColor}; border-radius: 50%;"></div>
-            <span style="font-weight: 500;">${roleLabel} activo</span>
+            <div>
+              <span style="font-weight: 500;">${roleLabel} activo</span>
+              ${transitInfo}
+            </div>
           </div>`;
 
       if (existingMarker) {
