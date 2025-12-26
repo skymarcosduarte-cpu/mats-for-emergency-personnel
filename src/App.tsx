@@ -21,7 +21,7 @@ import InstallPage from '@/pages/InstallPage';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt, UpdateIndicator } from '@/components/UpdatePrompt';
 import { SplashScreen } from '@/components/SplashScreen';
-import { EmergencyChat } from '@/components/EmergencyChat';
+
 import { SeismicAlert } from '@/components/SeismicAlert';
 import { ActiveAlertBanner } from '@/components/ActiveAlertBanner';
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
@@ -249,7 +249,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <UpdateIndicator />
       <main className="flex-1 overflow-hidden">{renderScreen()}</main>
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} onPanicTriggered={handlePanicTriggered} />
-      <EmergencyChat />
+      
       <InstallPrompt />
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'RESCATISTA'} disasterMode={disasterMode} />
       
