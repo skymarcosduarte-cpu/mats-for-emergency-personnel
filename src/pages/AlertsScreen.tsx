@@ -248,11 +248,10 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         }
       }
 
-      toast.success('¡Alerta enviada!');
-
-      // Generate WhatsApp alert
-      const message = `🆘 AYUDA 14 - SISMO%0A${userRole === 'FAMILIAR' ? '⚠️ FAMILIAR – NO PARAMÉDICO%0A' : ''}📍 ${getGoogleMapsLink(position.lat, position.lng)}%0A${help14Message ? `Mensaje: ${help14Message}` : ''}`;
-      window.open(`https://wa.me/?text=${message}`, '_blank');
+      toast.success('¡Alerta enviada!', {
+        description: 'Se notificó a la comunidad dentro de la app',
+        duration: 5000,
+      });
 
       setShowHelp14Dialog(false);
       resetHelp14Form();

@@ -143,10 +143,8 @@ export function SeismicAlert({
           console.error('Error creating help request:', helpError);
         }
 
-        // Open WhatsApp with emergency message
-        const whatsappMessage = `🆘 AYUDA 14 - SISMO M${mag.toFixed(1)}%0A${userRole === 'FAMILIAR' ? '⚠️ FAMILIAR – NO PARAMÉDICO%0A' : ''}📍 ${getGoogleMapsLink(position.lat, position.lng)}%0AIntensidad percibida: ${reportIntensity}/10%0A${helpMessage ? `Mensaje: ${helpMessage}` : ''}`;
-        window.open(`https://wa.me/?text=${whatsappMessage}`, '_blank');
-      }
+        // Alert is handled inside the app (realtime + notifications)
+
 
       toast({
         title: felt ? "Reporte enviado" : "Gracias por reportar",

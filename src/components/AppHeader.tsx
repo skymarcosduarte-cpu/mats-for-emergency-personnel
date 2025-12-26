@@ -83,21 +83,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
     setShowConfirmation(false);
   }, []);
 
-  // Simple touch handler for iOS compatibility
-  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLButtonElement>) => {
-    console.log('[AppHeader] TouchEnd');
-    e.preventDefault(); // Prevent ghost clicks on iOS
+  // Pointer handler (works across iOS/Android/Desktop)
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    console.log('[AppHeader] PointerUp:', e.pointerType);
+    e.preventDefault();
+    e.stopPropagation();
     triggerPanic();
   }, [triggerPanic]);
 
-  // Fallback click handler for non-touch devices
+  // Fallback click handler
   const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    // Check if this was from a touch (if so, touchend already handled it)
-    const now = Date.now();
-    if (now - lastActivatedAtRef.current < 300) {
-      console.log('[AppHeader] Click skipped - touchend just handled it');
-      return;
-    }
     console.log('[AppHeader] Click');
     e.preventDefault();
     triggerPanic();
@@ -109,7 +104,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
         <MatsLogo size={36} showText />
         
         <button
-          onTouchEnd={handleTouchEnd}
+          onPointerUp={handlePointerUp}
           onClick={handleClick}
           className="relative flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-panic to-red-600 text-white shadow-lg shadow-panic/40 touch-manipulation select-none active:scale-95 transition-all hover:shadow-panic/60"
           aria-label="Botón de pánico - SOS"

@@ -390,12 +390,10 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
       listingId: listing.id,
     });
 
-    const phone = listing.profiles.phone.replace(/\D/g, '');
-    const message = encodeURIComponent(
-      `Hola ${listing.profiles.nickname || 'vendedor'}, estoy interesado en tu anuncio "${listing.title}" del Marketplace de MATS.${listing.price ? ` Precio: $${listing.price.toFixed(2)}` : ''}`
-    );
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
-  };
+    toast({
+      title: 'Listo',
+      description: 'El vendedor fue notificado dentro de la app.',
+    });
 
   // My listings
   const myListings = useMemo(() => {
