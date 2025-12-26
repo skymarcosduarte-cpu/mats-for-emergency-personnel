@@ -100,23 +100,36 @@ export function UpdateButton() {
     
     try {
       if ('serviceWorker' in navigator) {
-        // Wrap serviceWorker.ready in timeout to prevent Android hanging
-        const reg = await withTimeout(
-          navigator.serviceWorker.ready,
+        // Get current registration without waiting for ready (which can hang on Android)
+        const registrations = await withTimeout(
+          navigator.serviceWorker.getRegistrations(),
           SW_READY_TIMEOUT
         );
         
-        // Wrap update check in timeout
-        await withTimeout(reg.update(), UPDATE_CHECK_TIMEOUT);
-        
-        if (reg.waiting) {
-          setHasUpdate(true);
-          toast.info('Nueva versión disponible');
+        if (registrations.length > 0) {
+          const reg = registrations[0];
+          
+          // Wrap update check in timeout
+          try {
+            await withTimeout(reg.update(), UPDATE_CHECK_TIMEOUT);
+          } catch (updateError) {
+            console.warn('Update check timed out, checking waiting state:', updateError);
+          }
+          
+          if (reg.waiting) {
+            setHasUpdate(true);
+            toast.info('Nueva versión disponible');
+          } else {
+            setHasUpdate(false);
+            toast.success('Ya tienes la última versión');
+          }
+          setLastChecked(new Date());
         } else {
+          // No service worker registered
           setHasUpdate(false);
           toast.success('Ya tienes la última versión');
+          setLastChecked(new Date());
         }
-        setLastChecked(new Date());
       } else {
         toast.info('Recargando página...');
         window.location.reload();
@@ -125,7 +138,7 @@ export function UpdateButton() {
       console.error('Update check error:', error);
       setCheckFailed(true);
       toast.error('No se pudo verificar actualizaciones', {
-        description: 'Verifica tu conexión o intenta más tarde',
+        description: 'Usa "Forzar Recarga" si hay problemas',
         duration: 4000,
       });
     } finally {
@@ -136,13 +149,16 @@ export function UpdateButton() {
   const applyUpdate = async () => {
     try {
       if ('serviceWorker' in navigator) {
-        const reg = await withTimeout(
-          navigator.serviceWorker.ready,
+        const registrations = await withTimeout(
+          navigator.serviceWorker.getRegistrations(),
           SW_READY_TIMEOUT
         );
-        if (reg.waiting) {
-          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        
+        if (registrations.length > 0 && registrations[0].waiting) {
+          registrations[0].waiting.postMessage({ type: 'SKIP_WAITING' });
           toast.success('Actualizando...');
+          // Give time for the skip waiting to process
+          setTimeout(() => window.location.reload(), 500);
         } else {
           window.location.reload();
         }
