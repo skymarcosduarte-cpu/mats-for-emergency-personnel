@@ -645,7 +645,9 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
 
     // Remove old markers
     markersRef.current.forEach((marker, key) => {
-      if (!locations.find(l => l.user_id === key)) {
+      // keys are stored as `user-<uuid>`
+      const stillExists = !!locations.find(l => `user-${l.user_id}` === key);
+      if (!stillExists) {
         map.removeLayer(marker);
         markersRef.current.delete(key);
       }
