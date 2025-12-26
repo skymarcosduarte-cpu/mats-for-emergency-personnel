@@ -120,6 +120,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 }) {
   const { disasterMode } = useAppState();
   const [panicOpen, setPanicOpen] = useState(false);
+  const [isSavingAlert, setIsSavingAlert] = useState(false);
   const { user } = useAuth();
   
   // Test mode for simulating panic alerts
@@ -179,6 +180,14 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       return;
     }
 
+    // Show saving indicator
+    setIsSavingAlert(true);
+    
+    // Show immediate feedback toast
+    const savingToastId = toast.loading('Enviando alerta a la comunidad...', {
+      description: 'Guardando tu ubicación GPS',
+    });
+
     try {
       const { error } = await supabase.from('panic_events').insert({
         user_id: user.id,
@@ -189,15 +198,26 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 
       if (error) {
         console.error('Error saving panic event:', error);
-        toast.error('Error al guardar alerta');
+        toast.error('Error al guardar alerta', {
+          id: savingToastId,
+          description: 'Intenta de nuevo',
+        });
       } else {
         console.log('Panic event saved and broadcasted:', type, lat, lng);
-        toast.success('🚨 Alerta enviada a todos los usuarios de la comunidad', {
+        toast.success('Alerta enviada correctamente', {
+          id: savingToastId,
+          description: 'Todos los usuarios de la comunidad han sido notificados',
           duration: 5000,
         });
       }
     } catch (err) {
       console.error('Failed to save panic event:', err);
+      toast.error('Error de conexión', {
+        id: savingToastId,
+        description: 'Verifica tu conexión a internet',
+      });
+    } finally {
+      setIsSavingAlert(false);
     }
   }, [user?.id]);
 
