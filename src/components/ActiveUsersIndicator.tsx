@@ -18,7 +18,15 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
   compact = false,
 }) => {
   const { locations } = useUserLocations();
-  const activeCount = locations.length;
+  
+  // Filter out stale locations (older than 10 minutes)
+  const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+  const now = Date.now();
+  const activeCount = locations.filter(loc => {
+    if (!loc.updated_at) return false;
+    const updatedMs = new Date(loc.updated_at).getTime();
+    return (now - updatedMs) < STALE_THRESHOLD_MS;
+  }).length;
 
   return (
     <div
