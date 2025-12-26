@@ -31,6 +31,7 @@ import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { EmergencyRouteMap } from '@/components/EmergencyRouteMap';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { ResponderEtaCountdown } from '@/components/ResponderEtaCountdown';
+import { ThankYouDialog } from '@/components/ThankYouDialog';
 import { useLocation, getGoogleMapsLink } from '@/hooks/useLocation';
 import { useHelpRequests, useActiveResponders } from '@/hooks/useRealtime';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -75,7 +76,9 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     startResponding, 
     stopResponding,
     markAsArrived,
-    markAsResolved 
+    markAsResolved,
+    showThankYou,
+    dismissThankYou 
   } = useEmergencyResponse();
   const { responders } = useActiveResponders();
   const { 
@@ -1240,6 +1243,12 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Thank You Dialog - shown when user's alert is resolved */}
+      <ThankYouDialog
+        open={showThankYou}
+        onClose={dismissThankYou}
+      />
     </div>
   );
 };
