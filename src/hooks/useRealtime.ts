@@ -28,6 +28,7 @@ interface HelpRequest {
   resolved: boolean;
   created_at: string;
   resolved_at: string | null;
+  resolved_by: string | null;
 }
 
 interface RoadReport {
@@ -92,12 +93,14 @@ export function useUserLocations() {
 // Hook for help requests with distance-based alert sounds
 export function useHelpRequests(userPosition?: { lat: number; lng: number } | null) {
   const [requests, setRequests] = useState<HelpRequest[]>([]);
+  const [resolvedRequests, setResolvedRequests] = useState<HelpRequest[]>([]);
   const [urgentHelp, setUrgentHelp] = useState<HelpRequest | null>(null);
   const alertedRequestsRef = useRef<Set<string>>(new Set());
 
   const NEARBY_THRESHOLD_KM = 30 * 1.60934; // 30 miles in km
 
   const fetchRequests = useCallback(async () => {
+    // Fetch active requests
     const { data, error } = await supabase
       .from('help_requests')
       .select('*')
@@ -107,6 +110,22 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
 
     if (!error && data) {
       setRequests(data as HelpRequest[]);
+    }
+
+    // Fetch recently resolved requests (last 24 hours)
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const { data: resolvedData, error: resolvedError } = await supabase
+      .from('help_requests')
+      .select('*')
+      .eq('resolved', true)
+      .gte('resolved_at', yesterday.toISOString())
+      .order('resolved_at', { ascending: false })
+      .limit(20);
+
+    if (!resolvedError && resolvedData) {
+      setResolvedRequests(resolvedData as HelpRequest[]);
     }
   }, []);
 
@@ -143,12 +162,13 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
   }, [userPosition]);
 
   // Resolve (eliminate) a help request
-  const resolveRequest = useCallback(async (requestId: string) => {
+  const resolveRequest = useCallback(async (requestId: string, resolverId?: string) => {
     const { error } = await supabase
       .from('help_requests')
       .update({ 
         resolved: true, 
-        resolved_at: new Date().toISOString() 
+        resolved_at: new Date().toISOString(),
+        resolved_by: resolverId || null
       })
       .eq('id', requestId);
 
@@ -196,7 +216,7 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
 
   const dismissUrgentHelp = useCallback(() => setUrgentHelp(null), []);
 
-  return { requests, urgentHelp, dismissUrgentHelp, resolveRequest, refetch: fetchRequests };
+  return { requests, resolvedRequests, urgentHelp, dismissUrgentHelp, resolveRequest, refetch: fetchRequests };
 }
 
 // Hook for app state
