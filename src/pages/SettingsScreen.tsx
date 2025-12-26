@@ -166,12 +166,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [hasFirstAidKit, setHasFirstAidKit] = useState(
     profile?.has_first_aid_kit ?? false
   );
+  const [hasAmbulance, setHasAmbulance] = useState(
+    profile?.has_ambulance ?? false
+  );
 
   // Sync state when profile loads
   React.useEffect(() => {
     if (profile) {
       setCanProvideMedical(profile.can_provide_medical_assistance ?? false);
       setHasFirstAidKit(profile.has_first_aid_kit ?? false);
+      setHasAmbulance(profile.has_ambulance ?? false);
       setMedicalForm({
         blood_type: profile.blood_type || '',
         allergies: profile.allergies || '',
@@ -183,13 +187,15 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   }, [profile]);
 
   // Update medical assistance settings
-  const handleMedicalToggle = async (field: 'can_provide_medical_assistance' | 'has_first_aid_kit', value: boolean) => {
+  const handleMedicalToggle = async (field: 'can_provide_medical_assistance' | 'has_first_aid_kit' | 'has_ambulance', value: boolean) => {
     setSavingMedical(true);
     
     if (field === 'can_provide_medical_assistance') {
       setCanProvideMedical(value);
-    } else {
+    } else if (field === 'has_first_aid_kit') {
       setHasFirstAidKit(value);
+    } else {
+      setHasAmbulance(value);
     }
 
     try {
@@ -536,9 +542,32 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   disabled={savingMedical}
                 />
               </div>
+
+              {/* Ambulance toggle */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                    <span className="text-lg">🚑</span>
+                  </div>
+                  <div>
+                    <Label htmlFor="ambulance-toggle" className="text-foreground font-medium">
+                      Tengo ambulancia disponible
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Cuento con ambulancia o vehículo de emergencia
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="ambulance-toggle"
+                  checked={hasAmbulance}
+                  onCheckedChange={(value) => handleMedicalToggle('has_ambulance', value)}
+                  disabled={savingMedical}
+                />
+              </div>
             </div>
 
-            {(canProvideMedical || hasFirstAidKit) && (
+            {(canProvideMedical || hasFirstAidKit || hasAmbulance) && (
               <div className="mt-4 p-3 bg-safe/10 rounded-lg border border-safe/20">
                 <p className="text-xs text-safe flex items-center gap-2">
                   <HeartPulse className="w-4 h-4" />

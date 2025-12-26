@@ -13,6 +13,7 @@ interface Profile {
   birthday: string | null;
   can_provide_medical_assistance: boolean;
   has_first_aid_kit: boolean;
+  has_ambulance: boolean;
   blood_type: string | null;
   allergies: string | null;
   medical_conditions: string | null;
@@ -192,6 +193,7 @@ export function useAuth() {
     role: 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR';
     can_provide_medical_assistance?: boolean;
     has_first_aid_kit?: boolean;
+    has_ambulance?: boolean;
   }) => {
     if (!state.user) {
       return { error: new Error('Not authenticated') };
@@ -209,6 +211,7 @@ export function useAuth() {
         birthday: profileData.birthday || null,
         can_provide_medical_assistance: profileData.can_provide_medical_assistance ?? false,
         has_first_aid_kit: profileData.has_first_aid_kit ?? false,
+        has_ambulance: profileData.has_ambulance ?? false,
       });
 
     if (profileError) {

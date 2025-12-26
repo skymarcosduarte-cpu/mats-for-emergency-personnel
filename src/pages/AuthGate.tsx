@@ -62,6 +62,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     role: 'SOS_ACTIVO' as 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR',
     canProvideMedicalAssistance: false,
     hasFirstAidKit: false,
+    hasAmbulance: false,
   });
 
   const { signUp, signIn, createProfile, user, isProfileComplete } = useAuth();
@@ -199,6 +200,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         role: profileForm.role,
         can_provide_medical_assistance: profileForm.canProvideMedicalAssistance,
         has_first_aid_kit: profileForm.hasFirstAidKit,
+        has_ambulance: profileForm.hasAmbulance,
       });
 
       if (profileError) {

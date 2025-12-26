@@ -260,6 +260,89 @@ const createTransitIcon = (isCurrentUser: boolean = false) => L.divIcon({
   popupAnchor: [0, isCurrentUser ? -20 : -16],
 });
 
+// Ambulance icon for users with ambulance
+const createAmbulanceIcon = () => L.divIcon({
+  className: 'ambulance-marker',
+  html: `
+    <div style="
+      width: 36px;
+      height: 36px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        position: absolute;
+        width: 36px;
+        height: 36px;
+        background: rgba(239, 68, 68, 0.3);
+        border-radius: 50%;
+        animation: pulseMedical 2s infinite;
+      "></div>
+      <div style="
+        width: 28px;
+        height: 28px;
+        background: #ef4444;
+        border: 2px solid white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        font-size: 14px;
+      ">🚑</div>
+    </div>
+  `,
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+  popupAnchor: [0, -18],
+});
+
+// First aid kit icon for users with kit
+const createFirstAidKitIcon = () => L.divIcon({
+  className: 'firstaid-marker',
+  html: `
+    <div style="
+      width: 32px;
+      height: 32px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        position: absolute;
+        width: 32px;
+        height: 32px;
+        background: rgba(239, 68, 68, 0.2);
+        border-radius: 50%;
+        animation: pulseMedical 2s infinite;
+      "></div>
+      <div style="
+        width: 24px;
+        height: 24px;
+        background: #ef4444;
+        border: 2px solid white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+      ">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+        </svg>
+      </div>
+    </div>
+  `,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+  popupAnchor: [0, -16],
+});
+
 // Default icon for users (uses FAMILIAR style - green with star)
 const createMatsIcon = (isCurrentUser: boolean = false) => createFamiliarIcon(isCurrentUser);
 
@@ -542,6 +625,8 @@ export interface POIVisibility {
   pharmacy: boolean;
   police: boolean;
   fire_station: boolean;
+  first_aid_kit: boolean;
+  ambulance: boolean;
 }
 
 // Collapsible Map Legend Component with POI toggles
@@ -555,6 +640,8 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
   const [isExpanded, setIsExpanded] = useState(false);
 
   const poiItems: { type: keyof POIVisibility; label: string; color: string; emoji: string }[] = [
+    { type: 'first_aid_kit', label: 'Botiquines', color: '#ef4444', emoji: '🩹' },
+    { type: 'ambulance', label: 'Ambulancias', color: '#ef4444', emoji: '🚑' },
     { type: 'hospital', label: 'Hospitales', color: '#ef4444', emoji: '🏥' },
     { type: 'gas_station', label: 'Gasolineras', color: '#f97316', emoji: '⛽' },
     { type: 'pharmacy', label: 'Farmacias', color: '#22c55e', emoji: '💊' },
@@ -632,10 +719,36 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
             <span className="text-foreground">Rescatista</span>
           </div>
 
+          {/* Recursos comunitarios Toggles */}
+          <div className="border-t border-border my-2 pt-2">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Recursos comunitarios</div>
+            {poiItems.filter(item => item.type === 'first_aid_kit' || item.type === 'ambulance').map(item => (
+              <button
+                key={item.type}
+                onClick={() => onTogglePOI(item.type)}
+                className={cn(
+                  "flex items-center gap-2 w-full py-1 px-1 rounded transition-colors",
+                  poiVisibility[item.type] ? "bg-accent/50" : "opacity-60 hover:opacity-100"
+                )}
+              >
+                <div 
+                  className="w-4 h-4 rounded flex items-center justify-center text-[10px]" 
+                  style={{ background: item.color }}
+                >
+                  {item.emoji}
+                </div>
+                <span className="text-foreground flex-1 text-left">{item.label}</span>
+                {poiVisibility[item.type] && (
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                )}
+              </button>
+            ))}
+          </div>
+
           {/* POI Toggles */}
           <div className="border-t border-border my-2 pt-2">
             <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Servicios (click para mostrar)</div>
-            {poiItems.map(item => (
+            {poiItems.filter(item => item.type !== 'first_aid_kit' && item.type !== 'ambulance').map(item => (
               <button
                 key={item.type}
                 onClick={() => onTogglePOI(item.type)}
@@ -686,6 +799,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     pharmacy: false,
     police: false,
     fire_station: false,
+    first_aid_kit: false,
+    ambulance: false,
   });
 
   const { position, error: locationError } = useLocation();
@@ -905,6 +1020,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const isMe = loc.user_id === currentUserId;
       const hasFirstAidKit = loc.has_first_aid_kit ?? false;
       const canProvideMedical = loc.can_provide_medical_assistance ?? false;
+      const hasAmbulance = (loc as any).has_ambulance ?? false;
       
       // Priority: Transit > SOS Activo/EX-SOS > Familiar
       let icon;
@@ -957,6 +1073,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const medicalCapabilities: string[] = [];
       if (canProvideMedical) medicalCapabilities.push('🩺 Asistencia médica');
       if (hasFirstAidKit) medicalCapabilities.push('🧰 Botiquín');
+      if (hasAmbulance) medicalCapabilities.push('🚑 Ambulancia');
       const medicalInfo = medicalCapabilities.length > 0 
         ? `<div style="font-size: 10px; color: #22c55e; margin-top: 4px;">${medicalCapabilities.join(' • ')}</div>`
         : '';
@@ -1244,6 +1361,82 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       }
     });
   }, [medicalProviders, mapReady]);
+
+  // Update first aid kit and ambulance markers based on POI visibility toggles
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady) return;
+    const map = mapInstanceRef.current;
+
+    // Handle first aid kit markers
+    if (poiVisibility.first_aid_kit) {
+      // Add markers for users with first aid kits
+      locations.forEach((loc) => {
+        const hasKit = loc.has_first_aid_kit ?? false;
+        if (!hasKit) return;
+        
+        const key = `firstaid-${loc.user_id}`;
+        if (markersRef.current.has(key)) return; // Already exists
+        
+        const marker = L.marker([loc.lat, loc.lng], {
+          icon: createFirstAidKitIcon(),
+          zIndexOffset: 450,
+        })
+          .addTo(map)
+          .bindPopup(`
+            <div style="text-align: center; padding: 4px;">
+              <div style="font-size: 14px; font-weight: bold; color: #ef4444;">🩹 Botiquín Disponible</div>
+              <div style="font-size: 11px; color: #666; margin-top: 6px;">
+                Miembro con kit de primeros auxilios
+              </div>
+            </div>
+          `);
+        markersRef.current.set(key, marker);
+      });
+    } else {
+      // Remove first aid kit markers
+      markersRef.current.forEach((marker, key) => {
+        if (key.startsWith('firstaid-')) {
+          map.removeLayer(marker);
+          markersRef.current.delete(key);
+        }
+      });
+    }
+
+    // Handle ambulance markers
+    if (poiVisibility.ambulance) {
+      // Add markers for users with ambulances
+      locations.forEach((loc) => {
+        const hasAmbulance = (loc as any).has_ambulance ?? false;
+        if (!hasAmbulance) return;
+        
+        const key = `ambulance-${loc.user_id}`;
+        if (markersRef.current.has(key)) return; // Already exists
+        
+        const marker = L.marker([loc.lat, loc.lng], {
+          icon: createAmbulanceIcon(),
+          zIndexOffset: 500,
+        })
+          .addTo(map)
+          .bindPopup(`
+            <div style="text-align: center; padding: 4px;">
+              <div style="font-size: 14px; font-weight: bold; color: #ef4444;">🚑 Ambulancia Disponible</div>
+              <div style="font-size: 11px; color: #666; margin-top: 6px;">
+                Miembro con vehículo de emergencia
+              </div>
+            </div>
+          `);
+        markersRef.current.set(key, marker);
+      });
+    } else {
+      // Remove ambulance markers
+      markersRef.current.forEach((marker, key) => {
+        if (key.startsWith('ambulance-')) {
+          map.removeLayer(marker);
+          markersRef.current.delete(key);
+        }
+      });
+    }
+  }, [locations, poiVisibility.first_aid_kit, poiVisibility.ambulance, mapReady]);
 
   // Update panic event markers
   useEffect(() => {
