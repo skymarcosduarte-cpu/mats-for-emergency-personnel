@@ -90,29 +90,35 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
     setShowConfirmation(false);
   }, []);
 
-  // Unified touch handler for Android
-  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLButtonElement>) => {
-    console.log('[AppHeader] TouchStart detected');
-    // Mark that a touch started (for click filtering)
-    lastActivatedAtRef.current = -1; // Use -1 as marker that touch started
+  // Unified touch/pointer handler for cross-platform compatibility
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    console.log('[AppHeader] PointerDown:', e.pointerType);
+    // Mark the start time for all pointer types
+    lastActivatedAtRef.current = -Date.now(); // Negative to mark as "in progress"
   }, []);
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLButtonElement>) => {
-    console.log('[AppHeader] TouchEnd detected');
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    console.log('[AppHeader] PointerUp:', e.pointerType);
+    
+    // Only trigger if we had a corresponding pointerdown
+    if (lastActivatedAtRef.current >= 0) {
+      console.log('[AppHeader] No matching pointerdown, skipping');
+      return;
+    }
+    
     e.preventDefault();
     e.stopPropagation();
     triggerPanic();
   }, [triggerPanic]);
 
-  // Click handler - works for both mouse and touch (as fallback)
+  // Fallback click handler for devices that don't support pointer events well
   const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     console.log('[AppHeader] Click detected, lastActivated:', lastActivatedAtRef.current);
     
-    // If this was a touch-based click, the touch handlers already handled it
-    // Check if we're within 1 second of a touch (marker is set in touchStart/touchEnd)
+    // If pointer events handled it, skip
     const timeSinceLastActivation = Date.now() - Math.abs(lastActivatedAtRef.current);
     if (lastActivatedAtRef.current !== 0 && timeSinceLastActivation < 1000) {
-      console.log('[AppHeader] Click skipped - recent touch/activation detected');
+      console.log('[AppHeader] Click skipped - recent pointer/activation detected');
       return;
     }
     
@@ -126,16 +132,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
         <MatsLogo size={36} showText />
         
         <button
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={() => { lastActivatedAtRef.current = 0; }}
           onClick={handleClick}
-          className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-panic to-red-600 text-white shadow-lg shadow-panic/40 touch-manipulation select-none active:scale-95 transition-all hover:shadow-panic/60"
+          className="relative flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-panic to-red-600 text-white shadow-lg shadow-panic/40 touch-manipulation select-none active:scale-95 transition-all hover:shadow-panic/60"
           aria-label="Botón de pánico - SOS"
           type="button"
           style={{ 
             WebkitTapHighlightColor: 'transparent',
             touchAction: 'manipulation',
             userSelect: 'none',
+            WebkitUserSelect: 'none',
           }}
         >
           <AlertTriangle className="w-5 h-5 pointer-events-none" />

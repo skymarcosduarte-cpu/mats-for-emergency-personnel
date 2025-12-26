@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, X, Download, Sparkles, Smartphone, Share, Plus, Chrome, Globe, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
-import { useUpdateCheck } from "@/hooks/useUpdateCheck";
+import { useUpdateCheck, useUpdateAvailable } from "@/hooks/useUpdateCheck";
 import {
   Dialog,
   DialogContent,
@@ -10,63 +10,77 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// Non-intrusive update notification - uses toast instead of blocking banner
 export function UpdatePrompt() {
   const { updateAvailable, applyUpdate, dismissUpdate } = useUpdateCheck();
+  const [hasShownToast, setHasShownToast] = useState(false);
 
-  // Don't show if dismissed this session
+  // Show a non-blocking toast when update becomes available
+  useEffect(() => {
+    if (updateAvailable && !hasShownToast) {
+      const wasDismissed = sessionStorage.getItem("update-dismissed") === "true";
+      if (wasDismissed) return;
+      
+      setHasShownToast(true);
+      
+      // Delay slightly to not interrupt initial page load
+      const timer = setTimeout(() => {
+        toast.info('Nueva versión disponible', {
+          description: 'Actualiza para obtener las últimas mejoras',
+          duration: 10000,
+          icon: <Sparkles className="h-4 w-4 text-primary" />,
+          action: {
+            label: 'Actualizar',
+            onClick: () => {
+              toast.success('Actualizando...');
+              applyUpdate();
+            },
+          },
+          cancel: {
+            label: 'Después',
+            onClick: () => {
+              dismissUpdate();
+            },
+          },
+        });
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [updateAvailable, hasShownToast, applyUpdate, dismissUpdate]);
+
+  // Reset toast flag when update is dismissed
+  useEffect(() => {
+    if (!updateAvailable) {
+      setHasShownToast(false);
+    }
+  }, [updateAvailable]);
+
+  // No visible UI - uses toast instead
+  return null;
+}
+
+// Small floating indicator for persistent but non-intrusive update notice
+export function UpdateIndicator() {
+  const updateAvailable = useUpdateAvailable();
+  const { applyUpdate } = useUpdateCheck();
+  
   const wasDismissed = sessionStorage.getItem("update-dismissed") === "true";
-
-  if (!updateAvailable || wasDismissed) {
-    return null;
-  }
-
-  const handleUpdate = () => {
-    toast.success("Actualizando...");
-    applyUpdate();
-  };
-
+  
+  if (!updateAvailable || wasDismissed) return null;
+  
   return (
-    <div className="fixed top-14 left-0 right-0 z-40 px-3 animate-in slide-in-from-top-4 duration-300">
-      <div className="max-w-lg mx-auto bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-xl p-4 shadow-2xl border border-primary-foreground/20">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
-            <Sparkles className="h-5 w-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm">¡Nueva versión disponible!</p>
-            <p className="text-xs text-primary-foreground/80 mt-0.5">
-              Actualiza para obtener las últimas mejoras y correcciones
-            </p>
-          </div>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 flex-shrink-0"
-            onClick={dismissUpdate}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="flex gap-2 mt-3">
-          <Button
-            size="sm"
-            className="flex-1 bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold"
-            onClick={handleUpdate}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Actualizar Ahora
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
-            onClick={dismissUpdate}
-          >
-            Más tarde
-          </Button>
-        </div>
-      </div>
-    </div>
+    <button
+      onClick={() => {
+        toast.success('Actualizando...');
+        applyUpdate();
+      }}
+      className="fixed bottom-24 right-4 z-[900] flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-full shadow-lg animate-in slide-in-from-right-4 duration-300 hover:scale-105 transition-transform"
+      aria-label="Actualizar aplicación"
+    >
+      <Sparkles className="h-4 w-4" />
+      <span className="text-xs font-medium">Actualizar</span>
+    </button>
   );
 }
 
