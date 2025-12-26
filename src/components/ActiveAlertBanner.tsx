@@ -74,15 +74,56 @@ export const ActiveAlertBanner: React.FC = () => {
       if (error) {
         console.error('[ActiveAlertBanner] Cancel error:', error);
         toast.error('Error al cancelar la alerta');
+        // Error sound
+        try {
+          const errorAudio = new Audio('/alert-sound.mp3');
+          errorAudio.volume = 0.3;
+          errorAudio.playbackRate = 0.7;
+          errorAudio.play().catch(() => {});
+        } catch {}
         return;
       }
 
       toast.success('Alerta cancelada correctamente');
       setActiveAlert(null);
       
+      // Success sound - a quick confirmation beep
+      try {
+        const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.frequency.value = 880; // A5 note
+        oscillator.type = 'sine';
+        gainNode.gain.value = 0.3;
+        
+        oscillator.start();
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        oscillator.stop(audioCtx.currentTime + 0.15);
+        
+        // Second beep (higher)
+        setTimeout(() => {
+          const osc2 = audioCtx.createOscillator();
+          const gain2 = audioCtx.createGain();
+          osc2.connect(gain2);
+          gain2.connect(audioCtx.destination);
+          osc2.frequency.value = 1318; // E6 note
+          osc2.type = 'sine';
+          gain2.gain.value = 0.3;
+          osc2.start();
+          gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+          osc2.stop(audioCtx.currentTime + 0.2);
+        }, 100);
+      } catch {
+        // Fallback: ignore audio errors
+      }
+      
       // Vibrate to confirm
       if ('vibrate' in navigator) {
-        navigator.vibrate(100);
+        navigator.vibrate([50, 50, 50]);
       }
     } catch (err) {
       console.error('[ActiveAlertBanner] Cancel exception:', err);
