@@ -394,6 +394,7 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
       title: 'Listo',
       description: 'El vendedor fue notificado dentro de la app.',
     });
+  };
 
   // My listings
   const myListings = useMemo(() => {

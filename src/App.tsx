@@ -242,7 +242,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen min-h-dvh bg-background flex flex-col overflow-x-hidden">
       <AppHeader onPanicClick={() => setPanicOpen(true)} />
       <ActiveAlertBanner testAlert={testAlert} onClearTestAlert={clearTestAlert} refreshTrigger={alertRefreshTrigger} />
       <UpdatePrompt />
