@@ -412,3 +412,98 @@ export function usePanicEvents() {
 
   return { events, resolveEvent, refetch: fetchEvents };
 }
+
+// Hook for tracking responders - gets location of users who are responding to help requests
+interface ActiveResponder {
+  request_id: string;
+  responder_id: string;
+  responder_lat: number;
+  responder_lng: number;
+  emergency_lat: number;
+  emergency_lng: number;
+  responding_started_at: string;
+}
+
+export function useActiveResponders() {
+  const [responders, setResponders] = useState<ActiveResponder[]>([]);
+
+  const fetchResponders = useCallback(async () => {
+    // Get all help requests with active responders
+    const { data: helpData, error: helpError } = await supabase
+      .from('help_requests')
+      .select('id, lat, lng, responding_by, responding_started_at')
+      .eq('resolved', false)
+      .not('responding_by', 'is', null);
+
+    if (helpError || !helpData) return;
+
+    // Get locations for all responders
+    const responderIds = helpData.map(h => h.responding_by).filter(Boolean) as string[];
+    if (responderIds.length === 0) {
+      setResponders([]);
+      return;
+    }
+
+    const { data: locData, error: locError } = await supabase
+      .from('user_locations')
+      .select('user_id, lat, lng')
+      .in('user_id', responderIds);
+
+    if (locError || !locData) return;
+
+    // Combine data
+    const activeResponders: ActiveResponder[] = helpData
+      .filter(h => h.responding_by)
+      .map(h => {
+        const loc = locData.find(l => l.user_id === h.responding_by);
+        if (!loc) return null;
+        return {
+          request_id: h.id,
+          responder_id: h.responding_by!,
+          responder_lat: loc.lat,
+          responder_lng: loc.lng,
+          emergency_lat: h.lat,
+          emergency_lng: h.lng,
+          responding_started_at: h.responding_started_at!,
+        };
+      })
+      .filter(Boolean) as ActiveResponder[];
+
+    setResponders(activeResponders);
+  }, []);
+
+  useEffect(() => {
+    fetchResponders();
+
+    // Subscribe to help request updates (new responders)
+    const helpChannel = supabase
+      .channel('responders_help_changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'help_requests' },
+        () => fetchResponders()
+      )
+      .subscribe();
+
+    // Subscribe to user location updates (responder movement)
+    const locationChannel = supabase
+      .channel('responders_location_changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'user_locations' },
+        () => fetchResponders()
+      )
+      .subscribe();
+
+    // Refresh every 5 seconds for smoother updates
+    const interval = setInterval(fetchResponders, 5000);
+
+    return () => {
+      supabase.removeChannel(helpChannel);
+      supabase.removeChannel(locationChannel);
+      clearInterval(interval);
+    };
+  }, [fetchResponders]);
+
+  return { responders, refetch: fetchResponders };
+}
