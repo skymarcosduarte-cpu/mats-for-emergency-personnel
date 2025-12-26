@@ -192,18 +192,30 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
 
     // Redirect the placeholder window (or fallback to opening a new tab)
     // NOTE: On desktop, navigating the current tab away from the app can feel like a "freeze".
-    setTimeout(() => {
-      try {
-        if (waWindow && !waWindow.closed) {
-          waWindow.location.assign(waUrl);
-        } else {
-          window.open(waUrl, '_blank', 'noopener,noreferrer');
+    try {
+      if (waWindow && !waWindow.closed) {
+        // This should work even if popups are blocked because the window already exists.
+        waWindow.location.assign(waUrl);
+      } else {
+        const opened = window.open(waUrl, '_blank', 'noopener,noreferrer');
+        if (!opened) {
+          toast.error('Pop-up bloqueado', {
+            description: 'Tu navegador bloqueó WhatsApp. Presiona “Abrir WhatsApp”.',
+            duration: 10000,
+            action: {
+              label: 'Abrir WhatsApp',
+              onClick: () => window.open(waUrl, '_blank', 'noopener,noreferrer'),
+            },
+          });
         }
-      } catch (e) {
-        console.error('Failed to open WhatsApp:', e);
-        window.open(waUrl, '_blank', 'noopener,noreferrer');
       }
-    }, 100);
+    } catch (e) {
+      console.error('Failed to open WhatsApp:', e);
+      toast.error('No se pudo abrir WhatsApp', {
+        description: 'Copia el mensaje o intenta permitir pop-ups para este sitio.',
+        duration: 8000,
+      });
+    }
 
     // Notify emergency contacts via WhatsApp
     if (contacts.length > 0) {
@@ -219,25 +231,24 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         }
       );
 
-      // On desktop, opening many tabs can freeze the browser; limit auto-opens.
+      // On desktop, opening many tabs can freeze the browser.
       const isDesktop = window.matchMedia('(pointer: fine)').matches;
-      const maxAutoOpens = isDesktop ? 1 : contactUrls.length;
 
-      // Open WhatsApp for each contact with a small delay between each (limited on desktop)
-      contactUrls.slice(0, maxAutoOpens).forEach((item, index) => {
-        setTimeout(() => {
-          try {
-            window.open(item.url, '_blank', 'noopener,noreferrer');
-          } catch (e) {
-            console.error(`Failed to open WhatsApp for ${item.contact.name}:`, e);
-          }
-        }, 500 + (index * 1500)); // Stagger openings to avoid popup blockers
-      });
-
-      if (isDesktop && contactUrls.length > 1) {
-        toast.info('Para evitar bloqueos en desktop', {
-          description: 'Se abrió 1 chat automáticamente. Abre los demás desde WhatsApp.',
-          duration: 7000,
+      if (isDesktop) {
+        toast.info('Contactos de emergencia', {
+          description: 'En desktop no abrimos múltiples chats automáticamente para evitar congelamientos.',
+          duration: 9000,
+        });
+      } else {
+        // Open WhatsApp for each contact with a small delay between each
+        contactUrls.forEach((item, index) => {
+          setTimeout(() => {
+            try {
+              window.open(item.url, '_blank', 'noopener,noreferrer');
+            } catch (e) {
+              console.error(`Failed to open WhatsApp for ${item.contact.name}:`, e);
+            }
+          }, 500 + (index * 1500)); // Stagger openings to avoid popup blockers
         });
       }
     } else {
