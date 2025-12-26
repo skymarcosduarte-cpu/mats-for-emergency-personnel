@@ -282,8 +282,8 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                             </Button>
                             <MedicalInfoBadge userId={event.user_id} isRescatista={isRescatista} />
                             
-                            {/* Small delete for rescatistas (not owner) */}
-                            {!isMyAlert && isRescatista && onResolvePanicEvent && (
+                            {/* Delete button fallback (owner + rescatistas) */}
+                            {canDelete(event.user_id) && onResolvePanicEvent && (
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -387,8 +387,8 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                               </Button>
                               <MedicalInfoBadge userId={request.user_id} isRescatista={isRescatista} />
                               
-                              {/* Small delete for rescatistas (not owner) */}
-                              {!isMyAlert && isRescatista && onResolveHelpRequest && (
+                              {/* Delete button fallback (owner + rescatistas) */}
+                              {canDelete(request.user_id) && onResolveHelpRequest && (
                                 <Button
                                   size="sm"
                                   variant="ghost"

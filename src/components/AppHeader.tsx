@@ -20,6 +20,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
     triggerPanic(e);
   };
 
+  const handlePanicTouchEnd = (e: React.TouchEvent<HTMLButtonElement>) => {
+    // Fallback for Android WebView / older browsers where PointerEvents can be flaky.
+    lastActivatedAtRef.current = Date.now();
+    triggerPanic(e);
+  };
+
   const handlePanicClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     // Prevent the synthetic click that follows a touch/pointer interaction on Android.
     if (Date.now() - lastActivatedAtRef.current < 700) return;
@@ -32,6 +38,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
       
       <button
         onPointerUp={handlePanicPointerUp}
+        onTouchEnd={handlePanicTouchEnd}
         onClick={handlePanicClick}
         className="relative w-12 h-12 rounded-full bg-panic text-primary-foreground shadow-panic flex items-center justify-center touch-manipulation select-none"
         aria-label="Botón de pánico"
