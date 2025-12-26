@@ -190,17 +190,18 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
     setIsOpen(false);
     setSelectedType(null);
 
-    // Redirect the placeholder window (or fallback to direct navigation)
+    // Redirect the placeholder window (or fallback to opening a new tab)
+    // NOTE: On desktop, navigating the current tab away from the app can feel like a "freeze".
     setTimeout(() => {
       try {
         if (waWindow && !waWindow.closed) {
-          waWindow.location.href = waUrl;
+          waWindow.location.assign(waUrl);
         } else {
-          window.location.href = waUrl;
+          window.open(waUrl, '_blank', 'noopener,noreferrer');
         }
       } catch (e) {
         console.error('Failed to open WhatsApp:', e);
-        window.location.href = waUrl;
+        window.open(waUrl, '_blank', 'noopener,noreferrer');
       }
     }, 100);
 
@@ -218,16 +219,27 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         }
       );
 
-      // Open WhatsApp for each contact with a small delay between each
-      contactUrls.forEach((item, index) => {
+      // On desktop, opening many tabs can freeze the browser; limit auto-opens.
+      const isDesktop = window.matchMedia('(pointer: fine)').matches;
+      const maxAutoOpens = isDesktop ? 1 : contactUrls.length;
+
+      // Open WhatsApp for each contact with a small delay between each (limited on desktop)
+      contactUrls.slice(0, maxAutoOpens).forEach((item, index) => {
         setTimeout(() => {
           try {
-            window.open(item.url, '_blank');
+            window.open(item.url, '_blank', 'noopener,noreferrer');
           } catch (e) {
             console.error(`Failed to open WhatsApp for ${item.contact.name}:`, e);
           }
         }, 500 + (index * 1500)); // Stagger openings to avoid popup blockers
       });
+
+      if (isDesktop && contactUrls.length > 1) {
+        toast.info('Para evitar bloqueos en desktop', {
+          description: 'Se abrió 1 chat automáticamente. Abre los demás desde WhatsApp.',
+          duration: 7000,
+        });
+      }
     } else {
       toast.warning(
         'No tienes contactos de emergencia configurados',
