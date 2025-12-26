@@ -26,7 +26,7 @@ export function UpdatePrompt() {
   };
 
   return (
-    <div className="fixed top-14 left-0 right-0 z-50 px-3 animate-in slide-in-from-top-4 duration-300">
+    <div className="fixed top-14 left-0 right-0 z-40 px-3 animate-in slide-in-from-top-4 duration-300">
       <div className="max-w-lg mx-auto bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-xl p-4 shadow-2xl border border-primary-foreground/20">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
