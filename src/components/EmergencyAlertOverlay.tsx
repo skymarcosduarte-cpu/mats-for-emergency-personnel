@@ -28,7 +28,7 @@ interface EmergencyAlertOverlayProps {
 }
 
 const PANIC_TYPE_LABELS: Record<string, { label: string; emoji: string; color: string }> = {
-  'AMBULANCIA_PROPIA': { label: 'Ambulancia Propia', emoji: '🚑', color: 'bg-red-500' },
+  'AMBULANCIA_PROPIA': { label: 'Ambulancia para mí', emoji: '🚑', color: 'bg-red-500' },
   'AMBULANCIA_TERCERO': { label: 'Ambulancia Tercero', emoji: '🚑', color: 'bg-red-500' },
   'PATRULLA': { label: 'Patrulla', emoji: '🚔', color: 'bg-blue-500' },
   'MECANICO': { label: 'Mecánico', emoji: '🔧', color: 'bg-yellow-500' },

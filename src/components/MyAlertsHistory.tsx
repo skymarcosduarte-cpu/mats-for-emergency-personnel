@@ -38,7 +38,7 @@ interface ResponderInfo {
 
 // Map kind to readable label
 const KIND_LABELS: Record<string, string> = {
-  'AMBULANCIA_PROPIA': 'Ambulancia Propia',
+  'AMBULANCIA_PROPIA': 'Ambulancia para mí',
   'AMBULANCIA_TERCERO': 'Ambulancia Tercero',
   'PATRULLA': 'Patrulla',
   'MECANICO': 'Mecánico',

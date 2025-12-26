@@ -26,7 +26,7 @@ interface PanicOption {
 const PANIC_OPTIONS: PanicOption[] = [
   {
     type: 'AMBULANCIA_PROPIA',
-    label: 'Ambulancia Propia',
+    label: 'Ambulancia para mí',
     icon: <Ambulance className="w-6 h-6" />,
     description: 'Necesito ambulancia para mí',
   },
