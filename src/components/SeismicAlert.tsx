@@ -144,7 +144,7 @@ export function SeismicAlert({
         }
 
         // Alert is handled inside the app (realtime + notifications)
-
+      }
 
       toast({
         title: felt ? "Reporte enviado" : "Gracias por reportar",
