@@ -367,6 +367,25 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         }
       }
 
+      // Notify nearby users about the new report
+      try {
+        await supabase.functions.invoke('notify-nearby-report', {
+          body: {
+            reportId: reportData.id,
+            lat: position.lat,
+            lng: position.lng,
+            title: reportForm.title,
+            category: reportForm.category,
+            creatorId: user.id,
+            radiusMeters: 5000, // 5km radius
+          },
+        });
+        console.log('[TransitScreen] Nearby users notified');
+      } catch (notifyError) {
+        console.error('[TransitScreen] Error notifying nearby users:', notifyError);
+        // Don't fail the report submission if notification fails
+      }
+
       toast.success('¡Reporte enviado!', {
         description: 'Gracias por ayudar a la comunidad',
       });

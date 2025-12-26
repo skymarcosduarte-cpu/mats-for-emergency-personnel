@@ -40,7 +40,7 @@ export function useNotifications() {
     }
   }, []);
 
-  // Show toast for new responder contact notifications
+  // Show toast for new notifications
   const showContactNotification = useCallback((notification: Notification) => {
     if (notification.type === 'responder_contact') {
       // Play positive alert sound
@@ -56,6 +56,21 @@ export function useNotifications() {
       // Vibrate device
       if ('vibrate' in navigator) {
         navigator.vibrate([200, 100, 200, 100, 200]);
+      }
+    } else if (notification.type === 'road_report') {
+      // Play alert sound for nearby road reports
+      playPositiveAlert();
+      
+      // Show toast for road report
+      toast.warning(notification.title, {
+        description: notification.message || 'Nuevo reporte de incidente',
+        duration: 8000,
+        icon: '🚧',
+      });
+
+      // Vibrate device
+      if ('vibrate' in navigator) {
+        navigator.vibrate([100, 50, 100]);
       }
     }
   }, []);
