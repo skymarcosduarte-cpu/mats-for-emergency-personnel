@@ -244,6 +244,55 @@ export function useAuth() {
     return { error: null };
   };
 
+  // Update user role
+  const updateRole = async (newRole: 'RESCATISTA' | 'FAMILIAR') => {
+    if (!state.user) {
+      return { error: new Error('Not authenticated') };
+    }
+
+    const { error } = await supabase
+      .from('user_roles')
+      .update({ role: newRole })
+      .eq('user_id', state.user.id);
+
+    if (error) {
+      return { error: new Error(error.message) };
+    }
+
+    setState(prev => ({ ...prev, role: newRole }));
+    return { error: null };
+  };
+
+  // Delete user account
+  const deleteAccount = async () => {
+    if (!state.user) {
+      return { error: new Error('Not authenticated') };
+    }
+
+    // Delete profile first (will cascade to user_roles via trigger or we handle it)
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', state.user.id);
+
+    if (profileError) {
+      return { error: new Error(profileError.message) };
+    }
+
+    // Sign out the user
+    await supabase.auth.signOut();
+    setState({
+      user: null,
+      session: null,
+      profile: null,
+      role: null,
+      loading: false,
+      error: null,
+    });
+
+    return { error: null };
+  };
+
   // Sign out
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -265,6 +314,8 @@ export function useAuth() {
     signIn,
     createProfile,
     updateProfile,
+    updateRole,
+    deleteAccount,
     signOut,
   };
 }
