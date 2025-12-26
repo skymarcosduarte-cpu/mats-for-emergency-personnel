@@ -4,10 +4,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import DOMPurify from 'dompurify';
-import { Locate, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { Locate, ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame } from 'lucide-react';
 import { useLocation } from '@/hooks/useLocation';
 import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders, usePanicEvents, useActiveResponders } from '@/hooks/useRealtime';
 import { useEmergencyResponse } from '@/hooks/useEmergencyResponse';
+import { usePOIs, type POI } from '@/hooks/usePOIs';
 import { AlertsPanel } from '@/components/AlertsPanel';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -276,12 +277,68 @@ const createMedicalIcon = (hasKit: boolean, canProvide: boolean) => {
   });
 };
 
-// Collapsible Map Legend Component
-const MapLegend: React.FC = () => {
+// POI Icons
+const createPOIIcon = (type: POI['type'], isPrivate?: boolean) => {
+  const configs: Record<POI['type'], { color: string; emoji: string }> = {
+    hospital: { color: isPrivate ? '#8b5cf6' : '#ef4444', emoji: '🏥' },
+    gas_station: { color: '#f97316', emoji: '⛽' },
+    pharmacy: { color: '#22c55e', emoji: '💊' },
+    police: { color: '#3b82f6', emoji: '👮' },
+    fire_station: { color: '#dc2626', emoji: '🚒' },
+  };
+  const config = configs[type];
+
+  return L.divIcon({
+    className: `poi-marker poi-${type}`,
+    html: `
+      <div style="
+        width: 28px;
+        height: 28px;
+        background: ${config.color};
+        border: 2px solid white;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      ">${config.emoji}</div>
+    `,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -14],
+  });
+};
+
+// POI visibility state type
+export interface POIVisibility {
+  hospital: boolean;
+  gas_station: boolean;
+  pharmacy: boolean;
+  police: boolean;
+  fire_station: boolean;
+}
+
+// Collapsible Map Legend Component with POI toggles
+interface MapLegendProps {
+  poiVisibility: POIVisibility;
+  onTogglePOI: (type: keyof POIVisibility) => void;
+  poisLoading?: boolean;
+}
+
+const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisLoading }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const poiItems: { type: keyof POIVisibility; label: string; color: string; emoji: string }[] = [
+    { type: 'hospital', label: 'Hospitales', color: '#ef4444', emoji: '🏥' },
+    { type: 'gas_station', label: 'Gasolineras', color: '#f97316', emoji: '⛽' },
+    { type: 'pharmacy', label: 'Farmacias', color: '#22c55e', emoji: '💊' },
+    { type: 'police', label: 'Policía', color: '#3b82f6', emoji: '👮' },
+    { type: 'fire_station', label: 'Bomberos', color: '#dc2626', emoji: '🚒' },
+  ];
+
   return (
-    <div className="absolute bottom-20 right-4 z-[500] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border overflow-hidden">
+    <div className="absolute bottom-20 right-4 z-[500] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border overflow-hidden max-h-[60vh] overflow-y-auto">
       <button 
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between p-2.5 hover:bg-accent/50 transition-colors"
@@ -290,6 +347,7 @@ const MapLegend: React.FC = () => {
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <Info className="w-3.5 h-3.5" />
           <span>Leyenda</span>
+          {poisLoading && <span className="text-[10px] text-primary animate-pulse">Cargando...</span>}
         </div>
         {isExpanded ? (
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -300,6 +358,8 @@ const MapLegend: React.FC = () => {
       
       {isExpanded && (
         <div className="px-3 pb-3 pt-1 space-y-2 text-xs animate-in slide-in-from-bottom-2 duration-200">
+          {/* Core markers */}
+          <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Comunidad</div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full" style={{ background: '#2e8b57' }} />
             <span className="text-foreground">Miembro</span>
@@ -324,6 +384,32 @@ const MapLegend: React.FC = () => {
             <div className="w-4 h-4 rounded-full animate-pulse" style={{ background: '#3b82f6' }} />
             <span className="text-foreground">Rescatista</span>
           </div>
+
+          {/* POI Toggles */}
+          <div className="border-t border-border my-2 pt-2">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Servicios (click para mostrar)</div>
+            {poiItems.map(item => (
+              <button
+                key={item.type}
+                onClick={() => onTogglePOI(item.type)}
+                className={cn(
+                  "flex items-center gap-2 w-full py-1 px-1 rounded transition-colors",
+                  poiVisibility[item.type] ? "bg-accent/50" : "opacity-60 hover:opacity-100"
+                )}
+              >
+                <div 
+                  className="w-4 h-4 rounded flex items-center justify-center text-[10px]" 
+                  style={{ background: item.color }}
+                >
+                  {item.emoji}
+                </div>
+                <span className="text-foreground flex-1 text-left">{item.label}</span>
+                {poiVisibility[item.type] && (
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -346,6 +432,15 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
+  // POI visibility state
+  const [poiVisibility, setPoiVisibility] = useState<POIVisibility>({
+    hospital: false,
+    gas_station: false,
+    pharmacy: false,
+    police: false,
+    fire_station: false,
+  });
+
   const { position, error: locationError } = useLocation();
   const { role, user } = useAuth();
   const { locations } = useUserLocations();
@@ -355,9 +450,18 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   const { events: panicEvents, resolveEvent } = usePanicEvents();
   const { responders: activeResponders } = useActiveResponders();
   const { startResponding, stopResponding, markAsArrived, markAsResolved } = useEmergencyResponse();
+  const { pois, loading: poisLoading, fetchPOIs } = usePOIs();
   
   const isRescatista = role === 'RESCATISTA';
   const currentUserId = user?.id;
+
+  // Check if any POI type is enabled
+  const anyPOIEnabled = Object.values(poiVisibility).some(v => v);
+
+  // Toggle POI visibility
+  const handleTogglePOI = useCallback((type: keyof POIVisibility) => {
+    setPoiVisibility(prev => ({ ...prev, [type]: !prev[type] }));
+  }, []);
 
   // Handle respond to help request from modal
   const handleRespondToRequest = useCallback(async (requestId: string) => {
@@ -955,6 +1059,82 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       });
   }, [respondersToMyAlerts, mapReady]);
 
+  // Fetch POIs when map moves and any POI type is enabled
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady || !anyPOIEnabled) return;
+    const map = mapInstanceRef.current;
+
+    const handleMoveEnd = () => {
+      const bounds = map.getBounds();
+      fetchPOIs({
+        south: bounds.getSouth(),
+        west: bounds.getWest(),
+        north: bounds.getNorth(),
+        east: bounds.getEast(),
+      });
+    };
+
+    // Fetch immediately for current bounds
+    handleMoveEnd();
+
+    map.on('moveend', handleMoveEnd);
+    return () => {
+      map.off('moveend', handleMoveEnd);
+    };
+  }, [mapReady, anyPOIEnabled, fetchPOIs]);
+
+  // Update POI markers
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady) return;
+    const map = mapInstanceRef.current;
+
+    // Get visible POI types
+    const visiblePOIs = pois.filter(poi => poiVisibility[poi.type]);
+    const visiblePOIKeys = new Set(visiblePOIs.map(poi => `poi-${poi.id}`));
+
+    // Remove old POI markers
+    markersRef.current.forEach((marker, key) => {
+      if (key.startsWith('poi-') && !visiblePOIKeys.has(key)) {
+        map.removeLayer(marker);
+        markersRef.current.delete(key);
+      }
+    });
+
+    // Add/update POI markers
+    visiblePOIs.forEach(poi => {
+      const key = `poi-${poi.id}`;
+      const existingMarker = markersRef.current.get(key);
+
+      const hospitalLabel = poi.type === 'hospital' 
+        ? (poi.isPrivate ? ' (Privado)' : ' (Público)')
+        : '';
+
+      const popupContent = `
+        <div style="text-align: center; padding: 4px; max-width: 180px;">
+          <div style="font-size: 13px; font-weight: 600;">${sanitize(poi.name)}${hospitalLabel}</div>
+          <a href="https://maps.google.com/?q=${poi.lat},${poi.lng}" 
+             target="_blank" 
+             style="display: inline-block; margin-top: 6px; font-size: 11px; color: #3b82f6;">
+            Abrir en Google Maps
+          </a>
+        </div>
+      `;
+
+      if (existingMarker) {
+        existingMarker.setLatLng([poi.lat, poi.lng]);
+        existingMarker.setPopupContent(popupContent);
+      } else {
+        const marker = L.marker([poi.lat, poi.lng], {
+          icon: createPOIIcon(poi.type, poi.isPrivate),
+          zIndexOffset: 100,
+        })
+          .addTo(map)
+          .bindPopup(popupContent);
+        markersRef.current.set(key, marker);
+      }
+    });
+  }, [pois, poiVisibility, mapReady]);
+
   // Handle view location from alerts panel
   const handleViewLocation = useCallback((lat: number, lng: number) => {
     if (!mapInstanceRef.current) return;
@@ -1012,8 +1192,12 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         />
       </div>
 
-      {/* Map legend - Collapsible to avoid obstructing */}
-      <MapLegend />
+      {/* Map legend with POI toggles */}
+      <MapLegend 
+        poiVisibility={poiVisibility}
+        onTogglePOI={handleTogglePOI}
+        poisLoading={poisLoading}
+      />
     </div>
   );
 };
