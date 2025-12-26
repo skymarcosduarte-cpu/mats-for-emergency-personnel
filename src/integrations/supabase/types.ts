@@ -486,6 +486,7 @@ export type Database = {
           current_medications: string | null
           emergency_medical_notes: string | null
           full_name: string
+          has_ambulance: boolean | null
           has_first_aid_kit: boolean | null
           id: string
           medical_conditions: string | null
@@ -504,6 +505,7 @@ export type Database = {
           current_medications?: string | null
           emergency_medical_notes?: string | null
           full_name: string
+          has_ambulance?: boolean | null
           has_first_aid_kit?: boolean | null
           id: string
           medical_conditions?: string | null
@@ -522,6 +524,7 @@ export type Database = {
           current_medications?: string | null
           emergency_medical_notes?: string | null
           full_name?: string
+          has_ambulance?: boolean | null
           has_first_aid_kit?: boolean | null
           id?: string
           medical_conditions?: string | null
@@ -844,6 +847,7 @@ export type Database = {
       medical_providers: {
         Row: {
           can_provide_medical_assistance: boolean | null
+          has_ambulance: boolean | null
           has_first_aid_kit: boolean | null
           is_online: boolean | null
           lat: number | null
@@ -858,6 +862,7 @@ export type Database = {
           accuracy: number | null
           can_provide_medical_assistance: boolean | null
           display_name: string | null
+          has_ambulance: boolean | null
           has_first_aid_kit: boolean | null
           heading: number | null
           is_in_transit: boolean | null
