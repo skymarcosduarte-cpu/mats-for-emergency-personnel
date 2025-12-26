@@ -175,7 +175,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
   // Handle profile creation
   const handleProfileSubmit = async () => {
-    if (!profileForm.fullName.trim() || !profileForm.nickname.trim() || !profileForm.phone.trim() || !profileForm.birthday) {
+    if (!profileForm.fullName.trim() || !profileForm.phone.trim() || !profileForm.birthday) {
       setError('Completa todos los campos obligatorios');
       return;
     }
@@ -184,9 +184,12 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     setError(null);
 
     try {
+      // Use first name as nickname if not provided
+      const nickname = profileForm.nickname.trim() || profileForm.fullName.split(' ')[0];
+      
       const { error: profileError } = await createProfile({
         full_name: profileForm.fullName,
-        nickname: profileForm.nickname,
+        nickname,
         specialty: profileForm.specialty || null,
         phone: profileForm.phone,
         birthday: profileForm.birthday,
@@ -352,12 +355,15 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
               </div>
 
               <div>
-                <Label>Apodo (nombre para radio) *</Label>
+                <Label>Apodo (nombre para radio)</Label>
                 <Input
                   value={profileForm.nickname}
                   onChange={(e) => setProfileForm({ ...profileForm, nickname: e.target.value })}
-                  placeholder="JP23"
+                  placeholder="JP23 (opcional)"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Nombre corto para identificarte por radio
+                </p>
               </div>
 
               <div>
@@ -439,7 +445,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
               <Button
                 onClick={handleProfileSubmit}
-                disabled={loading || !profileForm.fullName || !profileForm.nickname || !profileForm.phone || !profileForm.birthday}
+                disabled={loading || !profileForm.fullName || !profileForm.phone || !profileForm.birthday}
                 className="w-full"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
