@@ -664,42 +664,80 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       let icon;
       let roleLabel;
       let bgColor;
+      let badgeColor;
       
       if (isInTransit) {
         icon = createTransitIcon();
         roleLabel = 'En tránsito';
         bgColor = '#f59e0b';
+        badgeColor = '#f59e0b';
       } else if (isRescatista) {
         icon = createRescatistaIcon();
-        roleLabel = 'Rescatista';
+        roleLabel = 'RESCATISTA';
         bgColor = '#3b82f6';
+        badgeColor = '#3b82f6';
       } else {
         icon = createFamiliarIcon();
-        roleLabel = 'Miembro';
+        roleLabel = 'FAMILIAR';
         bgColor = '#2e8b57';
+        badgeColor = '#2e8b57';
+      }
+      
+      // Calculate time since last update
+      let updatedAgo = '';
+      if (loc.updated_at) {
+        const updatedDate = new Date(loc.updated_at);
+        const now = new Date();
+        const diffMs = now.getTime() - updatedDate.getTime();
+        const diffSec = Math.floor(diffMs / 1000);
+        const diffMin = Math.floor(diffSec / 60);
+        const diffHrs = Math.floor(diffMin / 60);
+        
+        if (diffSec < 60) {
+          updatedAgo = `hace ${diffSec}s`;
+        } else if (diffMin < 60) {
+          updatedAgo = `hace ${diffMin}m`;
+        } else {
+          updatedAgo = `hace ${diffHrs}h`;
+        }
       }
       
       const displayName = loc.display_name ? sanitize(loc.display_name) : null;
       const transitInfo = isInTransit && loc.transit_destination 
-        ? `<div style="font-size: 10px; color: #f59e0b; margin-top: 2px;">🚗 → ${sanitize(loc.transit_destination)}</div>`
+        ? `<div style="font-size: 10px; color: #f59e0b; margin-top: 4px;">🚗 → ${sanitize(loc.transit_destination)}</div>`
         : '';
 
-      const popupContent = displayName
-        ? `<div style="display: flex; align-items: center; gap: 8px;">
-            <div style="width: 24px; height: 24px; background: ${bgColor}; border-radius: 50%;"></div>
+      // Badge HTML for role
+      const roleBadge = `<span style="
+        display: inline-block;
+        padding: 2px 6px;
+        font-size: 9px;
+        font-weight: 700;
+        color: #fff;
+        background: ${badgeColor};
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      ">${roleLabel}</span>`;
+      
+      // Updated ago HTML
+      const updatedInfo = updatedAgo 
+        ? `<div style="font-size: 10px; color: #888; margin-top: 4px;">⏱ Actualizado ${updatedAgo}</div>`
+        : '';
+
+      const popupContent = `
+        <div style="min-width: 140px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <div style="width: 28px; height: 28px; background: ${bgColor}; border-radius: 50%; flex-shrink: 0;"></div>
             <div>
-              <div style="font-weight: 600;">${displayName}</div>
-              <div style="font-size: 11px; color: #666;">${roleLabel} activo</div>
-              ${transitInfo}
+              ${displayName ? `<div style="font-weight: 600; font-size: 13px;">${displayName}</div>` : ''}
+              ${roleBadge}
             </div>
-          </div>`
-        : `<div style="display: flex; align-items: center; gap: 8px;">
-            <div style="width: 24px; height: 24px; background: ${bgColor}; border-radius: 50%;"></div>
-            <div>
-              <span style="font-weight: 500;">${roleLabel} activo</span>
-              ${transitInfo}
-            </div>
-          </div>`;
+          </div>
+          ${transitInfo}
+          ${updatedInfo}
+        </div>
+      `;
 
       if (existingMarker) {
         existingMarker.setLatLng([loc.lat, loc.lng]);
