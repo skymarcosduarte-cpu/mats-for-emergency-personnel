@@ -207,14 +207,48 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
     return cleaned;
   };
 
-  const callCreator = () => {
+  // Notify alert creator that a rescuer is contacting them
+  const notifyCreatorOfContact = async (contactType: 'call' | 'whatsapp') => {
+    if (!alert?.user_id || !currentUserId) return;
+
+    try {
+      // Get responder's name
+      const { data: responderProfile } = await supabase
+        .from('profiles')
+        .select('nickname, full_name')
+        .eq('id', currentUserId)
+        .single();
+
+      const responderName = responderProfile?.nickname || responderProfile?.full_name || 'Un rescatista';
+      
+      // Create a notification in the database
+      await supabase.from('notifications').insert({
+        user_id: alert.user_id,
+        type: 'responder_contact',
+        title: contactType === 'call' 
+          ? '📞 Rescatista te está llamando' 
+          : '💬 Rescatista te escribió por WhatsApp',
+        message: `${responderName} intenta contactarte para ayudarte con tu emergencia.`,
+      });
+
+      console.log('[AlertDetailModal] Notification sent to creator for', contactType);
+    } catch (err) {
+      console.error('[AlertDetailModal] Error notifying creator:', err);
+    }
+  };
+
+  const callCreator = async () => {
     if (creatorPhone) {
+      // Send notification first
+      await notifyCreatorOfContact('call');
       window.location.href = `tel:${creatorPhone}`;
     }
   };
 
-  const whatsappCreator = () => {
+  const whatsappCreator = async () => {
     if (creatorPhone) {
+      // Send notification first
+      await notifyCreatorOfContact('whatsapp');
       const formattedPhone = formatPhoneForWhatsApp(creatorPhone);
       const message = encodeURIComponent(`Hola ${creatorName || ''}, voy en camino a ayudarte con tu alerta de emergencia. ¿Puedes darme más información?`);
       window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
