@@ -935,7 +935,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Tipo de alerta" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent side="top" sideOffset={8}>
                   <SelectItem value="AMBULANCIA_PROPIA">🚑 Ambulancia</SelectItem>
                   <SelectItem value="PATRULLA">🚔 Patrulla</SelectItem>
                   <SelectItem value="MECANICO">🔧 Mecánico</SelectItem>
