@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
-
+import { playUrgentAlert, playSubtleAlert } from '@/lib/alertSound';
 interface PanicEvent {
   id: string;
   user_id: string;
@@ -69,17 +69,13 @@ export function usePanicAlerts() {
     }
   }, []);
 
-  // Play alert sound
-  const playAlertSound = useCallback(() => {
-    try {
-      const audio = new Audio('/alert-sound.mp3');
-      audio.volume = 0.5;
-      audio.play().catch(() => {
-        // Ignore autoplay errors
-      });
-    } catch {
-      // Ignore errors
-    }
+  // Play alert sound - use Web Audio API sounds
+  const playPanicAlertSound = useCallback(() => {
+    playUrgentAlert();
+  }, []);
+
+  const playHelpAlertSound = useCallback(() => {
+    playSubtleAlert();
   }, []);
 
   // Format Google Maps link
@@ -135,8 +131,8 @@ export function usePanicAlerts() {
     // Vibrate urgently
     vibrate([300, 100, 300, 100, 300]);
     
-    // Play sound
-    playAlertSound();
+    // Play urgent alert sound (3-tone sequence + vibration)
+    playPanicAlertSound();
 
     // Show browser notification (works in background)
     showBrowserNotification(
@@ -161,7 +157,7 @@ export function usePanicAlerts() {
         }
       );
     }
-  }, [vibrate, playAlertSound, getGoogleMapsLink, showBrowserNotification]);
+  }, [vibrate, playPanicAlertSound, getGoogleMapsLink, showBrowserNotification]);
 
   // Show notification for help request
   const showHelpNotification = useCallback((request: HelpRequest) => {
@@ -175,8 +171,8 @@ export function usePanicAlerts() {
     // Vibrate
     vibrate([200, 100, 200]);
     
-    // Play sound
-    playAlertSound();
+    // Play help alert sound
+    playHelpAlertSound();
 
     // Show browser notification (works in background)
     showBrowserNotification(
@@ -201,7 +197,7 @@ export function usePanicAlerts() {
         }
       );
     }
-  }, [vibrate, playAlertSound, getGoogleMapsLink, showBrowserNotification]);
+  }, [vibrate, playHelpAlertSound, getGoogleMapsLink, showBrowserNotification]);
 
   // Clear alerts
   const clearAlerts = useCallback(() => {
