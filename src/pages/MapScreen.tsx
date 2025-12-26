@@ -330,11 +330,14 @@ const MapLegend: React.FC = () => {
   );
 };
 
+import type { ActiveResponderInfo } from '@/hooks/useMyAlertResponders';
+
 interface MapScreenProps {
   className?: string;
+  respondersToMyAlerts?: ActiveResponderInfo[];
 }
 
-export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
+export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyAlerts = [] }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -820,6 +823,63 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
       }
     });
   }, [activeResponders, mapReady]);
+
+  // Update markers for responders to MY alerts (with names)
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady) return;
+    const map = mapInstanceRef.current;
+
+    // Keys for my alert responders
+    const myResponderKeys = new Set(
+      respondersToMyAlerts
+        .filter(r => r.lat && r.lng)
+        .map(r => `my-responder-${r.id}`)
+    );
+
+    // Remove old my-responder markers
+    markersRef.current.forEach((marker, key) => {
+      if (key.startsWith('my-responder-') && !myResponderKeys.has(key)) {
+        map.removeLayer(marker);
+        markersRef.current.delete(key);
+      }
+    });
+
+    // Add/update my alert responder markers
+    respondersToMyAlerts
+      .filter(r => r.lat && r.lng)
+      .forEach((responder, index) => {
+        const key = `my-responder-${responder.id}`;
+        const existingMarker = markersRef.current.get(key);
+        const latLng: [number, number] = [responder.lat!, responder.lng!];
+
+        const arrivedBadge = responder.arrived_at 
+          ? '<div style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-top: 4px;">✅ LLEGÓ</div>'
+          : '<div style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-top: 4px;">🚗 En camino</div>';
+
+        const popupContent = `
+          <div style="text-align: center; padding: 4px; min-width: 140px;">
+            <div style="font-size: 14px; font-weight: bold; color: #3b82f6;">🚨 ${sanitize(responder.nickname)}</div>
+            ${arrivedBadge}
+            <div style="font-size: 10px; color: #999; margin-top: 6px;">
+              Respondiendo desde ${new Date(responder.started_at).toLocaleTimeString()}
+            </div>
+          </div>
+        `;
+
+        if (existingMarker) {
+          existingMarker.setLatLng(latLng);
+          existingMarker.setPopupContent(popupContent);
+        } else {
+          const marker = L.marker(latLng, {
+            icon: createResponderIcon(),
+            zIndexOffset: 800 + index,
+          })
+            .addTo(map)
+            .bindPopup(popupContent);
+          markersRef.current.set(key, marker);
+        }
+      });
+  }, [respondersToMyAlerts, mapReady]);
 
   // Handle view location from alerts panel
   const handleViewLocation = useCallback((lat: number, lng: number) => {
