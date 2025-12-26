@@ -20,7 +20,10 @@ import {
   BellOff,
   Volume2,
   VolumeX,
-  Radar
+  Radar,
+  UserCog,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +36,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { MatsLogo } from '@/components/MatsLogo';
 import { EmergencyContactsManager } from '@/components/EmergencyContactsManager';
@@ -54,7 +59,7 @@ interface SettingsScreenProps {
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onLogout
 }) => {
-  const { profile, role, signOut, updateProfile } = useAuth();
+  const { profile, role, signOut, updateProfile, updateRole, deleteAccount } = useAuth();
   const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
   const { helpRequestSounds, earthquakeSounds, earthquakeRadiusMiles, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusMiles } = useAlertSettings();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
@@ -64,6 +69,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [generating, setGenerating] = useState(false);
   const [savingMedical, setSavingMedical] = useState(false);
   const [requestingPermission, setRequestingPermission] = useState(false);
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [changingRole, setChangingRole] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   // Handle notification permission request
   const handleRequestPermission = async () => {
@@ -187,6 +197,42 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     setTimeout(() => setCopied(false), 2000);
   }, [inviteCode]);
 
+  // Handle role change
+  const handleRoleChange = async (newRole: 'RESCATISTA' | 'FAMILIAR') => {
+    setChangingRole(true);
+    try {
+      const { error } = await updateRole(newRole);
+      if (error) {
+        console.error('Error changing role:', error);
+        alert('Error al cambiar el rol. Intenta de nuevo.');
+      } else {
+        setShowRoleDialog(false);
+      }
+    } finally {
+      setChangingRole(false);
+    }
+  };
+
+  // Handle account deletion
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'ELIMINAR') return;
+    
+    setDeletingAccount(true);
+    try {
+      const { error } = await deleteAccount();
+      if (error) {
+        console.error('Error deleting account:', error);
+        alert('Error al eliminar la cuenta. Intenta de nuevo.');
+      } else {
+        onLogout?.();
+      }
+    } finally {
+      setDeletingAccount(false);
+      setShowDeleteDialog(false);
+      setDeleteConfirmText('');
+    }
+  };
+
   // Handle logout
   const handleLogout = async () => {
     if (confirm('¿Seguro que deseas cerrar sesión?')) {
@@ -230,7 +276,71 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </CardContent>
         </Card>
 
-        {/* Medical Assistance Section */}
+        {/* Account Settings */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <UserCog className="w-5 h-5" />
+              Configuración de Cuenta
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Role Change */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center",
+                  role === 'RESCATISTA' ? "bg-mats-green/10" : "bg-muted"
+                )}>
+                  <Shield className={cn(
+                    "w-5 h-5",
+                    role === 'RESCATISTA' ? "text-mats-green" : "text-muted-foreground"
+                  )} />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Tipo de usuario</p>
+                  <p className="text-xs text-muted-foreground">
+                    {role === 'RESCATISTA' 
+                      ? 'Tienes acceso completo a todas las funciones' 
+                      : 'Acceso limitado a funciones básicas'}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRoleDialog(true)}
+              >
+                Cambiar
+              </Button>
+            </div>
+
+            {/* Delete Account */}
+            <div className="border-t border-border pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                    <Trash2 className="w-5 h-5 text-destructive" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Eliminar cuenta</p>
+                    <p className="text-xs text-muted-foreground">
+                      Esta acción es permanente e irreversible
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  Eliminar
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -666,6 +776,136 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               </>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Role Change Dialog */}
+      <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
+        <DialogContent className="sm:max-w-sm bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCog className="w-5 h-5" />
+              Cambiar Tipo de Usuario
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona tu nuevo rol en la comunidad.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-4">
+            <Button
+              variant={role === 'RESCATISTA' ? 'default' : 'outline'}
+              className="w-full justify-start gap-3 h-auto py-4"
+              onClick={() => handleRoleChange('RESCATISTA')}
+              disabled={changingRole || role === 'RESCATISTA'}
+            >
+              <div className="w-10 h-10 rounded-full bg-mats-green/20 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-mats-green" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium">RESCATISTA</p>
+                <p className="text-xs text-muted-foreground">
+                  Acceso completo: invitaciones, marketplace, responder alertas
+                </p>
+              </div>
+              {changingRole && role !== 'RESCATISTA' && (
+                <Loader2 className="w-4 h-4 animate-spin ml-auto" />
+              )}
+            </Button>
+
+            <Button
+              variant={role === 'FAMILIAR' ? 'default' : 'outline'}
+              className="w-full justify-start gap-3 h-auto py-4"
+              onClick={() => handleRoleChange('FAMILIAR')}
+              disabled={changingRole || role === 'FAMILIAR'}
+            >
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                <User className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium">FAMILIAR</p>
+                <p className="text-xs text-muted-foreground">
+                  Funciones básicas: pánico, tránsito, reportes de sismos
+                </p>
+              </div>
+              {changingRole && role !== 'FAMILIAR' && (
+                <Loader2 className="w-4 h-4 animate-spin ml-auto" />
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={(open) => {
+        setShowDeleteDialog(open);
+        if (!open) setDeleteConfirmText('');
+      }}>
+        <DialogContent className="sm:max-w-sm bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Eliminar Cuenta
+            </DialogTitle>
+            <DialogDescription>
+              Esta acción es permanente e irreversible. Se eliminarán todos tus datos.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+              <p className="text-sm text-destructive">
+                ⚠️ Al eliminar tu cuenta:
+              </p>
+              <ul className="text-xs text-destructive/80 mt-2 space-y-1 list-disc list-inside">
+                <li>Tu perfil será eliminado permanentemente</li>
+                <li>Tus contactos de emergencia serán eliminados</li>
+                <li>No podrás recuperar tu cuenta</li>
+              </ul>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="delete-confirm" className="text-sm text-foreground">
+                Escribe <span className="font-bold text-destructive">ELIMINAR</span> para confirmar
+              </Label>
+              <Input
+                id="delete-confirm"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                placeholder="ELIMINAR"
+                className="font-mono"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setDeleteConfirmText('');
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText !== 'ELIMINAR' || deletingAccount}
+            >
+              {deletingAccount ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Eliminar Cuenta
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
