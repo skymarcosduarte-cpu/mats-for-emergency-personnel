@@ -625,25 +625,37 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
     if (!mapInstanceRef.current || !mapReady) return;
     const map = mapInstanceRef.current;
 
-    // Remove old responder markers and polylines
+    // Get current responder keys for comparison
+    const currentResponderKeys = new Set(activeResponders.map(r => `responder-${r.request_id}-${r.responder_id}`));
+    const currentRouteKeys = new Set(activeResponders.map(r => `route-${r.request_id}-${r.responder_id}`));
+
+    // Remove old responder markers
     markersRef.current.forEach((marker, key) => {
-      if (key.startsWith('responder-') && !activeResponders.find(r => `responder-${r.responder_id}` === key)) {
+      if (key.startsWith('responder-') && !currentResponderKeys.has(key)) {
         map.removeLayer(marker);
         markersRef.current.delete(key);
       }
     });
 
+    // Remove old route polylines
     polylinesRef.current.forEach((polyline, key) => {
-      if (!activeResponders.find(r => `route-${r.request_id}` === key)) {
+      if (key.startsWith('route-') && !currentRouteKeys.has(key)) {
         map.removeLayer(polyline);
         polylinesRef.current.delete(key);
       }
     });
 
+    // Count responders per request for display
+    const respondersPerRequest = new Map<string, number>();
+    activeResponders.forEach(r => {
+      respondersPerRequest.set(r.request_id, (respondersPerRequest.get(r.request_id) || 0) + 1);
+    });
+
     // Add/update responder markers and route lines
-    activeResponders.forEach((responder) => {
-      const markerKey = `responder-${responder.responder_id}`;
-      const routeKey = `route-${responder.request_id}`;
+    activeResponders.forEach((responder, index) => {
+      // Use composite key to support multiple responders per request
+      const markerKey = `responder-${responder.request_id}-${responder.responder_id}`;
+      const routeKey = `route-${responder.request_id}-${responder.responder_id}`;
       const existingMarker = markersRef.current.get(markerKey);
       const existingPolyline = polylinesRef.current.get(routeKey);
 
@@ -675,54 +687,63 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
       const speedDisplay = responder.speed 
         ? `${Math.round(responder.speed * 3.6)} km/h` 
         : 'Velocidad desconocida';
+      
+      // Show responder count if multiple
+      const totalResponders = respondersPerRequest.get(responder.request_id) || 1;
+      const responderIndexForRequest = activeResponders
+        .filter(r => r.request_id === responder.request_id)
+        .indexOf(responder) + 1;
+      
+      const responderLabel = totalResponders > 1 
+        ? `Rescatista ${responderIndexForRequest}/${totalResponders}`
+        : 'Rescatista en camino';
+
+      // Check if arrived
+      const arrivedBadge = responder.arrived_at 
+        ? '<div style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-top: 4px;">✓ LLEGÓ</div>'
+        : '';
+
+      const popupContent = `
+        <div style="text-align: center; padding: 4px; min-width: 160px;">
+          <div style="font-size: 14px; font-weight: bold; color: #3b82f6;">🚨 ${responderLabel}</div>
+          ${arrivedBadge}
+          <div style="font-size: 13px; font-weight: 600; color: #22c55e; margin-top: 6px;">
+            ${etaDisplay}
+          </div>
+          <div style="font-size: 11px; color: #666; margin-top: 4px;">
+            ${speedDisplay}
+          </div>
+          <div style="font-size: 10px; color: #999; margin-top: 4px;">
+            Desde ${new Date(responder.responding_started_at).toLocaleTimeString()}
+          </div>
+        </div>
+      `;
 
       // Update or create responder marker
       if (existingMarker) {
         existingMarker.setLatLng(responderLatLng);
-        // Update popup content
-        existingMarker.setPopupContent(`
-          <div style="text-align: center; padding: 4px; min-width: 160px;">
-            <div style="font-size: 14px; font-weight: bold; color: #3b82f6;">🚨 Rescatista en camino</div>
-            <div style="font-size: 13px; font-weight: 600; color: #22c55e; margin-top: 6px;">
-              ${etaDisplay}
-            </div>
-            <div style="font-size: 11px; color: #666; margin-top: 4px;">
-              ${speedDisplay}
-            </div>
-            <div style="font-size: 10px; color: #999; margin-top: 4px;">
-              Desde ${new Date(responder.responding_started_at).toLocaleTimeString()}
-            </div>
-          </div>
-        `);
+        existingMarker.setPopupContent(popupContent);
       } else {
         const marker = L.marker(responderLatLng, {
           icon: createResponderIcon(),
-          zIndexOffset: 700,
+          zIndexOffset: 700 + index, // Stagger z-index for multiple markers
         })
           .addTo(map)
-          .bindPopup(`
-            <div style="text-align: center; padding: 4px; min-width: 160px;">
-              <div style="font-size: 14px; font-weight: bold; color: #3b82f6;">🚨 Rescatista en camino</div>
-              <div style="font-size: 13px; font-weight: 600; color: #22c55e; margin-top: 6px;">
-                ${etaDisplay}
-              </div>
-              <div style="font-size: 11px; color: #666; margin-top: 4px;">
-                ${speedDisplay}
-              </div>
-              <div style="font-size: 10px; color: #999; margin-top: 4px;">
-                Desde ${new Date(responder.responding_started_at).toLocaleTimeString()}
-              </div>
-            </div>
-          `);
+          .bindPopup(popupContent);
         markersRef.current.set(markerKey, marker);
       }
+
+      // Different colors for multiple responders
+      const routeColors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#ec4899'];
+      const routeColor = routeColors[responderIndexForRequest - 1] || routeColors[0];
 
       // Update or create route polyline (dashed line from responder to emergency)
       if (existingPolyline) {
         existingPolyline.setLatLngs([responderLatLng, emergencyLatLng]);
+        existingPolyline.setStyle({ color: routeColor });
       } else {
         const polyline = L.polyline([responderLatLng, emergencyLatLng], {
-          color: '#3b82f6',
+          color: routeColor,
           weight: 3,
           opacity: 0.8,
           dashArray: '10, 10',
