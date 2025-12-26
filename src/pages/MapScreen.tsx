@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import DOMPurify from 'dompurify';
-import { Locate } from 'lucide-react';
+import { Locate, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { useLocation } from '@/hooks/useLocation';
 import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders, usePanicEvents, useActiveResponders } from '@/hooks/useRealtime';
 import { useEmergencyResponse } from '@/hooks/useEmergencyResponse';
@@ -274,6 +274,60 @@ const createMedicalIcon = (hasKit: boolean, canProvide: boolean) => {
     iconAnchor: [18, 18],
     popupAnchor: [0, -18],
   });
+};
+
+// Collapsible Map Legend Component
+const MapLegend: React.FC = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div className="absolute bottom-20 right-4 z-[500] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border overflow-hidden">
+      <button 
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between p-2.5 hover:bg-accent/50 transition-colors"
+        aria-label={isExpanded ? 'Ocultar leyenda' : 'Mostrar leyenda'}
+      >
+        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          <Info className="w-3.5 h-3.5" />
+          <span>Leyenda</span>
+        </div>
+        {isExpanded ? (
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        ) : (
+          <ChevronUp className="w-4 h-4 text-muted-foreground" />
+        )}
+      </button>
+      
+      {isExpanded && (
+        <div className="px-3 pb-3 pt-1 space-y-2 text-xs animate-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full" style={{ background: '#2e8b57' }} />
+            <span className="text-foreground">Miembro</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full" style={{ background: '#22c55e' }} />
+            <span className="text-foreground">Médico/Botiquín</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full animate-pulse" style={{ background: '#ef4444' }} />
+            <span className="text-foreground">Alerta SOS</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full" style={{ background: '#ef4444', opacity: 0.7 }} />
+            <span className="text-foreground">Ayuda 14</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full" style={{ background: '#eab308' }} />
+            <span className="text-foreground">Reporte</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full animate-pulse" style={{ background: '#3b82f6' }} />
+            <span className="text-foreground">Rescatista</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 interface MapScreenProps {
@@ -824,35 +878,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
         />
       </div>
 
-      {/* Map legend */}
-      <div className="absolute bottom-20 right-4 z-[1000] bg-card/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-border">
-        <div className="space-y-2 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full" style={{ background: '#2e8b57' }} />
-            <span className="text-foreground">Miembro</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full" style={{ background: '#22c55e' }} />
-            <span className="text-foreground">Médico/Botiquín</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full animate-pulse" style={{ background: '#ef4444' }} />
-            <span className="text-foreground">Alerta SOS</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full" style={{ background: '#ef4444', opacity: 0.7 }} />
-            <span className="text-foreground">Ayuda 14</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full" style={{ background: '#eab308' }} />
-            <span className="text-foreground">Reporte</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full animate-pulse" style={{ background: '#3b82f6' }} />
-            <span className="text-foreground">Rescatista</span>
-          </div>
-        </div>
-      </div>
+      {/* Map legend - Collapsible to avoid obstructing */}
+      <MapLegend />
     </div>
   );
 };
