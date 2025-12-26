@@ -18,6 +18,8 @@ interface UserLocation {
   role: 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR';
   display_name: string | null;
   show_name_on_map: boolean | null;
+  can_provide_medical_assistance: boolean | null;
+  has_first_aid_kit: boolean | null;
   is_in_transit: boolean;
   transit_destination: string | null;
   transit_destination_lat: number | null;

@@ -34,7 +34,7 @@ L.Icon.Default.mergeOptions({
 
 // Custom icons
 // Star icon for FAMILIAR users (5-pointed star)
-const createFamiliarIcon = (isCurrentUser: boolean = false) => L.divIcon({
+const createFamiliarIcon = (isCurrentUser: boolean = false, hasFirstAidKit: boolean = false) => L.divIcon({
   className: `mats-marker familiar-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
   html: `
     <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : '32px'};">
@@ -68,6 +68,26 @@ const createFamiliarIcon = (isCurrentUser: boolean = false) => L.divIcon({
           <path d="M12 2L14 8H20L15 12L17 18L12 14L7 18L9 12L4 8H10L12 2Z" fill="#0a0a0a"/>
         </svg>
       </div>
+      ${hasFirstAidKit ? `
+        <div style="
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          width: 16px;
+          height: 16px;
+          background: #ef4444;
+          border: 2px solid #fff;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        ">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="#fff">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+          </svg>
+        </div>
+      ` : ''}
       ${isCurrentUser ? `
         <div style="
           position: absolute;
@@ -91,8 +111,8 @@ const createFamiliarIcon = (isCurrentUser: boolean = false) => L.divIcon({
   popupAnchor: [0, isCurrentUser ? -20 : -16],
 });
 
-// Star of Life icon for RESCATISTA users (proper 6-pointed paramedic star)
-const createRescatistaIcon = (isCurrentUser: boolean = false) => L.divIcon({
+// Star of Life icon for SOS ACTIVO / EX-SOS users (proper 6-pointed paramedic star)
+const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: boolean = false) => L.divIcon({
   className: `mats-marker rescatista-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
   html: `
     <div style="position: relative; width: 36px; height: ${isCurrentUser ? '44px' : '36px'};">
@@ -136,6 +156,26 @@ const createRescatistaIcon = (isCurrentUser: boolean = false) => L.divIcon({
           </g>
         </svg>
       </div>
+      ${hasFirstAidKit ? `
+        <div style="
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          width: 16px;
+          height: 16px;
+          background: #ef4444;
+          border: 2px solid #fff;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        ">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="#fff">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+          </svg>
+        </div>
+      ` : ''}
       ${isCurrentUser ? `
         <div style="
           position: absolute;
@@ -841,6 +881,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const isSosActivo = loc.role === 'SOS_ACTIVO' || loc.role === 'EX_SOS';
       const isInTransit = loc.is_in_transit;
       const isMe = loc.user_id === currentUserId;
+      const hasFirstAidKit = loc.has_first_aid_kit ?? false;
+      const canProvideMedical = loc.can_provide_medical_assistance ?? false;
       
       // Priority: Transit > SOS Activo/EX-SOS > Familiar
       let icon;
@@ -854,12 +896,12 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         bgColor = '#f59e0b';
         badgeColor = '#f59e0b';
       } else if (isSosActivo) {
-        icon = createRescatistaIcon(isMe);
+        icon = createRescatistaIcon(isMe, hasFirstAidKit);
         roleLabel = loc.role === 'SOS_ACTIVO' ? 'SOS ACTIVO' : 'EX-SOS';
         bgColor = loc.role === 'SOS_ACTIVO' ? '#22c55e' : '#3b82f6';
         badgeColor = loc.role === 'SOS_ACTIVO' ? '#22c55e' : '#3b82f6';
       } else {
-        icon = createFamiliarIcon(isMe);
+        icon = createFamiliarIcon(isMe, hasFirstAidKit);
         roleLabel = 'FAMILIAR';
         bgColor = '#2e8b57';
         badgeColor = '#2e8b57';
@@ -887,6 +929,14 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const displayName = loc.display_name ? sanitize(loc.display_name) : null;
       const transitInfo = isInTransit && loc.transit_destination 
         ? `<div style="font-size: 10px; color: #f59e0b; margin-top: 4px;">🚗 → ${sanitize(loc.transit_destination)}</div>`
+        : '';
+      
+      // Medical capabilities info
+      const medicalCapabilities: string[] = [];
+      if (canProvideMedical) medicalCapabilities.push('🩺 Asistencia médica');
+      if (hasFirstAidKit) medicalCapabilities.push('🧰 Botiquín');
+      const medicalInfo = medicalCapabilities.length > 0 
+        ? `<div style="font-size: 10px; color: #22c55e; margin-top: 4px;">${medicalCapabilities.join(' • ')}</div>`
         : '';
 
       // Badge HTML for role
@@ -916,6 +966,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
               ${roleBadge}
             </div>
           </div>
+          ${medicalInfo}
           ${transitInfo}
           ${updatedInfo}
         </div>

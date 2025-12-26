@@ -856,7 +856,9 @@ export type Database = {
       user_locations_with_roles: {
         Row: {
           accuracy: number | null
+          can_provide_medical_assistance: boolean | null
           display_name: string | null
+          has_first_aid_kit: boolean | null
           heading: number | null
           is_in_transit: boolean | null
           is_online: boolean | null
