@@ -158,7 +158,7 @@ export function useEmergencyResponse() {
       }
 
       toast.success('¡Llegaste al lugar!', {
-        description: 'Puedes resolver la alerta cuando termines',
+        description: 'Marca como resuelto cuando termines',
       });
       return true;
     } catch (error) {
@@ -237,6 +237,42 @@ export function useEmergencyResponse() {
       watchIdRef.current = null;
     }
   }, []);
+
+  // Mark the alert as resolved/complete (after arriving)
+  const markAsResolved = useCallback(async () => {
+    if (!activeResponse || !user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('help_requests')
+        .update({
+          resolved: true,
+          resolved_at: new Date().toISOString(),
+          resolved_by: user.id,
+        })
+        .eq('id', activeResponse.requestId)
+        .eq('responding_by', user.id);
+
+      if (error) {
+        console.error('Error resolving alert:', error);
+        toast.error('Error al resolver alerta');
+        return false;
+      }
+
+      // Stop location tracking
+      stopLocationTracking();
+      setActiveResponse(null);
+
+      toast.success('¡Alerta resuelta!', {
+        description: 'Gracias por tu ayuda',
+      });
+      return true;
+    } catch (error) {
+      console.error('Error resolving alert:', error);
+      toast.error('Error al resolver alerta');
+      return false;
+    }
+  }, [activeResponse, user, stopLocationTracking]);
 
   // Fetch responders for a specific request
   const fetchResponders = useCallback(async (requestId: string) => {
@@ -357,6 +393,7 @@ export function useEmergencyResponse() {
     startResponding,
     stopResponding,
     markAsArrived,
+    markAsResolved,
     fetchResponders,
     isResponding: activeResponse !== null,
   };
