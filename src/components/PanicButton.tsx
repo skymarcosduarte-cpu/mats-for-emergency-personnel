@@ -110,6 +110,15 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   const handlePanicSelect = async (option: PanicOption) => {
     setSelectedType(option.type);
 
+    // Open a placeholder window immediately (user gesture) to bypass Android popup blockers.
+    // We will redirect it once we have the GPS + message.
+    let waWindow: Window | null = null;
+    try {
+      waWindow = window.open('about:blank', '_blank');
+    } catch {
+      waWindow = null;
+    }
+
     // Immediate feedback: vibration + toast
     vibrate([200, 100, 200, 100, 300]); // SOS-style pattern
     toast.info(`Enviando alerta: ${option.label}`, {
@@ -130,6 +139,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         console.error('Failed to get position:', error);
         toast.error('No se pudo obtener tu ubicación.');
         setSelectedType(null);
+        waWindow?.close();
         return;
       }
     }
@@ -145,19 +155,16 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
     setIsOpen(false);
     setSelectedType(null);
 
-    // Use setTimeout to ensure dialog closes before navigation
-    // This helps prevent Android Chrome from freezing
+    // Redirect the placeholder window (or fallback to direct navigation)
     setTimeout(() => {
-      // Try to open WhatsApp - use location.href as fallback for Android
       try {
-        const newWindow = window.open(waUrl, '_blank');
-        if (!newWindow || newWindow.closed) {
-          // Fallback for popup blockers - navigate directly
+        if (waWindow && !waWindow.closed) {
+          waWindow.location.href = waUrl;
+        } else {
           window.location.href = waUrl;
         }
       } catch (e) {
         console.error('Failed to open WhatsApp:', e);
-        // Fallback: navigate directly
         window.location.href = waUrl;
       }
     }, 100);
