@@ -646,9 +646,50 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
       const responderLatLng: [number, number] = [responder.responder_lat, responder.responder_lng];
       const emergencyLatLng: [number, number] = [responder.emergency_lat, responder.emergency_lng];
 
+      // Format ETA display
+      const formatEta = (minutes: number | null, distanceKm: number) => {
+        const distanceText = distanceKm < 1 
+          ? `${Math.round(distanceKm * 1000)}m` 
+          : `${distanceKm.toFixed(1)}km`;
+        
+        if (minutes === null) {
+          return `📍 ${distanceText}`;
+        }
+        
+        if (minutes < 1) {
+          return `⏱️ <1 min • ${distanceText}`;
+        } else if (minutes < 60) {
+          return `⏱️ ~${Math.round(minutes)} min • ${distanceText}`;
+        } else {
+          const hours = Math.floor(minutes / 60);
+          const mins = Math.round(minutes % 60);
+          return `⏱️ ~${hours}h ${mins}min • ${distanceText}`;
+        }
+      };
+
+      const etaDisplay = formatEta(responder.eta_minutes, responder.distance_km);
+      const speedDisplay = responder.speed 
+        ? `${Math.round(responder.speed * 3.6)} km/h` 
+        : 'Velocidad desconocida';
+
       // Update or create responder marker
       if (existingMarker) {
         existingMarker.setLatLng(responderLatLng);
+        // Update popup content
+        existingMarker.setPopupContent(`
+          <div style="text-align: center; padding: 4px; min-width: 160px;">
+            <div style="font-size: 14px; font-weight: bold; color: #3b82f6;">🚨 Rescatista en camino</div>
+            <div style="font-size: 13px; font-weight: 600; color: #22c55e; margin-top: 6px;">
+              ${etaDisplay}
+            </div>
+            <div style="font-size: 11px; color: #666; margin-top: 4px;">
+              ${speedDisplay}
+            </div>
+            <div style="font-size: 10px; color: #999; margin-top: 4px;">
+              Desde ${new Date(responder.responding_started_at).toLocaleTimeString()}
+            </div>
+          </div>
+        `);
       } else {
         const marker = L.marker(responderLatLng, {
           icon: createResponderIcon(),
@@ -656,10 +697,16 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
         })
           .addTo(map)
           .bindPopup(`
-            <div style="text-align: center; padding: 4px;">
+            <div style="text-align: center; padding: 4px; min-width: 160px;">
               <div style="font-size: 14px; font-weight: bold; color: #3b82f6;">🚨 Rescatista en camino</div>
+              <div style="font-size: 13px; font-weight: 600; color: #22c55e; margin-top: 6px;">
+                ${etaDisplay}
+              </div>
               <div style="font-size: 11px; color: #666; margin-top: 4px;">
-                Respondiendo desde ${new Date(responder.responding_started_at).toLocaleTimeString()}
+                ${speedDisplay}
+              </div>
+              <div style="font-size: 10px; color: #999; margin-top: 4px;">
+                Desde ${new Date(responder.responding_started_at).toLocaleTimeString()}
               </div>
             </div>
           `);
