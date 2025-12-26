@@ -250,7 +250,9 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
   };
 
   const isOwner = (userId: string) => currentUserId === userId;
-  const canDelete = (userId: string) => isOwner(userId) || isRescatista;
+  // Only the alert creator can delete/cancel their own alert
+  // RESCATISTAS can RESOLVE alerts (mark as handled) but not DELETE them
+  const canDelete = (userId: string) => isOwner(userId);
 
   const openAlertDetail = (alert: PanicEvent | HelpRequest, type: 'panic' | 'help') => {
     setSelectedAlert(alert);
