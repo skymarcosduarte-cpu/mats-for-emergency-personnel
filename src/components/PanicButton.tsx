@@ -204,18 +204,38 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
       }
     }, 100);
 
-    // Notify emergency contacts
+    // Notify emergency contacts via WhatsApp
     if (contacts.length > 0) {
       const sosMessage = `🆘 SOS - ${option.label.toUpperCase()}\n\n📍 Ubicación: ${getGoogleMapsLink(lat, lng)}\nGPS: ${formatCoordinates(lat, lng)}\n\n¡Necesito ayuda urgente!`;
       const contactUrls = getSOSWhatsAppUrls(sosMessage);
 
-      toast.success(`Alertando a ${contacts.length} contacto(s) de emergencia`, {
-        action: {
-          label: 'Abrir WhatsApp',
-          onClick: () => contactUrls[0] && window.open(contactUrls[0].url, '_blank'),
-        },
-        duration: 10000,
+      // Show notification about contacts being alerted
+      toast.success(
+        `Alertando a ${contacts.length} contacto(s) de emergencia`,
+        {
+          description: contacts.map(c => c.name).join(', '),
+          duration: 15000,
+        }
+      );
+
+      // Open WhatsApp for each contact with a small delay between each
+      contactUrls.forEach((item, index) => {
+        setTimeout(() => {
+          try {
+            window.open(item.url, '_blank');
+          } catch (e) {
+            console.error(`Failed to open WhatsApp for ${item.contact.name}:`, e);
+          }
+        }, 500 + (index * 1500)); // Stagger openings to avoid popup blockers
       });
+    } else {
+      toast.warning(
+        'No tienes contactos de emergencia configurados',
+        {
+          description: 'Agrega contactos en Configuración para que sean notificados automáticamente',
+          duration: 8000,
+        }
+      );
     }
   };
 
