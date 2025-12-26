@@ -18,6 +18,8 @@ interface UserLocation {
   role: 'RESCATISTA' | 'FAMILIAR';
   display_name: string | null;
   show_name_on_map: boolean | null;
+  is_in_transit: boolean;
+  transit_destination: string | null;
 }
 
 interface HelpRequest {
