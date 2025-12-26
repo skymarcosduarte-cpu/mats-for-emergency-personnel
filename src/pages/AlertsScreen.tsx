@@ -1,5 +1,5 @@
-// Alerts Screen for COMUNIDAD EX SOS
-// USGS earthquakes + "4/10" quick report + "14" help + notifications
+// Alerts Screen for COMUNIDAD SOS
+// USGS earthquakes + "4/10" quick report + "14" help + notifications + my alerts history
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind, Route, X, CheckCircle2 } from 'lucide-react';
@@ -45,6 +45,7 @@ import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { playUrgentAlert } from '@/lib/alertSound';
 import { toast } from 'sonner';
+import { MyAlertsHistory } from '@/components/MyAlertsHistory';
 
 // Removed - now using useEarthquakeHistory hook
 
@@ -333,7 +334,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       </div>
 
       <Tabs defaultValue="help" className="p-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="help" className="relative text-xs px-1 font-semibold">
             🆘 Comunidad
             {helpRequests.filter(r => !r.resolved).length > 0 && (
@@ -344,6 +345,9 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 {helpRequests.filter(r => !r.resolved).length}
               </Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="myalerts" className="text-xs px-1">
+            📋 Mías
           </TabsTrigger>
           <TabsTrigger value="earthquakes" className="text-xs px-1">Sismos</TabsTrigger>
           <TabsTrigger value="mexico" className="relative text-xs px-1">
@@ -380,6 +384,11 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             )}
           </TabsTrigger>
         </TabsList>
+
+        {/* My Alerts History Tab */}
+        <TabsContent value="myalerts" className="mt-4">
+          <MyAlertsHistory />
+        </TabsContent>
 
         {/* Earthquakes Tab */}
         <TabsContent value="earthquakes" className="space-y-3 mt-4">
