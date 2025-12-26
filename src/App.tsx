@@ -33,6 +33,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useStatusCheckin } from '@/hooks/useStatusCheckin';
 import { useAuth } from '@/hooks/useAuth';
 import { usePanicAlerts } from '@/hooks/usePanicAlerts';
+import { useMyAlertResponders } from '@/hooks/useMyAlertResponders';
 import { useTestMode } from '@/hooks/useTestMode';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -129,6 +130,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   
   // Real-time panic alerts from other users
   const { recentAlerts, unreadCount } = usePanicAlerts();
+  
+  // Listen for responders to user's own alerts
+  useMyAlertResponders();
   
   // Push notifications
   const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
