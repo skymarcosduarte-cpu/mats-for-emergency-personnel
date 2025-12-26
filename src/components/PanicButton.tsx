@@ -86,8 +86,11 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   const [internalOpen, setInternalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<PanicType | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [gpsTimeout, setGpsTimeout] = useState(false);
   const { position, getCurrentPosition, loading: locationLoading } = useLocation();
   const { contacts, getSOSWhatsAppUrls, hasMinimumContacts } = useEmergencyContactsDB();
+
+  const GPS_TIMEOUT_MS = 10000; // 10 seconds
 
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalOpen;
   
@@ -127,23 +130,46 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
     let lat = position?.lat;
     let lng = position?.lng;
 
-    // Get position first before attempting to open any windows
+    // Get position with timeout
     if (!lat || !lng) {
+      // Create a timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          setGpsTimeout(true);
+          reject(new Error('GPS_TIMEOUT'));
+        }, GPS_TIMEOUT_MS);
+      });
+
       try {
-        const pos = await getCurrentPosition();
+        const pos = await Promise.race([
+          getCurrentPosition(),
+          timeoutPromise
+        ]);
         lat = pos.lat;
         lng = pos.lng;
+        setGpsTimeout(false);
       } catch (error) {
         console.error('Failed to get position:', error);
-        toast.error('No se pudo obtener tu ubicación.');
+        
+        if (error instanceof Error && error.message === 'GPS_TIMEOUT') {
+          toast.error('El GPS está tardando demasiado', {
+            description: 'Intenta en un lugar con mejor señal o activa el GPS manualmente',
+            duration: 6000,
+          });
+        } else {
+          toast.error('No se pudo obtener tu ubicación.');
+        }
+        
         setSelectedType(null);
         setIsGettingLocation(false);
+        setGpsTimeout(false);
         waWindow?.close();
         return;
       }
     }
     
     setIsGettingLocation(false);
+    setGpsTimeout(false);
 
     // Notify parent component
     onPanicTriggered?.(option.type, lat, lng);
@@ -194,15 +220,41 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         {isGettingLocation && (
           <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-200">
             <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-panic/20 flex items-center justify-center">
-                <MapPin className="w-10 h-10 text-panic animate-pulse" />
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center ${gpsTimeout ? 'bg-warning/20' : 'bg-panic/20'}`}>
+                <MapPin className={`w-10 h-10 animate-pulse ${gpsTimeout ? 'text-warning' : 'text-panic'}`} />
               </div>
-              <div className="absolute inset-0 rounded-full border-4 border-panic border-t-transparent animate-spin" />
+              <div className={`absolute inset-0 rounded-full border-4 border-t-transparent animate-spin ${gpsTimeout ? 'border-warning' : 'border-panic'}`} />
             </div>
-            <div className="text-center">
-              <p className="text-lg font-semibold text-foreground">Obteniendo ubicación GPS...</p>
-              <p className="text-sm text-muted-foreground mt-1">Por favor espera un momento</p>
+            <div className="text-center px-4">
+              {gpsTimeout ? (
+                <>
+                  <p className="text-lg font-semibold text-warning">El GPS está tardando...</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Verifica que el GPS esté activado o intenta en un lugar con mejor señal
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-lg font-semibold text-foreground">Obteniendo ubicación GPS...</p>
+                  <p className="text-sm text-muted-foreground mt-1">Por favor espera un momento</p>
+                </>
+              )}
             </div>
+            {gpsTimeout && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setIsGettingLocation(false);
+                  setGpsTimeout(false);
+                  setSelectedType(null);
+                }}
+                className="mt-2"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+            )}
           </div>
         )}
 
