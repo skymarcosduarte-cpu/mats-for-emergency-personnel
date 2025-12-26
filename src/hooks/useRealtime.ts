@@ -29,6 +29,10 @@ interface HelpRequest {
   created_at: string;
   resolved_at: string | null;
   resolved_by: string | null;
+  responding_by: string | null;
+  responding_started_at: string | null;
+  audio_url: string | null;
+  audio_duration_ms: number | null;
 }
 
 interface RoadReport {
