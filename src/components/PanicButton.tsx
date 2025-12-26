@@ -9,7 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import type { PanicType, UserRole } from '@/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useLocation } from '@/hooks/useLocation';
 import { toast } from 'sonner';
 
@@ -84,6 +91,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [gpsTimeout, setGpsTimeout] = useState(false);
   const { position, getCurrentPosition, loading: locationLoading } = useLocation();
+  const isMobile = useIsMobile();
   const openedAtRef = useRef<number>(0);
 
   const GPS_TIMEOUT_MS = 10000; // 10 seconds
@@ -172,8 +180,8 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
 
   const isProcessingAny = isGettingLocation || selectedType !== null;
 
-  // Prevent Android/iOS "same-tap" from opening and immediately closing the dialog
-  const handleOpenChange = (open: boolean) => {
+  // Prevent Android/iOS "same-tap" from opening and immediately closing the Dialog
+  const handleDialogOpenChange = (open: boolean) => {
     if (isProcessingAny) return;
 
     if (!open) {
@@ -184,136 +192,161 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
     setIsOpen(open);
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md bg-card border-border relative max-h-[85vh] overflow-y-auto">
-        {/* Full-screen loading overlay */}
-        {isGettingLocation && (
-          <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-200">
-            <div className="relative">
-              <div className={`w-20 h-20 rounded-full flex items-center justify-center ${gpsTimeout ? 'bg-warning/20' : 'bg-panic/20'}`}>
-                <MapPin className={`w-10 h-10 animate-pulse ${gpsTimeout ? 'text-warning' : 'text-panic'}`} />
-              </div>
-              <div className={`absolute inset-0 rounded-full border-4 border-t-transparent animate-spin ${gpsTimeout ? 'border-warning' : 'border-panic'}`} />
+  const content = (
+    <>
+      {/* Full-screen loading overlay */}
+      {isGettingLocation && (
+        <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-200">
+          <div className="relative">
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center ${gpsTimeout ? 'bg-warning/20' : 'bg-panic/20'}`}>
+              <MapPin className={`w-10 h-10 animate-pulse ${gpsTimeout ? 'text-warning' : 'text-panic'}`} />
             </div>
-            <div className="text-center px-4">
-              {gpsTimeout ? (
-                <>
-                  <p className="text-lg font-semibold text-warning">El GPS está tardando...</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Verifica que el GPS esté activado o intenta en un lugar con mejor señal
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-lg font-semibold text-foreground">Obteniendo ubicación GPS...</p>
-                  <p className="text-sm text-muted-foreground mt-1">Por favor espera un momento</p>
-                </>
-              )}
-            </div>
-            {gpsTimeout && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  setIsGettingLocation(false);
-                  setGpsTimeout(false);
-                  setSelectedType(null);
-                }}
-                className="mt-2"
-              >
-                <X className="w-4 h-4 mr-2" />
-                Cancelar
-              </Button>
+            <div className={`absolute inset-0 rounded-full border-4 border-t-transparent animate-spin ${gpsTimeout ? 'border-warning' : 'border-panic'}`} />
+          </div>
+          <div className="text-center px-4">
+            {gpsTimeout ? (
+              <>
+                <p className="text-lg font-semibold text-warning">El GPS está tardando...</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Verifica que el GPS esté activado o intenta en un lugar con mejor señal
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-semibold text-foreground">Obteniendo ubicación GPS...</p>
+                <p className="text-sm text-muted-foreground mt-1">Por favor espera un momento</p>
+              </>
             )}
           </div>
-        )}
+          {gpsTimeout && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setIsGettingLocation(false);
+                setGpsTimeout(false);
+                setSelectedType(null);
+              }}
+              className="mt-2"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancelar
+            </Button>
+          )}
+        </div>
+      )}
 
+      {isMobile ? (
+        <DrawerHeader>
+          <DrawerTitle className="flex items-center gap-2 text-foreground">
+            <AlertTriangle className="w-5 h-5 text-panic" />
+            Selecciona tipo de emergencia
+          </DrawerTitle>
+        </DrawerHeader>
+      ) : (
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <AlertTriangle className="w-5 h-5 text-panic" />
             Selecciona tipo de emergencia
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="grid gap-3 py-4">
-          {PANIC_OPTIONS.map((option) => {
-            const isProcessing = locationLoading && selectedType === option.type;
-            return (
-              <Button
-                key={option.type}
-                variant="outline"
-                className="h-16 justify-start gap-4 text-left border-border hover:bg-muted hover:border-panic/50 transition-all touch-manipulation active:scale-95"
-                onClick={() => {
-                  console.log('[PanicButton] Option clicked:', option.type);
-                  if (!isProcessing) handlePanicSelect(option);
-                }}
-                disabled={isProcessing}
-                style={{ 
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                }}
-              >
-                <div className="w-12 h-12 rounded-lg bg-panic/10 flex items-center justify-center text-panic pointer-events-none">
-                  {isProcessing ? (
-                    <div className="w-5 h-5 border-2 border-panic border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    option.icon
-                  )}
+      )}
+
+      <div className="grid gap-3 py-4 px-4 sm:px-0">
+        {PANIC_OPTIONS.map((option) => {
+          const isProcessing = locationLoading && selectedType === option.type;
+          return (
+            <Button
+              key={option.type}
+              variant="outline"
+              className="h-16 justify-start gap-4 text-left border-border hover:bg-muted hover:border-panic/50 transition-all touch-manipulation active:scale-95"
+              onClick={() => {
+                console.log('[PanicButton] Option clicked:', option.type);
+                if (!isProcessing) handlePanicSelect(option);
+              }}
+              disabled={isProcessing}
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+              }}
+            >
+              <div className="w-12 h-12 rounded-lg bg-panic/10 flex items-center justify-center text-panic pointer-events-none">
+                {isProcessing ? (
+                  <div className="w-5 h-5 border-2 border-panic border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  option.icon
+                )}
+              </div>
+              <div className="pointer-events-none">
+                <div className="font-semibold text-foreground">{option.label}</div>
+                <div className="text-xs text-muted-foreground">
+                  {isProcessing ? 'Obteniendo ubicación...' : 'Envía alerta con ubicación GPS'}
                 </div>
-                <div className="pointer-events-none">
-                  <div className="font-semibold text-foreground">{option.label}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {isProcessing ? 'Obteniendo ubicación...' : 'Envía alerta con ubicación GPS'}
-                  </div>
-                </div>
-              </Button>
-            );
-          })}
+              </div>
+            </Button>
+          );
+        })}
+      </div>
+
+      {/* Emergency Services Quick Dial */}
+      <div className="border-t border-border pt-4 mt-2 px-4 sm:px-0">
+        <p className="text-xs text-muted-foreground mb-3 text-center font-medium">
+          Llamar a Servicios de Emergencia
+        </p>
+        <div className="grid grid-cols-4 gap-2">
+          {EMERGENCY_NUMBERS.map((service) => (
+            <a
+              key={service.number}
+              href={`tel:${service.number}`}
+              className={`flex flex-col items-center gap-1 p-3 rounded-lg ${service.color} text-white hover:opacity-90 transition-opacity touch-manipulation active:scale-95`}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+              onClick={() => {
+                vibrate([100, 50, 100]);
+                toast.info(`Llamando a ${service.name}...`);
+              }}
+            >
+              {service.icon}
+              <span className="text-xs font-bold">{service.number}</span>
+              <span className="text-[10px] opacity-80 truncate w-full text-center">{service.name}</span>
+            </a>
+          ))}
         </div>
+      </div>
 
-        {/* Emergency Services Quick Dial */}
-        <div className="border-t border-border pt-4 mt-2">
-          <p className="text-xs text-muted-foreground mb-3 text-center font-medium">
-            Llamar a Servicios de Emergencia
-          </p>
-          <div className="grid grid-cols-4 gap-2">
-            {EMERGENCY_NUMBERS.map((service) => (
-              <a
-                key={service.number}
-                href={`tel:${service.number}`}
-                className={`flex flex-col items-center gap-1 p-3 rounded-lg ${service.color} text-white hover:opacity-90 transition-opacity touch-manipulation active:scale-95`}
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-                onClick={() => {
-                  vibrate([100, 50, 100]);
-                  toast.info(`Llamando a ${service.name}...`);
-                }}
-              >
-                {service.icon}
-                <span className="text-xs font-bold">{service.number}</span>
-                <span className="text-[10px] opacity-80 truncate w-full text-center">{service.name}</span>
-              </a>
-            ))}
-          </div>
+      {userRole === 'FAMILIAR' && (
+        <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-sm text-warning mt-3 mx-4 sm:mx-0">
+          ⚠️ FAMILIAR – NO PARAMÉDICO
         </div>
+      )}
 
-        {userRole === 'FAMILIAR' && (
-          <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-sm text-warning mt-3">
-            ⚠️ FAMILIAR – NO PARAMÉDICO
-          </div>
-        )}
+      <div className="flex items-center gap-2 p-3 rounded-lg mt-3 bg-accent/10 text-foreground border border-accent/20 mx-4 sm:mx-0">
+        <Users className="w-4 h-4 text-accent" />
+        <span className="text-sm">La alerta se enviará dentro de la app a usuarios conectados</span>
+      </div>
 
-        <div className="flex items-center gap-2 p-3 rounded-lg mt-3 bg-accent/10 text-foreground border border-accent/20">
-          <Users className="w-4 h-4 text-accent" />
-          <span className="text-sm">
-            La alerta se enviará dentro de la app a usuarios conectados
-          </span>
-        </div>
-
-        <Button variant="ghost" onClick={() => setIsOpen(false)} className="mt-2">
+      <div className="px-4 pb-6 sm:p-0">
+        <Button variant="ghost" onClick={() => setIsOpen(false)} className="mt-2 w-full sm:w-auto">
           <X className="w-4 h-4 mr-2" />
           Cancelar
         </Button>
+      </div>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={isOpen} onOpenChange={(open) => !isProcessingAny && setIsOpen(open)}>
+        <DrawerContent className="bg-card border-border relative max-h-[85vh] overflow-y-auto">
+          {content}
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
+      <DialogContent className="sm:max-w-md bg-card border-border relative max-h-[85vh] overflow-y-auto">
+        {content}
       </DialogContent>
     </Dialog>
   );
