@@ -121,6 +121,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   const { disasterMode } = useAppState();
   const [panicOpen, setPanicOpen] = useState(false);
   const [isSavingAlert, setIsSavingAlert] = useState(false);
+  const [alertRefreshTrigger, setAlertRefreshTrigger] = useState(0);
   const { user } = useAuth();
   
   // Test mode for simulating panic alerts
@@ -209,6 +210,8 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
           description: 'Todos los usuarios de la comunidad han sido notificados',
           duration: 5000,
         });
+        // Trigger banner refresh
+        setAlertRefreshTrigger(prev => prev + 1);
       }
     } catch (err) {
       console.error('Failed to save panic event:', err);
@@ -237,7 +240,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <AppHeader onPanicClick={() => setPanicOpen(true)} />
-      <ActiveAlertBanner testAlert={testAlert} onClearTestAlert={clearTestAlert} />
+      <ActiveAlertBanner testAlert={testAlert} onClearTestAlert={clearTestAlert} refreshTrigger={alertRefreshTrigger} />
       <UpdatePrompt />
       <UpdateIndicator />
       <main className="flex-1 overflow-hidden">{renderScreen()}</main>
