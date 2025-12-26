@@ -121,10 +121,16 @@ export function UpdateButton() {
     try {
       if ('serviceWorker' in navigator) {
         // Get current registration without waiting for ready (which can hang on Android)
-        const registrations = await withTimeout(
-          navigator.serviceWorker.getRegistrations(),
-          SW_READY_TIMEOUT
-        );
+        let registrations: readonly ServiceWorkerRegistration[] = [];
+        
+        try {
+          registrations = await withTimeout(
+            navigator.serviceWorker.getRegistrations(),
+            SW_READY_TIMEOUT
+          );
+        } catch (regError) {
+          console.warn('Could not get SW registrations:', regError);
+        }
         
         if (registrations.length > 0) {
           const reg = registrations[0];
@@ -149,14 +155,20 @@ export function UpdateButton() {
           }
           setLastChecked(new Date());
         } else {
-          // No service worker registered - just reload
+          // No service worker registered - just show success
           setHasUpdate(false);
           toast.success('Ya tienes la última versión');
           setLastChecked(new Date());
         }
       } else {
-        toast.info('Recargando página...');
-        window.location.reload();
+        // No service worker support - offer page reload
+        toast.info('Recarga la página para actualizar', {
+          action: {
+            label: 'Recargar',
+            onClick: () => window.location.reload(),
+          },
+        });
+        setLastChecked(new Date());
       }
     } catch (error) {
       console.error('Update check error:', error);
