@@ -1,8 +1,8 @@
 // Transit Screen for COMUNIDAD EX SOS
 // Road + Flight transit tracking with incident reports
 
-import React, { useState } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -65,6 +65,9 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     departureTime: '',
     arrivalTime: '',
     eta: '',
+    // Destination coordinates (optional, for route display)
+    destinationLat: null as number | null,
+    destinationLng: null as number | null,
   });
 
   // Report form state
@@ -106,23 +109,51 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   // Handle trip submission
   const handleTripSubmit = async () => {
     if (!position) {
-      alert('Se requiere ubicación GPS');
+      toast.error('Se requiere ubicación GPS');
+      return;
+    }
+
+    if (!tripForm.eta) {
+      toast.error('Se requiere hora de llegada estimada');
       return;
     }
 
     setSubmitting(true);
     try {
-      console.log('Trip submission:', {
-        type: transitType,
-        ...tripForm,
-        lat: position.lat,
-        lng: position.lng,
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No autenticado');
 
+      const tripData = {
+        user_id: user.id,
+        transit_type: transitType,
+        origin: transitType === 'ROAD' ? tripForm.origin : tripForm.departureAirport,
+        destination: transitType === 'ROAD' ? tripForm.destination : tripForm.arrivalAirport,
+        eta: new Date(tripForm.eta).toISOString(),
+        status: 'ACTIVE',
+        plates: transitType === 'ROAD' ? tripForm.plates : null,
+        companions: tripForm.companions || null,
+        vehicle_type: transitType === 'ROAD' ? tripForm.vehicleType : null,
+        airline: transitType === 'FLIGHT' ? tripForm.airline : null,
+        flight_number: transitType === 'FLIGHT' ? tripForm.flightNumber : null,
+        departure_airport: transitType === 'FLIGHT' ? tripForm.departureAirport : null,
+        arrival_airport: transitType === 'FLIGHT' ? tripForm.arrivalAirport : null,
+        // Store current location as origin coordinates
+        origin_lat: position.lat,
+        origin_lng: position.lng,
+        // Store destination coordinates if provided
+        destination_lat: tripForm.destinationLat,
+        destination_lng: tripForm.destinationLng,
+      };
+
+      const { error } = await supabase.from('transit_trips').insert(tripData);
+      if (error) throw error;
+
+      toast.success('¡Viaje registrado! Tu ubicación será visible en el mapa.');
       setShowTripDialog(false);
       resetTripForm();
     } catch (error) {
       console.error('Error submitting trip:', error);
+      toast.error('Error al registrar viaje');
     } finally {
       setSubmitting(false);
     }
@@ -173,6 +204,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       departureTime: '',
       arrivalTime: '',
       eta: '',
+      destinationLat: null,
+      destinationLng: null,
     });
     setTransitType('ROAD');
   };
@@ -390,6 +423,52 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                     onChange={(e) => setTripForm({ ...tripForm, destination: e.target.value })}
                     placeholder="Guadalajara"
                   />
+                </div>
+                
+                {/* Destination coordinates for route display */}
+                <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Navigation className="w-3 h-3" />
+                      Coordenadas destino (opcional)
+                    </div>
+                    {tripForm.destinationLat && tripForm.destinationLng && (
+                      <span className="text-xs text-primary">✓ Configurado</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Latitud</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        value={tripForm.destinationLat ?? ''}
+                        onChange={(e) => setTripForm({ 
+                          ...tripForm, 
+                          destinationLat: e.target.value ? parseFloat(e.target.value) : null 
+                        })}
+                        placeholder="20.6597"
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Longitud</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        value={tripForm.destinationLng ?? ''}
+                        onChange={(e) => setTripForm({ 
+                          ...tripForm, 
+                          destinationLng: e.target.value ? parseFloat(e.target.value) : null 
+                        })}
+                        placeholder="-103.3496"
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Si agregas coordenadas, tu ruta será visible en el mapa para la comunidad.
+                  </p>
                 </div>
                 <div>
                   <Label>Tipo de vehículo</Label>
