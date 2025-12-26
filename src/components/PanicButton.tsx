@@ -1,6 +1,6 @@
 // Panic Button FAB Component for COMUNIDAD EX SOS
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users, MapPin, Loader2, Phone, Cross } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -84,12 +84,17 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [gpsTimeout, setGpsTimeout] = useState(false);
   const { position, getCurrentPosition, loading: locationLoading } = useLocation();
+  const openedAtRef = useRef<number>(0);
 
   const GPS_TIMEOUT_MS = 10000; // 10 seconds
 
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalOpen;
   
   const setIsOpen = (open: boolean) => {
+    if (open) {
+      openedAtRef.current = Date.now();
+    }
+
     if (onOpenChange) {
       onOpenChange(open);
     } else {
@@ -167,8 +172,20 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
 
   const isProcessingAny = isGettingLocation || selectedType !== null;
 
+  // Prevent Android/iOS "same-tap" from opening and immediately closing the dialog
+  const handleOpenChange = (open: boolean) => {
+    if (isProcessingAny) return;
+
+    if (!open) {
+      const msSinceOpen = Date.now() - openedAtRef.current;
+      if (msSinceOpen < 350) return;
+    }
+
+    setIsOpen(open);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !isProcessingAny && setIsOpen(open)}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md bg-card border-border relative max-h-[85vh] overflow-y-auto">
         {/* Full-screen loading overlay */}
         {isGettingLocation && (
