@@ -457,7 +457,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       </div>
 
       <div className="p-4 text-center text-xs text-muted-foreground">
-        COMUNIDAD EX SOS • M.A.T.S.
+        COMUNIDAD SOS • M.A.T.S.
       </div>
     </div>
   );
