@@ -752,8 +752,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                             <MapPin className="w-4 h-4 mr-1" />
                             Ver ubicación
                           </Button>
-                          {/* Show resolve button only for the owner */}
-                          {user?.id === req.user_id && (
+                          {/* Show resolve button for owner or RESCATISTA */}
+                          {(user?.id === req.user_id || userRole === 'RESCATISTA') && (
                             <Button
                               variant="ghost"
                               size="sm"
