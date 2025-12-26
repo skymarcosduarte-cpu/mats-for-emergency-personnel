@@ -210,65 +210,37 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     });
 
     try {
-      // Create help_request instead of panic_event if there's a message or audio
-      // This allows for more context and responder tracking
-      if (message || audioUrl) {
-        const { error } = await supabase.from('help_requests').insert({
-          user_id: user.id,
-          kind: type.toLowerCase(),
-          lat,
-          lng,
-          message: message || null,
-          audio_url: audioUrl || null,
-          audio_duration_ms: audioDurationMs || null,
-          resolved: false,
-        });
+      // Always save to panic_events for SOS alerts (with or without context)
+      const { error } = await supabase.from('panic_events').insert({
+        user_id: user.id,
+        panic_type: type,
+        lat,
+        lng,
+        message: message || null,
+        audio_url: audioUrl || null,
+        audio_duration_ms: audioDurationMs || null,
+        resolved: false,
+      });
 
-        if (error) {
-          console.error('Error saving help request:', error);
-          toast.error('Error al guardar alerta', {
-            id: savingToastId,
-            description: 'Intenta de nuevo',
-          });
-        } else {
-          console.log('Help request saved with context:', type, lat, lng, message?.slice(0, 50));
-          toast.success('Alerta enviada correctamente', {
-            id: savingToastId,
-            description: 'Todos los usuarios han sido notificados con tu mensaje',
-            duration: 5000,
-          });
-          setAlertRefreshTrigger(prev => prev + 1);
-          
-          // Notify emergency contacts via WhatsApp
-          notifyEmergencyContacts(type, lat, lng, message);
-        }
+      if (error) {
+        console.error('Error saving panic event:', error);
+        toast.error('Error al guardar alerta', {
+          id: savingToastId,
+          description: 'Intenta de nuevo',
+        });
       } else {
-        // Simple panic event without context
-        const { error } = await supabase.from('panic_events').insert({
-          user_id: user.id,
-          panic_type: type,
-          lat,
-          lng,
+        console.log('Panic event saved:', type, lat, lng, message?.slice(0, 50));
+        toast.success('Alerta enviada correctamente', {
+          id: savingToastId,
+          description: message || audioUrl 
+            ? 'Todos los usuarios han sido notificados con tu mensaje' 
+            : 'Todos los usuarios de la comunidad han sido notificados',
+          duration: 5000,
         });
-
-        if (error) {
-          console.error('Error saving panic event:', error);
-          toast.error('Error al guardar alerta', {
-            id: savingToastId,
-            description: 'Intenta de nuevo',
-          });
-        } else {
-          console.log('Panic event saved and broadcasted:', type, lat, lng);
-          toast.success('Alerta enviada correctamente', {
-            id: savingToastId,
-            description: 'Todos los usuarios de la comunidad han sido notificados',
-            duration: 5000,
-          });
-          setAlertRefreshTrigger(prev => prev + 1);
-          
-          // Notify emergency contacts via WhatsApp
-          notifyEmergencyContacts(type, lat, lng);
-        }
+        setAlertRefreshTrigger(prev => prev + 1);
+        
+        // Notify emergency contacts via WhatsApp
+        notifyEmergencyContacts(type, lat, lng, message);
       }
     } catch (err) {
       console.error('Failed to save alert:', err);
