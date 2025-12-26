@@ -678,7 +678,7 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full" style={{ background: '#22c55e' }} />
-            <span className="text-foreground">Médico/Botiquín</span>
+            <span className="text-foreground">Paramédico/Botiquín</span>
           </div>
           
           {/* Badge explanation */}
