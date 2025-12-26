@@ -33,44 +33,62 @@ L.Icon.Default.mergeOptions({
 
 // Custom icons
 // Star icon for FAMILIAR users (5-pointed star)
-const createFamiliarIcon = () => L.divIcon({
+const createFamiliarIcon = (isCurrentUser: boolean = false) => L.divIcon({
   className: 'mats-marker familiar-marker',
   html: `
     <div style="
       width: 32px;
       height: 32px;
       background: #2e8b57;
-      border: 2px solid #0a0a0a;
+      border: 2px solid ${isCurrentUser ? '#fbbf24' : '#0a0a0a'};
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)'};
+      position: relative;
     ">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
         <path d="M12 2L14 8H20L15 12L17 18L12 14L7 18L9 12L4 8H10L12 2Z" fill="#0a0a0a"/>
       </svg>
+      ${isCurrentUser ? `
+        <div style="
+          position: absolute;
+          bottom: -8px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #fbbf24;
+          color: #000;
+          font-size: 8px;
+          font-weight: 800;
+          padding: 1px 4px;
+          border-radius: 3px;
+          white-space: nowrap;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        ">TÚ</div>
+      ` : ''}
     </div>
   `,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-  popupAnchor: [0, -16],
+  iconSize: [32, isCurrentUser ? 40 : 32],
+  iconAnchor: [16, isCurrentUser ? 20 : 16],
+  popupAnchor: [0, isCurrentUser ? -20 : -16],
 });
 
 // Star of Life icon for RESCATISTA users (proper 6-pointed paramedic star)
-const createRescatistaIcon = () => L.divIcon({
+const createRescatistaIcon = (isCurrentUser: boolean = false) => L.divIcon({
   className: 'mats-marker rescatista-marker',
   html: `
     <div style="
       width: 34px;
       height: 34px;
       background: #3b82f6;
-      border: 2px solid #1e40af;
+      border: 2px solid ${isCurrentUser ? '#fbbf24' : '#1e40af'};
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 8px rgba(59,130,246,0.5);
+      box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(59,130,246,0.5)' : '0 2px 8px rgba(59,130,246,0.5)'};
+      position: relative;
     ">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff">
         <!-- Star of Life - 6-pointed medical emergency symbol -->
@@ -88,43 +106,76 @@ const createRescatistaIcon = () => L.divIcon({
         <rect x="3" y="10" width="18" height="4" rx="0.5" fill="#fff" transform="rotate(-60 12 12)"/>
         <circle cx="12" cy="12" r="3" fill="#3b82f6"/>
       </svg>
+      ${isCurrentUser ? `
+        <div style="
+          position: absolute;
+          bottom: -8px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #fbbf24;
+          color: #000;
+          font-size: 8px;
+          font-weight: 800;
+          padding: 1px 4px;
+          border-radius: 3px;
+          white-space: nowrap;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        ">TÚ</div>
+      ` : ''}
     </div>
   `,
-  iconSize: [34, 34],
-  iconAnchor: [17, 17],
-  popupAnchor: [0, -17],
+  iconSize: [34, isCurrentUser ? 42 : 34],
+  iconAnchor: [17, isCurrentUser ? 21 : 17],
+  popupAnchor: [0, isCurrentUser ? -21 : -17],
 });
 
 // Transit icon for users with active road trips (orange/amber color with car icon)
-const createTransitIcon = () => L.divIcon({
+const createTransitIcon = (isCurrentUser: boolean = false) => L.divIcon({
   className: 'mats-marker transit-marker',
   html: `
     <div style="
       width: 32px;
       height: 32px;
       background: #f59e0b;
-      border: 2px solid #0a0a0a;
+      border: 2px solid ${isCurrentUser ? '#fbbf24' : '#0a0a0a'};
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)'};
       animation: pulse-transit 2s ease-in-out infinite;
+      position: relative;
     ">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.3 1 12.1 1 13v3c0 .6.4 1 1 1h2"/>
         <circle cx="7" cy="17" r="2"/>
         <circle cx="17" cy="17" r="2"/>
       </svg>
+      ${isCurrentUser ? `
+        <div style="
+          position: absolute;
+          bottom: -8px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #fbbf24;
+          color: #000;
+          font-size: 8px;
+          font-weight: 800;
+          padding: 1px 4px;
+          border-radius: 3px;
+          white-space: nowrap;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        ">TÚ</div>
+      ` : ''}
     </div>
   `,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-  popupAnchor: [0, -16],
+  iconSize: [32, isCurrentUser ? 40 : 32],
+  iconAnchor: [16, isCurrentUser ? 20 : 16],
+  popupAnchor: [0, isCurrentUser ? -20 : -16],
 });
 
 // Default icon for users (uses FAMILIAR style - green with star)
-const createMatsIcon = () => createFamiliarIcon();
+const createMatsIcon = (isCurrentUser: boolean = false) => createFamiliarIcon(isCurrentUser);
 
 const createHelp14Icon = () => L.divIcon({
   className: 'help14-marker',
@@ -674,6 +725,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const existingMarker = markersRef.current.get(key);
       const isRescatista = loc.role === 'RESCATISTA';
       const isInTransit = loc.is_in_transit;
+      const isMe = loc.user_id === currentUserId;
       
       // Priority: Transit > Rescatista > Familiar
       let icon;
@@ -682,17 +734,17 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       let badgeColor;
       
       if (isInTransit) {
-        icon = createTransitIcon();
+        icon = createTransitIcon(isMe);
         roleLabel = 'En tránsito';
         bgColor = '#f59e0b';
         badgeColor = '#f59e0b';
       } else if (isRescatista) {
-        icon = createRescatistaIcon();
+        icon = createRescatistaIcon(isMe);
         roleLabel = 'RESCATISTA';
         bgColor = '#3b82f6';
         badgeColor = '#3b82f6';
       } else {
-        icon = createFamiliarIcon();
+        icon = createFamiliarIcon(isMe);
         roleLabel = 'FAMILIAR';
         bgColor = '#2e8b57';
         badgeColor = '#2e8b57';
