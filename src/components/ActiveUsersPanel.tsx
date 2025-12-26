@@ -74,8 +74,17 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
     return '👤';
   };
 
+  // Filter out stale locations (older than 10 minutes)
+  const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+  const now = Date.now();
+  const activeUsers = users.filter(u => {
+    if (!u.updated_at) return false;
+    const updatedMs = new Date(u.updated_at).getTime();
+    return (now - updatedMs) < STALE_THRESHOLD_MS;
+  });
+
   // Sort: Rescatistas first, then transit, then familiar
-  const sortedUsers = [...users].sort((a, b) => {
+  const sortedUsers = [...activeUsers].sort((a, b) => {
     const getPriority = (u: UserLocationSummary) => {
       if (u.role === 'RESCATISTA') return 0;
       if (u.is_in_transit) return 1;
@@ -84,9 +93,9 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
     return getPriority(a) - getPriority(b);
   });
 
-  const rescatistaCount = users.filter(u => u.role === 'RESCATISTA').length;
-  const transitCount = users.filter(u => u.is_in_transit).length;
-  const familiarCount = users.filter(u => u.role === 'FAMILIAR' && !u.is_in_transit).length;
+  const rescatistaCount = activeUsers.filter(u => u.role === 'RESCATISTA').length;
+  const transitCount = activeUsers.filter(u => u.is_in_transit).length;
+  const familiarCount = activeUsers.filter(u => u.role === 'FAMILIAR' && !u.is_in_transit).length;
 
   return (
     <div className={cn('absolute top-20 right-4 z-[1000] flex', className)}>

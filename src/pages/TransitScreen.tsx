@@ -42,6 +42,25 @@ interface TransitScreenProps {
   userRole?: UserRole;
 }
 
+interface TransitTrip {
+  id: string;
+  user_id: string;
+  transit_type: TransitType;
+  origin: string;
+  destination: string;
+  eta: string;
+  status: string;
+  plates: string | null;
+  companions: string | null;
+  vehicle_type: string | null;
+  airline: string | null;
+  flight_number: string | null;
+  departure_airport: string | null;
+  arrival_airport: string | null;
+  created_at: string;
+  arrived_at: string | null;
+}
+
 export const TransitScreen: React.FC<TransitScreenProps> = ({
   userRole = 'RESCATISTA'
 }) => {
@@ -50,6 +69,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [transitType, setTransitType] = useState<TransitType>('ROAD');
   const [submitting, setSubmitting] = useState(false);
+  const [myTrips, setMyTrips] = useState<TransitTrip[]>([]);
+  const [loadingTrips, setLoadingTrips] = useState(true);
   
   // Trip form state
   const [tripForm, setTripForm] = useState({
@@ -83,6 +104,32 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
   const { position } = useLocation();
   const { reports, refetch: refetchReports } = useRoadReports();
+
+  // Fetch user's trips
+  const fetchMyTrips = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('transit_trips')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMyTrips(data as TransitTrip[]);
+    } catch (error) {
+      console.error('Error fetching trips:', error);
+    } finally {
+      setLoadingTrips(false);
+    }
+  };
+
+  // Load trips on mount
+  useEffect(() => {
+    fetchMyTrips();
+  }, []);
 
   // Handle report verification (upvote)
   const handleVerifyReport = async (reportId: string) => {
@@ -151,6 +198,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       toast.success('¡Viaje registrado! Tu ubicación será visible en el mapa.');
       setShowTripDialog(false);
       resetTripForm();
+      fetchMyTrips(); // Refresh trips list
     } catch (error) {
       console.error('Error submitting trip:', error);
       toast.error('Error al registrar viaje');
@@ -275,18 +323,137 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
         {/* Trips Tab */}
         <TabsContent value="trips" className="space-y-3 mt-4">
-          <div className="text-center py-12 text-muted-foreground">
-            <Car className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>No hay viajes activos</p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => setShowTripDialog(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Registrar viaje
-            </Button>
-          </div>
+          {loadingTrips ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin" />
+              <p>Cargando viajes...</p>
+            </div>
+          ) : myTrips.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Car className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No hay viajes registrados</p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => setShowTripDialog(true)}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Registrar viaje
+              </Button>
+            </div>
+          ) : (
+            myTrips.map((trip) => {
+              const isActive = trip.status === 'ACTIVE';
+              const etaDate = new Date(trip.eta);
+              const isOverdue = isActive && etaDate < new Date();
+              
+              return (
+                <Card key={trip.id} className={cn(
+                  "bg-card border-border",
+                  isOverdue && "border-destructive/50"
+                )}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className={cn(
+                        'w-10 h-10 rounded-lg flex items-center justify-center',
+                        isActive ? (isOverdue ? 'bg-destructive' : 'bg-primary') : 'bg-muted',
+                        'text-white'
+                      )}>
+                        {trip.transit_type === 'ROAD' ? (
+                          <Car className="w-5 h-5" />
+                        ) : (
+                          <Plane className="w-5 h-5" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-foreground">
+                            {trip.origin} → {trip.destination}
+                          </h3>
+                          {isOverdue && (
+                            <span className="text-xs bg-destructive/20 text-destructive px-2 py-0.5 rounded">
+                              ATRASADO
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          <span>ETA: {etaDate.toLocaleString('es-MX', { 
+                            day: 'numeric', 
+                            month: 'short', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}</span>
+                          {trip.plates && (
+                            <>
+                              <span>•</span>
+                              <span>🚗 {trip.plates}</span>
+                            </>
+                          )}
+                          {trip.companions && (
+                            <>
+                              <span>•</span>
+                              <span>👥 {trip.companions}</span>
+                            </>
+                          )}
+                        </div>
+                        {trip.flight_number && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            ✈️ {trip.airline} {trip.flight_number}
+                          </div>
+                        )}
+                        <div className="flex gap-2 mt-3">
+                          {isActive && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs"
+                              onClick={async () => {
+                                try {
+                                  await supabase
+                                    .from('transit_trips')
+                                    .update({ 
+                                      status: 'COMPLETED', 
+                                      arrived_at: new Date().toISOString() 
+                                    })
+                                    .eq('id', trip.id);
+                                  toast.success('¡Viaje completado!');
+                                  fetchMyTrips();
+                                } catch (e) {
+                                  toast.error('Error al completar viaje');
+                                }
+                              }}
+                            >
+                              ✓ Llegué
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs text-muted-foreground"
+                            onClick={async () => {
+                              try {
+                                await supabase
+                                  .from('transit_trips')
+                                  .update({ status: 'CANCELLED' })
+                                  .eq('id', trip.id);
+                                toast.success('Viaje cancelado');
+                                fetchMyTrips();
+                              } catch (e) {
+                                toast.error('Error al cancelar');
+                              }
+                            }}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
         </TabsContent>
 
         {/* Reports Tab */}

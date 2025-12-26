@@ -759,10 +759,20 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     if (!mapInstanceRef.current || !mapReady) return;
     const map = mapInstanceRef.current;
 
+    // Filter out stale locations (older than 10 minutes) except current user
+    const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+    const now = Date.now();
+    const activeLocations = locations.filter(loc => {
+      if (loc.user_id === currentUserId) return true; // Always show current user
+      if (!loc.updated_at) return false;
+      const updatedMs = new Date(loc.updated_at).getTime();
+      return (now - updatedMs) < STALE_THRESHOLD_MS;
+    });
+
     // Remove old markers
     markersRef.current.forEach((marker, key) => {
       // keys are stored as `user-<uuid>`
-      const stillExists = !!locations.find(l => `user-${l.user_id}` === key);
+      const stillExists = !!activeLocations.find(l => `user-${l.user_id}` === key);
       if (!stillExists) {
         map.removeLayer(marker);
         markersRef.current.delete(key);
@@ -770,7 +780,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     });
 
     // Add/update markers with role-based icons, transit status, and name visibility
-    locations.forEach((loc) => {
+    activeLocations.forEach((loc) => {
       const key = `user-${loc.user_id}`;
       const existingMarker = markersRef.current.get(key);
       const isRescatista = loc.role === 'RESCATISTA';
