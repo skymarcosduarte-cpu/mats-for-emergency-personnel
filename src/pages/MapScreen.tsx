@@ -260,13 +260,13 @@ const createTransitIcon = (isCurrentUser: boolean = false) => L.divIcon({
   popupAnchor: [0, isCurrentUser ? -20 : -16],
 });
 
-// Ambulance icon for users with ambulance
-const createAmbulanceIcon = () => L.divIcon({
+// Ambulance icon for users with ambulance - with emergency pulsing animation
+const createAmbulanceIcon = (hasEmergencyNearby: boolean = false) => L.divIcon({
   className: 'ambulance-marker',
   html: `
     <div style="
-      width: 36px;
-      height: 36px;
+      width: ${hasEmergencyNearby ? '44px' : '36px'};
+      height: ${hasEmergencyNearby ? '44px' : '36px'};
       position: relative;
       display: flex;
       align-items: center;
@@ -274,30 +274,40 @@ const createAmbulanceIcon = () => L.divIcon({
     ">
       <div style="
         position: absolute;
-        width: 36px;
-        height: 36px;
-        background: rgba(239, 68, 68, 0.3);
+        width: ${hasEmergencyNearby ? '44px' : '36px'};
+        height: ${hasEmergencyNearby ? '44px' : '36px'};
+        background: rgba(239, 68, 68, ${hasEmergencyNearby ? '0.5' : '0.3'});
         border-radius: 50%;
-        animation: pulseMedical 2s infinite;
+        animation: ${hasEmergencyNearby ? 'pulseEmergency 0.8s infinite' : 'pulseMedical 2s infinite'};
       "></div>
+      ${hasEmergencyNearby ? `
       <div style="
-        width: 28px;
-        height: 28px;
+        position: absolute;
+        width: 56px;
+        height: 56px;
+        background: rgba(239, 68, 68, 0.2);
+        border-radius: 50%;
+        animation: pulseEmergencyOuter 1.2s infinite;
+      "></div>
+      ` : ''}
+      <div style="
+        width: ${hasEmergencyNearby ? '32px' : '28px'};
+        height: ${hasEmergencyNearby ? '32px' : '28px'};
         background: #ef4444;
-        border: 2px solid white;
+        border: ${hasEmergencyNearby ? '3px' : '2px'} solid white;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 1;
-        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
-        font-size: 14px;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, ${hasEmergencyNearby ? '0.7' : '0.4'});
+        font-size: ${hasEmergencyNearby ? '16px' : '14px'};
       ">🚑</div>
     </div>
   `,
-  iconSize: [36, 36],
-  iconAnchor: [18, 18],
-  popupAnchor: [0, -18],
+  iconSize: [hasEmergencyNearby ? 44 : 36, hasEmergencyNearby ? 44 : 36],
+  iconAnchor: [hasEmergencyNearby ? 22 : 18, hasEmergencyNearby ? 22 : 18],
+  popupAnchor: [0, hasEmergencyNearby ? -22 : -18],
 });
 
 // First aid kit / Paramédico icon - GREEN for medical assistance
@@ -1412,24 +1422,39 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       });
     }
 
+    // Check if there are active emergencies (unresolved help requests or panic events)
+    const hasActiveEmergency = helpRequests.length > 0 || panicEvents.length > 0;
+
     // Handle ambulance markers
     if (poiVisibility.ambulance) {
+      // First, remove existing ambulance markers to update with new icon state
+      markersRef.current.forEach((marker, key) => {
+        if (key.startsWith('ambulance-')) {
+          map.removeLayer(marker);
+          markersRef.current.delete(key);
+        }
+      });
+
       // Add markers for users with ambulances
       locations.forEach((loc) => {
         const hasAmbulance = (loc as any).has_ambulance ?? false;
         if (!hasAmbulance) return;
         
         const key = `ambulance-${loc.user_id}`;
-        if (markersRef.current.has(key)) return; // Already exists
+        
+        const emergencyMessage = hasActiveEmergency 
+          ? '<div style="font-size: 11px; color: #ef4444; font-weight: bold; margin-top: 6px;">⚠️ Emergencia activa cercana</div>'
+          : '';
         
         const marker = L.marker([loc.lat, loc.lng], {
-          icon: createAmbulanceIcon(),
-          zIndexOffset: 500,
+          icon: createAmbulanceIcon(hasActiveEmergency),
+          zIndexOffset: hasActiveEmergency ? 550 : 500,
         })
           .addTo(map)
           .bindPopup(`
             <div style="text-align: center; padding: 4px;">
               <div style="font-size: 14px; font-weight: bold; color: #ef4444;">🚑 Ambulancia Disponible</div>
+              ${emergencyMessage}
               <div style="font-size: 11px; color: #666; margin-top: 6px;">
                 Miembro con vehículo de emergencia
               </div>
@@ -1446,7 +1471,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         }
       });
     }
-  }, [locations, poiVisibility.first_aid_kit, poiVisibility.ambulance, mapReady]);
+  }, [locations, poiVisibility.first_aid_kit, poiVisibility.ambulance, mapReady, helpRequests.length, panicEvents.length]);
 
   // Update panic event markers
   useEffect(() => {
