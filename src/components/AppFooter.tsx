@@ -15,6 +15,11 @@ export function AppFooter() {
           </div>
         </div>
 
+        {/* Community Name */}
+        <p className="text-sm font-semibold text-foreground">
+          COMUNIDAD SOS
+        </p>
+
         {/* Free Version Badge */}
         <p className="text-[10px] text-muted-foreground">
           Versión Gratuita · Solo por Invitación
