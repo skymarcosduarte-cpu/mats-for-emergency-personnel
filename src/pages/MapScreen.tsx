@@ -824,7 +824,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     });
   }, [activeResponders, mapReady]);
 
-  // Update markers for responders to MY alerts (with names)
+  // Update markers and route lines for responders to MY alerts (with names, routes, and ETA)
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
     const map = mapInstanceRef.current;
@@ -835,6 +835,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         .filter(r => r.lat && r.lng)
         .map(r => `my-responder-${r.id}`)
     );
+    const myRouteKeys = new Set(
+      respondersToMyAlerts
+        .filter(r => r.lat && r.lng)
+        .map(r => `my-route-${r.id}`)
+    );
 
     // Remove old my-responder markers
     markersRef.current.forEach((marker, key) => {
@@ -844,24 +849,67 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       }
     });
 
-    // Add/update my alert responder markers
+    // Remove old my-route polylines
+    polylinesRef.current.forEach((polyline, key) => {
+      if (key.startsWith('my-route-') && !myRouteKeys.has(key)) {
+        map.removeLayer(polyline);
+        polylinesRef.current.delete(key);
+      }
+    });
+
+    // Add/update my alert responder markers and routes
     respondersToMyAlerts
       .filter(r => r.lat && r.lng)
       .forEach((responder, index) => {
-        const key = `my-responder-${responder.id}`;
-        const existingMarker = markersRef.current.get(key);
+        const markerKey = `my-responder-${responder.id}`;
+        const routeKey = `my-route-${responder.id}`;
+        const existingMarker = markersRef.current.get(markerKey);
+        const existingPolyline = polylinesRef.current.get(routeKey);
         const latLng: [number, number] = [responder.lat!, responder.lng!];
+        const alertLatLng: [number, number] = [responder.alert_lat, responder.alert_lng];
+
+        // Format ETA display
+        const formatEta = (minutes: number | null, distanceKm: number) => {
+          const distanceText = distanceKm < 1 
+            ? `${Math.round(distanceKm * 1000)}m` 
+            : `${distanceKm.toFixed(1)}km`;
+          
+          if (minutes === null || minutes <= 0) {
+            return `📍 ${distanceText}`;
+          }
+          
+          if (minutes < 1) {
+            return `⏱️ <1 min • ${distanceText}`;
+          } else if (minutes < 60) {
+            return `⏱️ ~${Math.round(minutes)} min • ${distanceText}`;
+          } else {
+            const hours = Math.floor(minutes / 60);
+            const mins = Math.round(minutes % 60);
+            return `⏱️ ~${hours}h ${mins}min • ${distanceText}`;
+          }
+        };
+
+        const etaDisplay = formatEta(responder.eta_minutes, responder.distance_km);
+        const speedDisplay = responder.speed 
+          ? `🚗 ${Math.round(responder.speed * 3.6)} km/h` 
+          : 'Velocidad desconocida';
 
         const arrivedBadge = responder.arrived_at 
           ? '<div style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-top: 4px;">✅ LLEGÓ</div>'
           : '<div style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-top: 4px;">🚗 En camino</div>';
 
         const popupContent = `
-          <div style="text-align: center; padding: 4px; min-width: 140px;">
+          <div style="text-align: center; padding: 4px; min-width: 160px;">
             <div style="font-size: 14px; font-weight: bold; color: #3b82f6;">🚨 ${sanitize(responder.nickname)}</div>
             ${arrivedBadge}
-            <div style="font-size: 10px; color: #999; margin-top: 6px;">
-              Respondiendo desde ${new Date(responder.started_at).toLocaleTimeString()}
+            <div style="font-size: 13px; font-weight: 600; color: #22c55e; margin-top: 6px;">
+              ${etaDisplay}
+            </div>
+            <div style="font-size: 11px; color: #666; margin-top: 4px;">
+              ${speedDisplay}
+            </div>
+            <div style="font-size: 10px; color: #999; margin-top: 4px;">
+              Desde ${new Date(responder.started_at).toLocaleTimeString()}
             </div>
           </div>
         `;
@@ -876,7 +924,33 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           })
             .addTo(map)
             .bindPopup(popupContent);
-          markersRef.current.set(key, marker);
+          markersRef.current.set(markerKey, marker);
+        }
+
+        // Route line colors - use different colors for multiple responders
+        const routeColors = ['#22c55e', '#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b'];
+        const routeColor = routeColors[index % routeColors.length];
+
+        // Update or create route polyline (dashed line from responder to alert)
+        if (!responder.arrived_at) {
+          if (existingPolyline) {
+            existingPolyline.setLatLngs([latLng, alertLatLng]);
+            existingPolyline.setStyle({ color: routeColor });
+          } else {
+            const polyline = L.polyline([latLng, alertLatLng], {
+              color: routeColor,
+              weight: 4,
+              opacity: 0.9,
+              dashArray: '12, 8',
+            }).addTo(map);
+            polylinesRef.current.set(routeKey, polyline);
+          }
+        } else {
+          // Remove route line if arrived
+          if (existingPolyline) {
+            map.removeLayer(existingPolyline);
+            polylinesRef.current.delete(routeKey);
+          }
         }
       });
   }, [respondersToMyAlerts, mapReady]);

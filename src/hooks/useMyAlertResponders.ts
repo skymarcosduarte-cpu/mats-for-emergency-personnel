@@ -1,6 +1,6 @@
 // Hook to listen for responders to user's own alerts
 // Shows push notifications when a rescatista starts responding
-// Also tracks responder location for real-time map display
+// Also tracks responder location for real-time map display with route and ETA
 
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +31,13 @@ export interface ActiveResponderInfo {
   lng: number | null;
   started_at: string;
   arrived_at: string | null;
+  // Alert/emergency location
+  alert_lat: number;
+  alert_lng: number;
+  // Calculated ETA fields
+  distance_km: number;
+  eta_minutes: number | null;
+  speed: number | null; // m/s from user_locations
 }
 
 export function useMyAlertResponders() {
@@ -38,6 +45,8 @@ export function useMyAlertResponders() {
   const notifiedResponderIds = useRef<Set<string>>(new Set());
   const notifiedArrivalIds = useRef<Set<string>>(new Set());
   const [respondersToMyAlerts, setRespondersToMyAlerts] = useState<ActiveResponderInfo[]>([]);
+  // Cache of alert locations by request_id
+  const alertLocationsRef = useRef<Map<string, { lat: number; lng: number }>>(new Map());
 
   // Vibrate helper
   const vibrate = useCallback((pattern: number | number[]) => {
@@ -47,6 +56,47 @@ export function useMyAlertResponders() {
       } catch {
         // Ignore errors
       }
+    }
+  }, []);
+
+  // Calculate distance using Haversine formula
+  const calculateDistance = useCallback((lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }, []);
+
+  // Calculate ETA based on distance and speed
+  const calculateEta = useCallback((distanceKm: number, speedMps: number | null): number | null => {
+    if (!speedMps || speedMps <= 0) {
+      // Default to 30 km/h walking/slow vehicle speed if unknown
+      const defaultSpeedKmh = 30;
+      return (distanceKm / defaultSpeedKmh) * 60; // minutes
+    }
+    const speedKmh = speedMps * 3.6;
+    if (speedKmh < 1) return null;
+    return (distanceKm / speedKmh) * 60; // minutes
+  }, []);
+
+  // Fetch responder's speed from user_locations
+  const fetchResponderSpeed = useCallback(async (userId: string): Promise<number | null> => {
+    try {
+      const { data } = await supabase
+        .from('user_locations')
+        .select('speed')
+        .eq('user_id', userId)
+        .maybeSingle();
+      return data?.speed ?? null;
+    } catch {
+      return null;
     }
   }, []);
 
@@ -96,6 +146,29 @@ export function useMyAlertResponders() {
     }
   }, []);
 
+  // Fetch alert location by request_id
+  const fetchAlertLocation = useCallback(async (requestId: string): Promise<{ lat: number; lng: number } | null> => {
+    // Check cache first
+    const cached = alertLocationsRef.current.get(requestId);
+    if (cached) return cached;
+
+    try {
+      const { data } = await supabase
+        .from('help_requests')
+        .select('lat, lng')
+        .eq('id', requestId)
+        .maybeSingle();
+      
+      if (data) {
+        alertLocationsRef.current.set(requestId, { lat: data.lat, lng: data.lng });
+        return { lat: data.lat, lng: data.lng };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, []);
+
   // Notify when a rescatista starts responding
   const notifyResponderStarted = useCallback(async (responder: ResponderEvent) => {
     // Prevent duplicate notifications
@@ -104,8 +177,12 @@ export function useMyAlertResponders() {
 
     console.log('[useMyAlertResponders] Responder started:', responder);
 
-    // Fetch responder's nickname
-    const nickname = await fetchResponderProfile(responder.user_id);
+    // Fetch responder's nickname and alert location in parallel
+    const [nickname, alertLocation, speed] = await Promise.all([
+      fetchResponderProfile(responder.user_id),
+      fetchAlertLocation(responder.request_id),
+      fetchResponderSpeed(responder.user_id),
+    ]);
 
     // Vibrate positively
     vibrate([100, 50, 100, 50, 200]);
@@ -132,6 +209,14 @@ export function useMyAlertResponders() {
       });
     }
 
+    // Calculate distance and ETA
+    const alertLat = alertLocation?.lat ?? 0;
+    const alertLng = alertLocation?.lng ?? 0;
+    const distance_km = responder.lat && responder.lng
+      ? calculateDistance(responder.lat, responder.lng, alertLat, alertLng)
+      : 0;
+    const eta_minutes = calculateEta(distance_km, speed);
+
     // Add to tracked responders
     setRespondersToMyAlerts(prev => {
       const exists = prev.find(r => r.id === responder.id);
@@ -139,9 +224,14 @@ export function useMyAlertResponders() {
       return [...prev, {
         ...responder,
         nickname,
+        alert_lat: alertLat,
+        alert_lng: alertLng,
+        distance_km,
+        eta_minutes,
+        speed,
       }];
     });
-  }, [vibrate, showBrowserNotification, fetchResponderProfile]);
+  }, [vibrate, showBrowserNotification, fetchResponderProfile, fetchAlertLocation, fetchResponderSpeed, calculateDistance, calculateEta]);
 
   // Notify when a rescatista arrives
   const notifyResponderArrived = useCallback(async (responder: ResponderEvent) => {
@@ -179,32 +269,51 @@ export function useMyAlertResponders() {
       });
     }
 
-    // Update responder status
+    // Update responder status (distance is 0 on arrival)
     setRespondersToMyAlerts(prev => 
-      prev.map(r => r.id === responder.id ? { ...r, arrived_at: responder.arrived_at, nickname } : r)
+      prev.map(r => r.id === responder.id 
+        ? { ...r, arrived_at: responder.arrived_at, nickname, distance_km: 0, eta_minutes: 0 } 
+        : r
+      )
     );
   }, [vibrate, showBrowserNotification, fetchResponderProfile]);
 
-  // Update responder location in real-time
-  const updateResponderLocation = useCallback((responder: ResponderEvent) => {
+  // Update responder location in real-time with recalculated distance and ETA
+  const updateResponderLocation = useCallback(async (responder: ResponderEvent) => {
+    // Get speed for ETA calculation
+    const speed = await fetchResponderSpeed(responder.user_id);
+
     setRespondersToMyAlerts(prev => 
-      prev.map(r => 
-        r.id === responder.id 
-          ? { ...r, lat: responder.lat, lng: responder.lng } 
-          : r
-      )
+      prev.map(r => {
+        if (r.id !== responder.id) return r;
+        
+        // Recalculate distance and ETA with new location
+        const distance_km = responder.lat && responder.lng
+          ? calculateDistance(responder.lat, responder.lng, r.alert_lat, r.alert_lng)
+          : r.distance_km;
+        const eta_minutes = calculateEta(distance_km, speed);
+
+        return { 
+          ...r, 
+          lat: responder.lat, 
+          lng: responder.lng,
+          distance_km,
+          eta_minutes,
+          speed,
+        };
+      })
     );
-  }, []);
+  }, [fetchResponderSpeed, calculateDistance, calculateEta]);
 
   // Fetch existing responders on mount
   const fetchExistingResponders = useCallback(async () => {
     if (!user?.id) return;
 
     try {
-      // Get user's active help requests
+      // Get user's active help requests with their locations
       const { data: myRequests } = await supabase
         .from('help_requests')
-        .select('id')
+        .select('id, lat, lng')
         .eq('user_id', user.id)
         .eq('resolved', false);
 
@@ -212,6 +321,11 @@ export function useMyAlertResponders() {
         setRespondersToMyAlerts([]);
         return;
       }
+
+      // Cache alert locations
+      myRequests.forEach(req => {
+        alertLocationsRef.current.set(req.id, { lat: req.lat, lng: req.lng });
+      });
 
       const requestIds = myRequests.map(r => r.id);
 
@@ -226,13 +340,36 @@ export function useMyAlertResponders() {
         return;
       }
 
-      // Fetch nicknames for all responders
+      // Fetch nicknames and speeds for all responders
       const respondersWithProfiles = await Promise.all(
         responders
           .filter(r => r.user_id !== user.id)
           .map(async (r) => {
-            const nickname = await fetchResponderProfile(r.user_id);
-            return { ...r, nickname };
+            const [nickname, speed] = await Promise.all([
+              fetchResponderProfile(r.user_id),
+              fetchResponderSpeed(r.user_id),
+            ]);
+            
+            // Get alert location
+            const alertLoc = alertLocationsRef.current.get(r.request_id);
+            const alertLat = alertLoc?.lat ?? 0;
+            const alertLng = alertLoc?.lng ?? 0;
+            
+            // Calculate distance and ETA
+            const distance_km = r.lat && r.lng
+              ? calculateDistance(r.lat, r.lng, alertLat, alertLng)
+              : 0;
+            const eta_minutes = calculateEta(distance_km, speed);
+
+            return { 
+              ...r, 
+              nickname,
+              alert_lat: alertLat,
+              alert_lng: alertLng,
+              distance_km,
+              eta_minutes,
+              speed,
+            };
           })
       );
 
@@ -240,7 +377,7 @@ export function useMyAlertResponders() {
     } catch (error) {
       console.error('[useMyAlertResponders] Error fetching responders:', error);
     }
-  }, [user?.id, fetchResponderProfile]);
+  }, [user?.id, fetchResponderProfile, fetchResponderSpeed, calculateDistance, calculateEta]);
 
   // Fetch on mount
   useEffect(() => {
