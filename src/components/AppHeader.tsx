@@ -1,6 +1,7 @@
 import React, { useRef, useCallback, useState } from 'react';
 import { MatsLogo } from './MatsLogo';
 import { AlertTriangle, Phone } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +55,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
     
     // Show confirmation dialog
     setShowConfirmation(true);
+    
+    // Show toast notification for clear feedback
+    toast.warning('¿Necesitas ayuda de emergencia?', {
+      description: 'Confirma para alertar a la comunidad',
+      duration: 4000,
+      icon: '🆘',
+    });
     
     // Reset processing state after a delay
     setTimeout(() => {
