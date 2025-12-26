@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { playPositiveAlert } from '@/lib/alertSound';
 
 export interface Notification {
   id: string;
@@ -16,6 +18,7 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const lastNotificationIdRef = useRef<string | null>(null);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -37,6 +40,26 @@ export function useNotifications() {
     }
   }, []);
 
+  // Show toast for new responder contact notifications
+  const showContactNotification = useCallback((notification: Notification) => {
+    if (notification.type === 'responder_contact') {
+      // Play positive alert sound
+      playPositiveAlert();
+      
+      // Show prominent toast
+      toast.success(notification.title, {
+        description: notification.message || 'Un rescatista intenta contactarte',
+        duration: 10000,
+        icon: notification.title.includes('📞') ? '📞' : '💬',
+      });
+
+      // Vibrate device
+      if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200, 100, 200]);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     fetchNotifications();
 
@@ -46,7 +69,39 @@ export function useNotifications() {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+        },
+        (payload) => {
+          const newNotification = payload.new as Notification;
+          
+          // Avoid duplicate notifications
+          if (lastNotificationIdRef.current !== newNotification.id) {
+            lastNotificationIdRef.current = newNotification.id;
+            
+            // Show toast for contact notifications
+            showContactNotification(newNotification);
+          }
+          
+          fetchNotifications();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+        },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
           schema: 'public',
           table: 'notifications',
         },
@@ -59,7 +114,7 @@ export function useNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchNotifications]);
+  }, [fetchNotifications, showContactNotification]);
 
   const markAsRead = async (notificationId: string) => {
     try {
