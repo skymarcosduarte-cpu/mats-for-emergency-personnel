@@ -19,7 +19,9 @@ import {
   MapPinCheck,
   Mic,
   CheckCircle2,
-  ChevronDown
+  ChevronDown,
+  MessageCircle,
+  PhoneCall
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -161,6 +163,63 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   const [showCancelReasons, setShowCancelReasons] = useState(false);
   const [isWithinRadius, setIsWithinRadius] = useState<boolean | null>(null);
   const [distanceToAlert, setDistanceToAlert] = useState<number | null>(null);
+  const [creatorPhone, setCreatorPhone] = useState<string | null>(null);
+  const [creatorName, setCreatorName] = useState<string | null>(null);
+  const [loadingCreatorInfo, setLoadingCreatorInfo] = useState(false);
+
+  // Fetch creator's phone number for direct contact
+  useEffect(() => {
+    if (!alert?.user_id || isOwner) {
+      setCreatorPhone(null);
+      setCreatorName(null);
+      return;
+    }
+
+    const fetchCreatorInfo = async () => {
+      setLoadingCreatorInfo(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('phone, full_name, nickname')
+          .eq('id', alert.user_id)
+          .single();
+
+        if (!error && data) {
+          setCreatorPhone(data.phone);
+          setCreatorName(data.nickname || data.full_name);
+        }
+      } catch (err) {
+        console.error('[AlertDetailModal] Error fetching creator info:', err);
+      } finally {
+        setLoadingCreatorInfo(false);
+      }
+    };
+
+    fetchCreatorInfo();
+  }, [alert?.user_id, isOwner]);
+
+  // Format phone for WhatsApp (Mexico format)
+  const formatPhoneForWhatsApp = (phone: string): string => {
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('52')) return cleaned;
+    if (cleaned.startsWith('1') && cleaned.length === 11) return cleaned;
+    if (cleaned.length === 10) return `52${cleaned}`;
+    return cleaned;
+  };
+
+  const callCreator = () => {
+    if (creatorPhone) {
+      window.location.href = `tel:${creatorPhone}`;
+    }
+  };
+
+  const whatsappCreator = () => {
+    if (creatorPhone) {
+      const formattedPhone = formatPhoneForWhatsApp(creatorPhone);
+      const message = encodeURIComponent(`Hola ${creatorName || ''}, voy en camino a ayudarte con tu alerta de emergencia. ¿Puedes darme más información?`);
+      window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+    }
+  };
 
   // Check if user is already responding
   const isAlreadyResponding = currentUserId && responders.some(
@@ -450,6 +509,52 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
             </div>
           )}
         </section>
+
+        {/* Direct Contact Section - For responders to call/message alert creator */}
+        {!isOwner && creatorPhone && (isAlreadyResponding || isRescatista) && (
+          <section className="bg-card rounded-lg p-4 border border-primary/30 border-2">
+            <h2 className="text-sm font-medium text-primary mb-3 flex items-center gap-2">
+              <PhoneCall className="w-4 h-4" />
+              Contactar al Solicitante
+              {creatorName && (
+                <Badge variant="secondary" className="text-xs ml-auto">
+                  {creatorName}
+                </Badge>
+              )}
+            </h2>
+            {loadingCreatorInfo ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Comunícate directamente con la persona que necesita ayuda
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    variant="default"
+                    className="w-full touch-manipulation bg-green-600 hover:bg-green-700"
+                    onClick={callCreator}
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
+                  >
+                    <Phone className="w-4 h-4 mr-2" />
+                    Llamar
+                  </Button>
+                  <Button 
+                    variant="default"
+                    className="w-full touch-manipulation bg-[#25D366] hover:bg-[#128C7E]"
+                    onClick={whatsappCreator}
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    WhatsApp
+                  </Button>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Medical Info */}
         {isRescatista && (
