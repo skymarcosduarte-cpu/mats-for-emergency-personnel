@@ -173,9 +173,9 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   const [creatorName, setCreatorName] = useState<string | null>(null);
   const [loadingCreatorInfo, setLoadingCreatorInfo] = useState(false);
 
-  // Fetch creator's phone number for direct contact
+  // Fetch creator's info for contact and display
   useEffect(() => {
-    if (!alert?.user_id || isOwner) {
+    if (!alert?.user_id) {
       setCreatorPhone(null);
       setCreatorName(null);
       return;
@@ -188,21 +188,26 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
           .from('profiles')
           .select('phone, full_name, nickname')
           .eq('id', alert.user_id)
-          .single();
+          .maybeSingle();
 
         if (!error && data) {
           setCreatorPhone(data.phone);
           setCreatorName(data.nickname || data.full_name);
+        } else {
+          setCreatorPhone(null);
+          setCreatorName(null);
         }
       } catch (err) {
         console.error('[AlertDetailModal] Error fetching creator info:', err);
+        setCreatorPhone(null);
+        setCreatorName(null);
       } finally {
         setLoadingCreatorInfo(false);
       }
     };
 
     fetchCreatorInfo();
-  }, [alert?.user_id, isOwner]);
+  }, [alert?.user_id]);
 
   // Format phone for WhatsApp (Mexico format)
   const formatPhoneForWhatsApp = (phone: string): string => {
@@ -381,6 +386,60 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-4 space-y-6">
+        {/* Requester Info Section */}
+        <section className="bg-card rounded-lg p-4 border border-primary/30">
+          <h2 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+            <User className="w-4 h-4" />
+            Solicitante
+          </h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full ${config.color} flex items-center justify-center text-white`}>
+                {creatorName ? creatorName.charAt(0).toUpperCase() : '?'}
+              </div>
+              <div>
+                {loadingCreatorInfo ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm text-muted-foreground">Cargando...</span>
+                  </div>
+                ) : creatorName ? (
+                  <>
+                    <p className="font-medium text-foreground">{creatorName}</p>
+                    {isOwner && (
+                      <p className="text-xs text-primary">Tu alerta</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Usuario de la comunidad</p>
+                )}
+              </div>
+            </div>
+            
+            {/* Quick contact buttons for rescatistas */}
+            {!isOwner && creatorPhone && isRescatista && (
+              <div className="flex gap-2">
+                <Button 
+                  size="icon"
+                  variant="outline"
+                  className="h-10 w-10 bg-green-600/10 border-green-600/30 text-green-600 hover:bg-green-600 hover:text-white"
+                  onClick={callCreator}
+                >
+                  <Phone className="w-4 h-4" />
+                </Button>
+                <Button 
+                  size="icon"
+                  variant="outline"
+                  className="h-10 w-10 bg-[#25D366]/10 border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366] hover:text-white"
+                  onClick={whatsappCreator}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </section>
+
         {/* Timestamp Section */}
         <section className="bg-card rounded-lg p-4 border border-border">
           <h2 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
@@ -550,49 +609,36 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
           )}
         </section>
 
-        {/* Direct Contact Section - For responders to call/message alert creator */}
-        {!isOwner && creatorPhone && (isAlreadyResponding || isRescatista) && (
-          <section className="bg-card rounded-lg p-4 border border-primary/30 border-2">
-            <h2 className="text-sm font-medium text-primary mb-3 flex items-center gap-2">
+        {/* Expanded Contact Section - Shows only when responding */}
+        {!isOwner && creatorPhone && isAlreadyResponding && (
+          <section className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg p-4 border border-green-500/30">
+            <h2 className="text-sm font-medium text-green-600 mb-3 flex items-center gap-2">
               <PhoneCall className="w-4 h-4" />
-              Contactar al Solicitante
-              {creatorName && (
-                <Badge variant="secondary" className="text-xs ml-auto">
-                  {creatorName}
-                </Badge>
-              )}
+              Línea directa con {creatorName || 'el solicitante'}
             </h2>
-            {loadingCreatorInfo ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-xs text-muted-foreground">
-                  Comunícate directamente con la persona que necesita ayuda
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button 
-                    variant="default"
-                    className="w-full touch-manipulation bg-green-600 hover:bg-green-700"
-                    onClick={callCreator}
-                    style={{ WebkitTapHighlightColor: 'transparent' }}
-                  >
-                    <Phone className="w-4 h-4 mr-2" />
-                    Llamar
-                  </Button>
-                  <Button 
-                    variant="default"
-                    className="w-full touch-manipulation bg-[#25D366] hover:bg-[#128C7E]"
-                    onClick={whatsappCreator}
-                    style={{ WebkitTapHighlightColor: 'transparent' }}
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    WhatsApp
-                  </Button>
-                </div>
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground mb-3">
+              Estás respondiendo a esta alerta. Comunícate para coordinar la ayuda.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                variant="default"
+                className="w-full touch-manipulation bg-green-600 hover:bg-green-700"
+                onClick={callCreator}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                <Phone className="w-4 h-4 mr-2" />
+                Llamar ahora
+              </Button>
+              <Button 
+                variant="default"
+                className="w-full touch-manipulation bg-[#25D366] hover:bg-[#128C7E]"
+                onClick={whatsappCreator}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                WhatsApp
+              </Button>
+            </div>
           </section>
         )}
 
