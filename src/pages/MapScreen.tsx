@@ -623,7 +623,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       }
     });
 
-    // Add/update markers with role-based icons
+    // Add/update markers with role-based icons and name visibility
     locations.forEach((loc) => {
       const key = `user-${loc.user_id}`;
       const existingMarker = markersRef.current.get(key);
@@ -631,22 +631,31 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const icon = isRescatista ? createRescatistaIcon() : createFamiliarIcon();
       const roleLabel = isRescatista ? 'Rescatista' : 'Miembro';
       const bgColor = isRescatista ? '#3b82f6' : '#2e8b57';
+      const displayName = loc.display_name ? sanitize(loc.display_name) : null;
+
+      const popupContent = displayName
+        ? `<div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 24px; height: 24px; background: ${bgColor}; border-radius: 50%;"></div>
+            <div>
+              <div style="font-weight: 600;">${displayName}</div>
+              <div style="font-size: 11px; color: #666;">${roleLabel} activo</div>
+            </div>
+          </div>`
+        : `<div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 24px; height: 24px; background: ${bgColor}; border-radius: 50%;"></div>
+            <span style="font-weight: 500;">${roleLabel} activo</span>
+          </div>`;
 
       if (existingMarker) {
         existingMarker.setLatLng([loc.lat, loc.lng]);
-        // Update icon if role changed
         existingMarker.setIcon(icon);
+        existingMarker.setPopupContent(popupContent);
       } else {
         const marker = L.marker([loc.lat, loc.lng], {
           icon: icon,
         })
           .addTo(map)
-          .bindPopup(`
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <div style="width: 24px; height: 24px; background: ${bgColor}; border-radius: 50%;"></div>
-              <span style="font-weight: 500;">${roleLabel} activo</span>
-            </div>
-          `);
+          .bindPopup(popupContent);
         markersRef.current.set(key, marker);
       }
     });
