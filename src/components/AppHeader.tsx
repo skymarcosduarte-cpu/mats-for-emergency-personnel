@@ -7,10 +7,23 @@ interface AppHeaderProps {
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
-  const handlePanicClick = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const lastActivatedAtRef = React.useRef(0);
+
+  const triggerPanic = (e?: { preventDefault?: () => void; stopPropagation?: () => void }) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
     onPanicClick();
+  };
+
+  const handlePanicPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    lastActivatedAtRef.current = Date.now();
+    triggerPanic(e);
+  };
+
+  const handlePanicClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Prevent the synthetic click that follows a touch/pointer interaction on Android.
+    if (Date.now() - lastActivatedAtRef.current < 700) return;
+    triggerPanic(e);
   };
 
   return (
@@ -18,8 +31,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
       <MatsLogo size={36} showText />
       
       <button
+        onPointerUp={handlePanicPointerUp}
         onClick={handlePanicClick}
-        onTouchEnd={handlePanicClick}
         className="relative w-12 h-12 rounded-full bg-panic text-primary-foreground shadow-panic flex items-center justify-center touch-manipulation select-none"
         aria-label="Botón de pánico"
         type="button"
