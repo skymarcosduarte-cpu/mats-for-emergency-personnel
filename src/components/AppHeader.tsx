@@ -1,7 +1,6 @@
 import React, { useRef, useCallback, useState } from 'react';
 import { MatsLogo } from './MatsLogo';
 import { AlertTriangle, Phone } from 'lucide-react';
-import { toast } from 'sonner';
 import { playUrgentSound } from '@/lib/alertSound';
 import {
   AlertDialog,
@@ -28,61 +27,57 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
     // Prevent double-triggers within 500ms
     const now = Date.now();
     if (now - lastActivatedAtRef.current < 500) {
-      console.log('[AppHeader] Panic blocked - too soon after last trigger');
       return;
     }
     
     if (isProcessingRef.current) {
-      console.log('[AppHeader] Panic blocked - already processing');
       return;
     }
     
-    console.log('[AppHeader] Panic triggered!');
     lastActivatedAtRef.current = now;
     isProcessingRef.current = true;
     
-    // Visual feedback
+    // Visual feedback only
     setShowFeedback(true);
-    setTimeout(() => setShowFeedback(false), 200);
     
-    // Immediate haptic feedback
-    if ('vibrate' in navigator) {
-      try {
+    // Haptic feedback (non-blocking)
+    try {
+      if ('vibrate' in navigator) {
         navigator.vibrate([100, 50, 100]);
-      } catch (e) {
-        console.log('[AppHeader] Vibrate failed:', e);
       }
+    } catch (e) {
+      // Ignore vibration errors
     }
     
-    // Show confirmation dialog
+    // Show confirmation dialog (sound will play on confirm)
     setShowConfirmation(true);
     
-    // Play urgent alert sound
-    playUrgentSound();
-    
-    // Show toast notification for clear feedback
-    toast.warning('¿Necesitas ayuda de emergencia?', {
-      description: 'Confirma para alertar a la comunidad',
-      duration: 4000,
-      icon: '🆘',
-    });
-    
-    // Reset processing state after a delay
+    // Reset states after short delay
     setTimeout(() => {
+      setShowFeedback(false);
       isProcessingRef.current = false;
-    }, 500);
+    }, 300);
   }, []);
 
   const handleConfirm = useCallback(() => {
     setShowConfirmation(false);
-    // Vibrate on confirm
-    if ('vibrate' in navigator) {
-      try {
-        navigator.vibrate([200, 100, 200]);
-      } catch (e) {
-        // Ignore
-      }
+    
+    // Play urgent sound on confirmation
+    try {
+      playUrgentSound();
+    } catch (e) {
+      // Ignore sound errors
     }
+    
+    // Vibrate on confirm
+    try {
+      if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200]);
+      }
+    } catch (e) {
+      // Ignore vibration errors
+    }
+    
     onPanicClick();
   }, [onPanicClick]);
 
