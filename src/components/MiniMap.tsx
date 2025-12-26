@@ -1,9 +1,11 @@
 // Mini map preview component using vanilla Leaflet
-// Shows a static marker at a specific location
+// Shows a static marker at a specific location with tap-to-expand
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Expand } from 'lucide-react';
+import { FullScreenMap } from './FullScreenMap';
 
 interface MiniMapProps {
   lat: number;
@@ -20,9 +22,10 @@ export const MiniMap: React.FC<MiniMapProps> = ({
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (!mapContainerRef.current || isExpanded) return;
 
     // Initialize map
     const map = L.map(mapContainerRef.current, {
@@ -73,13 +76,37 @@ export const MiniMap: React.FC<MiniMapProps> = ({
         mapRef.current = null;
       }
     };
-  }, [lat, lng, zoom]);
+  }, [lat, lng, zoom, isExpanded]);
 
   return (
-    <div 
-      ref={mapContainerRef} 
-      className={`w-full h-32 rounded-lg overflow-hidden ${className}`}
-      style={{ minHeight: '128px' }}
-    />
+    <>
+      <div 
+        className={`relative w-full h-32 rounded-lg overflow-hidden cursor-pointer group ${className}`}
+        style={{ minHeight: '128px' }}
+        onClick={() => setIsExpanded(true)}
+      >
+        <div ref={mapContainerRef} className="absolute inset-0" />
+        
+        {/* Expand overlay */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+          <div className="bg-card/90 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+            <Expand className="w-5 h-5 text-foreground" />
+          </div>
+        </div>
+        
+        {/* Tap hint */}
+        <div className="absolute bottom-2 right-2 bg-card/90 backdrop-blur-sm rounded-md px-2 py-1 text-xs text-muted-foreground flex items-center gap-1">
+          <Expand className="w-3 h-3" />
+          Ampliar
+        </div>
+      </div>
+
+      <FullScreenMap
+        lat={lat}
+        lng={lng}
+        isOpen={isExpanded}
+        onClose={() => setIsExpanded(false)}
+      />
+    </>
   );
 };
