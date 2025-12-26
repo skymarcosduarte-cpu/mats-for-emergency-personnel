@@ -194,16 +194,28 @@ export function usePanicAlerts() {
     const kindInfo = HELP_KIND_LABELS[request.kind] || { label: 'Ayuda', emoji: '🤝' };
     const mapsLink = getGoogleMapsLink(request.lat, request.lng);
     
-    // Vibrate
-    vibrate([200, 100, 200]);
+    // Set latest emergency alert for prominent overlay
+    setLatestEmergencyAlert({
+      id: request.id,
+      type: 'help',
+      kind: request.kind,
+      lat: request.lat,
+      lng: request.lng,
+      message: request.message,
+      createdAt: request.created_at,
+      userId: request.user_id,
+    });
     
-    // Play help alert sound
-    playHelpAlertSound();
+    // Vibrate urgently for help requests
+    vibrate([300, 100, 300, 100, 300]);
+    
+    // Play urgent alert sound for help requests
+    playPanicAlertSound();
 
     // Show browser notification (works in background)
     showBrowserNotification(
-      `${kindInfo.emoji} Solicitud de Ayuda`,
-      request.message || `${kindInfo.label} - Alguien necesita ayuda`,
+      `${kindInfo.emoji} ¡ALERTA DE AYUDA!`,
+      request.message || `${kindInfo.label} - Alguien necesita ayuda urgente`,
       `help-${request.id}`,
       request.lat,
       request.lng
@@ -211,11 +223,11 @@ export function usePanicAlerts() {
 
     // Show toast if app is visible
     if (document.visibilityState === 'visible') {
-      toast.warning(
+      toast.error(
         `${kindInfo.emoji} ${kindInfo.label}`,
         {
-          description: request.message || 'Un miembro necesita ayuda',
-          duration: 10000,
+          description: request.message || 'Un miembro necesita ayuda urgente',
+          duration: 15000,
           action: {
             label: 'Ver ubicación',
             onClick: () => window.open(mapsLink, '_blank'),
@@ -223,7 +235,7 @@ export function usePanicAlerts() {
         }
       );
     }
-  }, [vibrate, playHelpAlertSound, getGoogleMapsLink, showBrowserNotification]);
+  }, [vibrate, playPanicAlertSound, getGoogleMapsLink, showBrowserNotification]);
 
   // Clear alerts
   const clearAlerts = useCallback(() => {

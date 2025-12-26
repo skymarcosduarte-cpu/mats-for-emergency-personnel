@@ -23,6 +23,7 @@ import { UpdatePrompt, UpdateIndicator } from '@/components/UpdatePrompt';
 import { SplashScreen } from '@/components/SplashScreen';
 
 import { SeismicAlert } from '@/components/SeismicAlert';
+import { EmergencyAlertOverlay } from '@/components/EmergencyAlertOverlay';
 import { ActiveAlertBanner } from '@/components/ActiveAlertBanner';
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
@@ -129,7 +130,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   const { testAlert, simulatePanicAlert, clearTestAlert } = useTestMode();
   
   // Real-time panic alerts from other users
-  const { recentAlerts, unreadCount } = usePanicAlerts();
+  const { recentAlerts, unreadCount, latestEmergencyAlert, dismissLatestAlert } = usePanicAlerts();
   
   // Listen for responders to user's own alerts and track their location
   const { respondersToMyAlerts } = useMyAlertResponders();
@@ -315,6 +316,24 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
         onConfirmSafe={handleConfirmSafe}
         onNeedHelp={handleNeedHelp}
         onDismiss={dismissPrompt}
+      />
+
+      {/* Prominent Emergency Alert Overlay for community alerts */}
+      <EmergencyAlertOverlay
+        alert={latestEmergencyAlert}
+        onDismiss={dismissLatestAlert}
+        onViewLocation={() => {
+          if (latestEmergencyAlert) {
+            setActiveTab('map');
+            dismissLatestAlert();
+          }
+        }}
+        onNavigate={() => {
+          if (latestEmergencyAlert) {
+            window.open(`https://maps.google.com/maps?daddr=${latestEmergencyAlert.lat},${latestEmergencyAlert.lng}`, '_blank');
+            dismissLatestAlert();
+          }
+        }}
       />
     </div>
   );
