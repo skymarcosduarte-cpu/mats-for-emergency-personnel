@@ -43,6 +43,12 @@ const HELP_KIND_LABELS: Record<string, { label: string; emoji: string }> = {
   'transport': { label: 'Transporte', emoji: '🚗' },
   'shelter': { label: 'Refugio', emoji: '🏠' },
   'other': { label: 'Ayuda General', emoji: '🤝' },
+  'SISMO_AYUDA_14': { label: 'Ayuda por Sismo', emoji: '🏚️' },
+  'AMBULANCIA_PROPIA': { label: 'Ambulancia Propia', emoji: '🚑' },
+  'AMBULANCIA_TERCERO': { label: 'Ambulancia Tercero', emoji: '🚑' },
+  'PATRULLA': { label: 'Patrulla', emoji: '🚔' },
+  'MECANICO': { label: 'Mecánico', emoji: '🔧' },
+  'PROTECCION_CIVIL': { label: 'Protección Civil', emoji: '🆘' },
 };
 
 export interface EmergencyAlertData {
