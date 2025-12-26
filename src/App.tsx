@@ -33,6 +33,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useStatusCheckin } from '@/hooks/useStatusCheckin';
 import { useAuth } from '@/hooks/useAuth';
 import { usePanicAlerts } from '@/hooks/usePanicAlerts';
+import { useTestMode } from '@/hooks/useTestMode';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { UserRole, USGSEarthquake, PanicType } from '@/types';
@@ -121,6 +122,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   const [panicOpen, setPanicOpen] = useState(false);
   const { user } = useAuth();
   
+  // Test mode for simulating panic alerts
+  const { testAlert, simulatePanicAlert, clearTestAlert } = useTestMode();
+  
   // Real-time panic alerts from other users
   const { recentAlerts, unreadCount } = usePanicAlerts();
   
@@ -205,7 +209,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       case 'community': return <CommunityScreen />;
       case 'market': return <MarketScreen userRole={userRole} />;
       case 'status': return <StatusScreen userRole={userRole} />;
-      case 'settings': return <SettingsScreen onLogout={handleLogout} />;
+      case 'settings': return <SettingsScreen onLogout={handleLogout} onSimulatePanicAlert={simulatePanicAlert} />;
       default: return <MapScreen className="h-[calc(100vh-120px)]" />;
     }
   };
@@ -213,7 +217,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <AppHeader onPanicClick={() => setPanicOpen(true)} />
-      <ActiveAlertBanner />
+      <ActiveAlertBanner testAlert={testAlert} onClearTestAlert={clearTestAlert} />
       <UpdatePrompt />
       <main className="flex-1 overflow-hidden">{renderScreen()}</main>
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} onPanicTriggered={handlePanicTriggered} />

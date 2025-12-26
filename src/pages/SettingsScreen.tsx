@@ -30,7 +30,8 @@ import {
   Droplets,
   Pill,
   FileHeart,
-  Wifi
+  Wifi,
+  FlaskConical
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,6 +47,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { MatsLogo } from '@/components/MatsLogo';
 import { EmergencyContactsManager } from '@/components/EmergencyContactsManager';
 import { AppFooter } from '@/components/AppFooter';
@@ -63,10 +71,12 @@ import QRCode from 'qrcode';
 
 interface SettingsScreenProps {
   onLogout?: () => void;
+  onSimulatePanicAlert?: (type: string) => void;
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
-  onLogout
+  onLogout,
+  onSimulatePanicAlert
 }) => {
   const { profile, role, signOut, updateProfile, updateRole, deleteAccount } = useAuth();
   const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
@@ -881,6 +891,54 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               Tu información personal (nombre, teléfono, apodo) nunca se muestra en el 
               mapa ni es visible para otros usuarios. Solo se muestra tu icono M.A.T.S. 
               sin identificadores personales.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Developer Test Mode */}
+        <Card className="bg-card border-border border-dashed border-warning/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base text-warning">
+              <FlaskConical className="w-5 h-5" />
+              Modo de Prueba
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Simula una alerta de pánico para probar el flujo de cancelación sin enviar una alerta real a la comunidad.
+            </p>
+            
+            <div className="flex gap-2">
+              <Select
+                defaultValue="AMBULANCIA_PROPIA"
+                onValueChange={(value) => {
+                  if (onSimulatePanicAlert) {
+                    onSimulatePanicAlert(value);
+                  }
+                }}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Tipo de alerta" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AMBULANCIA_PROPIA">🚑 Ambulancia</SelectItem>
+                  <SelectItem value="PATRULLA">🚔 Patrulla</SelectItem>
+                  <SelectItem value="MECANICO">🔧 Mecánico</SelectItem>
+                  <SelectItem value="PROTECCION_CIVIL">🆘 Protección Civil</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                className="border-warning text-warning hover:bg-warning/10"
+                onClick={() => onSimulatePanicAlert?.('AMBULANCIA_PROPIA')}
+              >
+                <FlaskConical className="w-4 h-4 mr-2" />
+                Simular
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground italic">
+              La alerta de prueba aparecerá en la parte superior de la pantalla. Usa el botón "Cancelar" para probar el flujo de cancelación.
             </p>
           </CardContent>
         </Card>

@@ -1,13 +1,15 @@
 // Floating banner for user's active panic alerts
 // Shows when user has an unresolved panic event and allows instant cancellation
+// Also supports test mode for simulating alerts without database
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, AlertTriangle, Loader2, FlaskConical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import type { TestPanicAlert } from '@/hooks/useTestMode';
 
 interface ActivePanicEvent {
   id: string;
@@ -23,7 +25,15 @@ const PANIC_TYPE_LABELS: Record<string, { label: string; emoji: string }> = {
   'PROTECCION_CIVIL': { label: 'Protección Civil', emoji: '🆘' },
 };
 
-export const ActiveAlertBanner: React.FC = () => {
+interface ActiveAlertBannerProps {
+  testAlert?: TestPanicAlert | null;
+  onClearTestAlert?: () => void;
+}
+
+export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
+  testAlert,
+  onClearTestAlert,
+}) => {
   const { user } = useAuth();
   const [activeAlert, setActiveAlert] = useState<ActivePanicEvent | null>(null);
   const [loading, setLoading] = useState(false);
@@ -57,6 +67,52 @@ export const ActiveAlertBanner: React.FC = () => {
 
   // Cancel/resolve the active alert
   const handleCancelAlert = async () => {
+    // Handle test alert separately
+    if (testAlert) {
+      setCancelling(true);
+      // Simulate cancellation with sound and vibration
+      try {
+        const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.frequency.value = 880;
+        oscillator.type = 'sine';
+        gainNode.gain.value = 0.3;
+        
+        oscillator.start();
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        oscillator.stop(audioCtx.currentTime + 0.15);
+        
+        setTimeout(() => {
+          const osc2 = audioCtx.createOscillator();
+          const gain2 = audioCtx.createGain();
+          osc2.connect(gain2);
+          gain2.connect(audioCtx.destination);
+          osc2.frequency.value = 1318;
+          osc2.type = 'sine';
+          gain2.gain.value = 0.3;
+          osc2.start();
+          gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+          osc2.stop(audioCtx.currentTime + 0.2);
+        }, 100);
+      } catch {
+        // Ignore audio errors
+      }
+      
+      if ('vibrate' in navigator) {
+        navigator.vibrate([50, 50, 50]);
+      }
+      
+      toast.success('✅ Alerta de prueba cancelada');
+      onClearTestAlert?.();
+      setCancelling(false);
+      return;
+    }
+
     if (!activeAlert) return;
 
     console.log('[ActiveAlertBanner] Cancelling alert:', activeAlert.id);
@@ -74,7 +130,6 @@ export const ActiveAlertBanner: React.FC = () => {
       if (error) {
         console.error('[ActiveAlertBanner] Cancel error:', error);
         toast.error('Error al cancelar la alerta');
-        // Error sound
         try {
           const errorAudio = new Audio('/alert-sound.mp3');
           errorAudio.volume = 0.3;
@@ -87,7 +142,7 @@ export const ActiveAlertBanner: React.FC = () => {
       toast.success('Alerta cancelada correctamente');
       setActiveAlert(null);
       
-      // Success sound - a quick confirmation beep
+      // Success sound
       try {
         const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
         const oscillator = audioCtx.createOscillator();
@@ -96,7 +151,7 @@ export const ActiveAlertBanner: React.FC = () => {
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
         
-        oscillator.frequency.value = 880; // A5 note
+        oscillator.frequency.value = 880;
         oscillator.type = 'sine';
         gainNode.gain.value = 0.3;
         
@@ -104,13 +159,12 @@ export const ActiveAlertBanner: React.FC = () => {
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
         oscillator.stop(audioCtx.currentTime + 0.15);
         
-        // Second beep (higher)
         setTimeout(() => {
           const osc2 = audioCtx.createOscillator();
           const gain2 = audioCtx.createGain();
           osc2.connect(gain2);
           gain2.connect(audioCtx.destination);
-          osc2.frequency.value = 1318; // E6 note
+          osc2.frequency.value = 1318;
           osc2.type = 'sine';
           gain2.gain.value = 0.3;
           osc2.start();
@@ -118,10 +172,9 @@ export const ActiveAlertBanner: React.FC = () => {
           osc2.stop(audioCtx.currentTime + 0.2);
         }, 100);
       } catch {
-        // Fallback: ignore audio errors
+        // Ignore audio errors
       }
       
-      // Vibrate to confirm
       if ('vibrate' in navigator) {
         navigator.vibrate([50, 50, 50]);
       }
@@ -165,19 +218,27 @@ export const ActiveAlertBanner: React.FC = () => {
     };
   }, [user?.id, fetchActiveAlert]);
 
-  // Don't show if no active alert or still loading
-  if (loading || !activeAlert) return null;
+  // Determine which alert to show (test alert takes priority for visibility)
+  const displayAlert = testAlert || activeAlert;
+  const isTestAlert = !!testAlert;
 
-  const typeInfo = PANIC_TYPE_LABELS[activeAlert.panic_type] || { label: 'Emergencia', emoji: '🆘' };
-  const createdAt = new Date(activeAlert.created_at);
-  const timeAgo = Math.round((Date.now() - createdAt.getTime()) / 60000); // minutes
+  // Don't show if no active alert or still loading
+  if (loading && !testAlert) return null;
+  if (!displayAlert) return null;
+
+  const typeInfo = PANIC_TYPE_LABELS[displayAlert.panic_type] || { label: 'Emergencia', emoji: '🆘' };
+  const createdAt = new Date(displayAlert.created_at);
+  const timeAgo = Math.round((Date.now() - createdAt.getTime()) / 60000);
 
   return (
     <div 
       className={cn(
         "fixed top-16 left-2 right-2 z-[9999]",
-        "bg-destructive text-destructive-foreground",
-        "rounded-lg shadow-lg border border-destructive/50",
+        isTestAlert 
+          ? "bg-warning text-warning-foreground"
+          : "bg-destructive text-destructive-foreground",
+        "rounded-lg shadow-lg border",
+        isTestAlert ? "border-warning/50" : "border-destructive/50",
         "p-3 flex items-center gap-3",
         "animate-in slide-in-from-top-2 duration-300",
         "touch-manipulation"
@@ -186,9 +247,19 @@ export const ActiveAlertBanner: React.FC = () => {
     >
       {/* Pulsing indicator */}
       <div className="relative flex-shrink-0">
-        <div className="absolute inset-0 bg-destructive-foreground/30 rounded-full animate-ping" />
-        <div className="relative w-10 h-10 bg-destructive-foreground/20 rounded-full flex items-center justify-center">
-          <span className="text-xl">{typeInfo.emoji}</span>
+        <div className={cn(
+          "absolute inset-0 rounded-full animate-ping",
+          isTestAlert ? "bg-warning-foreground/30" : "bg-destructive-foreground/30"
+        )} />
+        <div className={cn(
+          "relative w-10 h-10 rounded-full flex items-center justify-center",
+          isTestAlert ? "bg-warning-foreground/20" : "bg-destructive-foreground/20"
+        )}>
+          {isTestAlert ? (
+            <FlaskConical className="w-5 h-5" />
+          ) : (
+            <span className="text-xl">{typeInfo.emoji}</span>
+          )}
         </div>
       </div>
 
@@ -196,7 +267,9 @@ export const ActiveAlertBanner: React.FC = () => {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-          <span className="font-semibold truncate">Tu alerta activa</span>
+          <span className="font-semibold truncate">
+            {isTestAlert ? '🧪 PRUEBA - Tu alerta' : 'Tu alerta activa'}
+          </span>
         </div>
         <p className="text-sm opacity-90 truncate">
           {typeInfo.label} • hace {timeAgo} min
@@ -214,10 +287,10 @@ export const ActiveAlertBanner: React.FC = () => {
         }}
         disabled={cancelling}
         className={cn(
-          "flex-shrink-0 bg-destructive-foreground text-destructive",
-          "hover:bg-destructive-foreground/90",
-          "font-semibold px-4",
-          "touch-manipulation"
+          "flex-shrink-0 font-semibold px-4 touch-manipulation",
+          isTestAlert 
+            ? "bg-warning-foreground text-warning hover:bg-warning-foreground/90"
+            : "bg-destructive-foreground text-destructive hover:bg-destructive-foreground/90"
         )}
         style={{ WebkitTapHighlightColor: 'transparent' }}
       >
