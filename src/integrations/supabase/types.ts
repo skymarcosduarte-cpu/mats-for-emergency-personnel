@@ -172,6 +172,8 @@ export type Database = {
       }
       help_requests: {
         Row: {
+          audio_duration_ms: number | null
+          audio_url: string | null
           created_at: string | null
           id: string
           kind: string
@@ -182,9 +184,13 @@ export type Database = {
           resolved: boolean | null
           resolved_at: string | null
           resolved_by: string | null
+          responding_by: string | null
+          responding_started_at: string | null
           user_id: string
         }
         Insert: {
+          audio_duration_ms?: number | null
+          audio_url?: string | null
           created_at?: string | null
           id?: string
           kind: string
@@ -195,9 +201,13 @@ export type Database = {
           resolved?: boolean | null
           resolved_at?: string | null
           resolved_by?: string | null
+          responding_by?: string | null
+          responding_started_at?: string | null
           user_id: string
         }
         Update: {
+          audio_duration_ms?: number | null
+          audio_url?: string | null
           created_at?: string | null
           id?: string
           kind?: string
@@ -208,6 +218,8 @@ export type Database = {
           resolved?: boolean | null
           resolved_at?: string | null
           resolved_by?: string | null
+          responding_by?: string | null
+          responding_started_at?: string | null
           user_id?: string
         }
         Relationships: []

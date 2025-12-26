@@ -2,7 +2,7 @@
 // USGS earthquakes + "4/10" quick report + "14" help + notifications
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind, Route, X } from 'lucide-react';
 import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
 import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
 import { useMexicoAlerts, TropicalCycloneAlert, FireHotspot } from '@/hooks/useMexicoAlerts';
@@ -28,10 +28,14 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MediaCapture } from '@/components/MediaCapture';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { EmergencyRouteMap } from '@/components/EmergencyRouteMap';
+import { AudioPlayer } from '@/components/AudioPlayer';
 import { useLocation, getGoogleMapsLink } from '@/hooks/useLocation';
 import { useHelpRequests } from '@/hooks/useRealtime';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useAuth } from '@/hooks/useAuth';
+import { useEmergencyResponse } from '@/hooks/useEmergencyResponse';
+import { supabase } from '@/integrations/supabase/client';
 import type { USGSEarthquake, QuakeIntensity, QuakeDamage, UserRole, MediaRef } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -59,10 +63,17 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   const [help14Audio, setHelp14Audio] = useState<{ blob: Blob; duration: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showRouteMap, setShowRouteMap] = useState<{ requestId: string; lat: number; lng: number } | null>(null);
   
   const { position } = useLocation();
   const { requests: helpRequests, resolvedRequests, resolveRequest } = useHelpRequests(position);
   const { user } = useAuth();
+  const { 
+    activeResponse, 
+    isResponding, 
+    startResponding, 
+    stopResponding 
+  } = useEmergencyResponse();
   const { 
     notifications, 
     unreadCount, 
@@ -149,25 +160,88 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   // Handle "14" help request
   const handleHelp14Submit = async () => {
     if (!position) {
-      alert('Se requiere ubicación GPS');
+      toast.error('Se requiere ubicación GPS');
+      return;
+    }
+
+    if (!user) {
+      toast.error('Debes iniciar sesión');
       return;
     }
 
     setSubmitting(true);
 
     try {
-      const mediaRefs: MediaRef[] = [];
-      
-      // Upload images (would use Supabase storage)
-      // For now, just log
-      console.log('Help 14 submission:', {
-        quake_id: selectedQuake?.id,
-        lat: position.lat,
-        lng: position.lng,
-        message: help14Message,
-        images: help14Images.length,
-        audio: help14Audio ? 'yes' : 'no',
-      });
+      let audioUrl: string | null = null;
+      let audioDurationMs: number | null = null;
+
+      // Upload voice note to storage if present
+      if (help14Audio) {
+        const audioFileName = `help-${Date.now()}-${user.id}.webm`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('reports_media')
+          .upload(`audio/${audioFileName}`, help14Audio.blob, {
+            contentType: 'audio/webm',
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error('Audio upload error:', uploadError);
+        } else {
+          audioUrl = uploadData.path;
+          audioDurationMs = help14Audio.duration;
+        }
+      }
+
+      // Create help request in database
+      const { data: newRequest, error: insertError } = await supabase
+        .from('help_requests')
+        .insert({
+          user_id: user.id,
+          kind: 'SISMO_AYUDA_14',
+          quake_event_id: selectedQuake?.id || null,
+          lat: position.lat,
+          lng: position.lng,
+          message: help14Message || null,
+          audio_url: audioUrl,
+          audio_duration_ms: audioDurationMs,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Error creating help request:', insertError);
+        toast.error('Error al enviar alerta');
+        return;
+      }
+
+      // Upload images if present
+      if (help14Images.length > 0 && newRequest) {
+        for (let i = 0; i < help14Images.length; i++) {
+          const image = help14Images[i];
+          const imagePath = `images/${newRequest.id}/${i}-${Date.now()}.jpg`;
+          
+          await supabase.storage
+            .from('reports_media')
+            .upload(imagePath, image, {
+              contentType: image.type,
+              upsert: false,
+            });
+          
+          // Create media reference
+          await supabase
+            .from('report_media')
+            .insert({
+              report_id: newRequest.id,
+              report_type: 'help_request',
+              media_type: 'image',
+              mime_type: image.type,
+              storage_path: imagePath,
+            });
+        }
+      }
+
+      toast.success('¡Alerta enviada!');
 
       // Generate WhatsApp alert
       const message = `🆘 AYUDA 14 - SISMO%0A${userRole === 'FAMILIAR' ? '⚠️ FAMILIAR – NO PARAMÉDICO%0A' : ''}📍 ${getGoogleMapsLink(position.lat, position.lng)}%0A${help14Message ? `Mensaje: ${help14Message}` : ''}`;
@@ -177,6 +251,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       resetHelp14Form();
     } catch (error) {
       console.error('Error submitting Help 14:', error);
+      toast.error('Error al enviar alerta');
     } finally {
       setSubmitting(false);
     }
@@ -723,11 +798,14 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             helpRequests
               .filter(r => !r.resolved)
               .map((req) => (
-                <Card key={req.id} className="bg-card border-border">
+                <Card key={req.id} className={cn(
+                  "bg-card border-border",
+                  activeResponse?.requestId === req.id && "border-primary border-2"
+                )}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <span className={cn(
                             'px-2 py-0.5 rounded-full text-xs font-bold',
                             req.kind === 'SISMO_AYUDA_14' 
@@ -736,6 +814,12 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                           )}>
                             {req.kind === 'SISMO_AYUDA_14' ? '14 AYUDA' : 'AYUDA'}
                           </span>
+                          {(req as any).responding_by && (
+                            <Badge variant="outline" className="text-xs text-primary border-primary/50">
+                              <Route className="w-3 h-3 mr-1" />
+                              Responder en camino
+                            </Badge>
+                          )}
                           <span className="text-xs text-muted-foreground">
                             {new Date(req.created_at).toLocaleTimeString()}
                           </span>
@@ -743,7 +827,15 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                         {req.message && (
                           <p className="text-sm text-foreground">{req.message}</p>
                         )}
-                        <div className="flex gap-2 mt-3">
+                        
+                        {/* Audio playback if available */}
+                        {(req as any).audio_url && (
+                          <div className="mt-2">
+                            <AudioPlayer storagePath={(req as any).audio_url} />
+                          </div>
+                        )}
+                        
+                        <div className="flex gap-2 mt-3 flex-wrap">
                           <Button
                             variant="outline"
                             size="sm"
@@ -752,6 +844,43 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                             <MapPin className="w-4 h-4 mr-1" />
                             Ver ubicación
                           </Button>
+                          
+                          {/* Respond button - only for RESCATISTA and if not already responding */}
+                          {userRole === 'RESCATISTA' && user?.id !== req.user_id && (
+                            <>
+                              {activeResponse?.requestId === req.id ? (
+                                <>
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => setShowRouteMap({ requestId: req.id, lat: req.lat, lng: req.lng })}
+                                  >
+                                    <Route className="w-4 h-4 mr-1" />
+                                    Ver ruta
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-muted-foreground"
+                                    onClick={stopResponding}
+                                  >
+                                    <X className="w-4 h-4 mr-1" />
+                                    Cancelar
+                                  </Button>
+                                </>
+                              ) : !isResponding && (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => startResponding(req.id, req.lat, req.lng)}
+                                >
+                                  <Navigation className="w-4 h-4 mr-1" />
+                                  Responder
+                                </Button>
+                              )}
+                            </>
+                          )}
+                          
                           {/* Show resolve button for owner or RESCATISTA */}
                           {(user?.id === req.user_id || userRole === 'RESCATISTA') && (
                             <Button
@@ -1027,6 +1156,29 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Route Map Dialog */}
+      <Dialog open={!!showRouteMap} onOpenChange={(open) => !open && setShowRouteMap(null)}>
+        <DialogContent className="sm:max-w-lg bg-card border-border p-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-0">
+            <DialogTitle className="flex items-center gap-2">
+              <Route className="w-5 h-5 text-primary" />
+              Ruta a la emergencia
+            </DialogTitle>
+          </DialogHeader>
+          {showRouteMap && activeResponse && (
+            <div className="h-[400px]">
+              <EmergencyRouteMap
+                responderLat={activeResponse.responderLat}
+                responderLng={activeResponse.responderLng}
+                emergencyLat={showRouteMap.lat}
+                emergencyLng={showRouteMap.lng}
+                onClose={() => setShowRouteMap(null)}
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
