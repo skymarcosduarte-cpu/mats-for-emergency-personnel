@@ -14,7 +14,8 @@ import {
   Trash2,
   Phone,
   HeartHandshake,
-  AlertCircle
+  AlertCircle,
+  XCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -84,6 +85,7 @@ interface AlertDetailModalProps {
   currentUserId?: string;
   userPosition?: GeoPosition | null;
   onRespond?: (requestId: string) => Promise<boolean>;
+  onCancelResponse?: () => Promise<void>;
 }
 
 const PANIC_TYPE_CONFIG: Record<string, { label: string; emoji: string; color: string }> = {
@@ -129,8 +131,10 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   currentUserId,
   userPosition,
   onRespond,
+  onCancelResponse,
 }) => {
   const [isResponding, setIsResponding] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [isWithinRadius, setIsWithinRadius] = useState<boolean | null>(null);
   const [distanceToAlert, setDistanceToAlert] = useState<number | null>(null);
 
@@ -474,11 +478,47 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
           </>
         )}
 
-        {/* Already Responding Badge */}
+        {/* Already Responding - Show status and cancel button */}
         {isAlreadyResponding && (
-          <div className="flex items-center justify-center gap-2 text-primary bg-primary/10 rounded-lg p-3">
-            <HeartHandshake className="w-4 h-4" />
-            <span className="font-medium">Ya estás respondiendo a esta alerta</span>
+          <div className="space-y-2">
+            <div className="flex items-center justify-center gap-2 text-primary bg-primary/10 rounded-lg p-3">
+              <HeartHandshake className="w-4 h-4" />
+              <span className="font-medium">Ya estás respondiendo a esta alerta</span>
+            </div>
+            {onCancelResponse && (
+              <Button 
+                variant="outline"
+                className="w-full touch-manipulation border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                onClick={async () => {
+                  setIsCancelling(true);
+                  try {
+                    await onCancelResponse();
+                    toast({
+                      title: "Respuesta cancelada",
+                      description: "Has dejado de responder a esta alerta.",
+                    });
+                  } catch (error) {
+                    console.error('[AlertDetailModal] Error cancelling response:', error);
+                    toast({
+                      title: "Error",
+                      description: "No se pudo cancelar la respuesta",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setIsCancelling(false);
+                  }
+                }}
+                disabled={isCancelling}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                {isCancelling ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <XCircle className="w-4 h-4 mr-2" />
+                )}
+                Cancelar mi respuesta
+              </Button>
+            )}
           </div>
         )}
 

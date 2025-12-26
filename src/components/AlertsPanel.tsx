@@ -85,6 +85,7 @@ interface AlertsPanelProps {
   activeResponders?: ActiveResponder[];
   userPosition?: GeoPosition | null;
   onRespondToRequest?: (requestId: string) => Promise<boolean>;
+  onCancelResponse?: () => Promise<void>;
 }
 
 const PANIC_TYPE_CONFIG: Record<string, { label: string; emoji: string; color: string; icon: React.ReactNode }> = {
@@ -112,6 +113,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
   activeResponders = [],
   userPosition,
   onRespondToRequest,
+  onCancelResponse,
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -648,6 +650,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
         currentUserId={currentUserId}
         userPosition={userPosition}
         onRespond={onRespondToRequest}
+        onCancelResponse={onCancelResponse}
       />
     </>
   );
