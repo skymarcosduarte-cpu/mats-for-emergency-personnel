@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MedicalInfoBadge } from './MedicalInfoBadge';
+import { SwipeToDelete } from './SwipeToDelete';
 import { toast } from '@/hooks/use-toast';
 
 interface PanicEvent {
@@ -145,6 +146,43 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
     }
   };
 
+  // Direct swipe delete (no confirmation for faster UX)
+  const handleSwipeDelete = async (id: string, type: 'panic' | 'help') => {
+    setDeletingId(id);
+    
+    try {
+      let success = false;
+      
+      if (type === 'panic' && onResolvePanicEvent) {
+        success = await onResolvePanicEvent(id);
+      } else if (type === 'help' && onResolveHelpRequest) {
+        success = await onResolveHelpRequest(id);
+      }
+      
+      if (success) {
+        toast({
+          title: "Alerta eliminada",
+          description: "Tu alerta ha sido eliminada",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo eliminar",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting alert:', error);
+      toast({
+        title: "Error",
+        description: "Error al eliminar",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const isOwner = (userId: string) => currentUserId === userId;
   const canDelete = (userId: string) => isOwner(userId) || isRescatista;
 
@@ -196,12 +234,11 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                       };
                       const isMyAlert = isOwner(event.user_id);
                       
-                      return (
+                      const alertContent = (
                         <div
-                          key={event.id}
-                          className={`bg-card border rounded-lg p-3 hover:bg-accent/50 transition-colors ${
+                          className={`border p-3 transition-colors ${
                             isMyAlert ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border'
-                          }`}
+                          } ${isMyAlert ? 'rounded-none' : 'rounded-lg bg-card hover:bg-accent/50'}`}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-2">
@@ -213,7 +250,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                                   {config.emoji} {config.label}
                                   {isMyAlert && (
                                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/30">
-                                      MI ALERTA
+                                      ← DESLIZA
                                     </Badge>
                                   )}
                                 </div>
@@ -224,24 +261,6 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                               </div>
                             </div>
                           </div>
-                          
-                          {/* Prominent delete button for owner */}
-                          {isMyAlert && onResolvePanicEvent && (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="w-full mt-3 h-10"
-                              onClick={() => handleDeleteClick(event.id, 'panic')}
-                              disabled={deletingId === event.id}
-                            >
-                              {deletingId === event.id ? (
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-4 h-4 mr-2" />
-                              )}
-                              Eliminar mi alerta
-                            </Button>
-                          )}
                           
                           <div className="flex flex-wrap gap-2 mt-3">
                             <Button
@@ -278,6 +297,25 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                           </div>
                         </div>
                       );
+                      
+                      // Wrap owner's alerts with SwipeToDelete
+                      if (isMyAlert && onResolvePanicEvent) {
+                        return (
+                          <SwipeToDelete
+                            key={event.id}
+                            onDelete={() => handleSwipeDelete(event.id, 'panic')}
+                            disabled={deletingId === event.id}
+                          >
+                            {alertContent}
+                          </SwipeToDelete>
+                        );
+                      }
+                      
+                      return (
+                        <div key={event.id}>
+                          {alertContent}
+                        </div>
+                      );
                     })}
                   </div>
                 </div>
@@ -301,12 +339,11 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                         };
                         const isMyAlert = isOwner(request.user_id);
                         
-                        return (
+                        const alertContent = (
                           <div
-                            key={request.id}
-                            className={`bg-card border rounded-lg p-3 hover:bg-accent/50 transition-colors ${
+                            className={`border p-3 transition-colors ${
                               isMyAlert ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border'
-                            }`}
+                            } ${isMyAlert ? 'rounded-none' : 'rounded-lg bg-card hover:bg-accent/50'}`}
                           >
                             <div className="flex items-start justify-between">
                               <div>
@@ -314,7 +351,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                                   {config.emoji} {config.label}
                                   {isMyAlert && (
                                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/30">
-                                      MI ALERTA
+                                      ← DESLIZA
                                     </Badge>
                                   )}
                                 </div>
@@ -329,24 +366,6 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                                 )}
                               </div>
                             </div>
-                            
-                            {/* Prominent delete button for owner */}
-                            {isMyAlert && onResolveHelpRequest && (
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="w-full mt-3 h-10"
-                                onClick={() => handleDeleteClick(request.id, 'help')}
-                                disabled={deletingId === request.id}
-                              >
-                                {deletingId === request.id ? (
-                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-4 h-4 mr-2" />
-                                )}
-                                Eliminar mi alerta
-                              </Button>
-                            )}
                             
                             <div className="flex flex-wrap gap-2 mt-3">
                               <Button
@@ -381,6 +400,25 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                                 </Button>
                               )}
                             </div>
+                          </div>
+                        );
+                        
+                        // Wrap owner's alerts with SwipeToDelete
+                        if (isMyAlert && onResolveHelpRequest) {
+                          return (
+                            <SwipeToDelete
+                              key={request.id}
+                              onDelete={() => handleSwipeDelete(request.id, 'help')}
+                              disabled={deletingId === request.id}
+                            >
+                              {alertContent}
+                            </SwipeToDelete>
+                          );
+                        }
+                        
+                        return (
+                          <div key={request.id}>
+                            {alertContent}
                           </div>
                         );
                       })}
