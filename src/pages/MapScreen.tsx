@@ -6,7 +6,7 @@ import L from 'leaflet';
 import DOMPurify from 'dompurify';
 import { Locate } from 'lucide-react';
 import { useLocation } from '@/hooks/useLocation';
-import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders, usePanicEvents } from '@/hooks/useRealtime';
+import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders, usePanicEvents, useActiveResponders } from '@/hooks/useRealtime';
 import { AlertsPanel } from '@/components/AlertsPanel';
 import { cn } from '@/lib/utils';
 import 'leaflet/dist/leaflet.css';
@@ -182,6 +182,49 @@ const createPanicIcon = (panicType: string) => {
   });
 };
 
+// Responder icon - shows RESCATISTA responding to emergency
+const createResponderIcon = () => L.divIcon({
+  className: 'responder-marker',
+  html: `
+    <div style="
+      width: 44px;
+      height: 44px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        position: absolute;
+        width: 44px;
+        height: 44px;
+        background: rgba(59, 130, 246, 0.3);
+        border-radius: 50%;
+        animation: pulseResponder 1.5s infinite;
+      "></div>
+      <div style="
+        width: 32px;
+        height: 32px;
+        background: #3b82f6;
+        border: 3px solid white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+      ">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+        </svg>
+      </div>
+    </div>
+  `,
+  iconSize: [44, 44],
+  iconAnchor: [22, 22],
+  popupAnchor: [0, -22],
+});
+
 // Medical provider icon with cross symbol
 const createMedicalIcon = (hasKit: boolean, canProvide: boolean) => {
   const iconContent = canProvide 
@@ -239,6 +282,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const polylinesRef = useRef<Map<string, L.Polyline>>(new Map());
   const currentLocationMarkerRef = useRef<L.Marker | null>(null);
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -249,6 +293,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
   const { reports } = useRoadReports();
   const { providers: medicalProviders } = useMedicalProviders();
   const { events: panicEvents } = usePanicEvents();
+  const { responders: activeResponders } = useActiveResponders();
 
   // Default center (Mexico City)
   const defaultCenter: [number, number] = [19.4326, -99.1332];
@@ -293,6 +338,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
       @keyframes pulsePanic {
         0%, 100% { transform: scale(1); opacity: 0.5; }
         50% { transform: scale(1.4); opacity: 0; }
+      }
+      @keyframes pulseResponder {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.3); opacity: 0.2; }
       }
     `;
     document.head.appendChild(style);
@@ -567,6 +616,71 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
     });
   }, [panicEvents, mapReady]);
 
+  // Update responder markers and route lines
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady) return;
+    const map = mapInstanceRef.current;
+
+    // Remove old responder markers and polylines
+    markersRef.current.forEach((marker, key) => {
+      if (key.startsWith('responder-') && !activeResponders.find(r => `responder-${r.responder_id}` === key)) {
+        map.removeLayer(marker);
+        markersRef.current.delete(key);
+      }
+    });
+
+    polylinesRef.current.forEach((polyline, key) => {
+      if (!activeResponders.find(r => `route-${r.request_id}` === key)) {
+        map.removeLayer(polyline);
+        polylinesRef.current.delete(key);
+      }
+    });
+
+    // Add/update responder markers and route lines
+    activeResponders.forEach((responder) => {
+      const markerKey = `responder-${responder.responder_id}`;
+      const routeKey = `route-${responder.request_id}`;
+      const existingMarker = markersRef.current.get(markerKey);
+      const existingPolyline = polylinesRef.current.get(routeKey);
+
+      const responderLatLng: [number, number] = [responder.responder_lat, responder.responder_lng];
+      const emergencyLatLng: [number, number] = [responder.emergency_lat, responder.emergency_lng];
+
+      // Update or create responder marker
+      if (existingMarker) {
+        existingMarker.setLatLng(responderLatLng);
+      } else {
+        const marker = L.marker(responderLatLng, {
+          icon: createResponderIcon(),
+          zIndexOffset: 700,
+        })
+          .addTo(map)
+          .bindPopup(`
+            <div style="text-align: center; padding: 4px;">
+              <div style="font-size: 14px; font-weight: bold; color: #3b82f6;">🚨 Rescatista en camino</div>
+              <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                Respondiendo desde ${new Date(responder.responding_started_at).toLocaleTimeString()}
+              </div>
+            </div>
+          `);
+        markersRef.current.set(markerKey, marker);
+      }
+
+      // Update or create route polyline (dashed line from responder to emergency)
+      if (existingPolyline) {
+        existingPolyline.setLatLngs([responderLatLng, emergencyLatLng]);
+      } else {
+        const polyline = L.polyline([responderLatLng, emergencyLatLng], {
+          color: '#3b82f6',
+          weight: 3,
+          opacity: 0.8,
+          dashArray: '10, 10',
+        }).addTo(map);
+        polylinesRef.current.set(routeKey, polyline);
+      }
+    });
+  }, [activeResponders, mapReady]);
+
   // Handle view location from alerts panel
   const handleViewLocation = useCallback((lat: number, lng: number) => {
     if (!mapInstanceRef.current) return;
@@ -636,6 +750,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full" style={{ background: '#eab308' }} />
             <span className="text-foreground">Reporte</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full animate-pulse" style={{ background: '#3b82f6' }} />
+            <span className="text-foreground">Rescatista</span>
           </div>
         </div>
       </div>
