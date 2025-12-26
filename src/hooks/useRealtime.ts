@@ -422,6 +422,9 @@ interface ActiveResponder {
   emergency_lat: number;
   emergency_lng: number;
   responding_started_at: string;
+  speed: number | null; // m/s
+  distance_km: number;
+  eta_minutes: number | null;
 }
 
 export function useActiveResponders() {
@@ -437,7 +440,7 @@ export function useActiveResponders() {
 
     if (helpError || !helpData) return;
 
-    // Get locations for all responders
+    // Get locations for all responders (including speed)
     const responderIds = helpData.map(h => h.responding_by).filter(Boolean) as string[];
     if (responderIds.length === 0) {
       setResponders([]);
@@ -446,17 +449,31 @@ export function useActiveResponders() {
 
     const { data: locData, error: locError } = await supabase
       .from('user_locations')
-      .select('user_id, lat, lng')
+      .select('user_id, lat, lng, speed')
       .in('user_id', responderIds);
 
     if (locError || !locData) return;
 
-    // Combine data
+    // Combine data with distance and ETA calculation
     const activeResponders: ActiveResponder[] = helpData
       .filter(h => h.responding_by)
       .map(h => {
         const loc = locData.find(l => l.user_id === h.responding_by);
         if (!loc) return null;
+        
+        // Calculate distance in km
+        const distanceKm = calculateDistance(
+          loc.lat,
+          loc.lng,
+          h.lat,
+          h.lng
+        );
+        
+        // Calculate ETA in minutes
+        // Use actual speed if available, otherwise estimate 30 km/h (city driving)
+        const speedKmh = loc.speed ? (loc.speed * 3.6) : 30; // Convert m/s to km/h
+        const etaMinutes = speedKmh > 0 ? (distanceKm / speedKmh) * 60 : null;
+        
         return {
           request_id: h.id,
           responder_id: h.responding_by!,
@@ -465,6 +482,9 @@ export function useActiveResponders() {
           emergency_lat: h.lat,
           emergency_lng: h.lng,
           responding_started_at: h.responding_started_at!,
+          speed: loc.speed,
+          distance_km: distanceKm,
+          eta_minutes: etaMinutes,
         };
       })
       .filter(Boolean) as ActiveResponder[];
