@@ -2,7 +2,7 @@
 // Shows recent panic events and help requests from the community
 
 import React, { useState } from 'react';
-import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, MapPin, Clock, ExternalLink, Trash2, Loader2 } from 'lucide-react';
+import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, MapPin, Clock, ExternalLink, Trash2, Loader2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -27,6 +27,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MedicalInfoBadge } from './MedicalInfoBadge';
 import { SwipeToDelete } from './SwipeToDelete';
+import { AlertDetailModal } from './AlertDetailModal';
 import { toast } from '@/hooks/use-toast';
 
 interface PanicEvent {
@@ -48,6 +49,23 @@ interface HelpRequest {
   message: string | null;
   resolved: boolean;
   created_at: string;
+  responding_by?: string | null;
+  responding_started_at?: string | null;
+  arrived_at?: string | null;
+}
+
+interface ActiveResponder {
+  request_id: string;
+  responder_id: string;
+  responder_lat: number;
+  responder_lng: number;
+  emergency_lat: number;
+  emergency_lng: number;
+  responding_started_at: string;
+  speed: number | null;
+  distance_km: number;
+  eta_minutes: number | null;
+  arrived_at: string | null;
 }
 
 interface AlertsPanelProps {
@@ -58,6 +76,7 @@ interface AlertsPanelProps {
   currentUserId?: string;
   onResolveHelpRequest?: (requestId: string) => Promise<boolean>;
   onResolvePanicEvent?: (eventId: string) => Promise<boolean>;
+  activeResponders?: ActiveResponder[];
 }
 
 const PANIC_TYPE_CONFIG: Record<string, { label: string; emoji: string; color: string; icon: React.ReactNode }> = {
@@ -82,10 +101,14 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
   currentUserId,
   onResolveHelpRequest,
   onResolvePanicEvent,
+  activeResponders = [],
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteType, setConfirmDeleteType] = useState<'panic' | 'help' | null>(null);
+  const [selectedAlert, setSelectedAlert] = useState<PanicEvent | HelpRequest | null>(null);
+  const [selectedAlertType, setSelectedAlertType] = useState<'panic' | 'help' | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   
   const totalAlerts = panicEvents.length + helpRequests.filter(r => r.kind === 'SISMO_AYUDA_14').length;
 
@@ -211,9 +234,63 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
   const isOwner = (userId: string) => currentUserId === userId;
   const canDelete = (userId: string) => isOwner(userId) || isRescatista;
 
+  const openAlertDetail = (alert: PanicEvent | HelpRequest, type: 'panic' | 'help') => {
+    setSelectedAlert(alert);
+    setSelectedAlertType(type);
+    setSheetOpen(false); // Close sheet when opening detail
+  };
+
+  const closeAlertDetail = () => {
+    setSelectedAlert(null);
+    setSelectedAlertType(null);
+  };
+
+  const handleDeleteFromModal = async () => {
+    if (!selectedAlert || !selectedAlertType) return;
+    
+    setDeletingId(selectedAlert.id);
+    
+    try {
+      let success = false;
+      
+      if (selectedAlertType === 'panic') {
+        if (onResolvePanicEvent) {
+          success = await onResolvePanicEvent(selectedAlert.id);
+        }
+      } else {
+        if (onResolveHelpRequest) {
+          success = await onResolveHelpRequest(selectedAlert.id);
+        }
+      }
+      
+      if (success) {
+        toast({
+          title: "Alerta eliminada",
+          description: "La alerta ha sido eliminada correctamente",
+        });
+        closeAlertDetail();
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo eliminar la alerta",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('[AlertsPanel] Delete from modal error:', error);
+      toast({
+        title: "Error",
+        description: `Error al eliminar: ${error instanceof Error ? error.message : 'desconocido'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <>
-      <Sheet>
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetTrigger asChild>
           <Button
             variant="outline"
@@ -261,21 +338,29 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                       
                       const alertContent = (
                         <div
-                          className={`border p-3 transition-colors ${
+                          className={`border p-3 transition-colors cursor-pointer ${
                             isMyAlert ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border'
-                          } ${isMyAlert ? 'rounded-none' : 'rounded-lg bg-card hover:bg-accent/50'}`}
+                          } ${isMyAlert ? 'rounded-none' : 'rounded-lg bg-card hover:bg-accent/50 active:bg-accent'}`}
+                          onClick={() => openAlertDetail(event, 'panic')}
+                          onTouchEnd={(e) => {
+                            // Only open if not clicking a button
+                            if ((e.target as HTMLElement).closest('button')) return;
+                            e.preventDefault();
+                            openAlertDetail(event, 'panic');
+                          }}
+                          style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                         >
                           <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-1">
                               <div className={`w-8 h-8 rounded-full ${config.color} flex items-center justify-center text-white`}>
                                 {config.icon}
                               </div>
-                              <div>
+                              <div className="flex-1">
                                 <div className="font-medium text-foreground text-sm flex items-center gap-2">
                                   {config.emoji} {config.label}
                                   {isMyAlert && (
                                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/30">
-                                      ← DESLIZA
+                                      MI ALERTA
                                     </Badge>
                                   )}
                                 </div>
@@ -284,6 +369,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                                   {formatTime(event.created_at)}
                                 </div>
                               </div>
+                              <ChevronRight className="w-4 h-4 text-muted-foreground" />
                             </div>
                           </div>
                           
@@ -381,17 +467,25 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                         
                         const alertContent = (
                           <div
-                            className={`border p-3 transition-colors ${
+                            className={`border p-3 transition-colors cursor-pointer ${
                               isMyAlert ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border'
-                            } ${isMyAlert ? 'rounded-none' : 'rounded-lg bg-card hover:bg-accent/50'}`}
+                            } ${isMyAlert ? 'rounded-none' : 'rounded-lg bg-card hover:bg-accent/50 active:bg-accent'}`}
+                            onClick={() => openAlertDetail(request, 'help')}
+                            onTouchEnd={(e) => {
+                              // Only open if not clicking a button
+                              if ((e.target as HTMLElement).closest('button')) return;
+                              e.preventDefault();
+                              openAlertDetail(request, 'help');
+                            }}
+                            style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                           >
                             <div className="flex items-start justify-between">
-                              <div>
+                              <div className="flex-1">
                                 <div className="font-medium text-foreground text-sm flex items-center gap-2">
                                   {config.emoji} {config.label}
                                   {isMyAlert && (
                                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/30">
-                                      ← DESLIZA
+                                      MI ALERTA
                                     </Badge>
                                   )}
                                 </div>
@@ -405,6 +499,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                                   </p>
                                 )}
                               </div>
+                              <ChevronRight className="w-4 h-4 text-muted-foreground mt-1" />
                             </div>
                             
                             <div className="flex flex-wrap gap-2 mt-3">
@@ -523,6 +618,24 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Alert Detail Modal */}
+      <AlertDetailModal
+        alert={selectedAlert}
+        alertType={selectedAlertType}
+        isOpen={!!selectedAlert}
+        onClose={closeAlertDetail}
+        onViewLocation={(lat, lng) => {
+          closeAlertDetail();
+          onViewLocation(lat, lng);
+        }}
+        onDelete={handleDeleteFromModal}
+        isDeleting={deletingId === selectedAlert?.id}
+        isOwner={selectedAlert ? isOwner(selectedAlert.user_id) : false}
+        isRescatista={isRescatista}
+        canDelete={selectedAlert ? canDelete(selectedAlert.user_id) : false}
+        responders={activeResponders}
+      />
     </>
   );
 };

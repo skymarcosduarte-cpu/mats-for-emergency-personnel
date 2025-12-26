@@ -802,6 +802,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
           currentUserId={currentUserId}
           onResolveHelpRequest={resolveRequest}
           onResolvePanicEvent={resolveEvent}
+          activeResponders={activeResponders}
         />
       </div>
 
