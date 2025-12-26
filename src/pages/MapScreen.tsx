@@ -10,6 +10,7 @@ import { ImOkButton } from '@/components/ImOkButton';
 import { useLocation } from '@/hooks/useLocation';
 import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders, usePanicEvents, useActiveResponders } from '@/hooks/useRealtime';
 import { useEmergencyResponse } from '@/hooks/useEmergencyResponse';
+import { usePanicResponse } from '@/hooks/usePanicResponse';
 import { usePOIs, type POI } from '@/hooks/usePOIs';
 import { AlertsPanel } from '@/components/AlertsPanel';
 import { ActiveUsersPanel } from '@/components/ActiveUsersPanel';
@@ -634,6 +635,13 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   const { events: panicEvents, resolveEvent } = usePanicEvents();
   const { responders: activeResponders } = useActiveResponders();
   const { startResponding, stopResponding, markAsArrived, markAsResolved } = useEmergencyResponse();
+  const { 
+    startResponding: startPanicResponding, 
+    stopResponding: stopPanicResponding, 
+    markAsArrived: markPanicAsArrived, 
+    markAsResolved: markPanicAsResolved,
+    activeResponse: activePanicResponse
+  } = usePanicResponse();
   const { pois, loading: poisLoading, fetchPOIs } = usePOIs();
   
   const isRescatista = role === 'RESCATISTA';
@@ -647,16 +655,48 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     setPoiVisibility(prev => ({ ...prev, [type]: !prev[type] }));
   }, []);
 
-  // Handle respond to help request from modal
+  // Handle respond to help request or panic event from modal
   const handleRespondToRequest = useCallback(async (requestId: string) => {
-    // Find the help request to get its coordinates
+    // First try to find in help requests
     const request = helpRequests.find(r => r.id === requestId);
-    if (!request) {
-      console.error('[MapScreen] Help request not found:', requestId);
-      return false;
+    if (request) {
+      return await startResponding(requestId, request.lat, request.lng, isRescatista);
     }
-    return await startResponding(requestId, request.lat, request.lng, isRescatista);
-  }, [helpRequests, startResponding]);
+    
+    // If not found in help requests, try panic events
+    const panicEvent = panicEvents.find(e => e.id === requestId);
+    if (panicEvent) {
+      return await startPanicResponding(requestId, panicEvent.lat, panicEvent.lng, isRescatista);
+    }
+    
+    console.error('[MapScreen] Alert not found:', requestId);
+    return false;
+  }, [helpRequests, panicEvents, startResponding, startPanicResponding, isRescatista]);
+
+  // Handle cancel response - check which type of response is active
+  const handleCancelResponse = useCallback(async () => {
+    if (activePanicResponse) {
+      await stopPanicResponding();
+    } else {
+      await stopResponding();
+    }
+  }, [activePanicResponse, stopPanicResponding, stopResponding]);
+
+  // Handle mark as arrived - check which type of response is active  
+  const handleMarkAsArrived = useCallback(async () => {
+    if (activePanicResponse) {
+      return await markPanicAsArrived();
+    }
+    return await markAsArrived();
+  }, [activePanicResponse, markPanicAsArrived, markAsArrived]);
+
+  // Handle mark as resolved - check which type of response is active
+  const handleMarkAsResolved = useCallback(async () => {
+    if (activePanicResponse) {
+      return await markPanicAsResolved();
+    }
+    return await markAsResolved();
+  }, [activePanicResponse, markPanicAsResolved, markAsResolved]);
 
   // Default center (Mexico City)
   const defaultCenter: [number, number] = [19.4326, -99.1332];
@@ -1609,9 +1649,9 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           activeResponders={activeResponders}
           userPosition={position}
           onRespondToRequest={handleRespondToRequest}
-          onCancelResponse={stopResponding}
-          onMarkAsArrived={markAsArrived}
-          onResolve={markAsResolved}
+          onCancelResponse={handleCancelResponse}
+          onMarkAsArrived={handleMarkAsArrived}
+          onResolve={handleMarkAsResolved}
         />
       </div>
 
