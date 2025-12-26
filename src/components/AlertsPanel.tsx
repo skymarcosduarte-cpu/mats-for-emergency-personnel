@@ -107,18 +107,32 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
   };
 
   const handleConfirmDelete = async () => {
-    if (!confirmDeleteId || !confirmDeleteType) return;
+    if (!confirmDeleteId || !confirmDeleteType) {
+      console.warn('[AlertsPanel] handleConfirmDelete called without id/type');
+      return;
+    }
     
+    console.log('[AlertsPanel] Attempting delete:', { confirmDeleteId, confirmDeleteType });
     setDeletingId(confirmDeleteId);
     
     try {
       let success = false;
       
-      if (confirmDeleteType === 'panic' && onResolvePanicEvent) {
-        success = await onResolvePanicEvent(confirmDeleteId);
-      } else if (confirmDeleteType === 'help' && onResolveHelpRequest) {
-        success = await onResolveHelpRequest(confirmDeleteId);
+      if (confirmDeleteType === 'panic') {
+        if (!onResolvePanicEvent) {
+          console.error('[AlertsPanel] onResolvePanicEvent not provided');
+        } else {
+          success = await onResolvePanicEvent(confirmDeleteId);
+        }
+      } else if (confirmDeleteType === 'help') {
+        if (!onResolveHelpRequest) {
+          console.error('[AlertsPanel] onResolveHelpRequest not provided');
+        } else {
+          success = await onResolveHelpRequest(confirmDeleteId);
+        }
       }
+      
+      console.log('[AlertsPanel] Delete result:', { success });
       
       if (success) {
         toast({
@@ -128,15 +142,15 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
       } else {
         toast({
           title: "Error",
-          description: "No se pudo eliminar la alerta",
+          description: "No se pudo eliminar la alerta (revisa permisos)",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Error deleting alert:', error);
+      console.error('[AlertsPanel] Error deleting alert:', error);
       toast({
         title: "Error",
-        description: "Error al eliminar la alerta",
+        description: `Error al eliminar: ${error instanceof Error ? error.message : 'desconocido'}`,
         variant: "destructive",
       });
     } finally {
@@ -148,16 +162,27 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
 
   // Direct swipe delete (no confirmation for faster UX)
   const handleSwipeDelete = async (id: string, type: 'panic' | 'help') => {
+    console.log('[AlertsPanel] handleSwipeDelete:', { id, type });
     setDeletingId(id);
     
     try {
       let success = false;
       
-      if (type === 'panic' && onResolvePanicEvent) {
-        success = await onResolvePanicEvent(id);
-      } else if (type === 'help' && onResolveHelpRequest) {
-        success = await onResolveHelpRequest(id);
+      if (type === 'panic') {
+        if (!onResolvePanicEvent) {
+          console.error('[AlertsPanel] onResolvePanicEvent not provided for swipe');
+        } else {
+          success = await onResolvePanicEvent(id);
+        }
+      } else if (type === 'help') {
+        if (!onResolveHelpRequest) {
+          console.error('[AlertsPanel] onResolveHelpRequest not provided for swipe');
+        } else {
+          success = await onResolveHelpRequest(id);
+        }
       }
+      
+      console.log('[AlertsPanel] Swipe delete result:', { success });
       
       if (success) {
         toast({
@@ -167,15 +192,15 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
       } else {
         toast({
           title: "Error",
-          description: "No se pudo eliminar",
+          description: "No se pudo eliminar (revisa permisos)",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Error deleting alert:', error);
+      console.error('[AlertsPanel] Swipe delete error:', error);
       toast({
         title: "Error",
-        description: "Error al eliminar",
+        description: `Error al eliminar: ${error instanceof Error ? error.message : 'desconocido'}`,
         variant: "destructive",
       });
     } finally {
