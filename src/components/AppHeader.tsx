@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useState } from 'react';
 import { MatsLogo } from './MatsLogo';
 import { AlertTriangle } from 'lucide-react';
 
@@ -9,6 +9,7 @@ interface AppHeaderProps {
 export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
   const lastActivatedAtRef = useRef(0);
   const isProcessingRef = useRef(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   const triggerPanic = useCallback(() => {
     // Prevent double-triggers within 500ms
@@ -26,6 +27,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
     console.log('[AppHeader] Panic triggered!');
     lastActivatedAtRef.current = now;
     isProcessingRef.current = true;
+    
+    // Visual feedback
+    setShowFeedback(true);
+    setTimeout(() => setShowFeedback(false), 200);
     
     // Immediate haptic feedback
     if ('vibrate' in navigator) {
@@ -90,6 +95,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
       >
         <AlertTriangle className="w-6 h-6 pointer-events-none" />
         <span className="absolute inset-0 rounded-full border-2 border-panic animate-ping opacity-30 pointer-events-none" />
+        {/* Visual feedback overlay */}
+        {showFeedback && (
+          <span className="absolute inset-0 rounded-full bg-white/50 pointer-events-none animate-pulse" />
+        )}
       </button>
     </header>
   );
