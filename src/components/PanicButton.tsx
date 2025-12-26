@@ -2,13 +2,14 @@
 // With voice recording, additional context, and remote location support
 
 import React, { useRef, useState, useCallback } from 'react';
-import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users, MapPin, Phone, Cross, Mic, ChevronLeft, Send, MessageSquare, Navigation, ToggleLeft, ToggleRight } from 'lucide-react';
+import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users, MapPin, Phone, Cross, Mic, ChevronLeft, Send, MessageSquare, Navigation, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { LocationPickerMap } from '@/components/LocationPickerMap';
 import type { PanicType, UserRole } from '@/types';
 import { useLocation } from '@/hooks/useLocation';
 import { toast } from 'sonner';
@@ -105,6 +106,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   const [remoteLat, setRemoteLat] = useState<string>('');
   const [remoteLng, setRemoteLng] = useState<string>('');
   const [remoteAddress, setRemoteAddress] = useState<string>('');
+  const [showMapPicker, setShowMapPicker] = useState(false);
   
   const { position, getCurrentPosition, loading: locationLoading } = useLocation();
   const openedAtRef = useRef<number>(0);
@@ -501,45 +503,91 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
           
           {useRemoteLocation && (
             <div className="space-y-3 pt-2 border-t border-border animate-in slide-in-from-top-2 duration-200">
-              <div>
-                <Label className="text-xs text-muted-foreground">Dirección o referencia</Label>
-                <Input
-                  value={remoteAddress}
-                  onChange={(e) => setRemoteAddress(e.target.value)}
-                  placeholder="Ej: Av. Revolución 123, Col. Centro"
-                  className="h-9 text-sm"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Latitud *</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={remoteLat}
-                    onChange={(e) => setRemoteLat(e.target.value)}
-                    placeholder="20.6597"
-                    className="h-9 text-sm"
-                  />
+              {/* Map picker button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowMapPicker(true)}
+                className="w-full h-12 border-dashed border-2 hover:border-panic/50 hover:bg-panic/5"
+              >
+                <Map className="w-5 h-5 mr-2 text-panic" />
+                <span className="text-foreground">
+                  {remoteLat && remoteLng ? 'Cambiar ubicación en mapa' : 'Seleccionar en mapa'}
+                </span>
+              </Button>
+
+              {/* Show selected location */}
+              {remoteLat && remoteLng && (
+                <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+                  {remoteAddress && (
+                    <p className="text-sm font-medium text-foreground line-clamp-2">
+                      📍 {remoteAddress}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground font-mono">
+                    {parseFloat(remoteLat).toFixed(6)}, {parseFloat(remoteLng).toFixed(6)}
+                  </p>
                 </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Longitud *</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={remoteLng}
-                    onChange={(e) => setRemoteLng(e.target.value)}
-                    placeholder="-103.3496"
-                    className="h-9 text-sm"
-                  />
+              )}
+
+              {/* Manual coordinate inputs (collapsed) */}
+              <details className="text-xs">
+                <summary className="text-muted-foreground cursor-pointer hover:text-foreground">
+                  Ingresar coordenadas manualmente
+                </summary>
+                <div className="mt-2 space-y-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Dirección o referencia</Label>
+                    <Input
+                      value={remoteAddress}
+                      onChange={(e) => setRemoteAddress(e.target.value)}
+                      placeholder="Ej: Av. Revolución 123, Col. Centro"
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Latitud *</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        value={remoteLat}
+                        onChange={(e) => setRemoteLat(e.target.value)}
+                        placeholder="20.6597"
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Longitud *</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        value={remoteLng}
+                        onChange={(e) => setRemoteLng(e.target.value)}
+                        placeholder="-103.3496"
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <p className="text-[10px] text-warning">
-                💡 Tip: Pide las coordenadas por WhatsApp o usa Google Maps para obtenerlas
-              </p>
+              </details>
             </div>
           )}
         </div>
+
+        {/* Location picker map modal */}
+        <LocationPickerMap
+          isOpen={showMapPicker}
+          onClose={() => setShowMapPicker(false)}
+          onLocationSelect={(lat, lng, address) => {
+            setRemoteLat(lat.toString());
+            setRemoteLng(lng.toString());
+            if (address) setRemoteAddress(address);
+            toast.success('Ubicación seleccionada');
+          }}
+          initialLat={remoteLat ? parseFloat(remoteLat) : undefined}
+          initialLng={remoteLng ? parseFloat(remoteLng) : undefined}
+        />
 
         {/* Quick send button */}
         <Button
