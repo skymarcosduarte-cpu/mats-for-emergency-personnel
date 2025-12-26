@@ -1,7 +1,7 @@
 // Panic Button FAB Component for COMUNIDAD EX SOS
 
 import React, { useState } from 'react';
-import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users, MapPin, Loader2 } from 'lucide-react';
+import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users, MapPin, Loader2, Phone, Cross } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -57,6 +57,14 @@ const PANIC_OPTIONS: PanicOption[] = [
     whatsappMessage: (lat, lng, role) => 
       `🆘 EMERGENCIA - PROTECCIÓN CIVIL%0A${role === 'FAMILIAR' ? '⚠️ FAMILIAR – NO PARAMÉDICO%0A' : ''}📍 ${getGoogleMapsLink(lat, lng)}%0AGPS: ${formatCoordinates(lat, lng)}`,
   },
+];
+
+// Emergency services quick-dial numbers (Mexico)
+const EMERGENCY_NUMBERS = [
+  { name: 'Emergencias', number: '911', icon: <Phone className="w-5 h-5" />, color: 'bg-red-500' },
+  { name: 'Cruz Roja', number: '065', icon: <Cross className="w-5 h-5" />, color: 'bg-red-600' },
+  { name: 'Bomberos', number: '068', icon: <AlertTriangle className="w-5 h-5" />, color: 'bg-orange-500' },
+  { name: 'Policía', number: '060', icon: <Shield className="w-5 h-5" />, color: 'bg-blue-600' },
 ];
 
 interface PanicButtonProps {
@@ -301,13 +309,38 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
           })}
         </div>
 
+        {/* Emergency Services Quick Dial */}
+        <div className="border-t border-border pt-4 mt-2">
+          <p className="text-xs text-muted-foreground mb-3 text-center font-medium">
+            Llamar a Servicios de Emergencia
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            {EMERGENCY_NUMBERS.map((service) => (
+              <a
+                key={service.number}
+                href={`tel:${service.number}`}
+                className={`flex flex-col items-center gap-1 p-3 rounded-lg ${service.color} text-white hover:opacity-90 transition-opacity touch-manipulation active:scale-95`}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+                onClick={() => {
+                  vibrate([100, 50, 100]);
+                  toast.info(`Llamando a ${service.name}...`);
+                }}
+              >
+                {service.icon}
+                <span className="text-xs font-bold">{service.number}</span>
+                <span className="text-[10px] opacity-80 truncate w-full text-center">{service.name}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+
         {userRole === 'FAMILIAR' && (
-          <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-sm text-warning">
+          <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-sm text-warning mt-3">
             ⚠️ FAMILIAR – NO PARAMÉDICO
           </div>
         )}
 
-        <div className={`flex items-center gap-2 p-3 rounded-lg ${hasMinimumContacts ? 'bg-safe/10 text-safe' : 'bg-warning/10 text-warning'}`}>
+        <div className={`flex items-center gap-2 p-3 rounded-lg mt-3 ${hasMinimumContacts ? 'bg-safe/10 text-safe' : 'bg-warning/10 text-warning'}`}>
           <Users className="w-4 h-4" />
           <span className="text-sm">
             {hasMinimumContacts 
