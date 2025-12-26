@@ -7,6 +7,7 @@ import DOMPurify from 'dompurify';
 import { Locate } from 'lucide-react';
 import { useLocation } from '@/hooks/useLocation';
 import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders, usePanicEvents, useActiveResponders } from '@/hooks/useRealtime';
+import { useEmergencyResponse } from '@/hooks/useEmergencyResponse';
 import { AlertsPanel } from '@/components/AlertsPanel';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -296,9 +297,21 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
   const { providers: medicalProviders } = useMedicalProviders();
   const { events: panicEvents, resolveEvent } = usePanicEvents();
   const { responders: activeResponders } = useActiveResponders();
+  const { startResponding } = useEmergencyResponse();
   
   const isRescatista = role === 'RESCATISTA';
   const currentUserId = user?.id;
+
+  // Handle respond to help request from modal
+  const handleRespondToRequest = useCallback(async (requestId: string) => {
+    // Find the help request to get its coordinates
+    const request = helpRequests.find(r => r.id === requestId);
+    if (!request) {
+      console.error('[MapScreen] Help request not found:', requestId);
+      return false;
+    }
+    return await startResponding(requestId, request.lat, request.lng);
+  }, [helpRequests, startResponding]);
 
   // Default center (Mexico City)
   const defaultCenter: [number, number] = [19.4326, -99.1332];
@@ -803,6 +816,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
           onResolveHelpRequest={resolveRequest}
           onResolvePanicEvent={resolveEvent}
           activeResponders={activeResponders}
+          userPosition={position}
+          onRespondToRequest={handleRespondToRequest}
         />
       </div>
 
