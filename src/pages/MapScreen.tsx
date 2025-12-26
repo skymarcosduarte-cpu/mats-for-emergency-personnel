@@ -289,15 +289,16 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
   const [mapReady, setMapReady] = useState(false);
 
   const { position, error: locationError } = useLocation();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const { locations } = useUserLocations();
-  const { requests: helpRequests } = useHelpRequests(position);
+  const { requests: helpRequests, resolveRequest } = useHelpRequests(position);
   const { reports } = useRoadReports();
   const { providers: medicalProviders } = useMedicalProviders();
-  const { events: panicEvents } = usePanicEvents();
+  const { events: panicEvents, resolveEvent } = usePanicEvents();
   const { responders: activeResponders } = useActiveResponders();
   
   const isRescatista = role === 'RESCATISTA';
+  const currentUserId = user?.id;
 
   // Default center (Mexico City)
   const defaultCenter: [number, number] = [19.4326, -99.1332];
@@ -798,6 +799,9 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className }) => {
           helpRequests={helpRequests}
           onViewLocation={handleViewLocation}
           isRescatista={isRescatista}
+          currentUserId={currentUserId}
+          onResolveHelpRequest={resolveRequest}
+          onResolvePanicEvent={resolveEvent}
         />
       </div>
 
