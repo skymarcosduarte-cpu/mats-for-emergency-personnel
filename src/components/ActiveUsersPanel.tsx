@@ -17,6 +17,8 @@ interface UserLocationSummary {
   updated_at: string | null;
   display_name?: string | null;
   show_name_on_map?: boolean | null;
+  can_provide_medical_assistance?: boolean | null;
+  has_first_aid_kit?: boolean | null;
 }
 
 interface ActiveUsersPanelProps {
