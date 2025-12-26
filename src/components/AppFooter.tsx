@@ -11,13 +11,18 @@ export function AppFooter() {
           <span className="font-semibold text-sm">COMUNIDAD EX SOS</span>
         </div>
         
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-foreground">
-            M.A.T.S. - Mutual Aid Tracking System
-          </p>
-          <p className="text-xs text-muted-foreground italic">
-            Sistema de Seguimiento de Ayuda Mutua
-          </p>
+        <div className="space-y-2">
+          <div className="bg-primary/15 border border-primary/30 rounded-lg px-4 py-3">
+            <p className="text-base font-bold text-primary tracking-wide">
+              M.A.T.S.
+            </p>
+            <p className="text-sm font-semibold text-foreground">
+              Mutual Aid Tracking System
+            </p>
+            <p className="text-xs text-muted-foreground italic mt-1">
+              Sistema de Seguimiento de Ayuda Mutua
+            </p>
+          </div>
         </div>
         
         <div className="bg-primary/10 border border-primary/30 rounded-lg px-4 py-2">
