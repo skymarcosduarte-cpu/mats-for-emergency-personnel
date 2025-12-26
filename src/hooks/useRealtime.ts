@@ -15,6 +15,7 @@ interface UserLocation {
   speed: number | null;
   is_online: boolean;
   updated_at: string;
+  role: 'RESCATISTA' | 'FAMILIAR';
 }
 
 interface HelpRequest {
@@ -60,18 +61,18 @@ interface AppState {
   updated_at: string;
 }
 
-// Hook for user locations with real-time updates
+// Hook for user locations with real-time updates (includes role info)
 export function useUserLocations() {
   const [locations, setLocations] = useState<UserLocation[]>([]);
 
   const fetchLocations = useCallback(async () => {
+    // Use the view that joins locations with roles
     const { data, error } = await supabase
-      .from('user_locations')
-      .select('*')
-      .eq('is_online', true);
+      .from('user_locations_with_roles')
+      .select('*');
 
     if (!error && data) {
-      console.log('[useUserLocations] Fetched locations:', data.length);
+      console.log('[useUserLocations] Fetched locations with roles:', data.length);
       setLocations(data as UserLocation[]);
     } else if (error) {
       console.error('[useUserLocations] Error fetching locations:', error);
@@ -96,20 +97,9 @@ export function useUserLocations() {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'user_locations' },
         (payload) => {
-          console.log('[useUserLocations] UPDATE:', payload.new);
-          // Update specific location without full refetch
-          setLocations(prev => {
-            const updated = payload.new as UserLocation;
-            if (!updated.is_online) {
-              // Remove offline users
-              return prev.filter(l => l.user_id !== updated.user_id);
-            }
-            const exists = prev.find(l => l.user_id === updated.user_id);
-            if (exists) {
-              return prev.map(l => l.user_id === updated.user_id ? updated : l);
-            }
-            return [...prev, updated];
-          });
+          console.log('[useUserLocations] UPDATE - refetching for role info');
+          // Refetch to get role info from view
+          fetchLocations();
         }
       )
       .on(
