@@ -48,12 +48,12 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerClose,
+} from '@/components/ui/drawer';
 import { MatsLogo } from '@/components/MatsLogo';
 import { EmergencyContactsManager } from '@/components/EmergencyContactsManager';
 import { AppFooter } from '@/components/AppFooter';
@@ -102,6 +102,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [passwordError, setPasswordError] = useState('');
   const [showMedicalDialog, setShowMedicalDialog] = useState(false);
   const [savingMedicalData, setSavingMedicalData] = useState(false);
+  const [showAlertTypeDrawer, setShowAlertTypeDrawer] = useState(false);
+  const [selectedAlertType, setSelectedAlertType] = useState('AMBULANCIA_PROPIA');
   const [medicalForm, setMedicalForm] = useState({
     blood_type: profile?.blood_type || '',
     allergies: profile?.allergies || '',
@@ -924,33 +926,62 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </p>
             
             <div className="flex gap-2">
-              <Select
-                defaultValue="AMBULANCIA_PROPIA"
-                onValueChange={(value) => {
-                  if (onSimulatePanicAlert) {
-                    onSimulatePanicAlert(value);
-                  }
-                }}
+              <Button
+                variant="outline"
+                className="flex-1 justify-between"
+                onClick={() => setShowAlertTypeDrawer(true)}
               >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Tipo de alerta" />
-                </SelectTrigger>
-                <SelectContent side="top" sideOffset={8}>
-                  <SelectItem value="AMBULANCIA_PROPIA">🚑 Ambulancia</SelectItem>
-                  <SelectItem value="PATRULLA">🚔 Patrulla</SelectItem>
-                  <SelectItem value="MECANICO">🔧 Mecánico</SelectItem>
-                  <SelectItem value="PROTECCION_CIVIL">🆘 Protección Civil</SelectItem>
-                </SelectContent>
-              </Select>
+                <span>
+                  {selectedAlertType === 'AMBULANCIA_PROPIA' && '🚑 Ambulancia'}
+                  {selectedAlertType === 'PATRULLA' && '🚔 Patrulla'}
+                  {selectedAlertType === 'MECANICO' && '🔧 Mecánico'}
+                  {selectedAlertType === 'PROTECCION_CIVIL' && '🆘 Protección Civil'}
+                </span>
+                <FlaskConical className="w-4 h-4 opacity-50" />
+              </Button>
               <Button
                 variant="outline"
                 className="border-warning text-warning hover:bg-warning/10"
-                onClick={() => onSimulatePanicAlert?.('AMBULANCIA_PROPIA')}
+                onClick={() => onSimulatePanicAlert?.(selectedAlertType)}
               >
                 <FlaskConical className="w-4 h-4 mr-2" />
                 Simular
               </Button>
             </div>
+
+            {/* Alert Type Drawer */}
+            <Drawer open={showAlertTypeDrawer} onOpenChange={setShowAlertTypeDrawer}>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle className="text-center">Selecciona tipo de alerta</DrawerTitle>
+                </DrawerHeader>
+                <div className="px-4 pb-6 space-y-2">
+                  {[
+                    { value: 'AMBULANCIA_PROPIA', label: '🚑 Ambulancia', description: 'Emergencia médica' },
+                    { value: 'PATRULLA', label: '🚔 Patrulla', description: 'Seguridad' },
+                    { value: 'MECANICO', label: '🔧 Mecánico', description: 'Falla vehicular' },
+                    { value: 'PROTECCION_CIVIL', label: '🆘 Protección Civil', description: 'Desastre natural' },
+                  ].map((option) => (
+                    <DrawerClose asChild key={option.value}>
+                      <Button
+                        variant={selectedAlertType === option.value ? 'default' : 'outline'}
+                        className="w-full h-14 justify-start gap-3 text-left"
+                        onClick={() => {
+                          setSelectedAlertType(option.value);
+                          setShowAlertTypeDrawer(false);
+                        }}
+                      >
+                        <span className="text-xl">{option.label.split(' ')[0]}</span>
+                        <div className="flex flex-col items-start">
+                          <span className="font-semibold">{option.label.split(' ').slice(1).join(' ')}</span>
+                          <span className="text-xs text-muted-foreground">{option.description}</span>
+                        </div>
+                      </Button>
+                    </DrawerClose>
+                  ))}
+                </div>
+              </DrawerContent>
+            </Drawer>
 
             <p className="text-xs text-muted-foreground italic">
               La alerta de prueba aparecerá en la parte superior de la pantalla. Usa el botón "Cancelar" para probar el flujo de cancelación.
