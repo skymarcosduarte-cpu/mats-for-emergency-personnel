@@ -20,6 +20,7 @@ interface AppHeaderProps {
 
 export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
   const lastActivatedAtRef = useRef(0);
+  const suppressClickRef = useRef(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
@@ -84,28 +85,39 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
     setShowConfirmation(false);
   }, []);
 
-  // PointerDown is the most reliable across iOS/Android/Desktop
-  const handlePointerDown = useCallback(
+  // Open on pointer-up to avoid the overlay capturing the same gesture and instantly dismissing on mobile
+  const handlePointerUp = useCallback(
     (e: React.PointerEvent<HTMLButtonElement>) => {
-      // Only primary button / touch
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Prevent the follow-up click from re-firing
+      suppressClickRef.current = true;
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 400);
+
       triggerPanic();
     },
     [triggerPanic],
   );
 
-  // Fallback for older iOS / weird pointer cases
-  const handleTouchEnd = useCallback(
-    (e: React.TouchEvent<HTMLButtonElement>) => {
-      triggerPanic();
-    },
-    [triggerPanic],
-  );
-
-  // Fallback click handler
+  // Fallback click handler (older browsers / keyboard)
   const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
+    (_e: React.MouseEvent<HTMLButtonElement>) => {
+      if (suppressClickRef.current) return;
       triggerPanic();
+    },
+    [triggerPanic],
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        triggerPanic();
+      }
     },
     [triggerPanic],
   );
@@ -116,9 +128,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
         <MatsLogo size={36} showText />
 
         <button
-          onPointerDown={handlePointerDown}
-          onTouchEnd={handleTouchEnd}
+          onPointerUp={handlePointerUp}
           onClick={handleClick}
+          onKeyDown={handleKeyDown}
           className="relative flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-panic to-red-600 text-white shadow-lg shadow-panic/40 touch-manipulation select-none active:scale-95 transition-all hover:shadow-panic/60"
           aria-label="Botón de pánico - SOS"
           type="button"
