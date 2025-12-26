@@ -25,103 +25,109 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
   const triggerPanic = useCallback(() => {
     // Prevent double-triggers within 500ms
     const now = Date.now();
-    if (now - lastActivatedAtRef.current < 500) {
-      console.log('[AppHeader] Trigger skipped - too soon');
-      return;
-    }
-    
+    if (now - lastActivatedAtRef.current < 500) return;
+
     lastActivatedAtRef.current = now;
-    console.log('[AppHeader] Panic triggered');
-    
+
     // Visual feedback only
     setShowFeedback(true);
     setTimeout(() => setShowFeedback(false), 300);
-    
+
     // Haptic feedback (non-blocking)
     try {
-      if ('vibrate' in navigator) {
+      if ("vibrate" in navigator) {
         navigator.vibrate([100, 50, 100]);
       }
-    } catch (e) {
+    } catch {
       // Ignore vibration errors
     }
-    
+
     // Show confirmation dialog
     setShowConfirmation(true);
   }, []);
 
   const handleConfirm = useCallback(() => {
-    console.log('[AppHeader] Confirm clicked');
     // Close dialog first to prevent any blocking
     setShowConfirmation(false);
-    
+
     // Use setTimeout to ensure dialog closes before other operations
     setTimeout(() => {
       // Play urgent sound (non-blocking)
       try {
         playUrgentSound();
-      } catch (e) {
+      } catch {
         // Ignore sound errors
       }
-      
+
       // Vibrate on confirm (non-blocking)
       try {
-        if ('vibrate' in navigator) {
+        if ("vibrate" in navigator) {
           navigator.vibrate([200, 100, 200]);
         }
-      } catch (e) {
+      } catch {
         // Ignore vibration errors
       }
-      
+
       // Open panic options dialog
       onPanicClick();
     }, 50);
   }, [onPanicClick]);
 
   const handleCancel = useCallback(() => {
-    console.log('[AppHeader] Cancel clicked');
     setShowConfirmation(false);
   }, []);
 
-  // Pointer handler (works across iOS/Android/Desktop)
-  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
-    console.log('[AppHeader] PointerUp:', e.pointerType);
-    e.preventDefault();
-    e.stopPropagation();
-    triggerPanic();
-  }, [triggerPanic]);
+  // PointerDown is the most reliable across iOS/Android/Desktop
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      // Only primary button / touch
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      triggerPanic();
+    },
+    [triggerPanic],
+  );
+
+  // Fallback for older iOS / weird pointer cases
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent<HTMLButtonElement>) => {
+      triggerPanic();
+    },
+    [triggerPanic],
+  );
 
   // Fallback click handler
-  const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    console.log('[AppHeader] Click');
-    e.preventDefault();
-    triggerPanic();
-  }, [triggerPanic]);
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      triggerPanic();
+    },
+    [triggerPanic],
+  );
 
   return (
     <>
       <header className="app-header sticky top-0 z-50">
         <MatsLogo size={36} showText />
-        
+
         <button
-          onPointerUp={handlePointerUp}
+          onPointerDown={handlePointerDown}
+          onTouchEnd={handleTouchEnd}
           onClick={handleClick}
           className="relative flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-panic to-red-600 text-white shadow-lg shadow-panic/40 touch-manipulation select-none active:scale-95 transition-all hover:shadow-panic/60"
           aria-label="Botón de pánico - SOS"
           type="button"
-          style={{ 
-            WebkitTapHighlightColor: 'transparent',
-            touchAction: 'manipulation',
-            userSelect: 'none',
-            WebkitUserSelect: 'none',
+          style={{
+            WebkitTapHighlightColor: "transparent",
+            touchAction: "manipulation",
+            userSelect: "none",
+            WebkitUserSelect: "none",
           }}
         >
           <AlertTriangle className="w-5 h-5 pointer-events-none" />
           <span className="font-bold text-sm pointer-events-none">SOS</span>
-          
+
           {/* Pulsing border effect */}
           <span className="absolute inset-0 rounded-full border-2 border-white/50 animate-ping opacity-40 pointer-events-none" />
-          
+
           {/* Visual feedback overlay */}
           {showFeedback && (
             <span className="absolute inset-0 rounded-full bg-white/30 pointer-events-none animate-pulse" />
@@ -142,21 +148,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
               ¿Necesitas ayuda de emergencia?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center">
-              Esto alertará a la comunidad y a tus contactos de emergencia con tu ubicación GPS.
+              Esto alertará a la comunidad con tu ubicación GPS.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleConfirm}
               className="w-full bg-panic hover:bg-panic/90 text-white font-bold py-3"
             >
               <Phone className="w-4 h-4 mr-2" />
               Sí, necesito ayuda
             </AlertDialogAction>
-            <AlertDialogCancel 
-              onClick={handleCancel}
-              className="w-full"
-            >
+            <AlertDialogCancel onClick={handleCancel} className="w-full">
               Cancelar
             </AlertDialogCancel>
           </AlertDialogFooter>
