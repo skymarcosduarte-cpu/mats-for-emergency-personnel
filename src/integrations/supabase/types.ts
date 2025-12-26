@@ -381,35 +381,91 @@ export type Database = {
           },
         ]
       }
+      panic_event_responders: {
+        Row: {
+          arrived_at: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          panic_id: string
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arrived_at?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          panic_id: string
+          started_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          arrived_at?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          panic_id?: string
+          started_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panic_event_responders_panic_id_fkey"
+            columns: ["panic_id"]
+            isOneToOne: false
+            referencedRelation: "panic_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       panic_events: {
         Row: {
+          arrived_at: string | null
           created_at: string | null
           id: string
           lat: number
           lng: number
+          message: string | null
           panic_type: string
           resolved: boolean | null
           resolved_at: string | null
+          resolved_by: string | null
+          responding_by: string | null
+          responding_started_at: string | null
           user_id: string
         }
         Insert: {
+          arrived_at?: string | null
           created_at?: string | null
           id?: string
           lat: number
           lng: number
+          message?: string | null
           panic_type: string
           resolved?: boolean | null
           resolved_at?: string | null
+          resolved_by?: string | null
+          responding_by?: string | null
+          responding_started_at?: string | null
           user_id: string
         }
         Update: {
+          arrived_at?: string | null
           created_at?: string | null
           id?: string
           lat?: number
           lng?: number
+          message?: string | null
           panic_type?: string
           resolved?: boolean | null
           resolved_at?: string | null
+          resolved_by?: string | null
+          responding_by?: string | null
+          responding_started_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -851,6 +907,15 @@ export type Database = {
         }[]
       }
       is_rescatista: { Args: { _user_id: string }; Returns: boolean }
+      is_within_radius_of_panic: {
+        Args: {
+          panic_id: string
+          radius_meters?: number
+          user_lat: number
+          user_lng: number
+        }
+        Returns: boolean
+      }
       is_within_radius_of_request: {
         Args: {
           radius_meters?: number

@@ -43,6 +43,10 @@ interface PanicEvent {
   lng: number;
   resolved: boolean;
   created_at: string;
+  responding_by?: string | null;
+  responding_started_at?: string | null;
+  arrived_at?: string | null;
+  message?: string | null;
 }
 
 interface HelpRequest {
@@ -305,7 +309,7 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   };
 
   const handleRespond = async () => {
-    if (!onRespond || !alert || isPanic) return;
+    if (!onRespond || !alert) return;
     
     setIsResponding(true);
     try {
@@ -339,8 +343,8 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   const hasResponders = alertResponders.length > 0;
   const arrivedResponders = alertResponders.filter(r => r.arrived_at);
 
-  // Show respond button for help requests if: is rescatista, not owner, not already responding, is within radius
-  const canRespond = !isPanic && isRescatista && !isOwner && !isAlreadyResponding && onRespond;
+  // Show respond button for both panic and help requests if: is rescatista, not owner, not already responding
+  const canRespond = isRescatista && !isOwner && !isAlreadyResponding && onRespond;
 
   return (
     <div 
