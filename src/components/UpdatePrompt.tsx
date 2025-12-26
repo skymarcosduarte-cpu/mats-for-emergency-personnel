@@ -115,23 +115,27 @@ export function UpdateButton() {
         if (registrations.length > 0) {
           const reg = registrations[0];
           
-          // Wrap update check in timeout
+          // Force update check
           try {
             await withTimeout(reg.update(), UPDATE_CHECK_TIMEOUT);
           } catch (updateError) {
-            console.warn('Update check timed out, checking waiting state:', updateError);
+            console.warn('Update check timed out:', updateError);
           }
           
+          // Check if there's a waiting worker OR if controller exists
           if (reg.waiting) {
             setHasUpdate(true);
-            toast.info('Nueva versión disponible');
+            toast.info('Nueva versión disponible - Instala ahora');
+          } else if (reg.installing) {
+            setHasUpdate(true);
+            toast.info('Nueva versión instalándose...');
           } else {
             setHasUpdate(false);
             toast.success('Ya tienes la última versión');
           }
           setLastChecked(new Date());
         } else {
-          // No service worker registered
+          // No service worker registered - just reload
           setHasUpdate(false);
           toast.success('Ya tienes la última versión');
           setLastChecked(new Date());
@@ -153,39 +157,61 @@ export function UpdateButton() {
   };
 
   const applyUpdate = async () => {
+    toast.info('Aplicando actualización...');
+    
     try {
+      // Clear ALL caches first
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        console.log('Cleared caches:', cacheNames);
+      }
+      
       if ('serviceWorker' in navigator) {
-        const registrations = await withTimeout(
-          navigator.serviceWorker.getRegistrations(),
-          SW_READY_TIMEOUT
-        );
+        const registrations = await navigator.serviceWorker.getRegistrations();
         
         if (registrations.length > 0 && registrations[0].waiting) {
           registrations[0].waiting.postMessage({ type: 'SKIP_WAITING' });
-          toast.success('Actualizando...');
-          // Give time for the skip waiting to process
-          setTimeout(() => window.location.reload(), 500);
-        } else {
-          window.location.reload();
+          // Wait a bit for the message to be processed
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
-      } else {
-        window.location.reload();
       }
+      
+      // Force reload ignoring cache
+      window.location.reload();
     } catch (error) {
+      console.error('Apply update error:', error);
       // Fallback: just reload
       window.location.reload();
     }
   };
 
-  const forceRefresh = () => {
-    toast.info('Recargando aplicación...');
-    // Clear caches and force reload
-    if ('caches' in window) {
-      caches.keys().then((names) => {
-        names.forEach((name) => caches.delete(name));
-      });
+  const forceRefresh = async () => {
+    toast.info('Limpiando caché y recargando...');
+    
+    try {
+      // Unregister all service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(reg => reg.unregister()));
+        console.log('Unregistered all service workers');
+      }
+      
+      // Clear all caches
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        console.log('Cleared all caches');
+      }
+      
+      // Small delay then reload
+      setTimeout(() => {
+        window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
+      }, 300);
+    } catch (error) {
+      console.error('Force refresh error:', error);
+      window.location.reload();
     }
-    window.location.reload();
   };
 
   return (
@@ -211,14 +237,18 @@ export function UpdateButton() {
       )}
       
       <Button
-        variant="ghost"
+        variant="secondary"
         size="sm"
-        className="w-full text-muted-foreground"
+        className="w-full"
         onClick={forceRefresh}
       >
         <RefreshCw className="h-3 w-3 mr-2" />
-        Forzar Recarga
+        Forzar Recarga Completa
       </Button>
+      
+      <p className="text-xs text-muted-foreground text-center">
+        Si hay problemas, usa "Forzar Recarga Completa" para limpiar caché y reinstalar la app
+      </p>
       
       {lastChecked && (
         <p className="text-xs text-muted-foreground text-center">
@@ -228,7 +258,7 @@ export function UpdateButton() {
       
       {checkFailed && !checking && (
         <p className="text-xs text-destructive text-center">
-          La verificación falló. Usa "Forzar Recarga" si hay problemas.
+          La verificación falló. Usa "Forzar Recarga Completa" si hay problemas.
         </p>
       )}
     </div>
