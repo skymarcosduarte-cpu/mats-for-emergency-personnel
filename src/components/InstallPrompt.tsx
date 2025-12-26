@@ -80,8 +80,9 @@ export function InstallPrompt() {
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
 
-    // For platforms without beforeinstallprompt, show banner after short delay
-    const showForManualInstall = ["ios", "samsung", "desktop-firefox"].includes(detectedPlatform);
+    // For platforms without native prompt OR Android (as fallback), show banner after short delay
+    // Android is included because beforeinstallprompt may not fire if user dismissed previously
+    const showForManualInstall = ["ios", "samsung", "desktop-firefox", "android"].includes(detectedPlatform);
     if (showForManualInstall) {
       const timer = setTimeout(() => setShowBanner(true), 1500);
       return () => {
@@ -139,6 +140,27 @@ export function InstallPrompt() {
               icon: <Smartphone className="h-4 w-4" />,
               title: "Confirma la instalación",
               description: "Toca 'Agregar' y la app aparecerá en tu pantalla"
+            }
+          ]
+        };
+      case "android":
+        return {
+          title: "Instalar en Android",
+          steps: [
+            {
+              icon: <Chrome className="h-4 w-4" />,
+              title: "Toca el menú ⋮",
+              description: "Los 3 puntos verticales arriba a la derecha del navegador"
+            },
+            {
+              icon: <Download className="h-4 w-4" />,
+              title: "Busca 'Instalar aplicación'",
+              description: "O 'Añadir a pantalla de inicio' en el menú desplegable"
+            },
+            {
+              icon: <Smartphone className="h-4 w-4" />,
+              title: "Confirma la instalación",
+              description: "Toca 'Instalar' en el diálogo que aparece"
             }
           ]
         };
