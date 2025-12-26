@@ -291,8 +291,13 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                             <Button
                               size="sm"
                               variant="secondary"
-                              className="flex-1 h-8 text-xs"
+                              className="flex-1 h-8 text-xs touch-manipulation"
                               onClick={() => onViewLocation(event.lat, event.lng)}
+                              onTouchEnd={(e) => {
+                                e.preventDefault();
+                                onViewLocation(event.lat, event.lng);
+                              }}
+                              style={{ WebkitTapHighlightColor: 'transparent' }}
                             >
                               <MapPin className="w-3 h-3 mr-1" />
                               Ver en mapa
@@ -300,8 +305,13 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-8 text-xs"
+                              className="h-8 text-xs touch-manipulation"
                               onClick={() => openGoogleMaps(event.lat, event.lng)}
+                              onTouchEnd={(e) => {
+                                e.preventDefault();
+                                openGoogleMaps(event.lat, event.lng);
+                              }}
+                              style={{ WebkitTapHighlightColor: 'transparent' }}
                             >
                               <ExternalLink className="w-3 h-3" />
                             </Button>
@@ -312,9 +322,14 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 touch-manipulation"
                                 onClick={() => handleDeleteClick(event.id, 'panic')}
+                                onTouchEnd={(e) => {
+                                  e.preventDefault();
+                                  handleDeleteClick(event.id, 'panic');
+                                }}
                                 disabled={deletingId === event.id}
+                                style={{ WebkitTapHighlightColor: 'transparent' }}
                               >
                                 <Trash2 className="w-3 h-3" />
                               </Button>
@@ -396,8 +411,13 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                               <Button
                                 size="sm"
                                 variant="secondary"
-                                className="flex-1 h-8 text-xs"
+                                className="flex-1 h-8 text-xs touch-manipulation"
                                 onClick={() => onViewLocation(request.lat, request.lng)}
+                                onTouchEnd={(e) => {
+                                  e.preventDefault();
+                                  onViewLocation(request.lat, request.lng);
+                                }}
+                                style={{ WebkitTapHighlightColor: 'transparent' }}
                               >
                                 <MapPin className="w-3 h-3 mr-1" />
                                 Ver en mapa
@@ -405,8 +425,13 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-8 text-xs"
+                                className="h-8 text-xs touch-manipulation"
                                 onClick={() => openGoogleMaps(request.lat, request.lng)}
+                                onTouchEnd={(e) => {
+                                  e.preventDefault();
+                                  openGoogleMaps(request.lat, request.lng);
+                                }}
+                                style={{ WebkitTapHighlightColor: 'transparent' }}
                               >
                                 <ExternalLink className="w-3 h-3" />
                               </Button>
@@ -417,9 +442,14 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 touch-manipulation"
                                   onClick={() => handleDeleteClick(request.id, 'help')}
+                                  onTouchEnd={(e) => {
+                                    e.preventDefault();
+                                    handleDeleteClick(request.id, 'help');
+                                  }}
                                   disabled={deletingId === request.id}
+                                  style={{ WebkitTapHighlightColor: 'transparent' }}
                                 >
                                   <Trash2 className="w-3 h-3" />
                                 </Button>

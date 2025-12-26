@@ -199,14 +199,23 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
             <Button
               key={option.type}
               variant="outline"
-              className="h-16 justify-start gap-4 text-left border-border hover:bg-muted hover:border-panic/50 transition-all"
-              onClick={() => handlePanicSelect(option)}
+              className="h-16 justify-start gap-4 text-left border-border hover:bg-muted hover:border-panic/50 transition-all touch-manipulation active:scale-98"
+              onClick={() => {
+                console.log('[PanicButton] Option clicked:', option.type);
+                handlePanicSelect(option);
+              }}
+              onTouchEnd={(e) => {
+                console.log('[PanicButton] Option touchEnd:', option.type);
+                e.preventDefault();
+                handlePanicSelect(option);
+              }}
               disabled={locationLoading && selectedType === option.type}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
             >
-              <div className="w-12 h-12 rounded-lg bg-panic/10 flex items-center justify-center text-panic">
+              <div className="w-12 h-12 rounded-lg bg-panic/10 flex items-center justify-center text-panic pointer-events-none">
                 {option.icon}
               </div>
-              <div>
+              <div className="pointer-events-none">
                 <div className="font-semibold text-foreground">{option.label}</div>
                 <div className="text-xs text-muted-foreground">Envía alerta con ubicación GPS</div>
               </div>

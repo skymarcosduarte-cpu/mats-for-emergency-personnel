@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import { MatsLogo } from './MatsLogo';
 import { AlertTriangle } from 'lucide-react';
 
@@ -7,43 +7,86 @@ interface AppHeaderProps {
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
-  const lastActivatedAtRef = React.useRef(0);
+  const lastActivatedAtRef = useRef(0);
+  const isProcessingRef = useRef(false);
 
-  const triggerPanic = (e?: { preventDefault?: () => void; stopPropagation?: () => void }) => {
-    e?.preventDefault?.();
-    e?.stopPropagation?.();
+  const triggerPanic = useCallback(() => {
+    // Prevent double-triggers within 500ms
+    const now = Date.now();
+    if (now - lastActivatedAtRef.current < 500) {
+      console.log('[AppHeader] Panic blocked - too soon after last trigger');
+      return;
+    }
+    
+    if (isProcessingRef.current) {
+      console.log('[AppHeader] Panic blocked - already processing');
+      return;
+    }
+    
+    console.log('[AppHeader] Panic triggered!');
+    lastActivatedAtRef.current = now;
+    isProcessingRef.current = true;
+    
+    // Immediate haptic feedback
+    if ('vibrate' in navigator) {
+      try {
+        navigator.vibrate(100);
+      } catch (e) {
+        console.log('[AppHeader] Vibrate failed:', e);
+      }
+    }
+    
+    // Call the callback
     onPanicClick();
-  };
+    
+    // Reset processing state after a delay
+    setTimeout(() => {
+      isProcessingRef.current = false;
+    }, 500);
+  }, [onPanicClick]);
 
-  const handlePanicPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
-    lastActivatedAtRef.current = Date.now();
-    triggerPanic(e);
-  };
+  // Unified touch handler for Android
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLButtonElement>) => {
+    console.log('[AppHeader] TouchStart detected');
+    // Mark that a touch started (for click filtering)
+    lastActivatedAtRef.current = -1; // Use -1 as marker that touch started
+  }, []);
 
-  const handlePanicTouchEnd = (e: React.TouchEvent<HTMLButtonElement>) => {
-    // Fallback for Android WebView / older browsers where PointerEvents can be flaky.
-    lastActivatedAtRef.current = Date.now();
-    triggerPanic(e);
-  };
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLButtonElement>) => {
+    console.log('[AppHeader] TouchEnd detected');
+    e.preventDefault();
+    e.stopPropagation();
+    triggerPanic();
+  }, [triggerPanic]);
 
-  const handlePanicClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    // Prevent the synthetic click that follows a touch/pointer interaction on Android.
-    if (Date.now() - lastActivatedAtRef.current < 700) return;
-    triggerPanic(e);
-  };
+  // Click handler only fires if no touch event preceded it
+  const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    console.log('[AppHeader] Click detected, lastActivated:', lastActivatedAtRef.current);
+    // If touch event already handled this, skip
+    if (Date.now() - lastActivatedAtRef.current < 500) {
+      console.log('[AppHeader] Click skipped - touch already handled');
+      return;
+    }
+    e.preventDefault();
+    triggerPanic();
+  }, [triggerPanic]);
 
   return (
     <header className="app-header sticky top-0 z-50">
       <MatsLogo size={36} showText />
       
       <button
-        onPointerUp={handlePanicPointerUp}
-        onTouchEnd={handlePanicTouchEnd}
-        onClick={handlePanicClick}
-        className="relative w-12 h-12 rounded-full bg-panic text-primary-foreground shadow-panic flex items-center justify-center touch-manipulation select-none"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onClick={handleClick}
+        className="relative w-12 h-12 rounded-full bg-panic text-primary-foreground shadow-panic flex items-center justify-center touch-manipulation select-none active:scale-95 transition-transform"
         aria-label="Botón de pánico"
         type="button"
-        style={{ WebkitTapHighlightColor: 'transparent' }}
+        style={{ 
+          WebkitTapHighlightColor: 'transparent',
+          touchAction: 'manipulation',
+          userSelect: 'none',
+        }}
       >
         <AlertTriangle className="w-6 h-6 pointer-events-none" />
         <span className="absolute inset-0 rounded-full border-2 border-panic animate-ping opacity-30 pointer-events-none" />
