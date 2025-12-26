@@ -36,6 +36,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePanicAlerts } from '@/hooks/usePanicAlerts';
 import { useMyAlertResponders } from '@/hooks/useMyAlertResponders';
 import { useTestMode } from '@/hooks/useTestMode';
+import { useOverdueTrips } from '@/hooks/useOverdueTrips';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { UserRole, USGSEarthquake, PanicType } from '@/types';
@@ -134,6 +135,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   
   // Listen for responders to user's own alerts and track their location
   const { respondersToMyAlerts } = useMyAlertResponders();
+  
+  // Monitor for overdue trips (30+ minutes past ETA)
+  useOverdueTrips();
   
   // Push notifications
   const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
