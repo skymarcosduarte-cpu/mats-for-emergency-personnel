@@ -26,7 +26,10 @@ import {
   AlertTriangle,
   KeyRound,
   Eye,
-  EyeOff
+  EyeOff,
+  Droplets,
+  Pill,
+  FileHeart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,8 +88,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+  const [showMedicalDialog, setShowMedicalDialog] = useState(false);
+  const [savingMedicalData, setSavingMedicalData] = useState(false);
+  const [medicalForm, setMedicalForm] = useState({
+    blood_type: profile?.blood_type || '',
+    allergies: profile?.allergies || '',
+    medical_conditions: profile?.medical_conditions || '',
+    current_medications: profile?.current_medications || '',
+    emergency_medical_notes: profile?.emergency_medical_notes || '',
+  });
 
-  // Handle notification permission request
   const handleRequestPermission = async () => {
     setRequestingPermission(true);
     await requestPermission();
@@ -147,6 +158,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     if (profile) {
       setCanProvideMedical(profile.can_provide_medical_assistance ?? false);
       setHasFirstAidKit(profile.has_first_aid_kit ?? false);
+      setMedicalForm({
+        blood_type: profile.blood_type || '',
+        allergies: profile.allergies || '',
+        medical_conditions: profile.medical_conditions || '',
+        current_medications: profile.current_medications || '',
+        emergency_medical_notes: profile.emergency_medical_notes || '',
+      });
     }
   }, [profile]);
 
@@ -273,6 +291,29 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       }
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  // Save medical data
+  const handleSaveMedicalData = async () => {
+    setSavingMedicalData(true);
+    try {
+      const { error } = await updateProfile({
+        blood_type: medicalForm.blood_type || null,
+        allergies: medicalForm.allergies || null,
+        medical_conditions: medicalForm.medical_conditions || null,
+        current_medications: medicalForm.current_medications || null,
+        emergency_medical_notes: medicalForm.emergency_medical_notes || null,
+      });
+      
+      if (error) {
+        console.error('Error saving medical data:', error);
+        alert('Error al guardar. Intenta de nuevo.');
+      } else {
+        setShowMedicalDialog(false);
+      }
+    } finally {
+      setSavingMedicalData(false);
     }
   };
 
@@ -474,6 +515,71 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 </p>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Medical Emergency Data */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileHeart className="w-5 h-5 text-destructive" />
+              Datos Médicos de Emergencia
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Información médica importante que puede ayudar a los rescatistas en caso de emergencia.
+            </p>
+            
+            {/* Quick view of medical data */}
+            <div className="space-y-2 p-3 rounded-lg bg-muted/50">
+              {profile?.blood_type ? (
+                <div className="flex items-center gap-2">
+                  <Droplets className="w-4 h-4 text-destructive" />
+                  <span className="text-sm font-medium">Tipo de sangre:</span>
+                  <span className="text-sm text-muted-foreground">{profile.blood_type}</span>
+                </div>
+              ) : null}
+              
+              {profile?.allergies ? (
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-warning mt-0.5" />
+                  <span className="text-sm font-medium">Alergias:</span>
+                  <span className="text-sm text-muted-foreground flex-1">{profile.allergies}</span>
+                </div>
+              ) : null}
+              
+              {profile?.medical_conditions ? (
+                <div className="flex items-start gap-2">
+                  <HeartPulse className="w-4 h-4 text-safe mt-0.5" />
+                  <span className="text-sm font-medium">Condiciones:</span>
+                  <span className="text-sm text-muted-foreground flex-1">{profile.medical_conditions}</span>
+                </div>
+              ) : null}
+              
+              {profile?.current_medications ? (
+                <div className="flex items-start gap-2">
+                  <Pill className="w-4 h-4 text-primary mt-0.5" />
+                  <span className="text-sm font-medium">Medicamentos:</span>
+                  <span className="text-sm text-muted-foreground flex-1">{profile.current_medications}</span>
+                </div>
+              ) : null}
+              
+              {!profile?.blood_type && !profile?.allergies && !profile?.medical_conditions && !profile?.current_medications && (
+                <p className="text-xs text-muted-foreground italic">
+                  No hay datos médicos configurados
+                </p>
+              )}
+            </div>
+            
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setShowMedicalDialog(true)}
+            >
+              <FileHeart className="w-4 h-4 mr-2" />
+              {profile?.blood_type || profile?.allergies ? 'Editar Datos Médicos' : 'Agregar Datos Médicos'}
+            </Button>
           </CardContent>
         </Card>
 
@@ -1086,6 +1192,136 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               ) : (
                 <>
                   <KeyRound className="w-4 h-4 mr-2" />
+                  Guardar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Medical Data Dialog */}
+      <Dialog open={showMedicalDialog} onOpenChange={setShowMedicalDialog}>
+        <DialogContent className="sm:max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileHeart className="w-5 h-5 text-destructive" />
+              Datos Médicos de Emergencia
+            </DialogTitle>
+            <DialogDescription>
+              Esta información puede ser vital para los rescatistas en caso de emergencia.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="blood-type" className="text-sm text-foreground flex items-center gap-2">
+                <Droplets className="w-4 h-4 text-destructive" />
+                Tipo de Sangre
+              </Label>
+              <select
+                id="blood-type"
+                value={medicalForm.blood_type}
+                onChange={(e) => setMedicalForm(prev => ({ ...prev, blood_type: e.target.value }))}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="">Seleccionar...</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="allergies" className="text-sm text-foreground flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-warning" />
+                Alergias
+              </Label>
+              <Input
+                id="allergies"
+                value={medicalForm.allergies}
+                onChange={(e) => setMedicalForm(prev => ({ ...prev, allergies: e.target.value }))}
+                placeholder="Penicilina, mariscos, polen..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Alergias a medicamentos, alimentos u otros
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="conditions" className="text-sm text-foreground flex items-center gap-2">
+                <HeartPulse className="w-4 h-4 text-safe" />
+                Condiciones Médicas
+              </Label>
+              <Input
+                id="conditions"
+                value={medicalForm.medical_conditions}
+                onChange={(e) => setMedicalForm(prev => ({ ...prev, medical_conditions: e.target.value }))}
+                placeholder="Diabetes, hipertensión, asma..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Enfermedades crónicas o condiciones importantes
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="medications" className="text-sm text-foreground flex items-center gap-2">
+                <Pill className="w-4 h-4 text-primary" />
+                Medicamentos Actuales
+              </Label>
+              <Input
+                id="medications"
+                value={medicalForm.current_medications}
+                onChange={(e) => setMedicalForm(prev => ({ ...prev, current_medications: e.target.value }))}
+                placeholder="Metformina, losartán..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Medicamentos que tomas regularmente
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes" className="text-sm text-foreground flex items-center gap-2">
+                <FileHeart className="w-4 h-4 text-muted-foreground" />
+                Notas Adicionales
+              </Label>
+              <textarea
+                id="notes"
+                value={medicalForm.emergency_medical_notes}
+                onChange={(e) => setMedicalForm(prev => ({ ...prev, emergency_medical_notes: e.target.value }))}
+                placeholder="Información adicional importante..."
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+              <p className="text-xs text-muted-foreground">
+                Ej: Marcapasos, prótesis, instrucciones especiales
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowMedicalDialog(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveMedicalData}
+              disabled={savingMedicalData}
+            >
+              {savingMedicalData ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <FileHeart className="w-4 h-4 mr-2" />
                   Guardar
                 </>
               )}
