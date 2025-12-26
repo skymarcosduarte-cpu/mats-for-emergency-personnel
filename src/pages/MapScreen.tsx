@@ -10,6 +10,7 @@ import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders,
 import { useEmergencyResponse } from '@/hooks/useEmergencyResponse';
 import { usePOIs, type POI } from '@/hooks/usePOIs';
 import { AlertsPanel } from '@/components/AlertsPanel';
+import { ActiveUsersPanel } from '@/components/ActiveUsersPanel';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import 'leaflet/dist/leaflet.css';
@@ -1456,6 +1457,12 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         poiVisibility={poiVisibility}
         onTogglePOI={handleTogglePOI}
         poisLoading={poisLoading}
+      />
+
+      {/* Active Users Panel */}
+      <ActiveUsersPanel
+        users={locations}
+        onCenterOnUser={handleViewLocation}
       />
     </div>
   );
