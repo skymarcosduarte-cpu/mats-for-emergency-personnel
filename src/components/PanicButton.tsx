@@ -575,20 +575,6 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
           )}
         </div>
 
-        {/* Location picker map modal */}
-        <LocationPickerMap
-          isOpen={showMapPicker}
-          onClose={() => setShowMapPicker(false)}
-          onLocationSelect={(lat, lng, address) => {
-            setRemoteLat(lat.toString());
-            setRemoteLng(lng.toString());
-            if (address) setRemoteAddress(address);
-            toast.success('Ubicación seleccionada');
-          }}
-          initialLat={remoteLat ? parseFloat(remoteLat) : undefined}
-          initialLng={remoteLng ? parseFloat(remoteLng) : undefined}
-        />
-
         {/* Quick send button */}
         <Button
           onClick={handleSendNow}
@@ -671,32 +657,48 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[20000]">
-      <button
-        type="button"
-        aria-label="Cerrar"
-        className="absolute inset-0 bg-black/80"
-        onClick={() => handleOpenChange(false)}
-      />
-
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-label="Selecciona tipo de emergencia"
-        className="absolute left-1/2 top-4 z-[20010] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 rounded-lg border border-border bg-card text-card-foreground shadow-lg max-h-[calc(100dvh-2rem)] overflow-y-auto relative"
-      >
+    <>
+      <div className="fixed inset-0 z-[20000]">
         <button
           type="button"
-          aria-label="Cerrar selector de emergencia"
-          className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition z-10"
+          aria-label="Cerrar"
+          className="absolute inset-0 bg-black/80"
           onClick={() => handleOpenChange(false)}
-        >
-          <X className="h-4 w-4" />
-        </button>
+        />
 
-        {step === 'select-type' ? renderSelectType() : renderAddContext()}
-      </section>
-    </div>
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-label="Selecciona tipo de emergencia"
+          className="absolute left-1/2 top-4 z-[20010] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 rounded-lg border border-border bg-card text-card-foreground shadow-lg max-h-[calc(100dvh-2rem)] overflow-y-auto relative"
+        >
+          <button
+            type="button"
+            aria-label="Cerrar selector de emergencia"
+            className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition z-10"
+            onClick={() => handleOpenChange(false)}
+          >
+            <X className="h-4 w-4" />
+          </button>
+
+          {step === 'select-type' ? renderSelectType() : renderAddContext()}
+        </section>
+      </div>
+
+      {/* Location picker map - rendered outside dialog to avoid z-index issues */}
+      <LocationPickerMap
+        isOpen={showMapPicker}
+        onClose={() => setShowMapPicker(false)}
+        onLocationSelect={(lat, lng, address) => {
+          setRemoteLat(lat.toString());
+          setRemoteLng(lng.toString());
+          if (address) setRemoteAddress(address);
+          toast.success('Ubicación seleccionada');
+        }}
+        initialLat={remoteLat ? parseFloat(remoteLat) : undefined}
+        initialLng={remoteLng ? parseFloat(remoteLng) : undefined}
+      />
+    </>
   );
 };
 
