@@ -313,7 +313,18 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             <Button
               size="sm"
               variant="default"
-              onClick={requestNotifPermission}
+              onClick={async () => {
+                const granted = await requestNotifPermission();
+                if (granted) {
+                  toast.success('Notificaciones activadas', {
+                    description: 'Recibirás alertas de ciclones e incendios cercanos',
+                  });
+                } else {
+                  toast.error('Notificaciones bloqueadas', {
+                    description: 'Habilítalas en la configuración de tu navegador',
+                  });
+                }
+              }}
             >
               Activar
             </Button>
