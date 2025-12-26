@@ -1,10 +1,13 @@
-// Panic Button FAB Component for COMUNIDAD EX SOS
-// With voice recording and additional context support
+// Panic Button FAB Component for COMUNIDAD SOS
+// With voice recording, additional context, and remote location support
 
 import React, { useRef, useState, useCallback } from 'react';
-import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users, MapPin, Phone, Cross, Mic, ChevronLeft, Send, MessageSquare } from 'lucide-react';
+import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users, MapPin, Phone, Cross, Mic, ChevronLeft, Send, MessageSquare, Navigation, ToggleLeft, ToggleRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import type { PanicType, UserRole } from '@/types';
 import { useLocation } from '@/hooks/useLocation';
@@ -96,6 +99,13 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isUploadingAudio, setIsUploadingAudio] = useState(false);
   const [gpsTimeout, setGpsTimeout] = useState(false);
+  
+  // Remote location support
+  const [useRemoteLocation, setUseRemoteLocation] = useState(false);
+  const [remoteLat, setRemoteLat] = useState<string>('');
+  const [remoteLng, setRemoteLng] = useState<string>('');
+  const [remoteAddress, setRemoteAddress] = useState<string>('');
+  
   const { position, getCurrentPosition, loading: locationLoading } = useLocation();
   const openedAtRef = useRef<number>(0);
 
@@ -122,6 +132,10 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
       setMessage('');
       setAudioBlob(null);
       setAudioDurationMs(0);
+      setUseRemoteLocation(false);
+      setRemoteLat('');
+      setRemoteLng('');
+      setRemoteAddress('');
       vibrate([100, 50, 100]); // Double short vibration
       toast.warning('Selecciona el tipo de emergencia', {
         duration: 3000,
@@ -146,6 +160,10 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
     setMessage('');
     setAudioBlob(null);
     setAudioDurationMs(0);
+    setUseRemoteLocation(false);
+    setRemoteLat('');
+    setRemoteLng('');
+    setRemoteAddress('');
   };
 
   // Handle voice recording complete
@@ -195,46 +213,79 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   const handleSendAlert = async () => {
     if (!selectedType || !selectedOption) return;
 
-    setIsGettingLocation(true);
-    vibrate([200, 100, 200, 100, 300]); // SOS-style pattern
+    let lat: number | undefined;
+    let lng: number | undefined;
 
-    let lat = position?.lat;
-    let lng = position?.lng;
-
-    // Get position with timeout
-    if (!lat || !lng) {
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          setGpsTimeout(true);
-          reject(new Error('GPS_TIMEOUT'));
-        }, GPS_TIMEOUT_MS);
-      });
-
-      try {
-        const pos = await Promise.race([getCurrentPosition(), timeoutPromise]);
-        lat = pos.lat;
-        lng = pos.lng;
-        setGpsTimeout(false);
-      } catch (error) {
-        console.error('Failed to get position:', error);
-
-        if (error instanceof Error && error.message === 'GPS_TIMEOUT') {
-          toast.error('El GPS está tardando demasiado', {
-            description: 'Intenta en un lugar con mejor señal o activa el GPS manualmente',
-            duration: 6000,
-          });
-        } else {
-          toast.error('No se pudo obtener tu ubicación.');
-        }
-
-        setIsGettingLocation(false);
-        setGpsTimeout(false);
+    // Check if using remote location
+    if (useRemoteLocation) {
+      const parsedLat = parseFloat(remoteLat);
+      const parsedLng = parseFloat(remoteLng);
+      
+      if (isNaN(parsedLat) || isNaN(parsedLng)) {
+        toast.error('Coordenadas inválidas', {
+          description: 'Ingresa latitud y longitud válidas para la ubicación remota',
+        });
         return;
       }
-    }
+      
+      if (parsedLat < -90 || parsedLat > 90 || parsedLng < -180 || parsedLng > 180) {
+        toast.error('Coordenadas fuera de rango', {
+          description: 'Latitud: -90 a 90, Longitud: -180 a 180',
+        });
+        return;
+      }
 
-    setIsGettingLocation(false);
-    setGpsTimeout(false);
+      lat = parsedLat;
+      lng = parsedLng;
+      
+      // Add remote address to message if provided
+      if (remoteAddress.trim()) {
+        const addressPrefix = `📍 Ubicación reportada: ${remoteAddress.trim()}\n\n`;
+        setMessage(prev => addressPrefix + prev);
+      }
+    } else {
+      // Use current GPS location
+      setIsGettingLocation(true);
+      vibrate([200, 100, 200, 100, 300]); // SOS-style pattern
+
+      lat = position?.lat;
+      lng = position?.lng;
+
+      // Get position with timeout
+      if (!lat || !lng) {
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            setGpsTimeout(true);
+            reject(new Error('GPS_TIMEOUT'));
+          }, GPS_TIMEOUT_MS);
+        });
+
+        try {
+          const pos = await Promise.race([getCurrentPosition(), timeoutPromise]);
+          lat = pos.lat;
+          lng = pos.lng;
+          setGpsTimeout(false);
+        } catch (error) {
+          console.error('Failed to get position:', error);
+
+          if (error instanceof Error && error.message === 'GPS_TIMEOUT') {
+            toast.error('El GPS está tardando demasiado', {
+              description: 'Intenta en un lugar con mejor señal o activa el GPS manualmente',
+              duration: 6000,
+            });
+          } else {
+            toast.error('No se pudo obtener tu ubicación.');
+          }
+
+          setIsGettingLocation(false);
+          setGpsTimeout(false);
+          return;
+        }
+      }
+
+      setIsGettingLocation(false);
+      setGpsTimeout(false);
+    }
 
     // Upload audio if present
     let audioUrl: string | undefined;
@@ -423,15 +474,81 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         </div>
       </header>
 
-      <div className="px-4 py-4 space-y-4">
+      <div className="px-4 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+        {/* Remote location toggle */}
+        <div className="p-3 rounded-lg bg-muted/30 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Navigation className={cn(
+                "w-4 h-4",
+                useRemoteLocation ? "text-warning" : "text-muted-foreground"
+              )} />
+              <div>
+                <Label htmlFor="remote-location" className="text-sm font-medium cursor-pointer">
+                  Ubicación remota
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Para reportar emergencia de otra persona
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="remote-location"
+              checked={useRemoteLocation}
+              onCheckedChange={setUseRemoteLocation}
+            />
+          </div>
+          
+          {useRemoteLocation && (
+            <div className="space-y-3 pt-2 border-t border-border animate-in slide-in-from-top-2 duration-200">
+              <div>
+                <Label className="text-xs text-muted-foreground">Dirección o referencia</Label>
+                <Input
+                  value={remoteAddress}
+                  onChange={(e) => setRemoteAddress(e.target.value)}
+                  placeholder="Ej: Av. Revolución 123, Col. Centro"
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Latitud *</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={remoteLat}
+                    onChange={(e) => setRemoteLat(e.target.value)}
+                    placeholder="20.6597"
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Longitud *</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={remoteLng}
+                    onChange={(e) => setRemoteLng(e.target.value)}
+                    placeholder="-103.3496"
+                    className="h-9 text-sm"
+                  />
+                </div>
+              </div>
+              <p className="text-[10px] text-warning">
+                💡 Tip: Pide las coordenadas por WhatsApp o usa Google Maps para obtenerlas
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Quick send button */}
         <Button
           onClick={handleSendNow}
-          disabled={isProcessing}
+          disabled={isProcessing || (useRemoteLocation && (!remoteLat || !remoteLng))}
           className="w-full h-14 bg-panic hover:bg-panic/90 text-white font-semibold text-lg"
         >
           <Send className="w-5 h-5 mr-2" />
-          Enviar alerta ahora
+          {useRemoteLocation ? 'Enviar alerta (ubicación remota)' : 'Enviar alerta ahora'}
         </Button>
 
         <div className="relative">
@@ -440,7 +557,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-card px-2 text-muted-foreground">
-              O agrega más contexto
+              Agrega más contexto
             </span>
           </div>
         </div>

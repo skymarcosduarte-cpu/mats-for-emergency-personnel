@@ -1,6 +1,6 @@
 {
-  "name": "COMUNIDAD EX SOS",
-  "short_name": "EX SOS",
+  "name": "COMUNIDAD SOS",
+  "short_name": "SOS",
   "description": "Sistema de Respuesta a Emergencias M.A.T.S.",
   "start_url": "/",
   "display": "standalone",
