@@ -11,6 +11,24 @@ export function AppFooter() {
           <span className="font-semibold text-sm">COMUNIDAD EX SOS</span>
         </div>
         
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-foreground">
+            M.A.T.S. - Mutual Aid Tracking System
+          </p>
+          <p className="text-xs text-muted-foreground italic">
+            Sistema de Seguimiento de Ayuda Mutua
+          </p>
+        </div>
+        
+        <div className="bg-primary/10 border border-primary/30 rounded-lg px-4 py-2">
+          <p className="text-xs font-semibold text-primary">
+            Versión Gratuita
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Disponible solo por Invitación
+          </p>
+        </div>
+        
         <p className="text-xs text-muted-foreground leading-relaxed">
           APP gratuita, sin fines de lucro, creada para mantener el contacto y apoyo 
           entre los miembros y familiares de la comunidad EX SOS global.
