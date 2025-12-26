@@ -3,12 +3,6 @@
 import React, { useRef, useState } from 'react';
 import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users, MapPin, Loader2, Phone, Cross } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import type { PanicType, UserRole } from '@/types';
 import { useLocation } from '@/hooks/useLocation';
 import { toast } from 'sonner';
@@ -228,12 +222,12 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         </div>
       )}
 
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2 text-foreground">
+      <header className="px-4 pt-4 text-center sm:text-left">
+        <h2 className="flex items-center justify-center sm:justify-start gap-2 text-lg font-semibold leading-none tracking-tight text-foreground">
           <AlertTriangle className="w-5 h-5 text-panic" />
           Selecciona tipo de emergencia
-        </DialogTitle>
-      </DialogHeader>
+        </h2>
+      </header>
 
       <div className="grid gap-3 py-4 px-4 sm:px-0">
         {PANIC_OPTIONS.map((option) => {
@@ -316,12 +310,35 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
     </>
   );
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md bg-card border-border relative max-h-[85vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[20000]">
+      <button
+        type="button"
+        aria-label="Cerrar"
+        className="absolute inset-0 bg-black/80"
+        onClick={() => handleOpenChange(false)}
+      />
+
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="Selecciona tipo de emergencia"
+        className="absolute left-1/2 top-4 z-[20010] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 rounded-lg border border-border bg-card text-card-foreground shadow-lg max-h-[calc(100dvh-2rem)] overflow-y-auto relative"
+      >
+        <button
+          type="button"
+          aria-label="Cerrar selector de emergencia"
+          className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition"
+          onClick={() => handleOpenChange(false)}
+        >
+          <X className="h-4 w-4" />
+        </button>
+
         {content}
-      </DialogContent>
-    </Dialog>
+      </section>
+    </div>
   );
 };
 
