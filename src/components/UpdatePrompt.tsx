@@ -1,8 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, X, Download, Sparkles } from "lucide-react";
+import { RefreshCw, X, Download, Sparkles, Smartphone, Share, Plus, Chrome, Globe, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useUpdateCheck } from "@/hooks/useUpdateCheck";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function UpdatePrompt() {
   const { updateAvailable, applyUpdate, dismissUpdate } = useUpdateCheck();
@@ -226,5 +232,184 @@ export function UpdateButton() {
         </p>
       )}
     </div>
+  );
+}
+
+// ============= Install Button for Settings =============
+
+type Platform = "ios" | "android" | "samsung" | "desktop-chrome" | "desktop-edge" | "desktop-firefox" | "other";
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+export function InstallButton() {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [platform, setPlatform] = useState<Platform>("other");
+  const [showInstructions, setShowInstructions] = useState(false);
+
+  const detectPlatform = useCallback((): Platform => {
+    const ua = navigator.userAgent.toLowerCase();
+    const isIOS = /ipad|iphone|ipod/.test(ua) && !(window as any).MSStream;
+    const isSamsung = /samsungbrowser/.test(ua);
+    const isAndroid = /android/.test(ua);
+    const isChrome = /chrome/.test(ua) && !/edg/.test(ua);
+    const isEdge = /edg/.test(ua);
+    const isFirefox = /firefox/.test(ua);
+
+    if (isIOS) return "ios";
+    if (isSamsung) return "samsung";
+    if (isAndroid) return "android";
+    if (isEdge) return "desktop-edge";
+    if (isFirefox) return "desktop-firefox";
+    if (isChrome) return "desktop-chrome";
+    return "other";
+  }, []);
+
+  useEffect(() => {
+    const standalone = window.matchMedia("(display-mode: standalone)").matches 
+      || (window.navigator as any).standalone === true;
+    setIsStandalone(standalone);
+    setPlatform(detectPlatform());
+
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+  }, [detectPlatform]);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      try {
+        await deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === "accepted") {
+          toast.success("¡App instalada correctamente!");
+        }
+      } catch (error) {
+        console.error("Install prompt error:", error);
+        setShowInstructions(true);
+      }
+      setDeferredPrompt(null);
+    } else {
+      setShowInstructions(true);
+    }
+  };
+
+  const getInstructionContent = () => {
+    switch (platform) {
+      case "ios":
+        return {
+          title: "Instalar en iPhone/iPad",
+          steps: [
+            { icon: <Share className="h-4 w-4" />, title: "Toca el botón Compartir", description: "En Safari, toca el ícono de compartir en la barra inferior" },
+            { icon: <Plus className="h-4 w-4" />, title: "Agregar a pantalla de inicio", description: "Desplázate y selecciona 'Agregar a pantalla de inicio'" },
+            { icon: <Smartphone className="h-4 w-4" />, title: "Confirma la instalación", description: "Toca 'Agregar' y la app aparecerá en tu pantalla" }
+          ]
+        };
+      case "samsung":
+        return {
+          title: "Instalar en Samsung",
+          steps: [
+            { icon: <Globe className="h-4 w-4" />, title: "Abre el menú del navegador", description: "Toca el ícono de menú (⋮) en la esquina superior" },
+            { icon: <Plus className="h-4 w-4" />, title: "Agregar a pantalla de inicio", description: "Selecciona 'Agregar página a' → 'Pantalla de inicio'" },
+            { icon: <Smartphone className="h-4 w-4" />, title: "Confirma", description: "La app aparecerá como ícono en tu pantalla" }
+          ]
+        };
+      case "android":
+        return {
+          title: "Instalar en Android",
+          steps: [
+            { icon: <Globe className="h-4 w-4" />, title: "Abre el menú del navegador", description: "Toca el ícono de menú (⋮) en la esquina superior derecha" },
+            { icon: <Download className="h-4 w-4" />, title: "Instalar aplicación", description: "Busca 'Instalar app' o 'Agregar a pantalla de inicio'" },
+            { icon: <Smartphone className="h-4 w-4" />, title: "Confirma", description: "Toca 'Instalar' y la app aparecerá en tu pantalla" }
+          ]
+        };
+      case "desktop-firefox":
+        return {
+          title: "Instalar en Firefox",
+          steps: [
+            { icon: <Globe className="h-4 w-4" />, title: "Abre el menú de Firefox", description: "Haz clic en el ícono de menú (☰) arriba a la derecha" },
+            { icon: <Plus className="h-4 w-4" />, title: "Instalar sitio como aplicación", description: "Selecciona 'Instalar sitio como aplicación'" },
+            { icon: <Smartphone className="h-4 w-4" />, title: "Confirma", description: "Haz clic en 'Instalar' en el diálogo" }
+          ]
+        };
+      default:
+        return {
+          title: "Instalar la aplicación",
+          steps: [
+            { icon: <Chrome className="h-4 w-4" />, title: "Usa Chrome o Edge", description: "Para mejor compatibilidad, abre esta página en Chrome o Edge" },
+            { icon: <Download className="h-4 w-4" />, title: "Busca el ícono de instalación", description: "Aparecerá en la barra de direcciones o en el menú (⋮)" },
+            { icon: <Smartphone className="h-4 w-4" />, title: "Confirma", description: "Haz clic en 'Instalar' cuando aparezca" }
+          ]
+        };
+    }
+  };
+
+  const instructions = getInstructionContent();
+
+  if (isStandalone) {
+    return (
+      <div className="flex items-center gap-2 p-3 rounded-lg bg-safe/10 text-safe">
+        <Smartphone className="h-4 w-4" />
+        <span className="text-sm font-medium">App instalada correctamente</span>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="space-y-3">
+        <Button
+          className="w-full"
+          onClick={handleInstallClick}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Instalar App en Dispositivo
+        </Button>
+        
+        <a 
+          href="/install" 
+          className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ExternalLink className="h-3 w-3" />
+          Ver guía de instalación completa
+        </a>
+      </div>
+
+      <Dialog open={showInstructions} onOpenChange={setShowInstructions}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">{instructions.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            {instructions.steps.map((step, index) => (
+              <div key={index} className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold flex-shrink-0">
+                  {index + 1}
+                </div>
+                <div>
+                  <p className="font-medium flex items-center gap-2">
+                    {step.icon}
+                    {step.title}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {step.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Button onClick={() => setShowInstructions(false)} className="w-full">
+            Entendido
+          </Button>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
