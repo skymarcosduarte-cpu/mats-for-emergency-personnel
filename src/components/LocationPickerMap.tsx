@@ -1,8 +1,8 @@
 // Interactive map picker for selecting a location using Leaflet
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Search, X, Check, Crosshair } from 'lucide-react';
+import { MapPin, Search, X, Check, Crosshair, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -13,6 +13,13 @@ interface LocationPickerMapProps {
   onLocationSelect: (lat: number, lng: number, address?: string) => void;
   initialLat?: number;
   initialLng?: number;
+}
+
+interface SearchResult {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
 }
 
 // Default center (Mexico City)
@@ -29,12 +36,15 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
   
   const [selectedLat, setSelectedLat] = useState<number | null>(initialLat ?? null);
   const [selectedLng, setSelectedLng] = useState<number | null>(initialLng ?? null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [addressLabel, setAddressLabel] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [showResults, setShowResults] = useState(false);
 
   // Create marker icon
   const createMarkerIcon = () => {
@@ -131,25 +141,18 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
     }
   };
 
-  // Search for location
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      toast.error('Ingresa una dirección para buscar');
-      return;
-    }
-    
-    if (!mapRef.current) {
-      console.error('[LocationPicker] Map not initialized');
-      toast.error('El mapa no está listo, intenta de nuevo');
+  // Autocomplete search with debounce
+  const fetchAutocomplete = useCallback(async (query: string) => {
+    if (query.length < 3) {
+      setSearchResults([]);
+      setShowResults(false);
       return;
     }
 
     setIsSearching(true);
-    console.log('[LocationPicker] Searching for:', searchQuery);
-    
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=5&accept-language=es&countrycodes=mx`,
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&accept-language=es&countrycodes=mx`,
         {
           headers: {
             'User-Agent': 'MATS-App/1.0',
@@ -157,50 +160,84 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
         }
       );
       
-      if (!response.ok) {
-        throw new Error(`HTTP error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
       
-      const data = await response.json();
-      console.log('[LocationPicker] Search results:', data);
-
-      if (data.length > 0) {
-        const result = data[0];
-        const lat = parseFloat(result.lat);
-        const lng = parseFloat(result.lon);
-
-        console.log('[LocationPicker] Moving to:', lat, lng);
-        
-        // Move map to location
-        mapRef.current.setView([lat, lng], 16);
-
-        // Update marker
-        if (markerRef.current) {
-          markerRef.current.remove();
-        }
-        markerRef.current = L.marker([lat, lng], {
-          icon: createMarkerIcon(),
-        }).addTo(mapRef.current);
-
-        setSelectedLat(lat);
-        setSelectedLng(lng);
-        setAddressLabel(result.display_name);
-        
-        toast.success('Ubicación encontrada');
-      } else {
-        toast.error('No se encontró la ubicación', {
-          description: 'Intenta con otra dirección o selecciona en el mapa',
-        });
-      }
+      const data: SearchResult[] = await response.json();
+      setSearchResults(data);
+      setShowResults(data.length > 0);
     } catch (error) {
-      console.error('[LocationPicker] Search error:', error);
-      toast.error('Error al buscar ubicación', {
-        description: 'Verifica tu conexión a internet',
-      });
+      console.error('[LocationPicker] Autocomplete error:', error);
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
+  }, []);
+
+  // Handle input change with debounce
+  const handleInputChange = (value: string) => {
+    setSearchQuery(value);
+    
+    // Clear previous debounce
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    
+    // Set new debounce (300ms delay)
+    debounceRef.current = setTimeout(() => {
+      fetchAutocomplete(value);
+    }, 300);
   };
+
+  // Select a result from autocomplete
+  const selectResult = (result: SearchResult) => {
+    if (!mapRef.current) return;
+
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+
+    // Move map to location
+    mapRef.current.setView([lat, lng], 16);
+
+    // Update marker
+    if (markerRef.current) {
+      markerRef.current.remove();
+    }
+    markerRef.current = L.marker([lat, lng], {
+      icon: createMarkerIcon(),
+    }).addTo(mapRef.current);
+
+    setSelectedLat(lat);
+    setSelectedLng(lng);
+    setAddressLabel(result.display_name);
+    setSearchQuery(result.display_name.split(',')[0]); // Short name in input
+    setShowResults(false);
+    setSearchResults([]);
+  };
+
+  // Handle search button click
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      toast.error('Ingresa una dirección para buscar');
+      return;
+    }
+    
+    if (searchResults.length > 0) {
+      // Select first result
+      selectResult(searchResults[0]);
+    } else {
+      // Trigger new search
+      await fetchAutocomplete(searchQuery);
+    }
+  };
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
 
   // Center on user's current location
   const handleCenterOnMe = () => {
@@ -248,13 +285,20 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
           </h2>
         </div>
 
-        {/* Search bar */}
+        {/* Search bar with autocomplete */}
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Input
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              onChange={(e) => handleInputChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                } else if (e.key === 'Escape') {
+                  setShowResults(false);
+                }
+              }}
+              onFocus={() => searchResults.length > 0 && setShowResults(true)}
               placeholder="Buscar dirección..."
               className="pr-10"
             />
@@ -263,8 +307,30 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
               disabled={isSearching}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
             >
-              <Search className={`w-4 h-4 ${isSearching ? 'animate-pulse' : ''}`} />
+              {isSearching ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
             </button>
+
+            {/* Autocomplete dropdown */}
+            {showResults && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-[50020] max-h-60 overflow-y-auto">
+                {searchResults.map((result) => (
+                  <button
+                    key={result.place_id}
+                    onClick={() => selectResult(result)}
+                    className="w-full px-3 py-2.5 text-left hover:bg-muted transition-colors border-b border-border last:border-b-0 flex items-start gap-2"
+                  >
+                    <MapPin className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                    <span className="text-sm text-foreground line-clamp-2">
+                      {result.display_name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <Button
             variant="outline"
@@ -276,6 +342,14 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
           </Button>
         </div>
       </header>
+
+      {/* Click overlay to close autocomplete */}
+      {showResults && (
+        <div 
+          className="absolute inset-0 z-[50005]" 
+          onClick={() => setShowResults(false)}
+        />
+      )}
 
       {/* Map container */}
       <div ref={mapContainerRef} className="w-full h-full" />
