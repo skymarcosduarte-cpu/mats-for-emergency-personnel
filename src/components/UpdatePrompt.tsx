@@ -64,34 +64,70 @@ export function UpdatePrompt() {
   );
 }
 
-// Manual update check button for settings
+// Manual update check button for settings with Android-safe timeouts
 export function UpdateButton() {
   const [checking, setChecking] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [hasUpdate, setHasUpdate] = useState(false);
+  const [checkFailed, setCheckFailed] = useState(false);
+
+  // Timeout constants
+  const SW_READY_TIMEOUT = 5000;
+  const UPDATE_CHECK_TIMEOUT = 8000;
+
+  // Helper to create a timeout promise
+  const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error('Timeout'));
+      }, ms);
+
+      promise
+        .then((value) => {
+          clearTimeout(timer);
+          resolve(value);
+        })
+        .catch((err) => {
+          clearTimeout(timer);
+          reject(err);
+        });
+    });
+  };
 
   const checkForUpdates = async () => {
     setChecking(true);
+    setCheckFailed(false);
+    
     try {
-      if ("serviceWorker" in navigator) {
-        const reg = await navigator.serviceWorker.ready;
-        await reg.update();
+      if ('serviceWorker' in navigator) {
+        // Wrap serviceWorker.ready in timeout to prevent Android hanging
+        const reg = await withTimeout(
+          navigator.serviceWorker.ready,
+          SW_READY_TIMEOUT
+        );
+        
+        // Wrap update check in timeout
+        await withTimeout(reg.update(), UPDATE_CHECK_TIMEOUT);
         
         if (reg.waiting) {
           setHasUpdate(true);
-          toast.info("Nueva versión disponible");
+          toast.info('Nueva versión disponible');
         } else {
           setHasUpdate(false);
-          toast.success("Ya tienes la última versión");
+          toast.success('Ya tienes la última versión');
         }
+        setLastChecked(new Date());
       } else {
-        toast.info("Recargando página...");
+        toast.info('Recargando página...');
         window.location.reload();
       }
-      setLastChecked(new Date());
     } catch (error) {
-      console.error("Update check error:", error);
-      toast.error("Error al buscar actualizaciones");
+      console.error('Update check error:', error);
+      setCheckFailed(true);
+      toast.error('No se pudo verificar actualizaciones', {
+        description: 'Verifica tu conexión o intenta más tarde',
+        duration: 4000,
+      });
     } finally {
       setChecking(false);
     }
@@ -99,11 +135,14 @@ export function UpdateButton() {
 
   const applyUpdate = async () => {
     try {
-      if ("serviceWorker" in navigator) {
-        const reg = await navigator.serviceWorker.ready;
+      if ('serviceWorker' in navigator) {
+        const reg = await withTimeout(
+          navigator.serviceWorker.ready,
+          SW_READY_TIMEOUT
+        );
         if (reg.waiting) {
-          reg.waiting.postMessage({ type: "SKIP_WAITING" });
-          toast.success("Actualizando...");
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          toast.success('Actualizando...');
         } else {
           window.location.reload();
         }
@@ -111,14 +150,15 @@ export function UpdateButton() {
         window.location.reload();
       }
     } catch (error) {
+      // Fallback: just reload
       window.location.reload();
     }
   };
 
   const forceRefresh = () => {
-    toast.info("Recargando aplicación...");
+    toast.info('Recargando aplicación...');
     // Clear caches and force reload
-    if ("caches" in window) {
+    if ('caches' in window) {
       caches.keys().then((names) => {
         names.forEach((name) => caches.delete(name));
       });
@@ -138,13 +178,13 @@ export function UpdateButton() {
         </Button>
       ) : (
         <Button
-          variant="outline"
+          variant={checkFailed ? 'destructive' : 'outline'}
           className="w-full"
           onClick={checkForUpdates}
           disabled={checking}
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${checking ? "animate-spin" : ""}`} />
-          {checking ? "Buscando..." : "Buscar Actualizaciones"}
+          <RefreshCw className={`h-4 w-4 mr-2 ${checking ? 'animate-spin' : ''}`} />
+          {checking ? 'Buscando...' : checkFailed ? 'Reintentar' : 'Buscar Actualizaciones'}
         </Button>
       )}
       
@@ -160,7 +200,13 @@ export function UpdateButton() {
       
       {lastChecked && (
         <p className="text-xs text-muted-foreground text-center">
-          Última verificación: {lastChecked.toLocaleTimeString("es-MX")}
+          Última verificación: {lastChecked.toLocaleTimeString('es-MX')}
+        </p>
+      )}
+      
+      {checkFailed && !checking && (
+        <p className="text-xs text-destructive text-center">
+          La verificación falló. Usa "Forzar Recarga" si hay problemas.
         </p>
       )}
     </div>

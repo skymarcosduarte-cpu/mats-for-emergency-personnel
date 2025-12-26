@@ -1,5 +1,6 @@
-// Global update availability hook
-import { useState, useEffect, useCallback } from 'react';
+// Global update availability hook with Android-safe timeouts
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 
 // Global state for update availability (shared across components)
 let globalUpdateAvailable = false;
@@ -10,10 +11,36 @@ const notifyListeners = (available: boolean) => {
   listeners.forEach(listener => listener(available));
 };
 
+// Helper to create a timeout promise
+const withTimeout = <T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, ms);
+
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+};
+
+// Timeout constants
+const SW_READY_TIMEOUT = 5000; // 5 seconds to get service worker ready
+const UPDATE_CHECK_TIMEOUT = 8000; // 8 seconds for update check
+
 export function useUpdateCheck() {
   const [updateAvailable, setUpdateAvailable] = useState(globalUpdateAvailable);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [isChecking, setIsChecking] = useState(false);
+  const [checkFailed, setCheckFailed] = useState(false);
+  const intervalRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
 
   // Subscribe to global state changes
   useEffect(() => {
@@ -24,66 +51,120 @@ export function useUpdateCheck() {
     };
   }, []);
 
-  // Initialize and check for updates
-  useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-
-    navigator.serviceWorker.ready.then(async (reg) => {
-      setRegistration(reg);
+  // Safe update check with timeout
+  const performUpdateCheck = useCallback(async (reg: ServiceWorkerRegistration, showToastOnError = false) => {
+    if (!isMountedRef.current) return;
+    
+    try {
+      await withTimeout(
+        reg.update(),
+        UPDATE_CHECK_TIMEOUT,
+        'Update check timed out'
+      );
       
-      // Check for updates on mount
-      setIsChecking(true);
-      try {
-        await reg.update();
-        if (reg.waiting) {
-          notifyListeners(true);
-        }
-      } catch (error) {
-        console.log("Update check error:", error);
-      } finally {
-        setIsChecking(false);
+      if (isMountedRef.current && reg.waiting) {
+        notifyListeners(true);
       }
-      
-      // Periodic checks every 2 minutes
-      const interval = setInterval(async () => {
-        try {
-          await reg.update();
-          if (reg.waiting) {
-            notifyListeners(true);
-          }
-        } catch {
-          // Ignore
-        }
-      }, 2 * 60 * 1000);
-      
-      // Listen for new service worker
-      reg.addEventListener("updatefound", () => {
-        const newWorker = reg.installing;
-        if (newWorker) {
-          newWorker.addEventListener("statechange", () => {
-            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              notifyListeners(true);
-            }
+      setCheckFailed(false);
+    } catch (error) {
+      console.log('Update check error:', error);
+      if (isMountedRef.current) {
+        setCheckFailed(true);
+        if (showToastOnError) {
+          toast.error('No se pudo verificar actualizaciones', {
+            description: 'Verifica tu conexión a internet',
+            duration: 3000,
           });
         }
-      });
+      }
+    }
+  }, []);
 
-      return () => clearInterval(interval);
-    });
+  // Initialize and check for updates with safe timeout
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    if (!('serviceWorker' in navigator)) {
+      setIsChecking(false);
+      return;
+    }
+
+    const initServiceWorker = async () => {
+      setIsChecking(true);
+
+      try {
+        // Wrap serviceWorker.ready in a timeout to prevent hanging
+        const reg = await withTimeout(
+          navigator.serviceWorker.ready,
+          SW_READY_TIMEOUT,
+          'Service worker ready timed out'
+        );
+
+        if (!isMountedRef.current) return;
+
+        setRegistration(reg);
+
+        // Check for updates on mount with timeout
+        await performUpdateCheck(reg, false);
+
+        if (!isMountedRef.current) return;
+
+        // Periodic checks every 2 minutes with built-in timeout
+        intervalRef.current = window.setInterval(() => {
+          if (isMountedRef.current && reg) {
+            performUpdateCheck(reg, false);
+          }
+        }, 2 * 60 * 1000);
+
+        // Listen for new service worker
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                notifyListeners(true);
+              }
+            });
+          }
+        });
+      } catch (error) {
+        console.log('Service worker init error:', error);
+        if (isMountedRef.current) {
+          setCheckFailed(true);
+          // Don't show toast on initial load - just log it
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setIsChecking(false);
+        }
+      }
+    };
+
+    initServiceWorker();
 
     // Listen for controller change
     let refreshing = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
+    const handleControllerChange = () => {
       if (!refreshing) {
         refreshing = true;
         window.location.reload();
       }
-    });
-  }, []);
+    };
+
+    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+
+    return () => {
+      isMountedRef.current = false;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+    };
+  }, [performUpdateCheck]);
 
   const applyUpdate = useCallback(() => {
     if (registration?.waiting) {
-      registration.waiting.postMessage({ type: "SKIP_WAITING" });
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
     } else {
       window.location.reload();
     }
@@ -91,14 +172,45 @@ export function useUpdateCheck() {
 
   const dismissUpdate = useCallback(() => {
     notifyListeners(false);
-    sessionStorage.setItem("update-dismissed", "true");
+    sessionStorage.setItem('update-dismissed', 'true');
   }, []);
+
+  // Manual refresh/retry for when check failed
+  const retryCheck = useCallback(async () => {
+    if (!registration) {
+      // Try to get registration again
+      if ('serviceWorker' in navigator) {
+        setIsChecking(true);
+        try {
+          const reg = await withTimeout(
+            navigator.serviceWorker.ready,
+            SW_READY_TIMEOUT,
+            'Service worker ready timed out'
+          );
+          setRegistration(reg);
+          await performUpdateCheck(reg, true);
+        } catch (error) {
+          console.log('Retry failed:', error);
+          toast.error('No se pudo verificar actualizaciones');
+        } finally {
+          setIsChecking(false);
+        }
+      }
+      return;
+    }
+
+    setIsChecking(true);
+    await performUpdateCheck(registration, true);
+    setIsChecking(false);
+  }, [registration, performUpdateCheck]);
 
   return {
     updateAvailable,
     isChecking,
+    checkFailed,
     applyUpdate,
     dismissUpdate,
+    retryCheck,
   };
 }
 
