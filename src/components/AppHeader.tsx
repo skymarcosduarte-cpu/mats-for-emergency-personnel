@@ -2,6 +2,7 @@ import React, { useRef, useCallback, useState } from 'react';
 import { MatsLogo } from './MatsLogo';
 import { AlertTriangle, Phone } from 'lucide-react';
 import { toast } from 'sonner';
+import { playUrgentSound } from '@/lib/alertSound';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +56,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
     
     // Show confirmation dialog
     setShowConfirmation(true);
+    
+    // Play urgent alert sound
+    playUrgentSound();
     
     // Show toast notification for clear feedback
     toast.warning('¿Necesitas ayuda de emergencia?', {
