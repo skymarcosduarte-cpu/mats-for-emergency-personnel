@@ -252,7 +252,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <ActiveAlertBanner testAlert={testAlert} onClearTestAlert={clearTestAlert} refreshTrigger={alertRefreshTrigger} />
       <UpdatePrompt />
       <UpdateIndicator />
-      <main className="flex-1 overflow-hidden">{renderScreen()}</main>
+      <main className="main-content flex-1 overflow-y-auto overflow-x-hidden">{renderScreen()}</main>
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} onPanicTriggered={handlePanicTriggered} />
       
       <InstallPrompt />
