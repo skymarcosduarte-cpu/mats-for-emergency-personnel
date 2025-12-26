@@ -28,6 +28,7 @@ import { es } from 'date-fns/locale';
 import { MedicalInfoBadge } from './MedicalInfoBadge';
 import { AudioPlayer } from './AudioPlayer';
 import { ResponderEtaCountdown } from './ResponderEtaCountdown';
+import { MiniMap } from './MiniMap';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -312,6 +313,12 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
             <MapPin className="w-4 h-4" />
             Ubicación
           </h2>
+          
+          {/* Mini Map Preview */}
+          <div className="mb-4">
+            <MiniMap lat={alert.lat} lng={alert.lng} />
+          </div>
+          
           <div className="space-y-2 mb-4">
             <div className="flex justify-between">
               <span className="text-muted-foreground text-sm">Latitud</span>
