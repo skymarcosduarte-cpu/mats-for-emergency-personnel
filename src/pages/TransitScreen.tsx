@@ -210,29 +210,98 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   // Handle report submission
   const handleReportSubmit = async () => {
     if (!position) {
-      alert('Se requiere ubicación GPS');
+      toast.error('Se requiere ubicación GPS');
       return;
     }
 
     if (!reportForm.category || !reportForm.title) {
-      alert('Completa los campos requeridos');
+      toast.error('Completa los campos requeridos');
       return;
     }
 
     setSubmitting(true);
     try {
-      console.log('Report submission:', {
-        ...reportForm,
-        lat: position.lat,
-        lng: position.lng,
-        images: reportImages.length,
-        audio: reportAudio ? 'yes' : 'no',
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No autenticado');
 
+      // Insert road report into database
+      const { data: reportData, error: reportError } = await supabase
+        .from('road_reports')
+        .insert({
+          user_id: user.id,
+          category: reportForm.category,
+          severity: reportForm.severity,
+          title: reportForm.title,
+          description: reportForm.description || null,
+          lat: position.lat,
+          lng: position.lng,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (reportError) throw reportError;
+
+      console.log('[TransitScreen] Report created:', reportData.id);
+
+      // Upload images if any
+      if (reportImages.length > 0 && reportData) {
+        for (const image of reportImages) {
+          const fileName = `report_${reportData.id}_${Date.now()}_${image.name}`;
+          const filePath = `road-reports/${fileName}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('reports_media')
+            .upload(filePath, image, {
+              contentType: image.type,
+              upsert: false,
+            });
+
+          if (!uploadError) {
+            await supabase.from('report_media').insert({
+              report_id: reportData.id,
+              report_type: 'road_report',
+              media_type: 'image',
+              mime_type: image.type,
+              storage_path: filePath,
+            });
+          }
+        }
+      }
+
+      // Upload audio if present
+      if (reportAudio && reportData) {
+        const fileName = `report_${reportData.id}_${Date.now()}.webm`;
+        const filePath = `road-reports/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('reports_media')
+          .upload(filePath, reportAudio.blob, {
+            contentType: 'audio/webm',
+            upsert: false,
+          });
+
+        if (!uploadError) {
+          await supabase.from('report_media').insert({
+            report_id: reportData.id,
+            report_type: 'road_report',
+            media_type: 'audio',
+            mime_type: 'audio/webm',
+            storage_path: filePath,
+            duration_ms: reportAudio.duration,
+          });
+        }
+      }
+
+      toast.success('¡Reporte enviado!', {
+        description: 'Gracias por ayudar a la comunidad',
+      });
       setShowReportDialog(false);
       resetReportForm();
+      refetchReports(); // Refresh reports list
     } catch (error) {
       console.error('Error submitting report:', error);
+      toast.error('Error al enviar reporte');
     } finally {
       setSubmitting(false);
     }
