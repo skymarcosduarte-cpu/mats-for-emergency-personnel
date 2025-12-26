@@ -776,6 +776,20 @@ export type Database = {
         }
         Relationships: []
       }
+      user_locations_with_roles: {
+        Row: {
+          accuracy: number | null
+          heading: number | null
+          is_online: boolean | null
+          lat: number | null
+          lng: number | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          speed: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_beta_user_count: { Args: never; Returns: number }

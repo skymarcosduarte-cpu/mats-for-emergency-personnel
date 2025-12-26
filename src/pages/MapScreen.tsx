@@ -623,22 +623,28 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       }
     });
 
-    // Add/update markers
+    // Add/update markers with role-based icons
     locations.forEach((loc) => {
       const key = `user-${loc.user_id}`;
       const existingMarker = markersRef.current.get(key);
+      const isRescatista = loc.role === 'RESCATISTA';
+      const icon = isRescatista ? createRescatistaIcon() : createFamiliarIcon();
+      const roleLabel = isRescatista ? 'Rescatista' : 'Miembro';
+      const bgColor = isRescatista ? '#3b82f6' : '#2e8b57';
 
       if (existingMarker) {
         existingMarker.setLatLng([loc.lat, loc.lng]);
+        // Update icon if role changed
+        existingMarker.setIcon(icon);
       } else {
         const marker = L.marker([loc.lat, loc.lng], {
-          icon: createMatsIcon(),
+          icon: icon,
         })
           .addTo(map)
           .bindPopup(`
             <div style="display: flex; align-items: center; gap: 8px;">
-              <div style="width: 24px; height: 24px; background: #2e8b57; border-radius: 50%;"></div>
-              <span style="font-weight: 500;">Miembro activo</span>
+              <div style="width: 24px; height: 24px; background: ${bgColor}; border-radius: 50%;"></div>
+              <span style="font-weight: 500;">${roleLabel} activo</span>
             </div>
           `);
         markersRef.current.set(key, marker);
