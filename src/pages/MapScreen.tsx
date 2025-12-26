@@ -1374,7 +1374,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         <div className="flex items-center gap-2">
           <div className="bg-card/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-border">
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+              <div className="relative">
+                <div className="w-2.5 h-2.5 rounded-full bg-safe" />
+                <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-safe animate-ping opacity-75" />
+              </div>
               <span className="text-sm font-medium text-foreground">
                 {locations.length} {locations.length === 1 ? 'activo' : 'activos'}
               </span>
