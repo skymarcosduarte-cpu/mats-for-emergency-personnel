@@ -2,7 +2,14 @@
 // Email/Password Auth + Invite Code + Profile Setup
 
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Loader2, Eye, EyeOff, UserPlus, LogIn } from 'lucide-react';
+import { ArrowRight, Loader2, Eye, EyeOff, UserPlus, LogIn, Mail } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { AppFooter } from '@/components/AppFooter';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -44,6 +51,10 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   const [authTab, setAuthTab] = useState<'login' | 'signup'>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
   // Auth form state
@@ -75,6 +86,40 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       onAuthComplete?.();
     }
   }, [user, isProfileComplete, onAuthComplete]);
+
+  // Handle forgot password
+  const handleForgotPassword = async () => {
+    if (!forgotPasswordEmail.trim()) {
+      setError('Ingresa tu email');
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    setError(null);
+
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        forgotPasswordEmail,
+        {
+          redirectTo: `${window.location.origin}/settings`,
+        }
+      );
+      
+      if (resetError) {
+        if (resetError.message.includes('rate limit')) {
+          setError('Demasiados intentos. Espera unos minutos.');
+        } else {
+          setError('Error al enviar el email. Verifica tu dirección.');
+        }
+      } else {
+        setForgotPasswordSuccess(true);
+      }
+    } catch (err) {
+      setError('Error al enviar el email de recuperación');
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
 
   // Handle login
   const handleLogin = async () => {
@@ -321,6 +366,19 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <LogIn className="w-4 h-4 mr-2" />}
                   Iniciar Sesión
                 </Button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(true);
+                    setForgotPasswordEmail(email);
+                    setForgotPasswordSuccess(false);
+                    setError(null);
+                  }}
+                  className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
               </TabsContent>
 
               <TabsContent value="signup" className="space-y-4 mt-4">
@@ -591,6 +649,79 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       </div>
 
       <AppFooter />
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Recuperar contraseña</DialogTitle>
+            <DialogDescription>
+              Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {forgotPasswordSuccess ? (
+            <div className="space-y-4">
+              <div className="bg-safe/10 border border-safe/30 rounded-lg p-4 text-sm text-safe">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-5 h-5" />
+                  <span className="font-medium">¡Email enviado!</span>
+                </div>
+                <p className="mt-2 text-muted-foreground">
+                  Revisa tu bandeja de entrada (y spam) para el enlace de recuperación.
+                </p>
+              </div>
+              <Button 
+                onClick={() => setShowForgotPassword(false)} 
+                className="w-full"
+              >
+                Entendido
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {error && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+              
+              <div>
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  onKeyDown={(e) => e.key === 'Enter' && handleForgotPassword()}
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowForgotPassword(false)}
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleForgotPassword} 
+                  disabled={forgotPasswordLoading}
+                  className="flex-1"
+                >
+                  {forgotPasswordLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Mail className="w-4 h-4 mr-2" />
+                  )}
+                  Enviar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
