@@ -181,6 +181,7 @@ export type Database = {
           quake_event_id: string | null
           resolved: boolean | null
           resolved_at: string | null
+          resolved_by: string | null
           user_id: string
         }
         Insert: {
@@ -193,6 +194,7 @@ export type Database = {
           quake_event_id?: string | null
           resolved?: boolean | null
           resolved_at?: string | null
+          resolved_by?: string | null
           user_id: string
         }
         Update: {
@@ -205,6 +207,7 @@ export type Database = {
           quake_event_id?: string | null
           resolved?: boolean | null
           resolved_at?: string | null
+          resolved_by?: string | null
           user_id?: string
         }
         Relationships: []

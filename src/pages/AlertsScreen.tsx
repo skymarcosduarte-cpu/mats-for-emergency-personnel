@@ -61,7 +61,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   
   const { position } = useLocation();
-  const { requests: helpRequests, resolveRequest } = useHelpRequests(position);
+  const { requests: helpRequests, resolvedRequests, resolveRequest } = useHelpRequests(position);
   const { user } = useAuth();
   const { 
     notifications, 
@@ -771,6 +771,51 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 </Card>
               ))
           )}
+
+          {/* Recently Resolved Requests */}
+          {resolvedRequests.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                Resueltas recientemente
+              </h3>
+              <div className="space-y-3">
+                {resolvedRequests.map((req) => (
+                  <Card key={req.id} className="bg-card/50 border-border opacity-75">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-muted text-muted-foreground line-through">
+                              {req.kind === 'SISMO_AYUDA_14' ? '14 AYUDA' : 'AYUDA'}
+                            </span>
+                            <Badge variant="secondary" className="text-xs">
+                              <Check className="w-3 h-3 mr-1" />
+                              Resuelta
+                            </Badge>
+                            {/* Show badge if resolved by someone other than creator */}
+                            {req.resolved_by && req.resolved_by !== req.user_id && (
+                              <Badge variant="outline" className="text-xs text-primary border-primary/50">
+                                Resuelto por rescatista
+                              </Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {req.resolved_at && formatDistanceToNow(new Date(req.resolved_at), { 
+                                addSuffix: true,
+                                locale: es 
+                              })}
+                            </span>
+                          </div>
+                          {req.message && (
+                            <p className="text-sm text-muted-foreground">{req.message}</p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* Delete Confirmation Dialog */}
@@ -788,7 +833,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 onClick={async () => {
                   if (deleteConfirmId) {
-                    const success = await resolveRequest(deleteConfirmId);
+                    // Pass the current user's ID as the resolver
+                    const success = await resolveRequest(deleteConfirmId, user?.id);
                     setDeleteConfirmId(null);
                     if (success) {
                       toast.success('Alerta eliminada correctamente');
