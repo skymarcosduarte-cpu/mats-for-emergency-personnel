@@ -92,14 +92,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
     triggerPanic();
   }, [triggerPanic]);
 
-  // Click handler only fires if no touch event preceded it
+  // Click handler - works for both mouse and touch (as fallback)
   const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     console.log('[AppHeader] Click detected, lastActivated:', lastActivatedAtRef.current);
-    // If touch event already handled this, skip
-    if (Date.now() - lastActivatedAtRef.current < 500) {
-      console.log('[AppHeader] Click skipped - touch already handled');
+    
+    // If this was a touch-based click, the touch handlers already handled it
+    // Check if we're within 1 second of a touch (marker is set in touchStart/touchEnd)
+    const timeSinceLastActivation = Date.now() - Math.abs(lastActivatedAtRef.current);
+    if (lastActivatedAtRef.current !== 0 && timeSinceLastActivation < 1000) {
+      console.log('[AppHeader] Click skipped - recent touch/activation detected');
       return;
     }
+    
     e.preventDefault();
     triggerPanic();
   }, [triggerPanic]);
