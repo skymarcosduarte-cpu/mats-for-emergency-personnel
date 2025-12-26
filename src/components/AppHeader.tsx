@@ -50,8 +50,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
       icon: '🆘',
     });
 
-    // Show confirmation dialog
-    setShowConfirmation(true);
+    // Show confirmation dialog on next tick to avoid the same click dismissing it immediately (mobile/desktop)
+    window.setTimeout(() => {
+      setShowConfirmation(true);
+    }, 0);
   }, []);
 
   const handleConfirm = useCallback(() => {
