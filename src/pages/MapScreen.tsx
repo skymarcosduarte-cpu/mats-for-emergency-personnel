@@ -1061,8 +1061,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
 
   // Fetch POIs when map moves and any POI type is enabled
   useEffect(() => {
-    if (!mapInstanceRef.current || !mapReady || !anyPOIEnabled) return;
+    if (!mapInstanceRef.current || !mapReady) return;
     const map = mapInstanceRef.current;
+
+    // Only fetch if any POI type is enabled
+    if (!anyPOIEnabled) return;
 
     const handleMoveEnd = () => {
       const bounds = map.getBounds();
@@ -1082,6 +1085,20 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       map.off('moveend', handleMoveEnd);
     };
   }, [mapReady, anyPOIEnabled, fetchPOIs]);
+
+  // Re-fetch POIs when visibility changes and POIs are enabled
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady || !anyPOIEnabled) return;
+    const map = mapInstanceRef.current;
+    
+    const bounds = map.getBounds();
+    fetchPOIs({
+      south: bounds.getSouth(),
+      west: bounds.getWest(),
+      north: bounds.getNorth(),
+      east: bounds.getEast(),
+    });
+  }, [poiVisibility, mapReady, anyPOIEnabled, fetchPOIs]);
 
   // Update POI markers
   useEffect(() => {

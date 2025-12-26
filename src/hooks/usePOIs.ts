@@ -32,7 +32,8 @@ export function usePOIs() {
   const lastBoundsRef = useRef<string>('');
 
   const fetchPOIs = useCallback(async (
-    bounds: { south: number; west: number; north: number; east: number }
+    bounds: { south: number; west: number; north: number; east: number },
+    forceRefresh = false
   ) => {
     // Create a cache key based on rounded bounds (to avoid too many requests)
     const roundedBounds = {
@@ -43,12 +44,12 @@ export function usePOIs() {
     };
     const cacheKey = `${roundedBounds.south},${roundedBounds.west},${roundedBounds.north},${roundedBounds.east}`;
 
-    // Skip if same bounds
-    if (cacheKey === lastBoundsRef.current) return;
+    // Skip if same bounds and not forcing refresh
+    if (cacheKey === lastBoundsRef.current && !forceRefresh) return;
     lastBoundsRef.current = cacheKey;
 
     // Check cache
-    if (poiCache.has(cacheKey)) {
+    if (poiCache.has(cacheKey) && !forceRefresh) {
       setPois(poiCache.get(cacheKey)!);
       return;
     }

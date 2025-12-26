@@ -60,7 +60,7 @@ interface AppState {
   updated_at: string;
 }
 
-// Hook for user locations
+// Hook for user locations with real-time updates
 export function useUserLocations() {
   const [locations, setLocations] = useState<UserLocation[]>([]);
 
@@ -71,23 +71,61 @@ export function useUserLocations() {
       .eq('is_online', true);
 
     if (!error && data) {
+      console.log('[useUserLocations] Fetched locations:', data.length);
       setLocations(data as UserLocation[]);
+    } else if (error) {
+      console.error('[useUserLocations] Error fetching locations:', error);
     }
   }, []);
 
   useEffect(() => {
     fetchLocations();
 
+    console.log('[useUserLocations] Setting up realtime subscription...');
     const channel = supabase
-      .channel('user_locations_changes')
+      .channel('user_locations_realtime')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'user_locations' },
-        () => fetchLocations()
+        { event: 'INSERT', schema: 'public', table: 'user_locations' },
+        (payload) => {
+          console.log('[useUserLocations] INSERT:', payload.new);
+          fetchLocations();
+        }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'user_locations' },
+        (payload) => {
+          console.log('[useUserLocations] UPDATE:', payload.new);
+          // Update specific location without full refetch
+          setLocations(prev => {
+            const updated = payload.new as UserLocation;
+            if (!updated.is_online) {
+              // Remove offline users
+              return prev.filter(l => l.user_id !== updated.user_id);
+            }
+            const exists = prev.find(l => l.user_id === updated.user_id);
+            if (exists) {
+              return prev.map(l => l.user_id === updated.user_id ? updated : l);
+            }
+            return [...prev, updated];
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'user_locations' },
+        (payload) => {
+          console.log('[useUserLocations] DELETE:', payload.old);
+          fetchLocations();
+        }
+      )
+      .subscribe((status) => {
+        console.log('[useUserLocations] Subscription status:', status);
+      });
 
     return () => {
+      console.log('[useUserLocations] Cleaning up subscription');
       supabase.removeChannel(channel);
     };
   }, [fetchLocations]);
@@ -259,7 +297,7 @@ export function useAppState() {
   return { appState, disasterMode: appState?.disaster_mode ?? false, refetch: fetchAppState };
 }
 
-// Hook for road reports
+// Hook for road reports with improved real-time sync
 export function useRoadReports() {
   const [reports, setReports] = useState<RoadReport[]>([]);
 
@@ -272,23 +310,54 @@ export function useRoadReports() {
       .limit(100);
 
     if (!error && data) {
+      console.log('[useRoadReports] Fetched reports:', data.length);
       setReports(data as RoadReport[]);
+    } else if (error) {
+      console.error('[useRoadReports] Error fetching reports:', error);
     }
   }, []);
 
   useEffect(() => {
     fetchReports();
 
+    console.log('[useRoadReports] Setting up realtime subscription...');
     const channel = supabase
-      .channel('road_reports_changes')
+      .channel('road_reports_realtime')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'road_reports' },
-        () => fetchReports()
+        { event: 'INSERT', schema: 'public', table: 'road_reports' },
+        (payload) => {
+          console.log('[useRoadReports] INSERT:', payload.new);
+          const newReport = payload.new as RoadReport;
+          if (newReport.is_active) {
+            setReports(prev => [newReport, ...prev].slice(0, 100));
+          }
+        }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'road_reports' },
+        (payload) => {
+          console.log('[useRoadReports] UPDATE:', payload.new);
+          const updated = payload.new as RoadReport;
+          setReports(prev => {
+            if (!updated.is_active) {
+              return prev.filter(r => r.id !== updated.id);
+            }
+            const exists = prev.find(r => r.id === updated.id);
+            if (exists) {
+              return prev.map(r => r.id === updated.id ? updated : r);
+            }
+            return [updated, ...prev].slice(0, 100);
+          });
+        }
+      )
+      .subscribe((status) => {
+        console.log('[useRoadReports] Subscription status:', status);
+      });
 
     return () => {
+      console.log('[useRoadReports] Cleaning up subscription');
       supabase.removeChannel(channel);
     };
   }, [fetchReports]);
