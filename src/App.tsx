@@ -16,7 +16,7 @@ import { StatusScreen } from '@/pages/StatusScreen';
 import { MarketScreen } from '@/pages/MarketScreen';
 import { SettingsScreen } from '@/pages/SettingsScreen';
 import { CommunityScreen } from '@/pages/CommunityScreen';
-import LandingPage from '@/pages/LandingPage';
+
 import InstallPage from '@/pages/InstallPage';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
@@ -250,11 +250,9 @@ const App = () => (
     <TooltipProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/landing" element={<LandingPage />} />
           <Route path="/install" element={<InstallPage />} />
-          <Route path="/auth" element={<AppContent />} />
-          <Route path="/" element={<Navigate to="/landing" replace />} />
-          <Route path="*" element={<Navigate to="/landing" replace />} />
+          <Route path="/" element={<AppContent />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
       <Toaster />
