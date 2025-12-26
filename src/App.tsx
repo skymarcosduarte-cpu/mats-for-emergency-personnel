@@ -19,7 +19,7 @@ import { CommunityScreen } from '@/pages/CommunityScreen';
 
 import InstallPage from '@/pages/InstallPage';
 import { InstallPrompt } from '@/components/InstallPrompt';
-import { UpdatePrompt } from '@/components/UpdatePrompt';
+import { UpdatePrompt, UpdateIndicator } from '@/components/UpdatePrompt';
 import { SplashScreen } from '@/components/SplashScreen';
 import { EmergencyChat } from '@/components/EmergencyChat';
 import { SeismicAlert } from '@/components/SeismicAlert';
@@ -219,6 +219,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <AppHeader onPanicClick={() => setPanicOpen(true)} />
       <ActiveAlertBanner testAlert={testAlert} onClearTestAlert={clearTestAlert} />
       <UpdatePrompt />
+      <UpdateIndicator />
       <main className="flex-1 overflow-hidden">{renderScreen()}</main>
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} onPanicTriggered={handlePanicTriggered} />
       <EmergencyChat />
