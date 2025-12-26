@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,40 @@ serve(async (req) => {
   }
 
   try {
+    // Validate user authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("No authorization header provided");
+      return new Response(JSON.stringify({ error: "No autorizado. Inicia sesión para usar el chat." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("Missing Supabase configuration");
+      throw new Error("Server configuration error");
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("Auth validation failed:", authError?.message || "No user found");
+      return new Response(JSON.stringify({ error: "Sesión inválida. Por favor inicia sesión de nuevo." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("Authenticated user:", user.id);
+
     const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
@@ -19,7 +54,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Starting emergency chat with", messages.length, "messages");
+    console.log("Starting emergency chat with", messages.length, "messages for user:", user.id);
 
     const systemPrompt = `Eres un asistente de emergencias de M.A.T.S. (Comunidad EX SOS), una aplicación de respuesta a emergencias en México.
 
@@ -82,7 +117,7 @@ IMPORTANTE:
       });
     }
 
-    console.log("Streaming response from AI gateway");
+    console.log("Streaming response from AI gateway for user:", user.id);
 
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
