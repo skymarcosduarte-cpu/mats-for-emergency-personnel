@@ -133,20 +133,44 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
 
   // Search for location
   const handleSearch = async () => {
-    if (!searchQuery.trim() || !mapRef.current) return;
+    if (!searchQuery.trim()) {
+      toast.error('Ingresa una dirección para buscar');
+      return;
+    }
+    
+    if (!mapRef.current) {
+      console.error('[LocationPicker] Map not initialized');
+      toast.error('El mapa no está listo, intenta de nuevo');
+      return;
+    }
 
     setIsSearching(true);
+    console.log('[LocationPicker] Searching for:', searchQuery);
+    
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=1&accept-language=es`
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=5&accept-language=es&countrycodes=mx`,
+        {
+          headers: {
+            'User-Agent': 'MATS-App/1.0',
+          },
+        }
       );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('[LocationPicker] Search results:', data);
 
       if (data.length > 0) {
         const result = data[0];
         const lat = parseFloat(result.lat);
         const lng = parseFloat(result.lon);
 
+        console.log('[LocationPicker] Moving to:', lat, lng);
+        
         // Move map to location
         mapRef.current.setView([lat, lng], 16);
 
@@ -161,14 +185,18 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
         setSelectedLat(lat);
         setSelectedLng(lng);
         setAddressLabel(result.display_name);
+        
+        toast.success('Ubicación encontrada');
       } else {
         toast.error('No se encontró la ubicación', {
           description: 'Intenta con otra dirección o selecciona en el mapa',
         });
       }
     } catch (error) {
-      console.error('Search error:', error);
-      toast.error('Error al buscar ubicación');
+      console.error('[LocationPicker] Search error:', error);
+      toast.error('Error al buscar ubicación', {
+        description: 'Verifica tu conexión a internet',
+      });
     } finally {
       setIsSearching(false);
     }
