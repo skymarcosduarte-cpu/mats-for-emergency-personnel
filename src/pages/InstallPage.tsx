@@ -172,6 +172,34 @@ export default function InstallPage() {
 
           {/* Android Instructions */}
           <TabsContent value="android" className="space-y-4">
+            {/* Visual Guide for Android - Three Dots Menu */}
+            <Card className="overflow-hidden border-primary/30">
+              <CardContent className="p-0">
+                <div className="bg-muted/50 p-6">
+                  <div className="max-w-xs mx-auto">
+                    {/* Chrome Top Bar Mockup */}
+                    <div className="bg-card rounded-t-xl border p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded bg-muted" />
+                        <div className="h-3 w-32 bg-muted rounded" />
+                      </div>
+                      {/* Three dots menu - highlighted */}
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center ring-2 ring-primary ring-offset-2 ring-offset-card animate-pulse">
+                        <MoreVertical className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                    {/* Content Area */}
+                    <div className="bg-card border border-t-0 rounded-b-xl h-28 flex items-center justify-center">
+                      <MatsLogo size={48} />
+                    </div>
+                  </div>
+                  <p className="text-center text-sm text-primary font-medium mt-4">
+                    ⬆ Toca los 3 puntos aquí
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -182,14 +210,14 @@ export default function InstallPage() {
               <CardContent className="space-y-6">
                 <InstallStep
                   number={1}
-                  title="Abre el menú del navegador"
-                  description="Toca el ícono de tres puntos (⋮) en la esquina superior derecha"
+                  title="Toca el menú ⋮"
+                  description="Los 3 puntos verticales arriba a la derecha del navegador"
                   icon={<MoreVertical className="h-5 w-5" />}
                 />
                 <InstallStep
                   number={2}
-                  title="Selecciona 'Instalar aplicación'"
-                  description="También puede aparecer como 'Añadir a pantalla de inicio'"
+                  title="Busca 'Instalar aplicación'"
+                  description="O 'Añadir a pantalla de inicio' en el menú desplegable"
                   icon={<Download className="h-5 w-5" />}
                 />
                 <InstallStep
@@ -211,8 +239,8 @@ export default function InstallPage() {
               <CardContent className="space-y-6">
                 <InstallStep
                   number={1}
-                  title="Abre el menú del navegador"
-                  description="Toca el ícono de menú (☰) en la parte inferior"
+                  title="Abre el menú ☰"
+                  description="Toca las 3 líneas horizontales en la parte inferior"
                   icon={<MoreVertical className="h-5 w-5" />}
                 />
                 <InstallStep
