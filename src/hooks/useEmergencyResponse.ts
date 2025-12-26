@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { playPositiveAlert } from '@/lib/alertSound';
 
 interface ActiveResponse {
   requestId: string;
@@ -96,6 +97,9 @@ export function useEmergencyResponse() {
   ) => {
     // Only notify if we're the alert creator
     if (user?.id === creatorUserId) {
+      // Play positive sound and vibration for reassurance
+      playPositiveAlert();
+      
       showGenericNotification(
         '🚨 ¡Ayuda en camino!',
         'Un rescatista ha respondido a tu alerta y está en camino a tu ubicación.',
