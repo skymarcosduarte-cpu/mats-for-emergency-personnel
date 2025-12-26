@@ -29,8 +29,9 @@ L.Icon.Default.mergeOptions({
 });
 
 // Custom icons
-const createMatsIcon = () => L.divIcon({
-  className: 'mats-marker',
+// Star icon for FAMILIAR users (5-pointed star)
+const createFamiliarIcon = () => L.divIcon({
+  className: 'mats-marker familiar-marker',
   html: `
     <div style="
       width: 32px;
@@ -52,6 +53,35 @@ const createMatsIcon = () => L.divIcon({
   iconAnchor: [16, 16],
   popupAnchor: [0, -16],
 });
+
+// Star of Life icon for RESCATISTA users (6-pointed medical star)
+const createRescatistaIcon = () => L.divIcon({
+  className: 'mats-marker rescatista-marker',
+  html: `
+    <div style="
+      width: 32px;
+      height: 32px;
+      background: #3b82f6;
+      border: 2px solid #0a0a0a;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    ">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        <circle cx="12" cy="12" r="2.5" fill="#fff"/>
+      </svg>
+    </div>
+  `,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+  popupAnchor: [0, -16],
+});
+
+// Default icon for users (uses FAMILIAR style - green with star)
+const createMatsIcon = () => createFamiliarIcon();
 
 const createHelp14Icon = () => L.divIcon({
   className: 'help14-marker',
