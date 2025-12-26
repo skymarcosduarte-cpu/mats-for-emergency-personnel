@@ -170,6 +170,47 @@ export type Database = {
         }
         Relationships: []
       }
+      help_request_responders: {
+        Row: {
+          arrived_at: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          request_id: string
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arrived_at?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          request_id: string
+          started_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          arrived_at?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          request_id?: string
+          started_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_request_responders_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "help_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       help_requests: {
         Row: {
           arrived_at: string | null
@@ -775,6 +816,15 @@ export type Database = {
         }[]
       }
       is_rescatista: { Args: { _user_id: string }; Returns: boolean }
+      is_within_radius_of_request: {
+        Args: {
+          radius_meters?: number
+          request_id: string
+          user_lat: number
+          user_lng: number
+        }
+        Returns: boolean
+      }
       unverify_report: { Args: { report_id: string }; Returns: boolean }
       use_invite_code: { Args: { invite_code: string }; Returns: boolean }
       user_has_emergency_contacts: {

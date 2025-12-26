@@ -426,56 +426,108 @@ interface ActiveResponder {
   speed: number | null; // m/s
   distance_km: number;
   eta_minutes: number | null;
+  arrived_at: string | null;
 }
 
 export function useActiveResponders() {
   const [responders, setResponders] = useState<ActiveResponder[]>([]);
 
   const fetchResponders = useCallback(async () => {
-    // Get all help requests with active responders
+    // First, try to get responders from the new table
+    const { data: respondersData } = await supabase
+      .from('help_request_responders')
+      .select('request_id, user_id, lat, lng, started_at, arrived_at, updated_at');
+
+    // Get help request details for active (unresolved) requests
     const { data: helpData, error: helpError } = await supabase
       .from('help_requests')
       .select('id, lat, lng, responding_by, responding_started_at')
-      .eq('resolved', false)
-      .not('responding_by', 'is', null);
+      .eq('resolved', false);
 
     if (helpError || !helpData) return;
 
-    // Get locations for all responders (including speed)
-    const responderIds = helpData.map(h => h.responding_by).filter(Boolean) as string[];
-    if (responderIds.length === 0) {
-      setResponders([]);
-      return;
+    const activeRespondersList: ActiveResponder[] = [];
+
+    // Process responders from the new table
+    if (respondersData && respondersData.length > 0) {
+      // Get active request IDs
+      const activeRequestIds = helpData.map(h => h.id);
+      
+      // Filter responders to only those for active requests
+      const activeResponders = respondersData.filter(r => 
+        activeRequestIds.includes(r.request_id)
+      );
+
+      // Get responder user IDs for location lookup
+      const responderIds = activeResponders.map(r => r.user_id);
+
+      if (responderIds.length > 0) {
+        const { data: locData } = await supabase
+          .from('user_locations')
+          .select('user_id, lat, lng, speed')
+          .in('user_id', responderIds);
+
+        for (const responder of activeResponders) {
+          const helpRequest = helpData.find(h => h.id === responder.request_id);
+          if (!helpRequest) continue;
+
+          // Use responder table location first, fallback to user_locations
+          const loc = locData?.find(l => l.user_id === responder.user_id);
+          const responderLat = responder.lat || loc?.lat;
+          const responderLng = responder.lng || loc?.lng;
+
+          if (responderLat == null || responderLng == null) continue;
+
+          const distanceKm = calculateDistance(
+            responderLat,
+            responderLng,
+            helpRequest.lat,
+            helpRequest.lng
+          );
+
+          const speedKmh = loc?.speed ? (loc.speed * 3.6) : 30;
+          const etaMinutes = speedKmh > 0 ? (distanceKm / speedKmh) * 60 : null;
+
+          activeRespondersList.push({
+            request_id: responder.request_id,
+            responder_id: responder.user_id,
+            responder_lat: responderLat,
+            responder_lng: responderLng,
+            emergency_lat: helpRequest.lat,
+            emergency_lng: helpRequest.lng,
+            responding_started_at: responder.started_at,
+            speed: loc?.speed || null,
+            distance_km: distanceKm,
+            eta_minutes: etaMinutes,
+            arrived_at: responder.arrived_at,
+          });
+        }
+      }
     }
 
-    const { data: locData, error: locError } = await supabase
-      .from('user_locations')
-      .select('user_id, lat, lng, speed')
-      .in('user_id', responderIds);
+    // Fallback: Also check legacy responding_by field for backward compatibility
+    const legacyResponders = helpData.filter(h => 
+      h.responding_by && 
+      !activeRespondersList.some(ar => ar.request_id === h.id && ar.responder_id === h.responding_by)
+    );
 
-    if (locError || !locData) return;
+    if (legacyResponders.length > 0) {
+      const legacyIds = legacyResponders.map(h => h.responding_by).filter(Boolean) as string[];
+      
+      const { data: locData } = await supabase
+        .from('user_locations')
+        .select('user_id, lat, lng, speed')
+        .in('user_id', legacyIds);
 
-    // Combine data with distance and ETA calculation
-    const activeResponders: ActiveResponder[] = helpData
-      .filter(h => h.responding_by)
-      .map(h => {
-        const loc = locData.find(l => l.user_id === h.responding_by);
-        if (!loc) return null;
-        
-        // Calculate distance in km
-        const distanceKm = calculateDistance(
-          loc.lat,
-          loc.lng,
-          h.lat,
-          h.lng
-        );
-        
-        // Calculate ETA in minutes
-        // Use actual speed if available, otherwise estimate 30 km/h (city driving)
-        const speedKmh = loc.speed ? (loc.speed * 3.6) : 30; // Convert m/s to km/h
+      for (const h of legacyResponders) {
+        const loc = locData?.find(l => l.user_id === h.responding_by);
+        if (!loc) continue;
+
+        const distanceKm = calculateDistance(loc.lat, loc.lng, h.lat, h.lng);
+        const speedKmh = loc.speed ? (loc.speed * 3.6) : 30;
         const etaMinutes = speedKmh > 0 ? (distanceKm / speedKmh) * 60 : null;
-        
-        return {
+
+        activeRespondersList.push({
           request_id: h.id,
           responder_id: h.responding_by!,
           responder_lat: loc.lat,
@@ -486,11 +538,12 @@ export function useActiveResponders() {
           speed: loc.speed,
           distance_km: distanceKm,
           eta_minutes: etaMinutes,
-        };
-      })
-      .filter(Boolean) as ActiveResponder[];
+          arrived_at: null,
+        });
+      }
+    }
 
-    setResponders(activeResponders);
+    setResponders(activeRespondersList);
   }, []);
 
   useEffect(() => {
@@ -516,12 +569,23 @@ export function useActiveResponders() {
       )
       .subscribe();
 
+    // Subscribe to the new responders table
+    const respondersChannel = supabase
+      .channel('help_request_responders_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'help_request_responders' },
+        () => fetchResponders()
+      )
+      .subscribe();
+
     // Refresh every 5 seconds for smoother updates
     const interval = setInterval(fetchResponders, 5000);
 
     return () => {
       supabase.removeChannel(helpChannel);
       supabase.removeChannel(locationChannel);
+      supabase.removeChannel(respondersChannel);
       clearInterval(interval);
     };
   }, [fetchResponders]);
