@@ -114,6 +114,36 @@ export function useEmergencyResponse() {
     }
   }, [user, showGenericNotification]);
 
+  // Mark as arrived at the emergency location
+  const markAsArrived = useCallback(async () => {
+    if (!activeResponse || !user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('help_requests')
+        .update({
+          arrived_at: new Date().toISOString(),
+        })
+        .eq('id', activeResponse.requestId)
+        .eq('responding_by', user.id);
+
+      if (error) {
+        console.error('Error marking as arrived:', error);
+        toast.error('Error al marcar llegada');
+        return false;
+      }
+
+      toast.success('¡Llegaste al lugar!', {
+        description: 'Puedes resolver la alerta cuando termines',
+      });
+      return true;
+    } catch (error) {
+      console.error('Error marking as arrived:', error);
+      toast.error('Error al marcar llegada');
+      return false;
+    }
+  }, [activeResponse, user]);
+
   // Stop responding
   const stopResponding = useCallback(async () => {
     if (!activeResponse || !user) return;
@@ -292,6 +322,7 @@ export function useEmergencyResponse() {
     responderLocations,
     startResponding,
     stopResponding,
+    markAsArrived,
     fetchResponders,
     isResponding: activeResponse !== null,
   };
