@@ -289,10 +289,10 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
         }}
         disabled={cancelling}
         className={cn(
-          "flex-shrink-0 font-semibold px-4 touch-manipulation",
+          "flex-shrink-0 font-semibold px-4 touch-manipulation border-0",
           isTestAlert 
-            ? "bg-warning-foreground text-warning hover:bg-warning-foreground/90"
-            : "bg-destructive-foreground text-destructive hover:bg-destructive-foreground/90"
+            ? "bg-black text-white hover:bg-black/80"
+            : "bg-white text-destructive hover:bg-white/90"
         )}
         style={{ WebkitTapHighlightColor: 'transparent' }}
       >
