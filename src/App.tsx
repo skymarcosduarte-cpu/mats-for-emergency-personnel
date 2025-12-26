@@ -229,16 +229,21 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   }, [user?.id]);
 
   const renderScreen = () => {
-    switch (activeTab) {
-      case 'map': return <MapScreen className="h-[calc(100vh-120px)]" respondersToMyAlerts={respondersToMyAlerts} />;
-      case 'transit': return <TransitScreen userRole={userRole} />;
-      case 'alerts': return <AlertsScreen userRole={userRole} />;
-      case 'community': return <CommunityScreen />;
-      case 'market': return <MarketScreen userRole={userRole} />;
-      case 'status': return <StatusScreen userRole={userRole} />;
-      case 'settings': return <SettingsScreen onLogout={handleLogout} onSimulatePanicAlert={simulatePanicAlert} />;
-      default: return <MapScreen className="h-[calc(100vh-120px)]" respondersToMyAlerts={respondersToMyAlerts} />;
-    }
+    const screens: Record<string, React.ReactNode> = {
+      map: <MapScreen className="h-[calc(100vh-120px)]" respondersToMyAlerts={respondersToMyAlerts} />,
+      transit: <TransitScreen userRole={userRole} />,
+      alerts: <AlertsScreen userRole={userRole} />,
+      community: <CommunityScreen />,
+      market: <MarketScreen userRole={userRole} />,
+      status: <StatusScreen userRole={userRole} />,
+      settings: <SettingsScreen onLogout={handleLogout} onSimulatePanicAlert={simulatePanicAlert} />,
+    };
+
+    return (
+      <div key={activeTab} className="animate-fade-in h-full">
+        {screens[activeTab] || screens.map}
+      </div>
+    );
   };
 
   return (
