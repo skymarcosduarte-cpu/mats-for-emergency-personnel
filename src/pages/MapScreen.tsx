@@ -4,8 +4,9 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import DOMPurify from 'dompurify';
-import { Locate, ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame, Share2 } from 'lucide-react';
+import { Locate, ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame } from 'lucide-react';
 import { ShareLocationButton } from '@/components/ShareLocationButton';
+import { ImOkButton } from '@/components/ImOkButton';
 import { useLocation } from '@/hooks/useLocation';
 import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders, usePanicEvents, useActiveResponders } from '@/hooks/useRealtime';
 import { useEmergencyResponse } from '@/hooks/useEmergencyResponse';
@@ -1436,6 +1437,12 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           
           {/* Share location button */}
           <ShareLocationButton 
+            position={position} 
+            className="relative"
+          />
+          
+          {/* I'm OK button */}
+          <ImOkButton 
             position={position} 
             className="relative"
           />
