@@ -2,7 +2,7 @@
 // Road + Flight transit tracking with incident reports
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation } from 'lucide-react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -101,9 +101,19 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const [reportImages, setReportImages] = useState<File[]>([]);
   const [reportAudio, setReportAudio] = useState<{ blob: Blob; duration: number } | null>(null);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [editingReport, setEditingReport] = useState<string | null>(null);
+  const [deletingReport, setDeletingReport] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const { position } = useLocation();
   const { reports, refetch: refetchReports } = useRoadReports();
+
+  // Get current user ID
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUserId(user?.id || null);
+    });
+  }, []);
 
   // Fetch user's trips
   const fetchMyTrips = async () => {
@@ -150,6 +160,70 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       toast.error('Error al verificar');
     } finally {
       setVerifyingId(null);
+    }
+  };
+
+  // Handle report deletion
+  const handleDeleteReport = async (reportId: string) => {
+    setDeletingReport(reportId);
+    try {
+      const { error } = await supabase
+        .from('road_reports')
+        .update({ is_active: false })
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      toast.success('Reporte eliminado');
+      refetchReports();
+    } catch (error) {
+      console.error('Error deleting report:', error);
+      toast.error('Error al eliminar reporte');
+    } finally {
+      setDeletingReport(null);
+    }
+  };
+
+  // Handle report edit
+  const handleEditReport = (report: typeof reports[0]) => {
+    setReportForm({
+      category: report.category as ReportCategory,
+      severity: report.severity as ReportSeverity,
+      title: report.title,
+      description: report.description || '',
+    });
+    setEditingReport(report.id);
+    setShowReportDialog(true);
+  };
+
+  // Handle report update
+  const handleUpdateReport = async () => {
+    if (!editingReport) return;
+
+    setSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('road_reports')
+        .update({
+          category: reportForm.category,
+          severity: reportForm.severity,
+          title: reportForm.title,
+          description: reportForm.description || null,
+        })
+        .eq('id', editingReport);
+
+      if (error) throw error;
+
+      toast.success('Reporte actualizado');
+      setShowReportDialog(false);
+      setEditingReport(null);
+      resetReportForm();
+      refetchReports();
+    } catch (error) {
+      console.error('Error updating report:', error);
+      toast.error('Error al actualizar reporte');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -536,20 +610,32 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
             reports.map((report) => {
               const category = REPORT_CATEGORIES.find(c => c.value === report.category);
               const verificationCount = (report as unknown as { verification_count?: number }).verification_count || 0;
+              const isOwner = currentUserId && report.user_id === currentUserId;
+              
               return (
-                <Card key={report.id} className="bg-card border-border">
+                <Card key={report.id} className={cn(
+                  "bg-card border-border",
+                  isOwner && "border-primary/30"
+                )}>
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       <div className={cn(
-                        'w-10 h-10 rounded-lg flex items-center justify-center text-xl',
+                        'w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0',
                         getSeverityColor(report.severity as ReportSeverity),
                         'text-white'
                       )}>
                         {category?.emoji || '📍'}
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-medium text-foreground">{report.title}</h3>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-medium text-foreground">{report.title}</h3>
+                          {isOwner && (
+                            <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded flex-shrink-0">
+                              MI REPORTE
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
                           <span>{category?.label}</span>
                           <span>•</span>
                           <span>Severidad {report.severity}/4</span>
@@ -558,35 +644,67 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                               <span>•</span>
                               <span className="flex items-center gap-1 text-safe">
                                 <ThumbsUp className="w-3 h-3" />
-                                {verificationCount} verificado{verificationCount > 1 ? 's' : ''}
+                                {verificationCount}
                               </span>
                             </>
                           )}
                         </div>
                         {report.description && (
-                          <p className="text-sm text-muted-foreground mt-2">
+                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                             {report.description}
                           </p>
                         )}
-                        <div className="flex items-center justify-between mt-3">
+                        <div className="flex items-center justify-between mt-3 gap-2">
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <Clock className="w-3 h-3" />
-                            {new Date(report.created_at).toLocaleString()}
+                            {new Date(report.created_at).toLocaleString('es-MX', {
+                              day: 'numeric',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
                           </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs"
-                            onClick={() => handleVerifyReport(report.id)}
-                            disabled={verifyingId === report.id}
-                          >
-                            {verifyingId === report.id ? (
-                              <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                            ) : (
-                              <ThumbsUp className="w-3 h-3 mr-1" />
+                          <div className="flex items-center gap-1">
+                            {isOwner && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => handleEditReport(report)}
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                  onClick={() => handleDeleteReport(report.id)}
+                                  disabled={deletingReport === report.id}
+                                >
+                                  {deletingReport === report.id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  )}
+                                </Button>
+                              </>
                             )}
-                            Verificar
-                          </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              onClick={() => handleVerifyReport(report.id)}
+                              disabled={verifyingId === report.id}
+                            >
+                              {verifyingId === report.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                              ) : (
+                                <ThumbsUp className="w-3 h-3 mr-1" />
+                              )}
+                              Verificar
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -785,17 +903,26 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       </Dialog>
 
       {/* Report Incident Dialog */}
-      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+      <Dialog 
+        open={showReportDialog} 
+        onOpenChange={(open) => {
+          setShowReportDialog(open);
+          if (!open) {
+            setEditingReport(null);
+            resetReportForm();
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-warning" />
-              Reportar Incidente
+              {editingReport ? 'Editar Reporte' : 'Reportar Incidente'}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {userRole === 'FAMILIAR' && (
+            {userRole === 'FAMILIAR' && !editingReport && (
               <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-sm text-warning">
                 ⚠️ FAMILIAR – NO PARAMÉDICO / NO EX PARAMÉDICO
               </div>
@@ -859,41 +986,49 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               />
             </div>
 
-            <div>
-              <Label>Fotos (opcional)</Label>
-              <MediaCapture
-                onImagesSelected={setReportImages}
-                maxImages={3}
-              />
-            </div>
+            {!editingReport && (
+              <>
+                <div>
+                  <Label>Fotos (opcional)</Label>
+                  <MediaCapture
+                    onImagesSelected={setReportImages}
+                    maxImages={3}
+                  />
+                </div>
 
-            <div>
-              <Label>Nota de voz (opcional)</Label>
-              <VoiceRecorder
-                onRecordingComplete={(blob, duration) => setReportAudio({ blob, duration })}
-                onClear={() => setReportAudio(null)}
-              />
-            </div>
+                <div>
+                  <Label>Nota de voz (opcional)</Label>
+                  <VoiceRecorder
+                    onRecordingComplete={(blob, duration) => setReportAudio({ blob, duration })}
+                    onClear={() => setReportAudio(null)}
+                  />
+                </div>
+              </>
+            )}
 
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => setShowReportDialog(false)}
+                onClick={() => {
+                  setShowReportDialog(false);
+                  setEditingReport(null);
+                  resetReportForm();
+                }}
                 className="flex-1"
               >
                 Cancelar
               </Button>
               <Button
-                onClick={handleReportSubmit}
-                disabled={submitting || !position}
+                onClick={editingReport ? handleUpdateReport : handleReportSubmit}
+                disabled={submitting || (!editingReport && !position)}
                 className="flex-1 bg-warning text-warning-foreground hover:bg-warning/90"
               >
                 {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                Enviar Reporte
+                {editingReport ? 'Guardar Cambios' : 'Enviar Reporte'}
               </Button>
             </div>
 
-            {!position && (
+            {!editingReport && !position && (
               <p className="text-xs text-destructive text-center">
                 Se requiere ubicación GPS para reportar
               </p>
