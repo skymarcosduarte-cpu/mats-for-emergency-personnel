@@ -10,15 +10,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { PanicType, UserRole } from '@/types';
-import { useLocation, getGoogleMapsLink, formatCoordinates } from '@/hooks/useLocation';
-import { useEmergencyContactsDB } from '@/hooks/useEmergencyContactsDB';
+import { useLocation } from '@/hooks/useLocation';
 import { toast } from 'sonner';
 
 interface PanicOption {
   type: PanicType;
   label: string;
   icon: React.ReactNode;
-  whatsappMessage: (lat: number, lng: number, role: UserRole) => string;
 }
 
 const PANIC_OPTIONS: PanicOption[] = [
@@ -26,36 +24,26 @@ const PANIC_OPTIONS: PanicOption[] = [
     type: 'AMBULANCIA_PROPIA',
     label: 'Ambulancia Propia',
     icon: <Ambulance className="w-6 h-6" />,
-    whatsappMessage: (lat, lng, role) => 
-      `🚑 EMERGENCIA - AMBULANCIA PROPIA%0A${role === 'FAMILIAR' ? '⚠️ FAMILIAR – NO PARAMÉDICO%0A' : ''}📍 ${getGoogleMapsLink(lat, lng)}%0AGPS: ${formatCoordinates(lat, lng)}`,
   },
   {
     type: 'AMBULANCIA_TERCERO',
     label: 'Ambulancia Tercero',
     icon: <Ambulance className="w-6 h-6" />,
-    whatsappMessage: (lat, lng, role) => 
-      `🚑 EMERGENCIA - AMBULANCIA TERCERO%0A${role === 'FAMILIAR' ? '⚠️ FAMILIAR – NO PARAMÉDICO%0A' : ''}📍 ${getGoogleMapsLink(lat, lng)}%0AGPS: ${formatCoordinates(lat, lng)}`,
   },
   {
     type: 'PATRULLA',
     label: 'Patrulla',
     icon: <Shield className="w-6 h-6" />,
-    whatsappMessage: (lat, lng, role) => 
-      `🚔 EMERGENCIA - PATRULLA%0A${role === 'FAMILIAR' ? '⚠️ FAMILIAR – NO PARAMÉDICO%0A' : ''}📍 ${getGoogleMapsLink(lat, lng)}%0AGPS: ${formatCoordinates(lat, lng)}`,
   },
   {
     type: 'MECANICO',
     label: 'Mecánico',
     icon: <Wrench className="w-6 h-6" />,
-    whatsappMessage: (lat, lng, role) => 
-      `🔧 ASISTENCIA - MECÁNICO%0A${role === 'FAMILIAR' ? '⚠️ FAMILIAR – NO PARAMÉDICO%0A' : ''}📍 ${getGoogleMapsLink(lat, lng)}%0AGPS: ${formatCoordinates(lat, lng)}`,
   },
   {
     type: 'PROTECCION_CIVIL',
     label: 'Protección Civil',
     icon: <HardHat className="w-6 h-6" />,
-    whatsappMessage: (lat, lng, role) => 
-      `🆘 EMERGENCIA - PROTECCIÓN CIVIL%0A${role === 'FAMILIAR' ? '⚠️ FAMILIAR – NO PARAMÉDICO%0A' : ''}📍 ${getGoogleMapsLink(lat, lng)}%0AGPS: ${formatCoordinates(lat, lng)}`,
   },
 ];
 
@@ -96,7 +84,6 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [gpsTimeout, setGpsTimeout] = useState(false);
   const { position, getCurrentPosition, loading: locationLoading } = useLocation();
-  const { contacts, getSOSWhatsAppUrls, hasMinimumContacts } = useEmergencyContactsDB();
 
   const GPS_TIMEOUT_MS = 10000; // 10 seconds
 
@@ -123,16 +110,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
     setSelectedType(option.type);
     setIsGettingLocation(true);
 
-    // Open a placeholder window immediately (user gesture) to bypass Android popup blockers.
-    // We will redirect it once we have the GPS + message.
-    let waWindow: Window | null = null;
-    try {
-      waWindow = window.open('about:blank', '_blank');
-    } catch {
-      waWindow = null;
-    }
-
-    // Immediate feedback: vibration + toast
+    // Immediate feedback: vibration
     vibrate([200, 100, 200, 100, 300]); // SOS-style pattern
 
     let lat = position?.lat;
@@ -140,7 +118,6 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
 
     // Get position with timeout
     if (!lat || !lng) {
-      // Create a timeout promise
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
           setGpsTimeout(true);
@@ -149,16 +126,13 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
       });
 
       try {
-        const pos = await Promise.race([
-          getCurrentPosition(),
-          timeoutPromise
-        ]);
+        const pos = await Promise.race([getCurrentPosition(), timeoutPromise]);
         lat = pos.lat;
         lng = pos.lng;
         setGpsTimeout(false);
       } catch (error) {
         console.error('Failed to get position:', error);
-        
+
         if (error instanceof Error && error.message === 'GPS_TIMEOUT') {
           toast.error('El GPS está tardando demasiado', {
             description: 'Intenta en un lugar con mejor señal o activa el GPS manualmente',
@@ -167,106 +141,35 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         } else {
           toast.error('No se pudo obtener tu ubicación.');
         }
-        
+
         setSelectedType(null);
         setIsGettingLocation(false);
         setGpsTimeout(false);
-        waWindow?.close();
         return;
       }
     }
-    
+
     setIsGettingLocation(false);
     setGpsTimeout(false);
 
-    // Notify parent component
+    // Notify parent component (creates the emergency and notifies others via realtime)
     onPanicTriggered?.(option.type, lat, lng);
 
-    // Build WhatsApp URL
-    const message = option.whatsappMessage(lat, lng, userRole);
-    const waUrl = `https://wa.me/?text=${message}`;
+    toast.success('Alerta enviada a la comunidad', {
+      description: 'Los usuarios conectados serán notificados dentro de la app',
+      duration: 5000,
+    });
 
-    // Close dialog first to prevent UI freeze
+    // Close dialog
     setIsOpen(false);
     setSelectedType(null);
-
-    // Redirect the placeholder window (or fallback to opening a new tab)
-    // NOTE: On desktop, navigating the current tab away from the app can feel like a "freeze".
-    try {
-      if (waWindow && !waWindow.closed) {
-        // This should work even if popups are blocked because the window already exists.
-        waWindow.location.assign(waUrl);
-      } else {
-        const opened = window.open(waUrl, '_blank', 'noopener,noreferrer');
-        if (!opened) {
-          toast.error('Pop-up bloqueado', {
-            description: 'Tu navegador bloqueó WhatsApp. Presiona “Abrir WhatsApp”.',
-            duration: 10000,
-            action: {
-              label: 'Abrir WhatsApp',
-              onClick: () => window.open(waUrl, '_blank', 'noopener,noreferrer'),
-            },
-          });
-        }
-      }
-    } catch (e) {
-      console.error('Failed to open WhatsApp:', e);
-      toast.error('No se pudo abrir WhatsApp', {
-        description: 'Copia el mensaje o intenta permitir pop-ups para este sitio.',
-        duration: 8000,
-      });
-    }
-
-    // Notify emergency contacts via WhatsApp
-    if (contacts.length > 0) {
-      const sosMessage = `🆘 SOS - ${option.label.toUpperCase()}\n\n📍 Ubicación: ${getGoogleMapsLink(lat, lng)}\nGPS: ${formatCoordinates(lat, lng)}\n\n¡Necesito ayuda urgente!`;
-      const contactUrls = getSOSWhatsAppUrls(sosMessage);
-
-      // Show notification about contacts being alerted
-      toast.success(
-        `Alertando a ${contacts.length} contacto(s) de emergencia`,
-        {
-          description: contacts.map(c => c.name).join(', '),
-          duration: 15000,
-        }
-      );
-
-      // On desktop, opening many tabs can freeze the browser.
-      const isDesktop = window.matchMedia('(pointer: fine)').matches;
-
-      if (isDesktop) {
-        toast.info('Contactos de emergencia', {
-          description: 'En desktop no abrimos múltiples chats automáticamente para evitar congelamientos.',
-          duration: 9000,
-        });
-      } else {
-        // Open WhatsApp for each contact with a small delay between each
-        contactUrls.forEach((item, index) => {
-          setTimeout(() => {
-            try {
-              window.open(item.url, '_blank', 'noopener,noreferrer');
-            } catch (e) {
-              console.error(`Failed to open WhatsApp for ${item.contact.name}:`, e);
-            }
-          }, 500 + (index * 1500)); // Stagger openings to avoid popup blockers
-        });
-      }
-    } else {
-      toast.warning(
-        'No tienes contactos de emergencia configurados',
-        {
-          description: 'Agrega contactos en Configuración para que sean notificados automáticamente',
-          duration: 8000,
-        }
-      );
-    }
   };
 
   const isProcessingAny = isGettingLocation || selectedType !== null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !isProcessingAny && setIsOpen(open)}>
-      <DialogContent className="sm:max-w-md bg-card border-border relative overflow-hidden">
+      <DialogContent className="sm:max-w-md bg-card border-border relative max-h-[85vh] overflow-y-auto">
         {/* Full-screen loading overlay */}
         {isGettingLocation && (
           <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-200">
@@ -383,13 +286,10 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
           </div>
         )}
 
-        <div className={`flex items-center gap-2 p-3 rounded-lg mt-3 ${hasMinimumContacts ? 'bg-safe/10 text-safe' : 'bg-warning/10 text-warning'}`}>
-          <Users className="w-4 h-4" />
+        <div className="flex items-center gap-2 p-3 rounded-lg mt-3 bg-accent/10 text-foreground border border-accent/20">
+          <Users className="w-4 h-4 text-accent" />
           <span className="text-sm">
-            {hasMinimumContacts 
-              ? `${contacts.length} contacto(s) serán notificados`
-              : 'Agrega contactos de emergencia en Configuración'
-            }
+            La alerta se enviará dentro de la app a usuarios conectados
           </span>
         </div>
 
