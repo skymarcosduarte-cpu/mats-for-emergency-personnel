@@ -38,6 +38,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { playUrgentAlert } from '@/lib/alertSound';
+import { toast } from 'sonner';
 
 // Removed - now using useEarthquakeHistory hook
 
@@ -787,8 +788,13 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 onClick={async () => {
                   if (deleteConfirmId) {
-                    await resolveRequest(deleteConfirmId);
+                    const success = await resolveRequest(deleteConfirmId);
                     setDeleteConfirmId(null);
+                    if (success) {
+                      toast.success('Alerta eliminada correctamente');
+                    } else {
+                      toast.error('Error al eliminar la alerta');
+                    }
                   }
                 }}
               >
