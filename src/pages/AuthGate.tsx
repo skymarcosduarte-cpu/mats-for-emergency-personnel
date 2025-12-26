@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Loader2, Eye, EyeOff, UserPlus, LogIn } from 'lucide-react';
+import { AppFooter } from '@/components/AppFooter';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -456,9 +457,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         </div>
       </div>
 
-      <div className="p-4 text-center text-xs text-muted-foreground">
-        COMUNIDAD SOS • M.A.T.S.
-      </div>
+      <AppFooter />
     </div>
   );
 };
