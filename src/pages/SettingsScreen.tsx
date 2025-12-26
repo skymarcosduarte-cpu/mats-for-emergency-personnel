@@ -886,7 +886,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <div className="border-t border-border pt-4">
               <div className="flex items-center justify-center gap-2 text-mats-green">
                 <MatsLogo size={24} />
-                <span className="font-bold">COMUNIDAD EX SOS</span>
+                <span className="font-bold">COMUNIDAD SOS</span>
               </div>
               <p className="text-xs text-center text-muted-foreground mt-2">
                 M.A.T.S. - Sistema de Respuesta a Emergencias

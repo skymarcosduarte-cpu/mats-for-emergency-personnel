@@ -15,6 +15,8 @@ interface UserLocationSummary {
   is_in_transit: boolean;
   transit_destination: string | null;
   updated_at: string | null;
+  display_name?: string | null;
+  show_name_on_map?: boolean | null;
 }
 
 interface ActiveUsersPanelProps {
@@ -55,7 +57,7 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
     if (role === 'RESCATISTA') {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500 text-white">
-          ⭐ RESCATISTA
+          ☆ RESCATISTA
         </span>
       );
     }
@@ -68,7 +70,7 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
 
   const getRoleIcon = (role: 'RESCATISTA' | 'FAMILIAR' | null, isInTransit: boolean) => {
     if (isInTransit) return '🚗';
-    if (role === 'RESCATISTA') return '⭐';
+    if (role === 'RESCATISTA') return '☆';
     return '👤';
   };
 
@@ -153,6 +155,12 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                         {getRoleIcon(user.role, user.is_in_transit)}
                       </span>
                       <div className="min-w-0">
+                        {/* Show name if allowed */}
+                        {user.show_name_on_map && user.display_name && (
+                          <div className="text-xs font-medium text-foreground truncate max-w-[120px]">
+                            {user.display_name}
+                          </div>
+                        )}
                         <div className="flex items-center gap-1">
                           {getRoleBadge(user.role, user.is_in_transit)}
                         </div>

@@ -57,30 +57,42 @@ const createFamiliarIcon = () => L.divIcon({
   popupAnchor: [0, -16],
 });
 
-// Star of Life icon for RESCATISTA users (6-pointed medical star)
+// Star of Life icon for RESCATISTA users (proper 6-pointed paramedic star)
 const createRescatistaIcon = () => L.divIcon({
   className: 'mats-marker rescatista-marker',
   html: `
     <div style="
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       background: #3b82f6;
-      border: 2px solid #0a0a0a;
+      border: 2px solid #1e40af;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 8px rgba(59,130,246,0.5);
     ">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-        <circle cx="12" cy="12" r="2.5" fill="#fff"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff">
+        <!-- Star of Life - 6-pointed medical emergency symbol -->
+        <path d="M12 0 L14 4 L10 4 Z" transform="rotate(0 12 12)"/>
+        <path d="M12 0 L14 4 L10 4 Z" transform="rotate(60 12 12)"/>
+        <path d="M12 0 L14 4 L10 4 Z" transform="rotate(120 12 12)"/>
+        <path d="M12 0 L14 4 L10 4 Z" transform="rotate(180 12 12)"/>
+        <path d="M12 0 L14 4 L10 4 Z" transform="rotate(240 12 12)"/>
+        <path d="M12 0 L14 4 L10 4 Z" transform="rotate(300 12 12)"/>
+        <rect x="10" y="3" width="4" height="18" rx="0.5" fill="#fff"/>
+        <rect x="3" y="10" width="18" height="4" rx="0.5" fill="#fff"/>
+        <rect x="10" y="3" width="4" height="18" rx="0.5" fill="#fff" transform="rotate(60 12 12)"/>
+        <rect x="3" y="10" width="18" height="4" rx="0.5" fill="#fff" transform="rotate(60 12 12)"/>
+        <rect x="10" y="3" width="4" height="18" rx="0.5" fill="#fff" transform="rotate(-60 12 12)"/>
+        <rect x="3" y="10" width="18" height="4" rx="0.5" fill="#fff" transform="rotate(-60 12 12)"/>
+        <circle cx="12" cy="12" r="3" fill="#3b82f6"/>
       </svg>
     </div>
   `,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-  popupAnchor: [0, -16],
+  iconSize: [34, 34],
+  iconAnchor: [17, 17],
+  popupAnchor: [0, -17],
 });
 
 // Transit icon for users with active road trips (orange/amber color with car icon)
