@@ -177,6 +177,23 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     }
   };
 
+  // Translate common database errors to Spanish
+  const translateError = (errorMessage: string): string => {
+    if (errorMessage.includes('duplicate key value violates unique constraint')) {
+      if (errorMessage.includes('profiles_pkey')) {
+        return 'Ya existe un perfil para esta cuenta. Intenta cerrar sesión y volver a iniciar.';
+      }
+      return 'Este registro ya existe en el sistema.';
+    }
+    if (errorMessage.includes('violates foreign key constraint')) {
+      return 'Error de referencia en la base de datos. Contacta soporte.';
+    }
+    if (errorMessage.includes('null value in column')) {
+      return 'Faltan campos obligatorios. Por favor completa toda la información.';
+    }
+    return errorMessage;
+  };
+
   // Handle profile creation
   const handleProfileSubmit = async () => {
     if (!profileForm.fullName.trim() || !profileForm.phone.trim() || !profileForm.birthday) {
@@ -188,6 +205,19 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     setError(null);
 
     try {
+      // Check if profile already exists
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user?.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        // Profile exists, redirect to app
+        onAuthComplete?.();
+        return;
+      }
+
       // Use first name as nickname if not provided
       const nickname = profileForm.nickname.trim() || profileForm.fullName.split(' ')[0];
       
@@ -204,7 +234,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       });
 
       if (profileError) {
-        setError(profileError.message);
+        setError(translateError(profileError.message));
         return;
       }
 
@@ -218,7 +248,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
       onAuthComplete?.();
     } catch (err) {
-      setError('Error al crear perfil');
+      setError('Error al crear perfil. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }
