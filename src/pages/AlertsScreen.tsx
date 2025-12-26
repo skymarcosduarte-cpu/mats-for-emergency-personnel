@@ -21,6 +21,7 @@ import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { useLocation, getGoogleMapsLink } from '@/hooks/useLocation';
 import { useHelpRequests } from '@/hooks/useRealtime';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useAuth } from '@/hooks/useAuth';
 import type { USGSEarthquake, QuakeIntensity, QuakeDamage, UserRole, MediaRef } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -48,7 +49,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   const [submitting, setSubmitting] = useState(false);
   
   const { position } = useLocation();
-  const { requests: helpRequests } = useHelpRequests(position);
+  const { requests: helpRequests, resolveRequest } = useHelpRequests(position);
+  const { user } = useAuth();
   const { 
     notifications, 
     unreadCount, 
@@ -711,31 +713,53 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               .map((req) => (
                 <Card key={req.id} className="bg-card border-border">
                   <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={cn(
-                        'px-2 py-0.5 rounded-full text-xs font-bold',
-                        req.kind === 'SISMO_AYUDA_14' 
-                          ? 'bg-destructive text-destructive-foreground' 
-                          : 'bg-warning text-warning-foreground'
-                      )}>
-                        {req.kind === 'SISMO_AYUDA_14' ? '14 AYUDA' : 'AYUDA'}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(req.created_at).toLocaleTimeString()}
-                      </span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={cn(
+                            'px-2 py-0.5 rounded-full text-xs font-bold',
+                            req.kind === 'SISMO_AYUDA_14' 
+                              ? 'bg-destructive text-destructive-foreground' 
+                              : 'bg-warning text-warning-foreground'
+                          )}>
+                            {req.kind === 'SISMO_AYUDA_14' ? '14 AYUDA' : 'AYUDA'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(req.created_at).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        {req.message && (
+                          <p className="text-sm text-foreground">{req.message}</p>
+                        )}
+                        <div className="flex gap-2 mt-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(getGoogleMapsLink(req.lat, req.lng), '_blank')}
+                          >
+                            <MapPin className="w-4 h-4 mr-1" />
+                            Ver ubicación
+                          </Button>
+                          {/* Show resolve button only for the owner */}
+                          {user?.id === req.user_id && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-destructive"
+                              onClick={async () => {
+                                const success = await resolveRequest(req.id);
+                                if (success) {
+                                  // Optionally show toast
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Eliminar
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    {req.message && (
-                      <p className="text-sm text-foreground">{req.message}</p>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-3"
-                      onClick={() => window.open(getGoogleMapsLink(req.lat, req.lng), '_blank')}
-                    >
-                      <MapPin className="w-4 h-4 mr-1" />
-                      Ver ubicación
-                    </Button>
                   </CardContent>
                 </Card>
               ))
