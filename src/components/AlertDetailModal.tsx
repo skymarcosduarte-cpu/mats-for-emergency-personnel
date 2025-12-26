@@ -31,6 +31,7 @@ import { ResponderEtaCountdown } from './ResponderEtaCountdown';
 import { MiniMap } from './MiniMap';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface PanicEvent {
   id: string;
@@ -517,11 +518,49 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
               </div>
             )}
             {isRescatista && distanceToAlert && distanceToAlert > MAX_RESPONSE_RADIUS_KM && (
-              <div className="flex items-center gap-2 text-muted-foreground bg-muted/50 rounded-lg p-3 mb-2">
-                <MapPin className="w-4 h-4 flex-shrink-0" />
-                <span className="text-sm">
-                  Distancia: {distanceToAlert.toFixed(1)}km (sin límite para RESCATISTAS)
-                </span>
+              <div className={cn(
+                "rounded-lg p-3 mb-2",
+                distanceToAlert > 50 
+                  ? "bg-amber-500/15 border border-amber-500/30" 
+                  : "bg-muted/50"
+              )}>
+                <div className="flex items-center gap-2">
+                  {distanceToAlert > 50 ? (
+                    <Navigation className="w-4 h-4 flex-shrink-0 text-amber-500" />
+                  ) : (
+                    <MapPin className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+                  )}
+                  <span className={cn(
+                    "text-sm font-medium",
+                    distanceToAlert > 50 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
+                  )}>
+                    {distanceToAlert > 50 ? '⚠️ Alerta lejana' : 'Sin límite para RESCATISTAS'}
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-foreground font-medium">{distanceToAlert.toFixed(1)} km</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-foreground font-medium">
+                      {/* ETA based on average speed: 60km/h highway, 30km/h city */}
+                      {distanceToAlert > 50 
+                        ? `~${Math.ceil(distanceToAlert / 60 * 60)} min` 
+                        : `~${Math.ceil(distanceToAlert / 30 * 60)} min`
+                      }
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ({distanceToAlert > 50 ? '60km/h' : '30km/h'})
+                    </span>
+                  </div>
+                </div>
+                {distanceToAlert > 100 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                    🚗 Considera el tiempo de traslado antes de responder
+                  </p>
+                )}
               </div>
             )}
             <Button 
