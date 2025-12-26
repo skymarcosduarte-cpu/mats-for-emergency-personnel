@@ -54,7 +54,7 @@ interface AlertsScreenProps {
 }
 
 export const AlertsScreen: React.FC<AlertsScreenProps> = ({ 
-  userRole = 'RESCATISTA' 
+  userRole = 'SOS_ACTIVO' 
 }) => {
   const [selectedQuake, setSelectedQuake] = useState<EarthquakeWithDistance | null>(null);
   const [showCheckinDialog, setShowCheckinDialog] = useState(false);
@@ -912,8 +912,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                             Ver ubicación
                           </Button>
                           
-                          {/* Respond button - only for RESCATISTA and if not already responding */}
-                          {userRole === 'RESCATISTA' && user?.id !== req.user_id && (
+                          {/* Respond button - only for SOS_ACTIVO/EX_SOS and if not already responding */}
+                          {(userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS') && user?.id !== req.user_id && (
                             <>
                               {activeResponse?.requestId === req.id ? (
                                 <>
@@ -963,7 +963,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                                 <Button
                                   variant="secondary"
                                   size="sm"
-                                  onClick={() => startResponding(req.id, req.lat, req.lng, userRole === 'RESCATISTA')}
+                                  onClick={() => startResponding(req.id, req.lat, req.lng, userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS')}
                                 >
                                   <Navigation className="w-4 h-4 mr-1" />
                                   Responder
@@ -972,8 +972,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                             </>
                           )}
                           
-                          {/* Show resolve button for owner or RESCATISTA */}
-                          {(user?.id === req.user_id || userRole === 'RESCATISTA') && (
+                          {/* Show resolve button for owner or SOS_ACTIVO/EX_SOS */}
+                          {(user?.id === req.user_id || userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS') && (
                             <Button
                               variant="ghost"
                               size="sm"

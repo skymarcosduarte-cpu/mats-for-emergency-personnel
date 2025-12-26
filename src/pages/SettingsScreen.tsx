@@ -241,7 +241,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   }, [inviteCode]);
 
   // Handle role change
-  const handleRoleChange = async (newRole: 'RESCATISTA' | 'FAMILIAR') => {
+  const handleRoleChange = async (newRole: 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR') => {
     setChangingRole(true);
     try {
       const { error } = await updateRole(newRole);
@@ -363,11 +363,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 </p>
                 <span className={cn(
                   'inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium',
-                  role === 'RESCATISTA'
+                  role === 'SOS_ACTIVO'
                     ? 'bg-mats-green/20 text-mats-green'
+                    : role === 'EX_SOS'
+                    ? 'bg-primary/20 text-primary'
                     : 'bg-muted text-muted-foreground'
                 )}>
-                  {role || 'RESCATISTA'}
+                  {role === 'SOS_ACTIVO' ? 'SOS Activo' : role === 'EX_SOS' ? 'EX-SOS' : 'Familiar'}
                 </span>
               </div>
             </div>
@@ -401,18 +403,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "w-10 h-10 rounded-full flex items-center justify-center",
-                  role === 'RESCATISTA' ? "bg-mats-green/10" : "bg-muted"
+                  role === 'SOS_ACTIVO' ? "bg-mats-green/10" : role === 'EX_SOS' ? "bg-primary/10" : "bg-muted"
                 )}>
                   <Shield className={cn(
                     "w-5 h-5",
-                    role === 'RESCATISTA' ? "text-mats-green" : "text-muted-foreground"
+                    role === 'SOS_ACTIVO' ? "text-mats-green" : role === 'EX_SOS' ? "text-primary" : "text-muted-foreground"
                   )} />
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Tipo de usuario</p>
                   <p className="text-xs text-muted-foreground">
-                    {role === 'RESCATISTA' 
-                      ? 'Tienes acceso completo a todas las funciones' 
+                    {role === 'SOS_ACTIVO' 
+                      ? 'Acceso completo a todas las funciones' 
+                      : role === 'EX_SOS'
+                      ? 'Acceso completo como ex-paramédico'
                       : 'Acceso limitado a funciones básicas'}
                   </p>
                 </div>
@@ -1125,21 +1129,41 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
           <div className="space-y-3 py-4">
             <Button
-              variant={role === 'RESCATISTA' ? 'default' : 'outline'}
+              variant={role === 'SOS_ACTIVO' ? 'default' : 'outline'}
               className="w-full justify-start gap-3 h-auto py-4"
-              onClick={() => handleRoleChange('RESCATISTA')}
-              disabled={changingRole || role === 'RESCATISTA'}
+              onClick={() => handleRoleChange('SOS_ACTIVO')}
+              disabled={changingRole || role === 'SOS_ACTIVO'}
             >
               <div className="w-10 h-10 rounded-full bg-mats-green/20 flex items-center justify-center">
                 <Shield className="w-5 h-5 text-mats-green" />
               </div>
               <div className="text-left">
-                <p className="font-medium">RESCATISTA</p>
+                <p className="font-medium">SOS ACTIVO</p>
                 <p className="text-xs text-muted-foreground">
                   Acceso completo: invitaciones, marketplace, responder alertas
                 </p>
               </div>
-              {changingRole && role !== 'RESCATISTA' && (
+              {changingRole && role !== 'SOS_ACTIVO' && (
+                <Loader2 className="w-4 h-4 animate-spin ml-auto" />
+              )}
+            </Button>
+
+            <Button
+              variant={role === 'EX_SOS' ? 'default' : 'outline'}
+              className="w-full justify-start gap-3 h-auto py-4"
+              onClick={() => handleRoleChange('EX_SOS')}
+              disabled={changingRole || role === 'EX_SOS'}
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-primary" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium">EX-SOS</p>
+                <p className="text-xs text-muted-foreground">
+                  Acceso completo como ex-paramédico
+                </p>
+              </div>
+              {changingRole && role !== 'EX_SOS' && (
                 <Loader2 className="w-4 h-4 animate-spin ml-auto" />
               )}
             </Button>

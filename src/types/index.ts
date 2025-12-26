@@ -1,6 +1,6 @@
 // COMUNIDAD EX SOS - Type Definitions
 
-export type UserRole = 'RESCATISTA' | 'FAMILIAR';
+export type UserRole = 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR';
 
 export type PanicType = 
   | 'AMBULANCIA_PROPIA' 

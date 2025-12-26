@@ -49,7 +49,7 @@ function AppContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('map');
-  const [userRole] = useState<UserRole>('RESCATISTA');
+  const [userRole] = useState<UserRole>('SOS_ACTIVO');
   
   // Use the auth hook to check for existing session
   const { user, profile, loading: authLoading, signOut } = useAuth();
@@ -281,7 +281,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} onPanicTriggered={handlePanicTriggered} />
       
       <InstallPrompt />
-      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'RESCATISTA'} disasterMode={disasterMode} />
+      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS'} disasterMode={disasterMode} />
       
       {/* Seismic Alert Dialog */}
       {nearbyQuake && position && distanceKm !== null && (
