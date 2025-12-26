@@ -30,8 +30,9 @@ import { MediaCapture } from '@/components/MediaCapture';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { EmergencyRouteMap } from '@/components/EmergencyRouteMap';
 import { AudioPlayer } from '@/components/AudioPlayer';
+import { ResponderEtaCountdown } from '@/components/ResponderEtaCountdown';
 import { useLocation, getGoogleMapsLink } from '@/hooks/useLocation';
-import { useHelpRequests } from '@/hooks/useRealtime';
+import { useHelpRequests, useActiveResponders } from '@/hooks/useRealtime';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmergencyResponse } from '@/hooks/useEmergencyResponse';
@@ -74,6 +75,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     startResponding, 
     stopResponding 
   } = useEmergencyResponse();
+  const { responders } = useActiveResponders();
   const { 
     notifications, 
     unreadCount, 
@@ -827,6 +829,24 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                         {req.message && (
                           <p className="text-sm text-foreground">{req.message}</p>
                         )}
+                        
+                        {/* ETA Countdown - show when there's an active responder */}
+                        {(() => {
+                          const responderData = responders.find(r => r.request_id === req.id);
+                          if (responderData) {
+                            return (
+                              <div className="mt-2">
+                                <ResponderEtaCountdown
+                                  etaMinutes={responderData.eta_minutes}
+                                  distanceKm={responderData.distance_km}
+                                  speed={responderData.speed}
+                                  respondingStartedAt={responderData.responding_started_at}
+                                />
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                         
                         {/* Audio playback if available */}
                         {(req as any).audio_url && (
