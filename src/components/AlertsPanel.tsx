@@ -1,8 +1,8 @@
 // Alerts Panel for COMUNIDAD EX SOS
 // Shows recent panic events and help requests from the community
 
-import React, { useState } from 'react';
-import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, MapPin, Clock, ExternalLink, Trash2, Loader2, ChevronRight } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, MapPin, Clock, ExternalLink, Trash2, Loader2, ChevronRight, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -29,6 +29,7 @@ import { MedicalInfoBadge } from './MedicalInfoBadge';
 import { SwipeToDelete } from './SwipeToDelete';
 import { AlertDetailModal } from './AlertDetailModal';
 import { toast } from '@/hooks/use-toast';
+import { useUserNames } from '@/hooks/useUserNames';
 
 interface PanicEvent {
   id: string;
@@ -129,6 +130,15 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
   const [selectedAlert, setSelectedAlert] = useState<PanicEvent | HelpRequest | null>(null);
   const [selectedAlertType, setSelectedAlertType] = useState<'panic' | 'help' | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  
+  // Collect all user IDs to fetch names
+  const allUserIds = useMemo(() => {
+    const panicUserIds = panicEvents.map(e => e.user_id);
+    const helpUserIds = helpRequests.map(r => r.user_id);
+    return [...panicUserIds, ...helpUserIds];
+  }, [panicEvents, helpRequests]);
+  
+  const { getName } = useUserNames(allUserIds);
   
   const totalAlerts = panicEvents.length + helpRequests.filter(r => r.kind === 'SISMO_AYUDA_14').length;
 
@@ -394,9 +404,16 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Clock className="w-3 h-3" />
-                                  {formatTime(event.created_at)}
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                  <span className="flex items-center gap-1">
+                                    <User className="w-3 h-3" />
+                                    {isMyAlert ? 'Tú' : getName(event.user_id)}
+                                  </span>
+                                  <span className="text-muted-foreground/50">•</span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {formatTime(event.created_at)}
+                                  </span>
                                 </div>
                               </div>
                               <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -540,9 +557,16 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                  <Clock className="w-3 h-3" />
-                                  {formatTime(request.created_at)}
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                  <span className="flex items-center gap-1">
+                                    <User className="w-3 h-3" />
+                                    {isMyAlert ? 'Tú' : getName(request.user_id)}
+                                  </span>
+                                  <span className="text-muted-foreground/50">•</span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {formatTime(request.created_at)}
+                                  </span>
                                 </div>
                                 {request.message && (
                                   <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
