@@ -20,9 +20,9 @@ export function AppFooter() {
           COMUNIDAD SOS
         </p>
 
-        {/* Free Version Badge */}
+        {/* Version Badge */}
         <p className="text-[10px] text-muted-foreground">
-          Versión Gratuita · Solo por Invitación
+          v1.0.1 · Versión Gratuita · Solo por Invitación
         </p>
 
         {/* Powered by */}

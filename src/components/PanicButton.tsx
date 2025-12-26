@@ -575,6 +575,22 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
           )}
         </div>
 
+        {/* Voice recorder - MOVED UP for better visibility */}
+        <div className="space-y-2 bg-panic/5 p-4 rounded-lg border border-panic/20">
+          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Mic className="w-5 h-5 text-panic" />
+            Graba tu mensaje de voz
+          </label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Tu voz puede dar contexto importante a los rescatistas
+          </p>
+          <VoiceRecorder
+            onRecordingComplete={handleRecordingComplete}
+            onClear={handleClearRecording}
+            maxDurationMs={30000}
+          />
+        </div>
+
         {/* Quick send button */}
         <Button
           onClick={handleSendNow}
@@ -591,7 +607,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-card px-2 text-muted-foreground">
-              Agrega más contexto
+              Agrega más contexto (opcional)
             </span>
           </div>
         </div>
@@ -600,7 +616,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-foreground">
             <MessageSquare className="w-4 h-4 text-muted-foreground" />
-            Descripción (opcional)
+            Descripción escrita
           </label>
           <Textarea
             value={message}
@@ -612,19 +628,6 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
           <p className="text-xs text-muted-foreground text-right">
             {message.length}/500
           </p>
-        </div>
-
-        {/* Voice recorder */}
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Mic className="w-4 h-4 text-muted-foreground" />
-            Nota de voz (opcional)
-          </label>
-          <VoiceRecorder
-            onRecordingComplete={handleRecordingComplete}
-            onClear={handleClearRecording}
-            maxDurationMs={30000}
-          />
         </div>
 
         {/* Send with context */}
