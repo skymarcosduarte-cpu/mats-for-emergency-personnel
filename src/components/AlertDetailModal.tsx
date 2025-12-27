@@ -332,11 +332,23 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   };
 
   const handleRespond = async () => {
-    if (!onRespond || !alert) return;
+    console.log('[AlertDetailModal] handleRespond called', { 
+      alertId: alert?.id, 
+      hasOnRespond: !!onRespond,
+      isRescatista,
+      userPosition,
+      isWithinRadius
+    });
+    
+    if (!onRespond || !alert) {
+      console.error('[AlertDetailModal] Cannot respond: missing onRespond or alert');
+      return;
+    }
     
     setIsResponding(true);
     try {
       const success = await onRespond(alert.id);
+      console.log('[AlertDetailModal] Response result:', success);
       if (success) {
         toast({
           title: "¡Respondiendo!",
@@ -345,7 +357,7 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
       } else {
         toast({
           title: "Error",
-          description: "No se pudo iniciar la respuesta. Verifica que estés dentro del radio de 10km.",
+          description: "No se pudo iniciar la respuesta. Revisa los permisos o tu ubicación.",
           variant: "destructive",
         });
       }
@@ -353,7 +365,7 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
       console.error('[AlertDetailModal] Error responding:', error);
       toast({
         title: "Error",
-        description: "Error al responder a la alerta",
+        description: `Error al responder: ${error instanceof Error ? error.message : 'desconocido'}`,
         variant: "destructive",
       });
     } finally {
