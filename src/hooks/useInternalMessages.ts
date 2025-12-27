@@ -220,6 +220,31 @@ export const useInternalMessages = () => {
 
       if (error) throw error;
       
+      // Get sender name for push notification
+      let senderName = 'Usuario';
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('nickname, full_name')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileData) {
+        senderName = profileData.nickname || profileData.full_name || 'Usuario';
+      }
+
+      // Send push notification to receiver
+      try {
+        await supabase.functions.invoke('send-message-push', {
+          body: {
+            receiverId,
+            senderName,
+            messagePreview: displayMessage.substring(0, 100)
+          }
+        });
+      } catch (pushError) {
+        console.log('Push notification failed (user may not have subscription):', pushError);
+      }
+      
       await fetchMessages();
       await fetchConversations();
       return true;
