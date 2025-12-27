@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { playMessageNotification } from '@/lib/alertSound';
 
 export interface InternalMessage {
   id: string;
@@ -25,6 +26,8 @@ export const useInternalMessages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const lastMessageCountRef = useRef<number>(0);
+  const initialLoadDoneRef = useRef<boolean>(false);
 
   // Fetch all messages for the current user
   const fetchMessages = useCallback(async () => {
@@ -192,7 +195,25 @@ export const useInternalMessages = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
+          schema: 'public',
+          table: 'internal_messages',
+          filter: `receiver_id=eq.${user.id}`
+        },
+        (payload) => {
+          // Play notification for new incoming message
+          const newMessage = payload.new as InternalMessage;
+          if (newMessage && newMessage.sender_id !== user.id) {
+            playMessageNotification();
+          }
+          fetchMessages();
+          fetchConversations();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
           schema: 'public',
           table: 'internal_messages',
           filter: `receiver_id=eq.${user.id}`
