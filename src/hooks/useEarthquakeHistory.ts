@@ -112,13 +112,10 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
     });
   }, []);
 
-  // Sort by distance (nearest first) or by time if no position
+  // Sort by time (most recent first) - chronological order
   const sortEarthquakes = useCallback((quakes: EarthquakeWithDistance[]): EarthquakeWithDistance[] => {
     return [...quakes].sort((a, b) => {
-      if (a.distanceKm !== null && b.distanceKm !== null) {
-        return a.distanceKm - b.distanceKm;
-      }
-      // Sort by time if no distance available
+      // Sort by time descending (newest first)
       return b.properties.time - a.properties.time;
     });
   }, []);
