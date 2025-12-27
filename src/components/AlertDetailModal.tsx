@@ -116,7 +116,7 @@ interface AlertDetailModalProps {
   responders?: ActiveResponder[];
   currentUserId?: string;
   userPosition?: GeoPosition | null;
-  onRespond?: (requestId: string, transportMode?: string, estimatedEtaMinutes?: number) => Promise<boolean>;
+  onRespond?: (requestId: string, alertType: 'panic' | 'help', alertLat: number, alertLng: number, transportMode?: string, estimatedEtaMinutes?: number) => Promise<boolean>;
   onCancelResponse?: () => Promise<void>;
   onMarkAsArrived?: () => Promise<boolean>;
   onResolve?: () => Promise<boolean>;
@@ -425,7 +425,7 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
     
     setIsResponding(true);
     try {
-      const success = await onRespond(alert.id, selectedTransport || undefined, estimatedEta || undefined);
+      const success = await onRespond(alert.id, alertType!, alert.lat, alert.lng, selectedTransport || undefined, estimatedEta || undefined);
       console.log('[AlertDetailModal] Response result:', success);
       if (success) {
         toast({
