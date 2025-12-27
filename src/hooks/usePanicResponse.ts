@@ -345,29 +345,43 @@ export function usePanicResponse() {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
 
-        await supabase
-          .from('user_locations')
-          .upsert({
-            user_id: user.id,
-            lat,
-            lng,
-            accuracy: position.coords.accuracy,
-            heading: position.coords.heading,
-            speed: position.coords.speed,
-            is_online: true,
-            updated_at: new Date().toISOString(),
-          });
-
-        if (panicId || activeResponse?.panicId) {
-          await supabase
-            .from('panic_event_responders')
-            .update({
+        // Update user_locations - don't let errors stop the flow
+        try {
+          const { error: locationError } = await supabase
+            .from('user_locations')
+            .upsert({
+              user_id: user.id,
               lat,
               lng,
+              accuracy: position.coords.accuracy,
+              heading: position.coords.heading,
+              speed: position.coords.speed,
+              is_online: true,
               updated_at: new Date().toISOString(),
-            })
-            .eq('panic_id', panicId || activeResponse?.panicId)
-            .eq('user_id', user.id);
+            });
+          
+          if (locationError) {
+            console.warn('[usePanicResponse] Error updating user_locations (non-fatal):', locationError);
+          }
+        } catch (err) {
+          console.warn('[usePanicResponse] Exception updating user_locations:', err);
+        }
+
+        // Update responder position - this is more important
+        if (panicId || activeResponse?.panicId) {
+          try {
+            await supabase
+              .from('panic_event_responders')
+              .update({
+                lat,
+                lng,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('panic_id', panicId || activeResponse?.panicId)
+              .eq('user_id', user.id);
+          } catch (err) {
+            console.warn('[usePanicResponse] Error updating responder position:', err);
+          }
         }
 
         setActiveResponse(prev => prev ? {
