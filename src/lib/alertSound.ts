@@ -277,8 +277,8 @@ export function playPositiveAlert(): void {
 }
 
 /**
- * Play a soft message notification sound (for internal messages)
- * Uses two gentle ascending tones
+ * Play a STRONG message notification sound (for internal messages)
+ * Loud, attention-grabbing multi-tone sequence
  */
 export function playMessageSound(): void {
   const ctx = getAudioContext();
@@ -290,40 +290,51 @@ export function playMessageSound(): void {
 
   const now = ctx.currentTime;
   
-  // Two soft ascending tones (like a gentle notification)
-  const osc1 = ctx.createOscillator();
-  const gain1 = ctx.createGain();
-  osc1.connect(gain1);
-  gain1.connect(ctx.destination);
-  osc1.frequency.value = 587; // D5
-  osc1.type = 'sine';
-  gain1.gain.setValueAtTime(0, now);
-  gain1.gain.linearRampToValueAtTime(0.12, now + 0.02);
-  gain1.gain.linearRampToValueAtTime(0, now + 0.12);
-  osc1.start(now);
-  osc1.stop(now + 0.12);
-
-  // Second higher tone
-  const osc2 = ctx.createOscillator();
-  const gain2 = ctx.createGain();
-  osc2.connect(gain2);
-  gain2.connect(ctx.destination);
-  osc2.frequency.value = 880; // A5
-  osc2.type = 'sine';
-  gain2.gain.setValueAtTime(0, now + 0.1);
-  gain2.gain.linearRampToValueAtTime(0.12, now + 0.12);
-  gain2.gain.linearRampToValueAtTime(0, now + 0.25);
-  osc2.start(now + 0.1);
-  osc2.stop(now + 0.25);
+  // Attention-grabbing ascending notification with harmonics
+  const tones = [
+    // First chord - bright start
+    { freq: 784, delay: 0, duration: 0.15, volume: 0.35, type: 'sine' as OscillatorType },      // G5
+    { freq: 988, delay: 0, duration: 0.15, volume: 0.25, type: 'sine' as OscillatorType },      // B5 (harmony)
+    // Second chord - higher energy
+    { freq: 1047, delay: 0.12, duration: 0.18, volume: 0.4, type: 'sine' as OscillatorType },   // C6
+    { freq: 1319, delay: 0.12, duration: 0.18, volume: 0.3, type: 'sine' as OscillatorType },   // E6 (harmony)
+    // Third chord - peak attention
+    { freq: 1175, delay: 0.28, duration: 0.2, volume: 0.45, type: 'triangle' as OscillatorType }, // D6
+    { freq: 1480, delay: 0.28, duration: 0.2, volume: 0.35, type: 'triangle' as OscillatorType }, // F#6 (harmony)
+    // Final bright accent
+    { freq: 1568, delay: 0.45, duration: 0.25, volume: 0.4, type: 'sine' as OscillatorType },   // G6
+  ];
+  
+  tones.forEach(({ freq, delay, duration, volume, type }) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    osc.type = type;
+    const startTime = now + delay;
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(volume, startTime + 0.02);
+    gain.gain.setValueAtTime(volume, startTime + duration * 0.6);
+    gain.gain.linearRampToValueAtTime(0, startTime + duration);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  });
 }
 
 /**
- * Trigger a short gentle vibration for messages
+ * Trigger a strong vibration pattern for messages
+ * More noticeable than before
  */
 export function triggerMessageVibration(): void {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
-      navigator.vibrate([50, 30, 50]);
+      // Strong double-pulse pattern
+      navigator.vibrate([
+        150, 80, 150, 80, 200,  // Three strong pulses
+        150,                     // Pause
+        100, 50, 100, 50, 100   // Quick attention bursts
+      ]);
     } catch (e) {
       console.warn('Vibration not supported');
     }
@@ -332,10 +343,16 @@ export function triggerMessageVibration(): void {
 
 /**
  * Play message notification (sound + vibration)
+ * Strong and attention-grabbing
  */
 export function playMessageNotification(): void {
   playMessageSound();
   triggerMessageVibration();
+  
+  // Repeat sound after a short delay for extra attention
+  setTimeout(() => {
+    playMessageSound();
+  }, 800);
 }
 
 /**
