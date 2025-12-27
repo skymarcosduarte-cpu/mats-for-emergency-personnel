@@ -2,7 +2,7 @@
 // USGS + SSN Mexico earthquakes + "Todo bien" quick report + "14" help + notifications + my alerts history
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind, Route, X, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind, Route, X, CheckCircle2, Map } from 'lucide-react';
 import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
 import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
 import { useMexicoAlerts, TropicalCycloneAlert, FireHotspot } from '@/hooks/useMexicoAlerts';
@@ -47,6 +47,7 @@ import { Badge } from '@/components/ui/badge';
 import { playUrgentAlert } from '@/lib/alertSound';
 import { toast } from 'sonner';
 import { MyAlertsHistory } from '@/components/MyAlertsHistory';
+import { QuakeCheckinMap } from '@/components/QuakeCheckinMap';
 
 // Removed - now using useEarthquakeHistory hook
 
@@ -58,6 +59,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   userRole = 'SOS_ACTIVO' 
 }) => {
   const [selectedQuake, setSelectedQuake] = useState<EarthquakeWithDistance | null>(null);
+  const [showQuakeDetailDialog, setShowQuakeDetailDialog] = useState(false);
   const [showCheckinDialog, setShowCheckinDialog] = useState(false);
   const [showHelp14Dialog, setShowHelp14Dialog] = useState(false);
   const [checkinIntensity, setCheckinIntensity] = useState<QuakeIntensity>(4);
@@ -457,7 +459,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               <Card 
                 key={quake.id} 
                 className="bg-card border-border hover:border-primary/30 transition-colors cursor-pointer"
-                onClick={() => setSelectedQuake(quake)}
+                onClick={() => { setSelectedQuake(quake); setShowQuakeDetailDialog(true); }}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
@@ -1181,6 +1183,96 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Quake Detail Dialog with Checkin Map */}
+      <Dialog open={showQuakeDetailDialog} onOpenChange={setShowQuakeDetailDialog}>
+        <DialogContent className="sm:max-w-lg bg-card border-border max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Map className="w-5 h-5 text-primary" />
+              Detalle del Sismo
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedQuake && (
+            <div className="space-y-4 py-2">
+              {/* Earthquake info */}
+              <div className="bg-muted rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={cn(
+                    'text-3xl font-bold font-mono',
+                    getMagColor(selectedQuake.properties.mag)
+                  )}>
+                    M{formatMag(selectedQuake.properties.mag)}
+                  </span>
+                  <Badge variant="outline" className={cn(
+                    "text-xs",
+                    selectedQuake.source === 'SSN' ? "border-success text-success" : "border-primary text-primary"
+                  )}>
+                    {selectedQuake.source === 'SSN' ? 'SSN México' : 'USGS'}
+                  </Badge>
+                </div>
+                <p className="text-sm text-foreground font-medium mb-2">
+                  {selectedQuake.properties.place}
+                </p>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {formatTime(selectedQuake.properties.time)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3" />
+                    {selectedQuake.geometry.coordinates[2].toFixed(0)}km prof.
+                  </span>
+                  {selectedQuake.distanceMiles !== null && (
+                    <span className="flex items-center gap-1 text-primary font-medium">
+                      <Navigation className="w-3 h-3" />
+                      {selectedQuake.distanceMiles.toFixed(0)} mi de ti
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Checkin map - intensity reports */}
+              <div>
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-warning" />
+                  Reportes de la Comunidad
+                </h3>
+                <QuakeCheckinMap
+                  eventId={selectedQuake.id}
+                  epicenterLat={selectedQuake.geometry.coordinates[1]}
+                  epicenterLng={selectedQuake.geometry.coordinates[0]}
+                  magnitude={selectedQuake.properties.mag}
+                />
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    handleQuickCheckin(selectedQuake);
+                  }}
+                >
+                  Todo bien ✓
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowQuakeDetailDialog(false);
+                    setShowHelp14Dialog(true);
+                  }}
+                >
+                  Reporto Daños
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Help 14 Dialog */}
       <Dialog open={showHelp14Dialog} onOpenChange={setShowHelp14Dialog}>
