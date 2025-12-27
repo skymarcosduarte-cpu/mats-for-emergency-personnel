@@ -758,8 +758,21 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-start justify-center bg-black/60 backdrop-blur-sm p-4 pt-16 pb-24 overflow-y-auto">
-      <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-md min-h-[400px] max-h-[calc(100dvh-10rem)] flex flex-col overflow-hidden">
+    <div 
+      className="fixed inset-0 z-[10000] flex items-start justify-center bg-black/70 p-4 pt-16 pb-24 overflow-y-auto"
+      onClick={(e) => {
+        // Prevent clicks from propagating to the map
+        e.stopPropagation();
+      }}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
+      onWheel={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      <div 
+        className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-md min-h-[400px] max-h-[calc(100dvh-10rem)] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
           <div className="flex items-center gap-3">
