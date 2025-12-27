@@ -245,15 +245,15 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         setMessage(prev => addressPrefix + prev);
       }
     } else {
-      // Use current GPS location
-      setIsGettingLocation(true);
-      vibrate([200, 100, 200, 100, 300]); // SOS-style pattern
-
+      // Use current GPS location - check if we already have it
       lat = position?.lat;
       lng = position?.lng;
 
-      // Get position with timeout
+      // Only show loading and fetch if we don't have position yet
       if (!lat || !lng) {
+        setIsGettingLocation(true);
+        vibrate([200, 100, 200, 100, 300]); // SOS-style pattern
+
         const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => {
             setGpsTimeout(true);
@@ -282,10 +282,10 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
           setGpsTimeout(false);
           return;
         }
-      }
 
-      setIsGettingLocation(false);
-      setGpsTimeout(false);
+        setIsGettingLocation(false);
+        setGpsTimeout(false);
+      }
     }
 
     // Upload audio if present
@@ -304,7 +304,10 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
       }
     });
 
-    // Notify parent component
+    // Close dialog first to give immediate feedback
+    setIsOpen(false);
+
+    // Then notify parent component (this is async but we don't need to wait)
     onPanicTriggered?.(
       selectedType,
       lat,
@@ -314,13 +317,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
       audioBlob ? audioDurationMs : undefined
     );
 
-    toast.success('Alerta enviada a la comunidad', {
-      description: 'Los usuarios conectados serán notificados dentro de la app',
-      duration: 5000,
-    });
-
-    // Close dialog and reset
-    setIsOpen(false);
+    // Reset state
     setStep('select-type');
     setSelectedType(null);
     setSelectedOption(null);
