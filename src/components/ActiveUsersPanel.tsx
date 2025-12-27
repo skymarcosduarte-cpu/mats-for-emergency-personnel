@@ -1,13 +1,14 @@
 // Active Users Panel Component
-// Shows a list of active users without PII, with buttons to center on each
+// Shows a list of active users without PII, with buttons to center on each and message
 
 import React, { useState } from 'react';
-import { Users, MapPin, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Users, MapPin, ChevronLeft, ChevronRight, Clock, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
-interface UserLocationSummary {
+export interface UserLocationSummary {
   user_id: string;
   lat: number;
   lng: number;
@@ -24,15 +25,18 @@ interface UserLocationSummary {
 interface ActiveUsersPanelProps {
   users: UserLocationSummary[];
   onCenterOnUser: (lat: number, lng: number) => void;
+  onMessageUser?: (userId: string, displayName: string | null) => void;
   className?: string;
 }
 
 export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
   users,
   onCenterOnUser,
+  onMessageUser,
   className,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user: currentUser } = useAuth();
 
   const getTimeAgo = (updatedAt: string | null): string => {
     if (!updatedAt) return '';
@@ -200,15 +204,29 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                         </div>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => onCenterOnUser(user.lat, user.lng)}
-                      aria-label="Centrar en usuario"
-                    >
-                      <MapPin className="w-4 h-4 text-primary" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      {/* Message button - only show for other users */}
+                      {onMessageUser && user.user_id !== currentUser?.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => onMessageUser(user.user_id, user.show_name_on_map ? user.display_name || null : null)}
+                          aria-label="Enviar mensaje"
+                        >
+                          <MessageCircle className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => onCenterOnUser(user.lat, user.lng)}
+                        aria-label="Centrar en usuario"
+                      >
+                        <MapPin className="w-4 h-4 text-primary" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
 
