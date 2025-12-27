@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, MessageCircle, ArrowLeft } from 'lucide-react';
+import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useInternalMessages, InternalMessage } from '@/hooks/useInternalMessages';
+import { useInternalMessages, InternalMessage, requestNotificationPermission } from '@/hooks/useInternalMessages';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface InternalMessagingProps {
   isOpen: boolean;
@@ -35,8 +36,28 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
   const [messageText, setMessageText] = useState('');
   const [sending, setSending] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Check notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    } else {
+      setNotificationPermission('unsupported');
+    }
+  }, []);
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    if (granted) {
+      setNotificationPermission('granted');
+      toast.success('Notificaciones activadas');
+    } else {
+      toast.error('No se pudieron activar las notificaciones');
+    }
+  };
 
   // Handle initial user selection
   useEffect(() => {
@@ -136,6 +157,22 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                 : 'Mensajes'}
             </h2>
           </div>
+          {/* Notification toggle */}
+          {notificationPermission !== 'unsupported' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={handleEnableNotifications}
+              title={notificationPermission === 'granted' ? 'Notificaciones activadas' : 'Activar notificaciones'}
+            >
+              {notificationPermission === 'granted' ? (
+                <Bell className="w-4 h-4 text-primary" />
+              ) : (
+                <BellOff className="w-4 h-4 text-muted-foreground" />
+              )}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"

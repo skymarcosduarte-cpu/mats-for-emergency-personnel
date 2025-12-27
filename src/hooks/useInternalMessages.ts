@@ -20,6 +20,60 @@ export interface Conversation {
   unread_count: number;
 }
 
+// Helper to show browser notification when tab is in background
+const showBrowserNotification = (senderName: string, message: string, senderId: string) => {
+  // Only show if tab is not focused/visible
+  if (document.visibilityState === 'visible') {
+    return;
+  }
+
+  // Check if notifications are supported and permission granted
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    return;
+  }
+
+  try {
+    const notification = new Notification('💬 Nuevo mensaje', {
+      body: `${senderName}: ${message.substring(0, 100)}${message.length > 100 ? '...' : ''}`,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: `message-${senderId}-${Date.now()}`,
+      requireInteraction: false,
+      silent: false, // Allow sound
+    });
+
+    // Focus window when notification is clicked
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+
+    // Auto-close after 5 seconds
+    setTimeout(() => notification.close(), 5000);
+  } catch (error) {
+    console.error('Error showing browser notification:', error);
+  }
+};
+
+// Request notification permission
+export const requestNotificationPermission = async (): Promise<boolean> => {
+  if (!('Notification' in window)) {
+    console.warn('Browser does not support notifications');
+    return false;
+  }
+
+  if (Notification.permission === 'granted') {
+    return true;
+  }
+
+  if (Notification.permission !== 'denied') {
+    const permission = await Notification.requestPermission();
+    return permission === 'granted';
+  }
+
+  return false;
+};
+
 export const useInternalMessages = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<InternalMessage[]>([]);
@@ -28,6 +82,7 @@ export const useInternalMessages = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const lastMessageCountRef = useRef<number>(0);
   const initialLoadDoneRef = useRef<boolean>(false);
+  const senderNamesCache = useRef<Map<string, string>>(new Map());
 
   // Fetch all messages for the current user
   const fetchMessages = useCallback(async () => {
@@ -202,14 +257,37 @@ export const useInternalMessages = () => {
           table: 'internal_messages',
           filter: `receiver_id=eq.${user.id}`
         },
-        (payload) => {
+        async (payload) => {
           console.log('[InternalMessages] Received INSERT event:', payload);
-          // Play notification for new incoming message
           const newMessage = payload.new as InternalMessage;
+          
           if (newMessage && newMessage.sender_id !== user.id) {
-            console.log('[InternalMessages] Playing notification for new message from:', newMessage.sender_id);
+            console.log('[InternalMessages] New message from:', newMessage.sender_id);
+            
+            // Play notification sound
             playMessageNotification();
+            
+            // Get sender name for notification
+            let senderName = senderNamesCache.current.get(newMessage.sender_id);
+            
+            if (!senderName) {
+              // Fetch sender name
+              const { data } = await supabase
+                .from('user_locations_with_roles')
+                .select('display_name, show_name_on_map')
+                .eq('user_id', newMessage.sender_id)
+                .single();
+              
+              senderName = data?.show_name_on_map && data?.display_name 
+                ? data.display_name 
+                : 'Usuario';
+              senderNamesCache.current.set(newMessage.sender_id, senderName);
+            }
+            
+            // Show browser notification when tab is in background
+            showBrowserNotification(senderName, newMessage.message, newMessage.sender_id);
           }
+          
           fetchMessages();
           fetchConversations();
         }
