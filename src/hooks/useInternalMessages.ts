@@ -410,11 +410,16 @@ export const useInternalMessages = () => {
     setBannerDismissed(true);
   }, []);
 
-  // Reset dismissed state when unread count changes to a higher value
+  // Track the last unread count to detect NEW messages (not just any unread)
+  const lastUnreadCountRef = useRef(unreadCount);
+  
+  // Reset dismissed state ONLY when NEW messages arrive (count increases)
   useEffect(() => {
-    if (unreadCount > 0) {
+    if (unreadCount > lastUnreadCountRef.current) {
+      // New messages arrived, show banner again
       setBannerDismissed(false);
     }
+    lastUnreadCountRef.current = unreadCount;
   }, [unreadCount]);
 
   // Calculate last unread sender from conversations
