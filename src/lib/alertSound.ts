@@ -88,7 +88,7 @@ export function playSubtleSound(): void {
 
 /**
  * Play a more prominent urgent alert sound
- * For nearby help requests (<30 miles)
+ * For nearby help requests (<30 miles) - ENHANCED for attention
  */
 export function playUrgentSound(): void {
   const ctx = getAudioContext();
@@ -100,23 +100,38 @@ export function playUrgentSound(): void {
 
   const now = ctx.currentTime;
   
-  // Three-tone urgent sequence
-  const frequencies = [784, 988, 784]; // G5, B5, G5
-  const delays = [0, 0.12, 0.24];
+  // Enhanced attention-grabbing siren-like pattern with 3 cycles
+  // Uses alternating high-low tones like emergency sirens
+  const sirenCycles = [
+    // Cycle 1
+    { freq: 880, delay: 0, duration: 0.15, volume: 0.35 },      // A5 high
+    { freq: 587, delay: 0.15, duration: 0.15, volume: 0.35 },   // D5 low
+    // Cycle 2
+    { freq: 988, delay: 0.35, duration: 0.15, volume: 0.4 },    // B5 higher
+    { freq: 659, delay: 0.5, duration: 0.15, volume: 0.4 },     // E5 low
+    // Cycle 3 - loudest
+    { freq: 1047, delay: 0.7, duration: 0.2, volume: 0.45 },    // C6 highest
+    { freq: 784, delay: 0.9, duration: 0.2, volume: 0.45 },     // G5 
+    // Final attention beeps
+    { freq: 1175, delay: 1.15, duration: 0.1, volume: 0.5 },    // D6
+    { freq: 1175, delay: 1.3, duration: 0.1, volume: 0.5 },     // D6
+    { freq: 1175, delay: 1.45, duration: 0.15, volume: 0.5 },   // D6 (longer)
+  ];
   
-  frequencies.forEach((freq, i) => {
+  sirenCycles.forEach(({ freq, delay, duration, volume }) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.frequency.value = freq;
-    osc.type = 'sine';
-    const startTime = now + delays[i];
+    osc.type = 'square'; // Square wave is more piercing/attention-grabbing
+    const startTime = now + delay;
     gain.gain.setValueAtTime(0, startTime);
-    gain.gain.linearRampToValueAtTime(0.2, startTime + 0.02);
-    gain.gain.linearRampToValueAtTime(0, startTime + 0.1);
+    gain.gain.linearRampToValueAtTime(volume, startTime + 0.02);
+    gain.gain.linearRampToValueAtTime(volume * 0.8, startTime + duration * 0.5);
+    gain.gain.linearRampToValueAtTime(0, startTime + duration);
     osc.start(startTime);
-    osc.stop(startTime + 0.1);
+    osc.stop(startTime + duration);
   });
 }
 
@@ -134,12 +149,20 @@ export function triggerVibration(): void {
 }
 
 /**
- * Trigger a longer vibration pattern for urgent alerts
+ * Trigger a longer, more attention-grabbing vibration pattern for urgent alerts
+ * SOS-like pattern: 3 short, 3 long, 3 short
  */
 export function triggerUrgentVibration(): void {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
-      navigator.vibrate([150, 75, 150, 75, 150]);
+      // Enhanced SOS-style pattern for maximum attention
+      navigator.vibrate([
+        100, 50, 100, 50, 100,  // 3 short
+        150,                     // pause
+        200, 75, 200, 75, 200,  // 3 medium-long
+        150,                     // pause
+        100, 50, 100, 50, 100   // 3 short
+      ]);
     } catch (e) {
       console.warn('Vibration not supported');
     }

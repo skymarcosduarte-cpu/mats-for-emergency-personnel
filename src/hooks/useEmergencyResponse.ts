@@ -631,6 +631,38 @@ export function useEmergencyResponse() {
     setShowThankYou(false);
   }, []);
 
+  // Update transport mode for active response
+  const updateTransportMode = useCallback(async (
+    transportMode: string,
+    estimatedEtaMinutes: number
+  ) => {
+    if (!activeResponse || !user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('help_request_responders')
+        .update({
+          transport_mode: transportMode,
+          estimated_eta_minutes: estimatedEtaMinutes,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('request_id', activeResponse.requestId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error updating transport mode:', error);
+        toast.error('Error al actualizar transporte');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating transport mode:', error);
+      toast.error('Error al actualizar transporte');
+      return false;
+    }
+  }, [activeResponse, user]);
+
   return {
     activeResponse,
     responderLocations,
@@ -640,6 +672,7 @@ export function useEmergencyResponse() {
     markAsResolved,
     fetchResponders,
     getResponderCount,
+    updateTransportMode,
     isResponding: activeResponse !== null,
     showThankYou,
     dismissThankYou,

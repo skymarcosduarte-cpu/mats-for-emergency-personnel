@@ -120,6 +120,7 @@ interface AlertDetailModalProps {
   onCancelResponse?: () => Promise<void>;
   onMarkAsArrived?: () => Promise<boolean>;
   onResolve?: () => Promise<boolean>;
+  onUpdateTransport?: (transportMode: string, estimatedEtaMinutes: number) => Promise<boolean>;
 }
 
 const CANCELLATION_REASONS = [
@@ -176,6 +177,7 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   onCancelResponse,
   onMarkAsArrived,
   onResolve,
+  onUpdateTransport,
 }) => {
   const [isResponding, setIsResponding] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -193,6 +195,10 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   const [showTransportSelector, setShowTransportSelector] = useState(false);
   const [selectedTransport, setSelectedTransport] = useState<string | null>(null);
   const [estimatedEta, setEstimatedEta] = useState<number | null>(null);
+  
+  // State for updating transport after responding
+  const [showUpdateTransport, setShowUpdateTransport] = useState(false);
+  const [isUpdatingTransport, setIsUpdatingTransport] = useState(false);
 
   // Fetch attached media (photos and audio from report_media table)
   const { images: attachedImages, audios: attachedAudios, loading: mediaLoading, hasMedia } = useReportMedia({
@@ -302,6 +308,39 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   const hasArrived = currentUserId && responders.some(
     r => r.responder_id === currentUserId && r.request_id === alert?.id && r.arrived_at
   );
+
+  // Get current transport mode for the responder
+  const currentResponderTransport = currentUserId && responders.find(
+    r => r.responder_id === currentUserId && r.request_id === alert?.id
+  )?.transport_mode;
+
+  // Handler for updating transport mode
+  const handleUpdateTransport = async () => {
+    if (!onUpdateTransport || !selectedTransport || !estimatedEta) return;
+    
+    setIsUpdatingTransport(true);
+    try {
+      const success = await onUpdateTransport(selectedTransport, estimatedEta);
+      if (success) {
+        toast({
+          title: "Transporte actualizado",
+          description: `Ahora en ${TRANSPORT_OPTIONS.find(t => t.id === selectedTransport)?.label}. ETA: ~${estimatedEta} min`,
+        });
+        setShowUpdateTransport(false);
+        setSelectedTransport(null);
+        setEstimatedEta(null);
+      }
+    } catch (error) {
+      console.error('[AlertDetailModal] Error updating transport:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el transporte",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingTransport(false);
+    }
+  };
 
   // Calculate distance when modal opens or position changes
   // RESCATISTAS can respond regardless of distance
@@ -1128,8 +1167,139 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
                   <span className="font-medium">Ya estás respondiendo a esta alerta</span>
                 </div>
                 
+                {/* Current Transport Display + Change Option */}
+                {currentResponderTransport && (
+                  <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      {(() => {
+                        const transport = TRANSPORT_OPTIONS.find(t => t.id === currentResponderTransport);
+                        const Icon = transport?.icon || Car;
+                        return (
+                          <>
+                            <Icon className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-foreground">
+                              {transport?.label || 'En camino'}
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                    {onUpdateTransport && !showUpdateTransport && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-xs text-primary hover:text-primary/80"
+                        onClick={() => setShowUpdateTransport(true)}
+                      >
+                        Cambiar
+                      </Button>
+                    )}
+                  </div>
+                )}
+                
+                {/* Update Transport Selector */}
+                {showUpdateTransport && onUpdateTransport && (
+                  <div className="space-y-3 bg-muted/50 rounded-lg p-4 border border-border">
+                    <p className="text-sm font-medium text-foreground text-center">
+                      Actualizar transporte
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {TRANSPORT_OPTIONS.slice(0, 3).map((transport) => {
+                        const Icon = transport.icon;
+                        const isSelected = selectedTransport === transport.id;
+                        const eta = calculateTransportEta(transport.id);
+                        return (
+                          <button
+                            key={transport.id}
+                            onClick={() => handleSelectTransport(transport.id)}
+                            className={cn(
+                              "flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all",
+                              isSelected 
+                                ? "border-primary bg-primary/10" 
+                                : "border-border bg-card hover:border-primary/50"
+                            )}
+                          >
+                            <Icon className={cn("w-6 h-6", isSelected ? "text-primary" : "text-muted-foreground")} />
+                            <span className={cn("text-xs font-medium text-center leading-tight", isSelected ? "text-primary" : "text-foreground")}>
+                              {transport.label}
+                            </span>
+                            {distanceToAlert && eta && (
+                              <span className="text-[10px] text-muted-foreground">
+                                ~{eta} min
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {TRANSPORT_OPTIONS.slice(3).map((transport) => {
+                        const Icon = transport.icon;
+                        const isSelected = selectedTransport === transport.id;
+                        const eta = calculateTransportEta(transport.id);
+                        return (
+                          <button
+                            key={transport.id}
+                            onClick={() => handleSelectTransport(transport.id)}
+                            className={cn(
+                              "flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all",
+                              isSelected 
+                                ? "border-primary bg-primary/10" 
+                                : "border-border bg-card hover:border-primary/50"
+                            )}
+                          >
+                            <Icon className={cn("w-6 h-6", isSelected ? "text-primary" : "text-muted-foreground")} />
+                            <span className={cn("text-xs font-medium text-center leading-tight", isSelected ? "text-primary" : "text-foreground")}>
+                              {transport.label}
+                            </span>
+                            {distanceToAlert && eta && (
+                              <span className="text-[10px] text-muted-foreground">
+                                ~{eta} min
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    {selectedTransport && estimatedEta && (
+                      <div className="flex items-center justify-center gap-2 text-sm text-primary bg-primary/10 rounded-lg p-2">
+                        <Clock className="w-4 h-4" />
+                        <span>Nuevo ETA: <strong>~{estimatedEta} minutos</strong></span>
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          setShowUpdateTransport(false);
+                          setSelectedTransport(null);
+                          setEstimatedEta(null);
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button 
+                        variant="default"
+                        className="flex-1 bg-primary hover:bg-primary/90"
+                        onClick={handleUpdateTransport}
+                        disabled={isUpdatingTransport || !selectedTransport}
+                      >
+                        {isUpdatingTransport ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                        )}
+                        Actualizar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Mark as Arrived Button */}
-                {onMarkAsArrived && (
+                {onMarkAsArrived && !showUpdateTransport && (
                   <Button 
                     variant="default"
                     className="w-full touch-manipulation bg-green-600 hover:bg-green-700"
