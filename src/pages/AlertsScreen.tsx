@@ -1303,7 +1303,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="w-5 h-5" />
-              AYUDA 14 - Emergencia
+              Reporte de Daño por Sismo
             </DialogTitle>
           </DialogHeader>
 
@@ -1373,7 +1373,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 {submitting ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : null}
-                Enviar AYUDA
+                Enviar Reporte
               </Button>
             </div>
           </div>

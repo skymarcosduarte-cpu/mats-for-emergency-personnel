@@ -23,96 +23,108 @@ serve(async (req) => {
       place, 
       intensity, 
       damageReport, 
-      creatorId, 
-      radiusMeters = 10000  // 10km radius for earthquake damage alerts
+      creatorId,
     } = await req.json();
 
-    console.log(`[notify-quake-damage] Damage report at ${lat}, ${lng}`);
-    console.log(`[notify-quake-damage] Magnitude: ${magnitude}, Intensity: ${intensity}, Status: ${damageReport}`);
+    console.log(`[notify-quake-damage] ALERTA MÁXIMA PRIORIDAD - Daño por sismo reportado`);
+    console.log(`[notify-quake-damage] Ubicación: ${lat}, ${lng}`);
+    console.log(`[notify-quake-damage] Magnitud: ${magnitude}, Intensidad: ${intensity}, Estado: ${damageReport}`);
 
-    // Only notify for DAMAGE or high intensity reports
-    if (damageReport !== 'DAMAGE' && intensity < 7) {
-      console.log('[notify-quake-damage] Skipping notification - not severe enough');
-      return new Response(
-        JSON.stringify({ success: true, notified: 0, reason: 'Not severe enough' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get users within radius using existing database function
-    const { data: nearbyUsers, error: usersError } = await supabase
-      .rpc('get_users_within_radius', {
-        center_lat: lat,
-        center_lng: lng,
-        radius_meters: radiusMeters
-      });
+    // For earthquake damage reports, we notify ALL users regardless of distance
+    // This is a maximum priority alert
+    
+    // Get ALL users with locations (they are active users)
+    const { data: allUsers, error: usersError } = await supabase
+      .from('user_locations')
+      .select('user_id')
+      .eq('is_online', true);
 
     if (usersError) {
-      console.error('[notify-quake-damage] Error getting nearby users:', usersError);
+      console.error('[notify-quake-damage] Error getting users:', usersError);
       throw usersError;
     }
 
-    console.log(`[notify-quake-damage] Found ${nearbyUsers?.length || 0} users within ${radiusMeters}m`);
+    // Also get users who may not have updated location recently but have profiles
+    const { data: allProfiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id');
+
+    if (profilesError) {
+      console.error('[notify-quake-damage] Error getting profiles:', profilesError);
+    }
+
+    // Combine both lists and deduplicate
+    const onlineUserIds = new Set((allUsers || []).map((u: { user_id: string }) => u.user_id));
+    const profileUserIds = new Set((allProfiles || []).map((p: { id: string }) => p.id));
+    const allUserIds = new Set([...onlineUserIds, ...profileUserIds]);
 
     // Filter out the creator
-    const usersToNotify = (nearbyUsers || []).filter(
-      (u: { user_id: string }) => u.user_id !== creatorId
-    );
+    allUserIds.delete(creatorId);
+
+    const usersToNotify = Array.from(allUserIds);
+
+    console.log(`[notify-quake-damage] Notificando a TODOS los usuarios: ${usersToNotify.length}`);
 
     if (usersToNotify.length === 0) {
-      console.log('[notify-quake-damage] No users to notify');
+      console.log('[notify-quake-damage] No hay usuarios para notificar');
       return new Response(
         JSON.stringify({ success: true, notified: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create urgency message based on damage type
-    const urgencyEmoji = damageReport === 'DAMAGE' ? '🆘' : '⚠️';
-    const title = `${urgencyEmoji} Daños reportados - Sismo M${magnitude.toFixed(1)}`;
-    const message = `Alguien cerca reportó ${damageReport === 'DAMAGE' ? 'daños/ayuda necesaria' : 'intensidad ${intensity}/10'}. ${place}`;
+    // Create HIGH PRIORITY urgency message for earthquake damage
+    const title = `🚨 ALERTA MÁXIMA: Daños por Sismo M${magnitude.toFixed(1)}`;
+    const message = `Se reportaron daños en ${place}. Alguien necesita ayuda. Ubicación: https://www.google.com/maps?q=${lat},${lng}`;
 
-    // Create in-app notifications for all nearby users
-    const notifications = usersToNotify.map((user: { user_id: string; distance_meters: number }) => ({
-      user_id: user.user_id,
-      type: 'quake_damage',
+    // Create in-app notifications for ALL users
+    const notifications = usersToNotify.map((userId: string) => ({
+      user_id: userId,
+      type: 'quake_damage_priority',
       title: title,
-      message: `${message} (a ${(user.distance_meters / 1000).toFixed(1)}km de ti)`,
+      message: message,
       read: false
     }));
 
-    const { error: insertError } = await supabase
-      .from('notifications')
-      .insert(notifications);
+    // Insert in batches to avoid timeout
+    const batchSize = 100;
+    let insertedCount = 0;
 
-    if (insertError) {
-      console.error('[notify-quake-damage] Error inserting notifications:', insertError);
-      throw insertError;
+    for (let i = 0; i < notifications.length; i += batchSize) {
+      const batch = notifications.slice(i, i + batchSize);
+      const { error: insertError } = await supabase
+        .from('notifications')
+        .insert(batch);
+
+      if (insertError) {
+        console.error(`[notify-quake-damage] Error inserting batch ${i}:`, insertError);
+      } else {
+        insertedCount += batch.length;
+      }
     }
 
-    console.log(`[notify-quake-damage] Created ${notifications.length} in-app notifications`);
+    console.log(`[notify-quake-damage] Creadas ${insertedCount} notificaciones de máxima prioridad`);
 
-    // Also get push subscriptions for nearby users to send web push
-    const userIds = usersToNotify.map((u: { user_id: string }) => u.user_id);
-    
+    // Get push subscriptions for ALL users to send web push
     const { data: pushSubs, error: pushError } = await supabase
       .from('push_subscriptions')
       .select('*')
-      .in('user_id', userIds);
+      .in('user_id', usersToNotify.slice(0, 1000)); // Limit to first 1000 for performance
 
     if (pushError) {
       console.error('[notify-quake-damage] Error fetching push subscriptions:', pushError);
     } else if (pushSubs && pushSubs.length > 0) {
-      console.log(`[notify-quake-damage] Found ${pushSubs.length} push subscriptions to notify`);
+      console.log(`[notify-quake-damage] Found ${pushSubs.length} push subscriptions for priority notification`);
       // Note: Actual web push sending would require VAPID keys
-      // For now, we log this for future implementation
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        notified: notifications.length,
-        pushSubscriptions: pushSubs?.length || 0
+        notified: insertedCount,
+        totalUsers: usersToNotify.length,
+        pushSubscriptions: pushSubs?.length || 0,
+        priority: 'MAXIMUM'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
