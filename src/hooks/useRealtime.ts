@@ -532,6 +532,7 @@ interface ActiveResponder {
   distance_km: number;
   eta_minutes: number | null;
   arrived_at: string | null;
+  transport_mode: string | null;
 }
 
 export function useActiveResponders() {
@@ -543,7 +544,7 @@ export function useActiveResponders() {
     // ====== HELP REQUESTS RESPONDERS ======
     const { data: helpRespondersData } = await supabase
       .from('help_request_responders')
-      .select('request_id, user_id, lat, lng, started_at, arrived_at, updated_at');
+      .select('request_id, user_id, lat, lng, started_at, arrived_at, updated_at, transport_mode');
 
     const { data: helpData } = await supabase
       .from('help_requests')
@@ -589,6 +590,7 @@ export function useActiveResponders() {
               distance_km: distanceKm,
               eta_minutes: etaMinutes,
               arrived_at: responder.arrived_at,
+              transport_mode: responder.transport_mode || null,
             });
           }
         }
@@ -626,6 +628,7 @@ export function useActiveResponders() {
             distance_km: distanceKm,
             eta_minutes: etaMinutes,
             arrived_at: null,
+            transport_mode: null,
           });
         }
       }
@@ -634,7 +637,7 @@ export function useActiveResponders() {
     // ====== PANIC EVENTS RESPONDERS ======
     const { data: panicRespondersData } = await supabase
       .from('panic_event_responders')
-      .select('panic_id, user_id, lat, lng, started_at, arrived_at, updated_at');
+      .select('panic_id, user_id, lat, lng, started_at, arrived_at, updated_at, transport_mode');
 
     const { data: panicData } = await supabase
       .from('panic_events')
@@ -678,6 +681,7 @@ export function useActiveResponders() {
             distance_km: distanceKm,
             eta_minutes: etaMinutes,
             arrived_at: responder.arrived_at,
+            transport_mode: responder.transport_mode || null,
           });
         }
       }
@@ -716,6 +720,7 @@ export function useActiveResponders() {
             distance_km: distanceKm,
             eta_minutes: etaMinutes,
             arrived_at: null,
+            transport_mode: null,
           });
         }
       }

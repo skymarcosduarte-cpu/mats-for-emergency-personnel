@@ -57,7 +57,9 @@ export function useEmergencyResponse() {
     requestId: string, 
     requestLat: number, 
     requestLng: number,
-    skipRadiusCheck: boolean = false
+    skipRadiusCheck: boolean = false,
+    transportMode?: string,
+    estimatedEtaMinutes?: number
   ) => {
     if (!user) {
       toast.error('Debes iniciar sesión para responder');
@@ -95,6 +97,8 @@ export function useEmergencyResponse() {
           user_id: user.id,
           lat: responderLat,
           lng: responderLng,
+          transport_mode: transportMode || null,
+          estimated_eta_minutes: estimatedEtaMinutes || null,
         });
 
       if (responderError) {

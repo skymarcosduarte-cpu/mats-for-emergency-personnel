@@ -55,7 +55,9 @@ export function usePanicResponse() {
     panicId: string, 
     panicLat: number, 
     panicLng: number,
-    skipRadiusCheck: boolean = false
+    skipRadiusCheck: boolean = false,
+    transportMode?: string,
+    estimatedEtaMinutes?: number
   ) => {
     console.log('[usePanicResponse] startResponding called', { 
       panicId, panicLat, panicLng, skipRadiusCheck, hasUser: !!user 
@@ -103,6 +105,8 @@ export function usePanicResponse() {
           user_id: user.id,
           lat: responderLat,
           lng: responderLng,
+          transport_mode: transportMode || null,
+          estimated_eta_minutes: estimatedEtaMinutes || null,
         });
 
       if (responderError) {

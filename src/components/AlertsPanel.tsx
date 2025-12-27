@@ -71,6 +71,7 @@ interface ActiveResponder {
   distance_km: number;
   eta_minutes: number | null;
   arrived_at: string | null;
+  transport_mode: string | null;
 }
 
 interface GeoPosition {
@@ -89,7 +90,7 @@ interface AlertsPanelProps {
   onResolvePanicEvent?: (eventId: string) => Promise<boolean>;
   activeResponders?: ActiveResponder[];
   userPosition?: GeoPosition | null;
-  onRespondToRequest?: (requestId: string) => Promise<boolean>;
+  onRespondToRequest?: (requestId: string, transportMode?: string, estimatedEtaMinutes?: number) => Promise<boolean>;
   onCancelResponse?: () => Promise<void>;
   onMarkAsArrived?: () => Promise<boolean>;
   onResolve?: () => Promise<boolean>;
