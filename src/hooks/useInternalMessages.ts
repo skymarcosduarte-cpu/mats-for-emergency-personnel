@@ -13,6 +13,7 @@ export interface InternalMessage {
   created_at: string;
   audio_url: string | null;
   audio_duration_ms: number | null;
+  image_url: string | null;
 }
 
 export interface Conversation {
@@ -187,25 +188,33 @@ export const useInternalMessages = () => {
     }
   }, [user?.id]);
 
-  // Send a message (text or voice)
+  // Send a message (text, voice or image)
   const sendMessage = async (
     receiverId: string, 
     message: string,
     audioUrl?: string | null,
-    audioDurationMs?: number | null
+    audioDurationMs?: number | null,
+    imageUrl?: string | null
   ): Promise<boolean> => {
     if (!user?.id) return false;
-    if (!message.trim() && !audioUrl) return false;
+    if (!message.trim() && !audioUrl && !imageUrl) return false;
 
     try {
+      let displayMessage = message.trim();
+      if (!displayMessage) {
+        if (audioUrl) displayMessage = '🎤 Nota de voz';
+        else if (imageUrl) displayMessage = '📷 Imagen';
+      }
+
       const { error } = await supabase
         .from('internal_messages')
         .insert({
           sender_id: user.id,
           receiver_id: receiverId,
-          message: message.trim() || '🎤 Nota de voz',
+          message: displayMessage,
           audio_url: audioUrl || null,
-          audio_duration_ms: audioDurationMs || null
+          audio_duration_ms: audioDurationMs || null,
+          image_url: imageUrl || null
         });
 
       if (error) throw error;

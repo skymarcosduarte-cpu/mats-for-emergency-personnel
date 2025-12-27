@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2 } from 'lucide-react';
+import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -20,6 +20,56 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
+
+// Image thumbnail component that loads signed URL
+const ImageMessageBubble: React.FC<{ imagePath: string; onView: () => void }> = ({ imagePath, onView }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      try {
+        const { data, error } = await supabase.storage
+          .from('reports_media')
+          .createSignedUrl(imagePath, 3600);
+        
+        if (!error && data) {
+          setImageUrl(data.signedUrl);
+        }
+      } catch (err) {
+        console.error('Error loading image:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadImage();
+  }, [imagePath]);
+
+  if (loading) {
+    return (
+      <div className="w-32 h-32 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!imageUrl) {
+    return <p className="text-sm">📷 Error al cargar imagen</p>;
+  }
+
+  return (
+    <img 
+      src={imageUrl} 
+      alt="Imagen" 
+      className="max-w-[200px] max-h-[200px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+      onClick={onView}
+    />
+  );
+};
 
 interface InternalMessagingProps {
   isOpen: boolean;
@@ -66,6 +116,13 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   // Audio playback state
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [loadingAudioId, setLoadingAudioId] = useState<string | null>(null);
+  
+  // Image state
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [sendingImage, setSendingImage] = useState(false);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
   // Check notification permission on mount
@@ -358,6 +415,103 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     }
   };
 
+  // Image handling functions
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten imágenes');
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('La imagen es muy grande (máx 5MB)');
+      return;
+    }
+    
+    setSelectedImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const cancelImage = () => {
+    setSelectedImage(null);
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImagePreview(null);
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
+  };
+
+  const sendImageMessage = async () => {
+    if (!selectedImage || !selectedUserId || !user?.id) return;
+    
+    setSendingImage(true);
+    try {
+      // Upload to Supabase storage
+      const fileExt = selectedImage.name.split('.').pop() || 'jpg';
+      const fileName = `chat_images/${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('reports_media')
+        .upload(fileName, selectedImage, {
+          contentType: selectedImage.type,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error('Error al subir la imagen');
+      }
+
+      // Send message with image URL
+      const success = await sendMessage(
+        selectedUserId, 
+        '📷 Imagen',
+        null,
+        null,
+        fileName
+      );
+
+      if (success) {
+        cancelImage();
+        toast.success('Imagen enviada');
+      } else {
+        throw new Error('Error al enviar');
+      }
+    } catch (error) {
+      console.error('Error sending image:', error);
+      toast.error('Error al enviar imagen');
+    } finally {
+      setSendingImage(false);
+    }
+  };
+
+  const getSignedImageUrl = async (imagePath: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('reports_media')
+        .createSignedUrl(imagePath, 3600);
+      
+      if (error) throw error;
+      return data.signedUrl;
+    } catch (error) {
+      console.error('Error getting signed URL:', error);
+      return null;
+    }
+  };
+
+  const handleViewImage = async (imagePath: string) => {
+    const url = await getSignedImageUrl(imagePath);
+    if (url) {
+      setViewingImage(url);
+    }
+  };
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -367,8 +521,11 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
       if (audioElementRef.current) {
         audioElementRef.current.pause();
       }
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
     };
-  }, []);
+  }, [imagePreview]);
 
   if (!isOpen) return null;
 
@@ -510,8 +667,13 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                             isJustSent && 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background'
                           )}
                         >
-                          {/* Audio message */}
-                          {msg.audio_url ? (
+                          {/* Image message */}
+                          {msg.image_url ? (
+                            <ImageMessageBubble 
+                              imagePath={msg.image_url}
+                              onView={() => handleViewImage(msg.image_url!)}
+                            />
+                          ) : msg.audio_url ? (
                             <button
                               onClick={() => playAudio(msg)}
                               disabled={loadingAudioId === msg.id}
@@ -599,8 +761,51 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                     </>
                   )}
                 </div>
+              ) : selectedImage ? (
+                // Image preview UI
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 flex items-center gap-2">
+                    <img 
+                      src={imagePreview!} 
+                      alt="Preview" 
+                      className="w-12 h-12 object-cover rounded-lg"
+                    />
+                    <span className="text-sm truncate">{selectedImage.name}</span>
+                  </div>
+                  <Button
+                    onClick={cancelImage}
+                    size="icon"
+                    variant="ghost"
+                    disabled={sendingImage}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    onClick={sendImageMessage}
+                    size="icon"
+                    disabled={sendingImage}
+                  >
+                    {sendingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </Button>
+                </div>
               ) : (
                 <div className="flex gap-2">
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  <Button
+                    onClick={() => imageInputRef.current?.click()}
+                    size="icon"
+                    variant="ghost"
+                    disabled={sending}
+                    title="Enviar imagen"
+                  >
+                    <ImagePlus className="w-4 h-4" />
+                  </Button>
                   <Button
                     onClick={startRecording}
                     size="icon"
@@ -654,6 +859,19 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Image viewer dialog */}
+      <Dialog open={!!viewingImage} onOpenChange={(open) => !open && setViewingImage(null)}>
+        <DialogContent className="max-w-[90vw] max-h-[90vh] p-2 bg-black/90 border-none">
+          {viewingImage && (
+            <img 
+              src={viewingImage} 
+              alt="Imagen" 
+              className="max-w-full max-h-[85vh] object-contain mx-auto rounded-lg"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

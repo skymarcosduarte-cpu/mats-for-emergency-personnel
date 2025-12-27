@@ -280,6 +280,7 @@ export type Database = {
           audio_url: string | null
           created_at: string
           id: string
+          image_url: string | null
           message: string
           read: boolean
           receiver_id: string
@@ -290,6 +291,7 @@ export type Database = {
           audio_url?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           message: string
           read?: boolean
           receiver_id: string
@@ -300,6 +302,7 @@ export type Database = {
           audio_url?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           message?: string
           read?: boolean
           receiver_id?: string
