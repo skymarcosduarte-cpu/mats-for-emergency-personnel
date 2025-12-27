@@ -14,6 +14,7 @@ import { usePanicResponse } from '@/hooks/usePanicResponse';
 import { usePOIs, type POI } from '@/hooks/usePOIs';
 import { AlertsPanel } from '@/components/AlertsPanel';
 import { ActiveUsersPanel } from '@/components/ActiveUsersPanel';
+import { InternalMessaging } from '@/components/InternalMessaging';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import 'leaflet/dist/leaflet.css';
@@ -811,6 +812,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   const currentLocationMarkerRef = useRef<L.Marker | null>(null);
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  
+  // Messaging state
+  const [messagingOpen, setMessagingOpen] = useState(false);
+  const [messagingUserId, setMessagingUserId] = useState<string | null>(null);
+  const [messagingUserName, setMessagingUserName] = useState<string | null>(null);
 
   // POI visibility state
   const [poiVisibility, setPoiVisibility] = useState<POIVisibility>({
@@ -894,6 +900,13 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     }
     return await markAsResolved();
   }, [activePanicResponse, markPanicAsResolved, markAsResolved]);
+
+  // Handle messaging a user
+  const handleMessageUser = useCallback((userId: string, displayName: string | null) => {
+    setMessagingUserId(userId);
+    setMessagingUserName(displayName);
+    setMessagingOpen(true);
+  }, []);
 
   // Default center (Mexico City)
   const defaultCenter: [number, number] = [19.4326, -99.1332];
@@ -1967,6 +1980,19 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       <ActiveUsersPanel
         users={locations}
         onCenterOnUser={handleViewLocation}
+        onMessageUser={handleMessageUser}
+      />
+
+      {/* Internal Messaging Modal */}
+      <InternalMessaging
+        isOpen={messagingOpen}
+        onClose={() => {
+          setMessagingOpen(false);
+          setMessagingUserId(null);
+          setMessagingUserName(null);
+        }}
+        initialUserId={messagingUserId}
+        initialUserName={messagingUserName}
       />
     </div>
   );
