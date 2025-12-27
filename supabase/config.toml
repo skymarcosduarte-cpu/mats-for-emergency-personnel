@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.notify-responder-coming]
 verify_jwt = false
+
+[functions.notify-quake-damage]
+verify_jwt = false

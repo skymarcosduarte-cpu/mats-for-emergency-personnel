@@ -283,6 +283,29 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         }
       }
 
+      // Notify nearby users about the damage report
+      if (selectedQuake) {
+        try {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          await fetch(`${supabaseUrl}/functions/v1/notify-quake-damage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              lat: position.lat,
+              lng: position.lng,
+              magnitude: selectedQuake.properties.mag,
+              place: selectedQuake.properties.place,
+              intensity: 8, // Default high intensity for explicit damage reports
+              damageReport: 'DAMAGE',
+              creatorId: user.id,
+            }),
+          });
+          console.log('Nearby users notified about quake damage');
+        } catch (notifyError) {
+          console.error('Error notifying nearby users:', notifyError);
+        }
+      }
+
       toast.success('¡Alerta enviada!', {
         description: 'Se notificó a la comunidad dentro de la app',
         duration: 5000,
