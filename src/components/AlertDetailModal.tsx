@@ -24,7 +24,8 @@ import {
   PhoneCall,
   Image as ImageIcon,
   Volume2,
-  ZoomIn
+  ZoomIn,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -579,13 +580,56 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
         {/* Attached Photos Section */}
         {attachedImages.length > 0 && (
           <section className="bg-card rounded-lg p-4 border border-border">
-            <h2 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-              <ImageIcon className="w-4 h-4" />
-              Fotos Adjuntas
-              <Badge variant="secondary" className="text-xs">
-                {attachedImages.length}
-              </Badge>
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <ImageIcon className="w-4 h-4" />
+                Fotos Adjuntas
+                <Badge variant="secondary" className="text-xs">
+                  {attachedImages.length}
+                </Badge>
+              </h2>
+              {isRescatista && attachedImages.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1.5"
+                  onClick={async () => {
+                    toast({
+                      title: "Descargando fotos...",
+                      description: `Descargando ${attachedImages.length} foto${attachedImages.length > 1 ? 's' : ''}`,
+                    });
+                    
+                    for (let i = 0; i < attachedImages.length; i++) {
+                      const img = attachedImages[i];
+                      if (img.publicUrl) {
+                        try {
+                          const response = await fetch(img.publicUrl);
+                          const blob = await response.blob();
+                          const url = window.URL.createObjectURL(blob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = `foto_reporte_${i + 1}.${img.mime_type?.split('/')[1] || 'jpg'}`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          window.URL.revokeObjectURL(url);
+                        } catch (err) {
+                          console.error('Error downloading image:', err);
+                        }
+                      }
+                    }
+                    
+                    toast({
+                      title: "Descarga completa",
+                      description: `Se descargaron ${attachedImages.length} foto${attachedImages.length > 1 ? 's' : ''}`,
+                    });
+                  }}
+                >
+                  <Download className="w-3 h-3" />
+                  Descargar {attachedImages.length > 1 ? 'todas' : ''}
+                </Button>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {attachedImages.map((img) => (
                 <div 
