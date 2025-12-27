@@ -2,7 +2,7 @@
 // Shows alert when earthquake is detected near user's location
 
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, MapPin, ThermometerSun, CheckCircle, AlertCircle, HelpCircle } from 'lucide-react';
+import { AlertTriangle, MapPin, ThermometerSun, CheckCircle, AlertCircle, HelpCircle, Camera, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,6 +14,7 @@ import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { formatDistance, getGoogleMapsLink } from '@/hooks/useLocation';
 import { playAlertWithVibration } from '@/lib/alertSound';
@@ -21,6 +22,8 @@ import { areEarthquakeSoundsEnabled } from '@/hooks/useAlertSettings';
 import type { USGSEarthquake, QuakeIntensity, QuakeDamage, GeoPosition, UserRole } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { MediaCapture } from '@/components/MediaCapture';
+import { VoiceRecorder } from '@/components/VoiceRecorder';
 
 interface SeismicAlertProps {
   earthquake: USGSEarthquake;
@@ -45,6 +48,9 @@ export function SeismicAlert({
   const [status, setStatus] = useState<QuakeDamage>('OK');
   const [helpMessage, setHelpMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
+  const [voiceDurationMs, setVoiceDurationMs] = useState<number>(0);
   const { toast } = useToast();
 
   // Play alert sound and vibration when component mounts (if enabled)
@@ -110,7 +116,7 @@ export function SeismicAlert({
       }
 
       // Insert quake checkin
-      const { error: checkinError } = await supabase
+      const { data: checkinData, error: checkinError } = await supabase
         .from('quake_checkins')
         .insert({
           user_id: user.id,
@@ -119,16 +125,20 @@ export function SeismicAlert({
           damage_report: reportStatus,
           lat: position.lat,
           lng: position.lng,
-        });
+        })
+        .select()
+        .single();
 
       if (checkinError) {
         console.error('Error submitting checkin:', checkinError);
         throw checkinError;
       }
 
+      let helpRequestId: string | null = null;
+
       // If needs help, create help request
       if (reportStatus === 'DAMAGE' || reportStatus === 'UNSURE') {
-        const { error: helpError } = await supabase
+        const { data: helpData, error: helpError } = await supabase
           .from('help_requests')
           .insert({
             user_id: user.id,
@@ -136,20 +146,70 @@ export function SeismicAlert({
             quake_event_id: earthquake.id,
             lat: position.lat,
             lng: position.lng,
-            message: helpMessage || `Sismo M${mag.toFixed(1)} - ${reportStatus === 'DAMAGE' ? 'Necesito ayuda' : 'No estoy seguro'}`,
-          });
+            message: helpMessage || `Sismo M${mag.toFixed(1)} - ${reportStatus === 'DAMAGE' ? 'Reporto daños / Ayuda necesaria' : 'No estoy seguro'}`,
+          })
+          .select()
+          .single();
 
         if (helpError) {
           console.error('Error creating help request:', helpError);
+        } else {
+          helpRequestId = helpData.id;
         }
+      }
 
-        // Alert is handled inside the app (realtime + notifications)
+      // Upload media files if present
+      const reportId = helpRequestId || checkinData.id;
+      const reportType = helpRequestId ? 'help_request' : 'quake_checkin';
+
+      // Upload images
+      for (let i = 0; i < mediaFiles.length; i++) {
+        const file = mediaFiles[i];
+        const filePath = `${user.id}/${reportType}/${reportId}/image_${i}_${Date.now()}.jpg`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('reports_media')
+          .upload(filePath, file, { contentType: file.type });
+
+        if (!uploadError) {
+          await supabase.from('report_media').insert({
+            report_id: reportId,
+            report_type: reportType,
+            media_type: 'image',
+            mime_type: file.type,
+            storage_path: filePath,
+          });
+        } else {
+          console.error('Error uploading image:', uploadError);
+        }
+      }
+
+      // Upload voice recording if present
+      if (voiceBlob) {
+        const voicePath = `${user.id}/${reportType}/${reportId}/voice_${Date.now()}.webm`;
+        
+        const { error: voiceUploadError } = await supabase.storage
+          .from('reports_media')
+          .upload(voicePath, voiceBlob, { contentType: 'audio/webm' });
+
+        if (!voiceUploadError) {
+          await supabase.from('report_media').insert({
+            report_id: reportId,
+            report_type: reportType,
+            media_type: 'audio',
+            mime_type: 'audio/webm',
+            storage_path: voicePath,
+            duration_ms: voiceDurationMs,
+          });
+        } else {
+          console.error('Error uploading voice:', voiceUploadError);
+        }
       }
 
       toast({
         title: felt ? "Reporte enviado" : "Gracias por reportar",
         description: felt 
-          ? `Intensidad ${reportIntensity}/10 - ${reportStatus}` 
+          ? `Intensidad ${reportIntensity}/10 - ${reportStatus}${mediaFiles.length > 0 ? ` • ${mediaFiles.length} foto(s)` : ''}${voiceBlob ? ' • Nota de voz' : ''}` 
           : "No sentiste el sismo, tu ubicación ayuda a mapear el evento",
       });
 
@@ -321,7 +381,7 @@ export function SeismicAlert({
                 <Label htmlFor="damage" className="flex items-center gap-2 cursor-pointer flex-1">
                   <AlertCircle className="w-5 h-5 text-destructive" />
                   <div>
-                    <div className="font-medium">Necesito ayuda (14)</div>
+                    <div className="font-medium">Reporto Daños / Ayuda Necesaria</div>
                     <div className="text-xs text-muted-foreground">Hay daños o lesiones</div>
                   </div>
                 </Label>
@@ -348,25 +408,97 @@ export function SeismicAlert({
             )}
 
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-center">
-              <p className="text-destructive font-bold">🆘 AYUDA 14</p>
+              <p className="text-destructive font-bold">🆘 Reporto Daños / Ayuda Necesaria</p>
               <p className="text-sm text-muted-foreground mt-1">
                 Tu ubicación será compartida con la comunidad
               </p>
             </div>
 
-            <div>
-              <Label htmlFor="help-message" className="text-sm font-medium">
-                Describe la situación (opcional)
-              </Label>
-              <Textarea
-                id="help-message"
-                value={helpMessage}
-                onChange={(e) => setHelpMessage(e.target.value)}
-                placeholder="Ej: Atrapado, lesión en pierna, edificio dañado..."
-                className="mt-2"
-                rows={3}
-              />
-            </div>
+            {/* Tabs for different input types */}
+            <Tabs defaultValue="text" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="text" className="text-xs">
+                  Texto
+                </TabsTrigger>
+                <TabsTrigger value="photo" className="text-xs flex items-center gap-1">
+                  <Camera className="w-3 h-3" />
+                  Foto
+                </TabsTrigger>
+                <TabsTrigger value="voice" className="text-xs flex items-center gap-1">
+                  <Mic className="w-3 h-3" />
+                  Voz
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="text" className="mt-4">
+                <div>
+                  <Label htmlFor="help-message" className="text-sm font-medium">
+                    Describe la situación (opcional)
+                  </Label>
+                  <Textarea
+                    id="help-message"
+                    value={helpMessage}
+                    onChange={(e) => setHelpMessage(e.target.value)}
+                    placeholder="Ej: Atrapado, lesión en pierna, edificio dañado..."
+                    className="mt-2"
+                    rows={3}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="photo" className="mt-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Fotos de daños (opcional)
+                  </Label>
+                  <MediaCapture
+                    onImagesSelected={setMediaFiles}
+                    maxImages={3}
+                  />
+                  {mediaFiles.length > 0 && (
+                    <p className="text-xs text-safe text-center">
+                      ✓ {mediaFiles.length} foto(s) lista(s) para enviar
+                    </p>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="voice" className="mt-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Nota de voz (opcional)
+                  </Label>
+                  <VoiceRecorder
+                    onRecordingComplete={(blob, durationMs) => {
+                      setVoiceBlob(blob);
+                      setVoiceDurationMs(durationMs);
+                    }}
+                    onClear={() => {
+                      setVoiceBlob(null);
+                      setVoiceDurationMs(0);
+                    }}
+                    maxDurationMs={30000}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            {/* Summary of attachments */}
+            {(mediaFiles.length > 0 || voiceBlob) && (
+              <div className="bg-muted/50 rounded-lg p-2 text-xs text-muted-foreground flex items-center gap-2 justify-center flex-wrap">
+                <span>Adjuntos:</span>
+                {mediaFiles.length > 0 && (
+                  <span className="flex items-center gap-1 bg-background px-2 py-0.5 rounded">
+                    <Camera className="w-3 h-3" /> {mediaFiles.length} foto(s)
+                  </span>
+                )}
+                {voiceBlob && (
+                  <span className="flex items-center gap-1 bg-background px-2 py-0.5 rounded">
+                    <Mic className="w-3 h-3" /> Nota de voz
+                  </span>
+                )}
+              </div>
+            )}
 
             <Button
               variant="destructive"
@@ -374,7 +506,7 @@ export function SeismicAlert({
               onClick={handleHelpSubmit}
               disabled={submitting}
             >
-              {submitting ? 'Enviando...' : '🆘 Enviar AYUDA 14'}
+              {submitting ? 'Enviando...' : '🆘 Enviar Reporte de Daños'}
             </Button>
           </div>
         )}
