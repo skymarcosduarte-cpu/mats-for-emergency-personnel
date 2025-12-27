@@ -1167,15 +1167,42 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               />
             </div>
 
-            <div className="p-3 rounded-lg bg-muted/30 space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <Shield className="w-4 h-4 text-primary" />
-                Ubicación siempre activa
+            {/* Share location toggle */}
+            <div className="flex items-center justify-between py-2">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center",
+                  shareLocation ? "bg-primary/10" : "bg-muted"
+                )}>
+                  <MapPin className={cn(
+                    "w-5 h-5",
+                    shareLocation ? "text-primary" : "text-muted-foreground"
+                  )} />
+                </div>
+                <div>
+                  <Label htmlFor="share-location-toggle" className="text-foreground font-medium">
+                    Compartir ubicación en tiempo real
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {shareLocation 
+                      ? 'Tu ubicación es visible para la comunidad'
+                      : 'Tu ubicación no se comparte'}
+                  </p>
+                </div>
               </div>
+              <Switch
+                id="share-location-toggle"
+                checked={shareLocation}
+                onCheckedChange={(value) => handlePrivacyToggle('share_location', value)}
+                disabled={savingPrivacy}
+              />
+            </div>
+
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
               <p className="text-xs text-muted-foreground">
                 Tu ubicación se comparte en tiempo real con la red M.A.T.S. para tu seguridad. 
                 Esto permite que la comunidad pueda localizarte en caso de emergencia y protegerte 
-                de situaciones de riesgo como secuestros.
+                de situaciones de riesgo.
               </p>
             </div>
           </CardContent>
