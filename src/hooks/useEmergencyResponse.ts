@@ -325,31 +325,43 @@ export function useEmergencyResponse() {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
 
-        // Update user location in database
-        await supabase
-          .from('user_locations')
-          .upsert({
-            user_id: user.id,
-            lat,
-            lng,
-            accuracy: position.coords.accuracy,
-            heading: position.coords.heading,
-            speed: position.coords.speed,
-            is_online: true,
-            updated_at: new Date().toISOString(),
-          });
-
-        // Also update the responder record with current location
-        if (requestId || activeResponse?.requestId) {
-          await supabase
-            .from('help_request_responders')
-            .update({
+        // Update user location in database - don't let errors stop the flow
+        try {
+          const { error: locationError } = await supabase
+            .from('user_locations')
+            .upsert({
+              user_id: user.id,
               lat,
               lng,
+              accuracy: position.coords.accuracy,
+              heading: position.coords.heading,
+              speed: position.coords.speed,
+              is_online: true,
               updated_at: new Date().toISOString(),
-            })
-            .eq('request_id', requestId || activeResponse?.requestId)
-            .eq('user_id', user.id);
+            });
+          
+          if (locationError) {
+            console.warn('[useEmergencyResponse] Error updating user_locations (non-fatal):', locationError);
+          }
+        } catch (err) {
+          console.warn('[useEmergencyResponse] Exception updating user_locations:', err);
+        }
+
+        // Also update the responder record with current location - this is more important
+        if (requestId || activeResponse?.requestId) {
+          try {
+            await supabase
+              .from('help_request_responders')
+              .update({
+                lat,
+                lng,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('request_id', requestId || activeResponse?.requestId)
+              .eq('user_id', user.id);
+          } catch (err) {
+            console.warn('[useEmergencyResponse] Error updating responder position:', err);
+          }
         }
 
         setActiveResponse(prev => prev ? {
