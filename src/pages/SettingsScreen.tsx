@@ -33,7 +33,9 @@ import {
   Wifi,
   FlaskConical,
   MapPin,
-  FileText
+  FileText,
+  Database,
+  FileDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,6 +72,8 @@ import { useAlertSettings } from '@/hooks/useAlertSettings';
 import { playSubtleAlert, playUrgentAlert } from '@/lib/alertSound';
 import type { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
+import { useUserDataExport } from '@/hooks/useUserDataExport';
+import { Badge } from '@/components/ui/badge';
 import QRCode from 'qrcode';
 
 interface SettingsScreenProps {
@@ -84,7 +88,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const { profile, role, signOut, updateProfile, updateRole, deleteAccount } = useAuth();
   const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
   const { helpRequestSounds, earthquakeSounds, earthquakeRadiusMiles, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusMiles } = useAlertSettings();
+  const { loading: loadingDataExport, data: userDataExport, fetchAllUserData, downloadAsJson } = useUserDataExport();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [showDataExportDialog, setShowDataExportDialog] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [copied, setCopied] = useState(false);
@@ -620,6 +626,60 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <FileText className="w-4 h-4 mr-2" />
               Ver Aviso de Privacidad y Términos
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* ARCO Rights - Data Export Card */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Database className="w-5 h-5 text-primary" />
+              Mis Datos Personales (ARCO)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Tienes derecho a Acceder, Rectificar, Cancelar y Oponerte al uso de tus datos personales. 
+              Aquí puedes ver y descargar toda la información que tenemos almacenada sobre ti.
+            </p>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  await fetchAllUserData();
+                  setShowDataExportDialog(true);
+                }}
+                disabled={loadingDataExport}
+              >
+                {loadingDataExport ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Eye className="w-4 h-4 mr-2" />
+                )}
+                Ver Datos
+              </Button>
+              <Button
+                variant="outline"
+                onClick={downloadAsJson}
+                disabled={loadingDataExport}
+              >
+                {loadingDataExport ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <FileDown className="w-4 h-4 mr-2" />
+                )}
+                Exportar JSON
+              </Button>
+            </div>
+
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                <strong>Rectificación:</strong> Puedes editar tus datos desde las secciones de Perfil y Datos Médicos.
+                <br />
+                <strong>Cancelación:</strong> Puedes eliminar tu cuenta desde "Eliminar cuenta" en Configuración de Cuenta.
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -1787,6 +1847,162 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <DialogFooter>
             <Button onClick={() => setShowPrivacyDialog(false)}>
               Entendido
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Data Export Dialog */}
+      <Dialog open={showDataExportDialog} onOpenChange={setShowDataExportDialog}>
+        <DialogContent className="sm:max-w-2xl bg-card border-border max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Database className="w-5 h-5 text-primary" />
+              Mis Datos Personales
+            </DialogTitle>
+            <DialogDescription>
+              Información almacenada en tu cuenta
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="flex-1 max-h-[60vh] pr-4">
+            {userDataExport ? (
+              <div className="space-y-4 text-sm">
+                {/* Profile Data */}
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Perfil
+                  </h3>
+                  {userDataExport.profile ? (
+                    <div className="space-y-1 text-xs">
+                      <p><strong>Nombre:</strong> {(userDataExport.profile as Record<string, unknown>).full_name as string}</p>
+                      <p><strong>Apodo:</strong> {(userDataExport.profile as Record<string, unknown>).nickname as string}</p>
+                      <p><strong>Teléfono:</strong> {(userDataExport.profile as Record<string, unknown>).phone as string}</p>
+                      <p><strong>Especialidad:</strong> {(userDataExport.profile as Record<string, unknown>).specialty as string || 'No especificada'}</p>
+                      <p><strong>Cumpleaños:</strong> {(userDataExport.profile as Record<string, unknown>).birthday as string || 'No especificado'}</p>
+                      <p><strong>Rol:</strong> {userDataExport.role || 'No asignado'}</p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">Sin datos de perfil</p>
+                  )}
+                </div>
+
+                {/* Medical Data */}
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <HeartPulse className="w-4 h-4 text-safe" />
+                    Datos Médicos
+                  </h3>
+                  {userDataExport.profile && ((userDataExport.profile as Record<string, unknown>).blood_type || (userDataExport.profile as Record<string, unknown>).allergies) ? (
+                    <div className="space-y-1 text-xs">
+                      <p><strong>Tipo de sangre:</strong> {(userDataExport.profile as Record<string, unknown>).blood_type as string || 'No especificado'}</p>
+                      <p><strong>Alergias:</strong> {(userDataExport.profile as Record<string, unknown>).allergies as string || 'Ninguna'}</p>
+                      <p><strong>Condiciones médicas:</strong> {(userDataExport.profile as Record<string, unknown>).medical_conditions as string || 'Ninguna'}</p>
+                      <p><strong>Medicamentos actuales:</strong> {(userDataExport.profile as Record<string, unknown>).current_medications as string || 'Ninguno'}</p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">Sin datos médicos</p>
+                  )}
+                </div>
+
+                {/* Emergency Contacts */}
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <User className="w-4 h-4 text-warning" />
+                    Contactos de Emergencia
+                    <Badge variant="secondary" className="text-xs">{userDataExport.emergencyContacts.length}</Badge>
+                  </h3>
+                  {userDataExport.emergencyContacts.length > 0 ? (
+                    <div className="space-y-2">
+                      {userDataExport.emergencyContacts.map((contact, i) => (
+                        <div key={i} className="text-xs p-2 bg-background rounded">
+                          <p><strong>{contact.name as string}</strong> - {contact.phone as string}</p>
+                          <p className="text-muted-foreground">{contact.relationship as string}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">Sin contactos de emergencia</p>
+                  )}
+                </div>
+
+                {/* Location Data */}
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    Ubicación Actual
+                  </h3>
+                  {userDataExport.userLocation ? (
+                    <div className="space-y-1 text-xs">
+                      <p><strong>Latitud:</strong> {(userDataExport.userLocation as Record<string, unknown>).lat as number}</p>
+                      <p><strong>Longitud:</strong> {(userDataExport.userLocation as Record<string, unknown>).lng as number}</p>
+                      <p><strong>Última actualización:</strong> {new Date((userDataExport.userLocation as Record<string, unknown>).updated_at as string).toLocaleString('es-MX')}</p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">Sin datos de ubicación</p>
+                  )}
+                </div>
+
+                {/* Activity Summary */}
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <Info className="w-4 h-4" />
+                    Resumen de Actividad
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-2 bg-background rounded text-center">
+                      <p className="text-lg font-bold text-primary">{userDataExport.helpRequests.length}</p>
+                      <p className="text-muted-foreground">Solicitudes de ayuda</p>
+                    </div>
+                    <div className="p-2 bg-background rounded text-center">
+                      <p className="text-lg font-bold text-warning">{userDataExport.panicEvents.length}</p>
+                      <p className="text-muted-foreground">Alertas de pánico</p>
+                    </div>
+                    <div className="p-2 bg-background rounded text-center">
+                      <p className="text-lg font-bold text-safe">{userDataExport.roadReports.length}</p>
+                      <p className="text-muted-foreground">Reportes viales</p>
+                    </div>
+                    <div className="p-2 bg-background rounded text-center">
+                      <p className="text-lg font-bold text-muted-foreground">{userDataExport.transitTrips.length}</p>
+                      <p className="text-muted-foreground">Viajes registrados</p>
+                    </div>
+                    <div className="p-2 bg-background rounded text-center">
+                      <p className="text-lg font-bold text-muted-foreground">{userDataExport.statusMessages.length}</p>
+                      <p className="text-muted-foreground">Mensajes de estado</p>
+                    </div>
+                    <div className="p-2 bg-background rounded text-center">
+                      <p className="text-lg font-bold text-muted-foreground">{userDataExport.internalMessages.length}</p>
+                      <p className="text-muted-foreground">Mensajes internos</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Export Info */}
+                <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <p className="text-xs text-primary">
+                    Datos exportados el {new Date(userDataExport.exportedAt).toLocaleString('es-MX')}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </ScrollArea>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={downloadAsJson}
+              disabled={loadingDataExport}
+            >
+              <FileDown className="w-4 h-4 mr-2" />
+              Descargar JSON
+            </Button>
+            <Button onClick={() => setShowDataExportDialog(false)}>
+              Cerrar
             </Button>
           </DialogFooter>
         </DialogContent>
