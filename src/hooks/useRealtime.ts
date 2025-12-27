@@ -44,6 +44,7 @@ interface HelpRequest {
   audio_url: string | null;
   audio_duration_ms: number | null;
   arrived_at: string | null;
+  creator_name?: string | null; // Name of creator if show_name_on_map is enabled
 }
 
 interface RoadReport {
@@ -194,6 +195,30 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
       .order('created_at', { ascending: false })
       .limit(50);
 
+    // Collect all unique user_ids to fetch their public profiles
+    const allUserIds = [
+      ...(helpData || []).map((h: any) => h.user_id),
+      ...(panicData || []).map((p: any) => p.user_id),
+    ].filter(Boolean);
+    const uniqueUserIds = [...new Set(allUserIds)];
+
+    // Fetch public profiles for users who have show_name_on_map enabled
+    let userNamesMap: Record<string, string> = {};
+    if (uniqueUserIds.length > 0) {
+      const { data: profilesData } = await supabase
+        .from('profiles_public')
+        .select('user_id, nickname, show_name_on_map')
+        .in('user_id', uniqueUserIds);
+      
+      if (profilesData) {
+        profilesData.forEach((profile: any) => {
+          if (profile.show_name_on_map && profile.nickname) {
+            userNamesMap[profile.user_id] = profile.nickname;
+          }
+        });
+      }
+    }
+
     // Map panic_events to HelpRequest format for unified display
     const mappedPanicEvents: HelpRequest[] = (panicData || []).map((pe: any) => ({
       id: pe.id,
@@ -212,10 +237,17 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
       audio_url: pe.audio_url,
       audio_duration_ms: pe.audio_duration_ms,
       arrived_at: pe.arrived_at,
+      creator_name: userNamesMap[pe.user_id] || null,
+    }));
+
+    // Map help_requests with creator names
+    const mappedHelpRequests: HelpRequest[] = (helpData || []).map((hr: any) => ({
+      ...hr,
+      creator_name: userNamesMap[hr.user_id] || null,
     }));
 
     // Combine both sources and sort by created_at
-    const allRequests = [...(helpData || []), ...mappedPanicEvents]
+    const allRequests = [...mappedHelpRequests, ...mappedPanicEvents]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 50);
 
@@ -243,6 +275,29 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
       .order('resolved_at', { ascending: false })
       .limit(20);
 
+    // Collect resolved user_ids for names
+    const resolvedUserIds = [
+      ...(resolvedHelpData || []).map((h: any) => h.user_id),
+      ...(resolvedPanicData || []).map((p: any) => p.user_id),
+    ].filter(Boolean);
+    const uniqueResolvedUserIds = [...new Set(resolvedUserIds)].filter(id => !userNamesMap[id]);
+
+    // Fetch names for resolved requests if not already cached
+    if (uniqueResolvedUserIds.length > 0) {
+      const { data: resolvedProfilesData } = await supabase
+        .from('profiles_public')
+        .select('user_id, nickname, show_name_on_map')
+        .in('user_id', uniqueResolvedUserIds);
+      
+      if (resolvedProfilesData) {
+        resolvedProfilesData.forEach((profile: any) => {
+          if (profile.show_name_on_map && profile.nickname) {
+            userNamesMap[profile.user_id] = profile.nickname;
+          }
+        });
+      }
+    }
+
     // Map resolved panic_events
     const mappedResolvedPanic: HelpRequest[] = (resolvedPanicData || []).map((pe: any) => ({
       id: pe.id,
@@ -261,9 +316,16 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
       audio_url: pe.audio_url,
       audio_duration_ms: pe.audio_duration_ms,
       arrived_at: pe.arrived_at,
+      creator_name: userNamesMap[pe.user_id] || null,
     }));
 
-    const allResolved = [...(resolvedHelpData || []), ...mappedResolvedPanic]
+    // Map resolved help_requests with names
+    const mappedResolvedHelp: HelpRequest[] = (resolvedHelpData || []).map((hr: any) => ({
+      ...hr,
+      creator_name: userNamesMap[hr.user_id] || null,
+    }));
+
+    const allResolved = [...mappedResolvedHelp, ...mappedResolvedPanic]
       .sort((a, b) => new Date(b.resolved_at || b.created_at).getTime() - new Date(a.resolved_at || a.created_at).getTime())
       .slice(0, 20);
 

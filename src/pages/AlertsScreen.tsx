@@ -927,6 +927,11 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                           <span className="text-xs text-muted-foreground">
                             {new Date(req.created_at).toLocaleTimeString()}
                           </span>
+                          {(req as any).creator_name && (
+                            <span className="text-xs text-muted-foreground">
+                              • por <span className="font-medium text-foreground">{(req as any).creator_name}</span>
+                            </span>
+                          )}
                         </div>
                         {req.message && (
                           <p className="text-sm text-foreground">{req.message}</p>
@@ -1091,12 +1096,17 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 {resolvedRequests.map((req) => (
                   <Card key={req.id} className="bg-card/50 border-border opacity-75">
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-muted text-muted-foreground line-through">
                               {req.kind === 'SISMO_AYUDA_14' ? 'Daños / Ayuda' : 'Ayuda'}
                             </span>
+                            {(req as any).creator_name && (
+                              <span className="text-xs text-muted-foreground">
+                                por {(req as any).creator_name}
+                              </span>
+                            )}
                             <Badge variant="secondary" className="text-xs">
                               <Check className="w-3 h-3 mr-1" />
                               Resuelta
