@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { playMessageNotification } from '@/lib/alertSound';
 
 interface PushSubscriptionState {
   isSupported: boolean;
@@ -58,6 +59,9 @@ export function useWebPushSubscription() {
       .on('broadcast', { event: 'new_message' }, (payload) => {
         console.log('[Push] Received broadcast notification:', payload);
         const { senderName, messagePreview } = payload.payload as { senderName: string; messagePreview: string };
+        
+        // Always play the strong notification sound
+        playMessageNotification();
         
         // Show notification if tab is not focused
         if (document.hidden && Notification.permission === 'granted') {
