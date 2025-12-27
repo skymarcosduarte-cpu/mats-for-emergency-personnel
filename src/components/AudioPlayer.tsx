@@ -30,17 +30,17 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ storagePath, className
           return;
         }
 
-        const { data, error } = await supabase.storage
+        // Use public URL for the public bucket
+        const { data } = supabase.storage
           .from('reports_media')
-          .createSignedUrl(storagePath, 3600); // 1 hour validity
+          .getPublicUrl(storagePath);
 
-        if (error) {
-          console.error('Error getting audio URL:', error);
+        if (data?.publicUrl) {
+          setAudioUrl(data.publicUrl);
+        } else {
+          console.error('Error getting audio public URL');
           setError(true);
-          return;
         }
-
-        setAudioUrl(data.signedUrl);
       } catch (e) {
         console.error('Error fetching audio:', e);
         setError(true);
