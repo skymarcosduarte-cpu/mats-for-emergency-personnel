@@ -3,7 +3,7 @@
 // Also supports test mode for simulating alerts without database
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, AlertTriangle, Loader2, FlaskConical, Navigation, Users } from 'lucide-react';
+import { X, AlertTriangle, Loader2, FlaskConical, Navigation, Users, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,12 +27,19 @@ const PANIC_TYPE_LABELS: Record<string, { label: string; emoji: string }> = {
   'SISMO_AYUDA_14': { label: 'Ayuda por Sismo', emoji: '🏚️' },
 };
 
+interface ResponderInfo {
+  user_id: string;
+  nickname: string;
+}
+
 interface ActiveAlertBannerProps {
   testAlert?: TestPanicAlert | null;
   onClearTestAlert?: () => void;
   refreshTrigger?: number; // Trigger refetch when this changes
   responderCount?: number; // Number of responders to user's alert
   onViewResponders?: () => void; // Callback to open responder tracking map
+  onMessageResponder?: (userId: string, nickname: string) => void; // Callback to open chat with responder
+  responders?: ResponderInfo[]; // List of responders to show chat buttons
 }
 
 export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
@@ -41,6 +48,8 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
   refreshTrigger,
   responderCount = 0,
   onViewResponders,
+  onMessageResponder,
+  responders = [],
 }) => {
   const { user } = useAuth();
   const [activeAlert, setActiveAlert] = useState<ActiveAlert | null>(null);
@@ -370,6 +379,31 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
 
       {/* Buttons */}
       <div className="flex gap-2 flex-shrink-0">
+        {/* Chat button - only show if there are responders */}
+        {responderCount > 0 && onMessageResponder && responders.length > 0 && !isTestAlert && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const firstResponder = responders[0];
+              if (firstResponder) {
+                onMessageResponder(firstResponder.user_id, firstResponder.nickname);
+              }
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              const firstResponder = responders[0];
+              if (firstResponder) {
+                onMessageResponder(firstResponder.user_id, firstResponder.nickname);
+              }
+            }}
+            className="font-semibold px-3 touch-manipulation border-0 bg-primary text-primary-foreground hover:bg-primary/90"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            <MessageCircle className="w-4 h-4" />
+          </Button>
+        )}
+
         {/* View responders button - only show if there are responders */}
         {responderCount > 0 && onViewResponders && !isTestAlert && (
           <Button

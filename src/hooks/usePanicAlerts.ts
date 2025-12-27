@@ -63,6 +63,7 @@ export interface EmergencyAlertData {
   audioDurationMs?: number | null;
   createdAt: string;
   userId: string;
+  creatorName?: string | null;
 }
 
 export function usePanicAlerts() {
@@ -162,13 +163,30 @@ export function usePanicAlerts() {
   }, [getGoogleMapsLink]);
 
   // Show notification for panic event
-  const showPanicNotification = useCallback((event: PanicEvent) => {
+  const showPanicNotification = useCallback(async (event: PanicEvent) => {
     // Prevent duplicate notifications
     if (notifiedIds.current.has(event.id)) return;
     notifiedIds.current.add(event.id);
 
     const typeInfo = PANIC_TYPE_LABELS[event.panic_type] || { label: 'Emergencia', emoji: '🆘' };
     const mapsLink = getGoogleMapsLink(event.lat, event.lng);
+    
+    // Fetch creator's nickname if not available
+    let creatorName = event.user_nickname || null;
+    if (!creatorName) {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('nickname')
+          .eq('id', event.user_id)
+          .maybeSingle();
+        if (profile?.nickname) {
+          creatorName = profile.nickname;
+        }
+      } catch (err) {
+        console.warn('[usePanicAlerts] Failed to fetch creator nickname:', err);
+      }
+    }
     
     // Set latest emergency alert for prominent overlay
     setLatestEmergencyAlert({
@@ -179,6 +197,7 @@ export function usePanicAlerts() {
       lng: event.lng,
       createdAt: event.created_at,
       userId: event.user_id,
+      creatorName,
     });
     
     // Vibrate urgently
