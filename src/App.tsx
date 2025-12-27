@@ -48,6 +48,7 @@ import { useOverdueTrips } from '@/hooks/useOverdueTrips';
 import { useEmergencyNotification } from '@/hooks/useEmergencyNotification';
 import { useInternalMessages } from '@/hooks/useInternalMessages';
 import { useNewUserNotification } from '@/hooks/useNewUserNotification';
+import { useWebPushSubscription } from '@/hooks/useWebPushSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { UserRole, USGSEarthquake, PanicType } from '@/types';
@@ -238,8 +239,11 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   // Background sync - keeps data fresh every 2 minutes
   useBackgroundSync();
 
-  // Push notifications
+  // Push notifications (browser)
   const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
+  
+  // Web Push subscription for background notifications
+  const { isSupported: webPushSupported, isSubscribed, subscribe: subscribeToPush } = useWebPushSubscription();
   
   // Status check-in timer
   const { 
@@ -250,12 +254,23 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     getTimeSinceEarthquake 
   } = useStatusCheckin();
   
-  // Request notification permission on mount
+  // Request notification permission and register web push on mount
   useEffect(() => {
     if (permission === 'default') {
       requestPermission();
     }
   }, [permission, requestPermission]);
+  
+  // Auto-subscribe to web push when notifications are granted
+  useEffect(() => {
+    if (webPushSupported && permission === 'granted' && !isSubscribed) {
+      subscribeToPush().then(success => {
+        if (success) {
+          console.log('[App] Web Push subscription registered');
+        }
+      });
+    }
+  }, [webPushSupported, permission, isSubscribed, subscribeToPush]);
   
   // Callback for when earthquake is detected
   const handleEarthquakeDetected = useCallback((earthquake: USGSEarthquake, distanceKm: number) => {

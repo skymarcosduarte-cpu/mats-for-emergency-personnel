@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.notify-trip-update]
 verify_jwt = false
+
+[functions.send-message-push]
+verify_jwt = false
