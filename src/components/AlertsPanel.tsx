@@ -278,6 +278,12 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
     setSelectedAlertType(null);
   };
 
+  // Handler to view location on map and close the sheet
+  const handleViewOnMap = (lat: number, lng: number) => {
+    setSheetOpen(false); // Close sheet first
+    onViewLocation(lat, lng);
+  };
+
   const handleDeleteFromModal = async () => {
     if (!selectedAlert || !selectedAlertType) return;
     
@@ -426,10 +432,10 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                               size="sm"
                               variant="secondary"
                               className="flex-1 h-8 text-xs touch-manipulation"
-                              onClick={() => onViewLocation(event.lat, event.lng)}
+                              onClick={() => handleViewOnMap(event.lat, event.lng)}
                               onTouchEnd={(e) => {
                                 e.preventDefault();
-                                onViewLocation(event.lat, event.lng);
+                                handleViewOnMap(event.lat, event.lng);
                               }}
                               style={{ WebkitTapHighlightColor: 'transparent' }}
                             >
@@ -583,10 +589,10 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                                 size="sm"
                                 variant="secondary"
                                 className="flex-1 h-8 text-xs touch-manipulation"
-                                onClick={() => onViewLocation(request.lat, request.lng)}
+                                onClick={() => handleViewOnMap(request.lat, request.lng)}
                                 onTouchEnd={(e) => {
                                   e.preventDefault();
-                                  onViewLocation(request.lat, request.lng);
+                                  handleViewOnMap(request.lat, request.lng);
                                 }}
                                 style={{ WebkitTapHighlightColor: 'transparent' }}
                               >
