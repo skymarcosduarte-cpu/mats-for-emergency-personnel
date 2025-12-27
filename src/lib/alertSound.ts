@@ -224,3 +224,65 @@ export function playPositiveAlert(): void {
   playPositiveSound();
   triggerPositiveVibration();
 }
+
+/**
+ * Play a soft message notification sound (for internal messages)
+ * Uses two gentle ascending tones
+ */
+export function playMessageSound(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
+
+  const now = ctx.currentTime;
+  
+  // Two soft ascending tones (like a gentle notification)
+  const osc1 = ctx.createOscillator();
+  const gain1 = ctx.createGain();
+  osc1.connect(gain1);
+  gain1.connect(ctx.destination);
+  osc1.frequency.value = 587; // D5
+  osc1.type = 'sine';
+  gain1.gain.setValueAtTime(0, now);
+  gain1.gain.linearRampToValueAtTime(0.12, now + 0.02);
+  gain1.gain.linearRampToValueAtTime(0, now + 0.12);
+  osc1.start(now);
+  osc1.stop(now + 0.12);
+
+  // Second higher tone
+  const osc2 = ctx.createOscillator();
+  const gain2 = ctx.createGain();
+  osc2.connect(gain2);
+  gain2.connect(ctx.destination);
+  osc2.frequency.value = 880; // A5
+  osc2.type = 'sine';
+  gain2.gain.setValueAtTime(0, now + 0.1);
+  gain2.gain.linearRampToValueAtTime(0.12, now + 0.12);
+  gain2.gain.linearRampToValueAtTime(0, now + 0.25);
+  osc2.start(now + 0.1);
+  osc2.stop(now + 0.25);
+}
+
+/**
+ * Trigger a short gentle vibration for messages
+ */
+export function triggerMessageVibration(): void {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate([50, 30, 50]);
+    } catch (e) {
+      console.warn('Vibration not supported');
+    }
+  }
+}
+
+/**
+ * Play message notification (sound + vibration)
+ */
+export function playMessageNotification(): void {
+  playMessageSound();
+  triggerMessageVibration();
+}
