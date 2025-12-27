@@ -107,16 +107,12 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
   };
 
   const handleDelete = async (id: string) => {
-    if (contacts.length <= MIN_EMERGENCY_CONTACTS) {
-      toast({ 
-        title: 'No se puede eliminar', 
-        description: `Se requiere al menos ${MIN_EMERGENCY_CONTACTS} contacto de emergencia`,
-        variant: 'destructive'
-      });
-      return;
-    }
+    const isLastContact = contacts.length === 1;
+    const confirmMessage = isLastContact 
+      ? '¿En verdad desea borrar su único contacto de emergencia? No podrá usar el botón SOS hasta agregar otro.'
+      : '¿Eliminar este contacto de emergencia?';
     
-    if (confirm('¿Eliminar este contacto de emergencia?')) {
+    if (confirm(confirmMessage)) {
       try {
         await deleteContact(id);
         toast({ title: 'Contacto eliminado' });
@@ -333,18 +329,9 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
                           <Button
                             size="icon"
                             variant="ghost"
-                            className={cn(
-                              "h-8 w-8",
-                              contacts.length <= MIN_EMERGENCY_CONTACTS 
-                                ? "text-muted-foreground/40 cursor-not-allowed" 
-                                : "text-destructive hover:bg-destructive/10"
-                            )}
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
                             onClick={() => handleDelete(contact.id)}
-                            disabled={contacts.length <= MIN_EMERGENCY_CONTACTS}
-                            title={contacts.length <= MIN_EMERGENCY_CONTACTS 
-                              ? "No se puede eliminar - se requiere al menos 1 contacto" 
-                              : "Eliminar contacto"
-                            }
+                            title="Eliminar contacto"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
