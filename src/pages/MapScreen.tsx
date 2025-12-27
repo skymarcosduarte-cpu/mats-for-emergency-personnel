@@ -494,8 +494,8 @@ const createReportIcon = (severity: number, category?: string) => {
 };
 
 // Panic event icons with different colors based on type
-// Now includes responder count badge to show how many rescatistas are responding
-const createPanicIcon = (panicType: string, responderCount: number = 0) => {
+// Now includes responder name badge to show who is responding
+const createPanicIcon = (panicType: string, responderNames: string[] = []) => {
   const typeConfig: Record<string, { color: string; emoji: string }> = {
     'AMBULANCIA_PROPIA': { color: '#ef4444', emoji: '🚑' },
     'AMBULANCIA_TERCERO': { color: '#ef4444', emoji: '🚑' },
@@ -505,112 +505,170 @@ const createPanicIcon = (panicType: string, responderCount: number = 0) => {
   };
   const config = typeConfig[panicType] || { color: '#ef4444', emoji: '🆘' };
   
-  // Badge showing number of responders
-  const responderBadge = responderCount > 0 ? `
-    <div style="
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      min-width: 18px;
-      height: 18px;
-      background: #22c55e;
-      border: 2px solid white;
-      border-radius: 9px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      font-weight: bold;
-      color: white;
-      z-index: 10;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      padding: 0 4px;
-    ">${responderCount}🚨</div>
-  ` : '';
+  // Badge showing responder names
+  let responderBadge = '';
+  if (responderNames.length > 0) {
+    // Show first name, and +X if more
+    const displayName = responderNames[0].length > 8 
+      ? responderNames[0].substring(0, 8) + '...' 
+      : responderNames[0];
+    const extraCount = responderNames.length > 1 ? ` +${responderNames.length - 1}` : '';
+    
+    responderBadge = `
+      <div style="
+        position: absolute;
+        top: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        min-width: 40px;
+        max-width: 100px;
+        height: 18px;
+        background: #22c55e;
+        border: 2px solid white;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: bold;
+        color: white;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        padding: 0 6px;
+        white-space: nowrap;
+      ">🚨 ${displayName}${extraCount}</div>
+    `;
+  }
   
   return L.divIcon({
     className: 'panic-marker',
     html: `
       <div style="
         width: 44px;
-        height: 44px;
+        height: ${responderNames.length > 0 ? '56px' : '44px'};
         position: relative;
         display: flex;
-        align-items: center;
+        align-items: ${responderNames.length > 0 ? 'flex-end' : 'center'};
+        justify-content: center;
+      ">
+        ${responderBadge}
+        <div style="
+          position: ${responderNames.length > 0 ? 'absolute' : 'relative'};
+          bottom: 0;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          <div style="
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            background: ${config.color}40;
+            border-radius: 50%;
+            animation: pulsePanic 1s infinite;
+          "></div>
+          <div style="
+            width: 32px;
+            height: 32px;
+            background: ${config.color};
+            border: 3px solid white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            font-size: 16px;
+            box-shadow: 0 2px 8px ${config.color}80;
+          ">${config.emoji}</div>
+        </div>
+      </div>
+    `,
+    iconSize: [44, responderNames.length > 0 ? 56 : 44],
+    iconAnchor: [22, responderNames.length > 0 ? 44 : 22],
+    popupAnchor: [0, responderNames.length > 0 ? -44 : -22],
+  });
+};
+
+// Responder icon - shows RESCATISTA responding to emergency with their name
+const createResponderIcon = (responderName?: string) => {
+  const displayName = responderName 
+    ? (responderName.length > 10 ? responderName.substring(0, 10) + '...' : responderName)
+    : null;
+  
+  const nameBadge = displayName ? `
+    <div style="
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #3b82f6;
+      color: white;
+      font-size: 9px;
+      font-weight: bold;
+      padding: 1px 6px;
+      border-radius: 6px;
+      border: 1px solid white;
+      white-space: nowrap;
+      z-index: 10;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    ">${displayName}</div>
+  ` : '';
+  
+  return L.divIcon({
+    className: 'responder-marker',
+    html: `
+      <div style="
+        width: 44px;
+        height: ${displayName ? '56px' : '44px'};
+        position: relative;
+        display: flex;
+        align-items: ${displayName ? 'flex-start' : 'center'};
         justify-content: center;
       ">
         <div style="
           position: absolute;
+          top: 0;
           width: 44px;
           height: 44px;
-          background: ${config.color}40;
-          border-radius: 50%;
-          animation: pulsePanic 1s infinite;
-        "></div>
-        <div style="
-          width: 32px;
-          height: 32px;
-          background: ${config.color};
-          border: 3px solid white;
-          border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 1;
-          font-size: 16px;
-          box-shadow: 0 2px 8px ${config.color}80;
-        ">${config.emoji}</div>
-        ${responderBadge}
+        ">
+          <div style="
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            animation: pulseResponder 1.5s infinite;
+          "></div>
+          <div style="
+            width: 32px;
+            height: 32px;
+            background: #3b82f6;
+            border: 3px solid white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+          ">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            </svg>
+          </div>
+        </div>
+        ${nameBadge}
       </div>
     `,
-    iconSize: [44, 44],
-    iconAnchor: [22, 22],
-    popupAnchor: [0, -22],
+    iconSize: [44, displayName ? 56 : 44],
+    iconAnchor: [22, displayName ? 22 : 22],
+    popupAnchor: [0, displayName ? -22 : -22],
   });
 };
-
-// Responder icon - shows RESCATISTA responding to emergency
-const createResponderIcon = () => L.divIcon({
-  className: 'responder-marker',
-  html: `
-    <div style="
-      width: 44px;
-      height: 44px;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    ">
-      <div style="
-        position: absolute;
-        width: 44px;
-        height: 44px;
-        background: rgba(59, 130, 246, 0.3);
-        border-radius: 50%;
-        animation: pulseResponder 1.5s infinite;
-      "></div>
-      <div style="
-        width: 32px;
-        height: 32px;
-        background: #3b82f6;
-        border: 3px solid white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
-      ">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-        </svg>
-      </div>
-    </div>
-  `,
-  iconSize: [44, 44],
-  iconAnchor: [22, 22],
-  popupAnchor: [0, -22],
-});
 
 // Medical provider icon with cross symbol
 const createMedicalIcon = (hasKit: boolean, canProvide: boolean) => {
@@ -1662,12 +1720,15 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     if (!mapInstanceRef.current || !mapReady) return;
     const map = mapInstanceRef.current;
 
-    // Count responders per panic event
-    const respondersPerEvent = new Map<string, number>();
+    // Collect responder names per panic event
+    const respondersPerEvent = new Map<string, { names: string[]; count: number }>();
     activeResponders.forEach(r => {
       // Check if this responder is for a panic event
       if (panicEvents.some(e => e.id === r.request_id)) {
-        respondersPerEvent.set(r.request_id, (respondersPerEvent.get(r.request_id) || 0) + 1);
+        const current = respondersPerEvent.get(r.request_id) || { names: [], count: 0 };
+        current.names.push(r.responder_name);
+        current.count++;
+        respondersPerEvent.set(r.request_id, current);
       }
     });
 
@@ -1683,7 +1744,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     panicEvents.forEach((event) => {
       const key = `panic-${event.id}`;
       const existingMarker = markersRef.current.get(key);
-      const responderCount = respondersPerEvent.get(event.id) || 0;
+      const responderInfo = respondersPerEvent.get(event.id) || { names: [], count: 0 };
+      const responderNames = responderInfo.names;
 
       const typeLabels: Record<string, string> = {
         'AMBULANCIA_PROPIA': '🚑 Ambulancia para mí',
@@ -1694,11 +1756,18 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       };
       const label = typeLabels[event.panic_type] || '🆘 Emergencia';
       
-      const responderStatus = responderCount > 0 
-        ? `<div style="font-size: 12px; color: #22c55e; font-weight: bold; margin-top: 6px;">
-            🚨 ${responderCount} rescatista${responderCount > 1 ? 's' : ''} en camino
-           </div>`
-        : '<div style="font-size: 11px; color: #f97316; margin-top: 6px;">⏳ Esperando respuesta...</div>';
+      // Build responder status with names
+      let responderStatus: string;
+      if (responderNames.length > 0) {
+        const namesList = responderNames.length > 2 
+          ? `${responderNames.slice(0, 2).join(', ')} +${responderNames.length - 2} más`
+          : responderNames.join(', ');
+        responderStatus = `<div style="font-size: 12px; color: #22c55e; font-weight: bold; margin-top: 6px;">
+            🚨 En camino: ${namesList}
+           </div>`;
+      } else {
+        responderStatus = '<div style="font-size: 11px; color: #f97316; margin-top: 6px;">⏳ Esperando respuesta...</div>';
+      }
 
       const popupContent = `
         <div style="text-align: center; padding: 4px;">
@@ -1716,11 +1785,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
 
       if (existingMarker) {
         existingMarker.setLatLng([event.lat, event.lng]);
-        existingMarker.setIcon(createPanicIcon(event.panic_type, responderCount));
+        existingMarker.setIcon(createPanicIcon(event.panic_type, responderNames));
         existingMarker.setPopupContent(popupContent);
       } else {
         const marker = L.marker([event.lat, event.lng], {
-          icon: createPanicIcon(event.panic_type, responderCount),
+          icon: createPanicIcon(event.panic_type, responderNames),
           zIndexOffset: 600,
         })
           .addTo(map);
@@ -1812,9 +1881,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         .filter(r => r.request_id === responder.request_id)
         .indexOf(responder) + 1;
       
+      // Use responder name instead of generic label
       const responderLabel = totalResponders > 1 
-        ? `Rescatista ${responderIndexForRequest}/${totalResponders}`
-        : 'Rescatista en camino';
+        ? `${responder.responder_name} (${responderIndexForRequest}/${totalResponders})`
+        : responder.responder_name;
 
       // Check if arrived
       const arrivedBadge = responder.arrived_at 
@@ -1837,13 +1907,14 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         </div>
       `;
 
-      // Update or create responder marker
+      // Update or create responder marker with name
       if (existingMarker) {
         existingMarker.setLatLng(responderLatLng);
+        existingMarker.setIcon(createResponderIcon(responder.responder_name));
         existingMarker.setPopupContent(popupContent);
       } else {
         const marker = L.marker(responderLatLng, {
-          icon: createResponderIcon(),
+          icon: createResponderIcon(responder.responder_name),
           zIndexOffset: 700 + index, // Stagger z-index for multiple markers
         })
           .addTo(map)
