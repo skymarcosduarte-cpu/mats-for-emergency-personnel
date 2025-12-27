@@ -2,7 +2,7 @@
 // Shows full-screen alert when someone in the community needs help
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, X, MapPin, Phone, Navigation } from 'lucide-react';
+import { AlertTriangle, X, MapPin, Phone, Navigation, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +18,7 @@ interface EmergencyAlert {
   audioDurationMs?: number | null;
   createdAt: string;
   userId: string;
+  creatorName?: string | null;
 }
 
 interface EmergencyAlertOverlayProps {
@@ -25,6 +26,7 @@ interface EmergencyAlertOverlayProps {
   onDismiss: () => void;
   onViewLocation: () => void;
   onNavigate: () => void;
+  onMessageCreator?: (userId: string, userName: string) => void;
 }
 
 const PANIC_TYPE_LABELS: Record<string, { label: string; emoji: string; color: string }> = {
@@ -48,6 +50,7 @@ export const EmergencyAlertOverlay: React.FC<EmergencyAlertOverlayProps> = ({
   onDismiss,
   onViewLocation,
   onNavigate,
+  onMessageCreator,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState('');
@@ -172,7 +175,11 @@ export const EmergencyAlertOverlay: React.FC<EmergencyAlertOverlayProps> = ({
         {/* Actions */}
         <div className="bg-white p-4 space-y-3">
           <div className="text-center text-sm text-muted-foreground mb-3">
-            Un miembro de la comunidad necesita ayuda
+            {alert.creatorName ? (
+              <span><strong>{alert.creatorName}</strong> necesita ayuda</span>
+            ) : (
+              <span>Un miembro de la comunidad necesita ayuda</span>
+            )}
           </div>
           
           <div className="grid grid-cols-2 gap-3">
@@ -193,6 +200,18 @@ export const EmergencyAlertOverlay: React.FC<EmergencyAlertOverlayProps> = ({
               <span className="text-xs">Navegar</span>
             </Button>
           </div>
+          
+          {/* Message creator button */}
+          {onMessageCreator && alert.userId && (
+            <Button
+              onClick={() => onMessageCreator(alert.userId, alert.creatorName || 'Usuario')}
+              variant="outline"
+              className="w-full h-12 gap-2"
+            >
+              <MessageCircle className="w-5 h-5" />
+              <span>Enviar mensaje</span>
+            </Button>
+          )}
           
           <Button
             variant="ghost"

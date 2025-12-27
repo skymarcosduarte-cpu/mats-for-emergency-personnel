@@ -370,6 +370,8 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
         refreshTrigger={alertRefreshTrigger}
         responderCount={allMyResponders.filter(r => !r.arrived_at).length}
         onViewResponders={() => setShowResponderMap(true)}
+        onMessageResponder={handleOpenMessaging}
+        responders={allMyResponders.map(r => ({ user_id: r.user_id, nickname: r.nickname }))}
       />
       <UpdatePrompt />
       <UpdateIndicator />
@@ -415,6 +417,10 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
             window.open(`https://maps.google.com/maps?daddr=${latestEmergencyAlert.lat},${latestEmergencyAlert.lng}`, '_blank');
             dismissLatestAlert();
           }
+        }}
+        onMessageCreator={(userId, userName) => {
+          handleOpenMessaging(userId, userName);
+          dismissLatestAlert();
         }}
       />
 
