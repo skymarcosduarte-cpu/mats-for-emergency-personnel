@@ -494,7 +494,8 @@ const createReportIcon = (severity: number, category?: string) => {
 };
 
 // Panic event icons with different colors based on type
-const createPanicIcon = (panicType: string) => {
+// Now includes responder count badge to show how many rescatistas are responding
+const createPanicIcon = (panicType: string, responderCount: number = 0) => {
   const typeConfig: Record<string, { color: string; emoji: string }> = {
     'AMBULANCIA_PROPIA': { color: '#ef4444', emoji: '🚑' },
     'AMBULANCIA_TERCERO': { color: '#ef4444', emoji: '🚑' },
@@ -503,6 +504,29 @@ const createPanicIcon = (panicType: string) => {
     'PROTECCION_CIVIL': { color: '#f97316', emoji: '🆘' },
   };
   const config = typeConfig[panicType] || { color: '#ef4444', emoji: '🆘' };
+  
+  // Badge showing number of responders
+  const responderBadge = responderCount > 0 ? `
+    <div style="
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 18px;
+      height: 18px;
+      background: #22c55e;
+      border: 2px solid white;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+      color: white;
+      z-index: 10;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      padding: 0 4px;
+    ">${responderCount}🚨</div>
+  ` : '';
   
   return L.divIcon({
     className: 'panic-marker',
@@ -536,6 +560,7 @@ const createPanicIcon = (panicType: string) => {
           font-size: 16px;
           box-shadow: 0 2px 8px ${config.color}80;
         ">${config.emoji}</div>
+        ${responderBadge}
       </div>
     `,
     iconSize: [44, 44],
@@ -1632,9 +1657,19 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   }, [locations, poiVisibility.first_aid_kit, poiVisibility.ambulance, mapReady, helpRequests.length, panicEvents.length]);
 
   // Update panic event markers - clicking opens detail modal
+  // Now shows responder count badge and updates when responders change
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
     const map = mapInstanceRef.current;
+
+    // Count responders per panic event
+    const respondersPerEvent = new Map<string, number>();
+    activeResponders.forEach(r => {
+      // Check if this responder is for a panic event
+      if (panicEvents.some(e => e.id === r.request_id)) {
+        respondersPerEvent.set(r.request_id, (respondersPerEvent.get(r.request_id) || 0) + 1);
+      }
+    });
 
     // Remove old panic markers
     markersRef.current.forEach((marker, key) => {
@@ -1648,6 +1683,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     panicEvents.forEach((event) => {
       const key = `panic-${event.id}`;
       const existingMarker = markersRef.current.get(key);
+      const responderCount = respondersPerEvent.get(event.id) || 0;
 
       const typeLabels: Record<string, string> = {
         'AMBULANCIA_PROPIA': '🚑 Ambulancia para mí',
@@ -1657,12 +1693,34 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         'PROTECCION_CIVIL': '🆘 Protección Civil',
       };
       const label = typeLabels[event.panic_type] || '🆘 Emergencia';
+      
+      const responderStatus = responderCount > 0 
+        ? `<div style="font-size: 12px; color: #22c55e; font-weight: bold; margin-top: 6px;">
+            🚨 ${responderCount} rescatista${responderCount > 1 ? 's' : ''} en camino
+           </div>`
+        : '<div style="font-size: 11px; color: #f97316; margin-top: 6px;">⏳ Esperando respuesta...</div>';
+
+      const popupContent = `
+        <div style="text-align: center; padding: 4px;">
+          <div style="font-size: 16px; font-weight: bold; color: #ef4444;">⚠️ ALERTA SOS</div>
+          <div style="font-size: 13px; margin-top: 4px;">${label}</div>
+          ${responderStatus}
+          <div style="font-size: 11px; color: #666; margin-top: 4px;">
+            ${new Date(event.created_at).toLocaleTimeString()}
+          </div>
+          <div style="font-size: 12px; color: #3b82f6; margin-top: 8px; cursor: pointer;">
+            Toca para ver detalles
+          </div>
+        </div>
+      `;
 
       if (existingMarker) {
         existingMarker.setLatLng([event.lat, event.lng]);
+        existingMarker.setIcon(createPanicIcon(event.panic_type, responderCount));
+        existingMarker.setPopupContent(popupContent);
       } else {
         const marker = L.marker([event.lat, event.lng], {
-          icon: createPanicIcon(event.panic_type),
+          icon: createPanicIcon(event.panic_type, responderCount),
           zIndexOffset: 600,
         })
           .addTo(map);
@@ -1673,23 +1731,12 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         });
         
         // Also add popup for quick info on hover/long press
-        marker.bindPopup(`
-          <div style="text-align: center; padding: 4px;">
-            <div style="font-size: 16px; font-weight: bold; color: #ef4444;">⚠️ ALERTA SOS</div>
-            <div style="font-size: 13px; margin-top: 4px;">${label}</div>
-            <div style="font-size: 11px; color: #666; margin-top: 4px;">
-              ${new Date(event.created_at).toLocaleTimeString()}
-            </div>
-            <div style="font-size: 12px; color: #3b82f6; margin-top: 8px; cursor: pointer;">
-              Toca para ver detalles
-            </div>
-          </div>
-        `);
+        marker.bindPopup(popupContent);
         
         markersRef.current.set(key, marker);
       }
     });
-  }, [panicEvents, mapReady, handleOpenAlertFromMap]);
+  }, [panicEvents, activeResponders, mapReady, handleOpenAlertFromMap]);
 
   // Update responder markers and route lines
   useEffect(() => {
