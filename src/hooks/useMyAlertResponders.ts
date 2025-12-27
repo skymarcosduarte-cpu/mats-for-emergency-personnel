@@ -52,6 +52,13 @@ export interface ActiveResponderInfo {
   speed: number | null; // m/s from user_locations
 }
 
+export interface NewResponderAlert {
+  nickname: string;
+  transport_mode: string | null;
+  eta_minutes: number | null;
+  distance_km: number;
+}
+
 export function useMyAlertResponders() {
   const { user } = useAuth();
   const notifiedResponderIds = useRef<Set<string>>(new Set());
@@ -59,6 +66,13 @@ export function useMyAlertResponders() {
   const [respondersToMyAlerts, setRespondersToMyAlerts] = useState<ActiveResponderInfo[]>([]);
   // Cache of alert locations by request_id
   const alertLocationsRef = useRef<Map<string, { lat: number; lng: number }>>(new Map());
+  
+  // State for showing the visual overlay when a new responder starts
+  const [newResponderAlert, setNewResponderAlert] = useState<NewResponderAlert | null>(null);
+
+  const dismissNewResponderAlert = useCallback(() => {
+    setNewResponderAlert(null);
+  }, []);
 
   // Vibrate helper
   const vibrate = useCallback((pattern: number | number[]) => {
@@ -219,11 +233,20 @@ export function useMyAlertResponders() {
       `responder-started-${responder.id}`
     );
 
-    // Show toast if app is visible
+    // Show visual overlay if app is visible
     if (document.visibilityState === 'visible') {
-      toast.success('🚨 ¡Ayuda en camino!', {
-        description: notificationBody,
-        duration: 8000,
+      setNewResponderAlert({
+        nickname,
+        transport_mode: responder.transport_mode,
+        eta_minutes: calculateEta(
+          responder.lat && responder.lng && alertLocation
+            ? calculateDistance(responder.lat, responder.lng, alertLocation.lat, alertLocation.lng)
+            : 0,
+          speed
+        ),
+        distance_km: responder.lat && responder.lng && alertLocation
+          ? calculateDistance(responder.lat, responder.lng, alertLocation.lat, alertLocation.lng)
+          : 0,
       });
     }
 
@@ -489,5 +512,9 @@ export function useMyAlertResponders() {
     };
   }, [user?.id, notifyResponderStarted, notifyResponderArrived, updateResponderLocation]);
 
-  return { respondersToMyAlerts };
+  return { 
+    respondersToMyAlerts,
+    newResponderAlert,
+    dismissNewResponderAlert,
+  };
 }

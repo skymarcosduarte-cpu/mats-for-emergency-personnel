@@ -26,6 +26,7 @@ import { SeismicAlert } from '@/components/SeismicAlert';
 import { EmergencyAlertOverlay } from '@/components/EmergencyAlertOverlay';
 import { ActiveAlertBanner } from '@/components/ActiveAlertBanner';
 import { QuakeDamageBanner } from '@/components/QuakeDamageBanner';
+import { ResponderComingOverlay } from '@/components/ResponderComingOverlay';
 
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
@@ -141,10 +142,17 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   const { recentAlerts, unreadCount, latestEmergencyAlert, dismissLatestAlert } = usePanicAlerts();
   
   // Listen for responders to user's own alerts and track their location
-  const { respondersToMyAlerts } = useMyAlertResponders();
+  const { respondersToMyAlerts, newResponderAlert: newAlertResponder, dismissNewResponderAlert: dismissAlertResponder } = useMyAlertResponders();
   
   // Listen for responders to user's own panic alerts
-  const { respondersToMyPanics } = useMyPanicResponders();
+  const { respondersToMyPanics, newResponderAlert: newPanicResponder, dismissNewResponderAlert: dismissPanicResponder } = useMyPanicResponders();
+  
+  // Combined new responder alert state (from either hook)
+  const activeNewResponder = newAlertResponder || newPanicResponder;
+  const dismissNewResponder = useCallback(() => {
+    if (newAlertResponder) dismissAlertResponder();
+    if (newPanicResponder) dismissPanicResponder();
+  }, [newAlertResponder, newPanicResponder, dismissAlertResponder, dismissPanicResponder]);
   
   // Monitor for overdue trips (30+ minutes past ETA)
   useOverdueTrips();
@@ -338,6 +346,17 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
             window.open(`https://maps.google.com/maps?daddr=${latestEmergencyAlert.lat},${latestEmergencyAlert.lng}`, '_blank');
             dismissLatestAlert();
           }
+        }}
+      />
+
+      {/* Visual overlay when a rescuer starts responding to user's alert */}
+      <ResponderComingOverlay
+        isVisible={!!activeNewResponder}
+        responder={activeNewResponder}
+        onDismiss={dismissNewResponder}
+        onViewOnMap={() => {
+          setActiveTab('map');
+          dismissNewResponder();
         }}
       />
     </div>
