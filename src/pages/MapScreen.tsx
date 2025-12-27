@@ -494,8 +494,15 @@ const createReportIcon = (severity: number, category?: string) => {
 };
 
 // Panic event icons with different colors based on type
-// Now includes responder name badge to show who is responding
-const createPanicIcon = (panicType: string, responderNames: string[] = []) => {
+// Now includes responder info badge showing name, transport mode, ETA, and arrival status
+interface ResponderInfo {
+  name: string;
+  transport_mode: string | null;
+  eta_minutes: number | null;
+  arrived: boolean;
+}
+
+const createPanicIcon = (panicType: string, responderInfos: ResponderInfo[] = []) => {
   const typeConfig: Record<string, { color: string; emoji: string }> = {
     'AMBULANCIA_PROPIA': { color: '#ef4444', emoji: '🚑' },
     'AMBULANCIA_TERCERO': { color: '#ef4444', emoji: '🚑' },
@@ -505,14 +512,32 @@ const createPanicIcon = (panicType: string, responderNames: string[] = []) => {
   };
   const config = typeConfig[panicType] || { color: '#ef4444', emoji: '🆘' };
   
-  // Badge showing responder names
+  // Transport mode emojis
+  const transportEmojis: Record<string, string> = {
+    'car': '🚗',
+    'motorcycle': '🏍️',
+    'walking': '🚶',
+    'bicycle': '🚲',
+  };
+  
+  // Badge showing responder info with transport and ETA
   let responderBadge = '';
-  if (responderNames.length > 0) {
-    // Show first name, and +X if more
-    const displayName = responderNames[0].length > 8 
-      ? responderNames[0].substring(0, 8) + '...' 
-      : responderNames[0];
-    const extraCount = responderNames.length > 1 ? ` +${responderNames.length - 1}` : '';
+  if (responderInfos.length > 0) {
+    const first = responderInfos[0];
+    const displayName = first.name.length > 6 ? first.name.substring(0, 6) + '..' : first.name;
+    const transportEmoji = first.transport_mode ? (transportEmojis[first.transport_mode] || '🚗') : '';
+    
+    // Show arrival status, ETA, or just responding
+    let statusText = '';
+    if (first.arrived) {
+      statusText = '✅';
+    } else if (first.eta_minutes != null && first.eta_minutes > 0) {
+      const etaMin = Math.round(first.eta_minutes);
+      statusText = etaMin < 60 ? `${etaMin}m` : `${Math.round(etaMin / 60)}h`;
+    }
+    
+    const extraCount = responderInfos.length > 1 ? ` +${responderInfos.length - 1}` : '';
+    const badgeColor = first.arrived ? '#22c55e' : '#3b82f6';
     
     responderBadge = `
       <div style="
@@ -520,15 +545,16 @@ const createPanicIcon = (panicType: string, responderNames: string[] = []) => {
         top: -8px;
         left: 50%;
         transform: translateX(-50%);
-        min-width: 40px;
-        max-width: 100px;
-        height: 18px;
-        background: #22c55e;
+        min-width: 50px;
+        max-width: 120px;
+        height: 20px;
+        background: ${badgeColor};
         border: 2px solid white;
-        border-radius: 9px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 2px;
         font-size: 9px;
         font-weight: bold;
         color: white;
@@ -536,7 +562,7 @@ const createPanicIcon = (panicType: string, responderNames: string[] = []) => {
         box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         padding: 0 6px;
         white-space: nowrap;
-      ">🚨 ${displayName}${extraCount}</div>
+      ">${transportEmoji}${displayName}${statusText ? ' ' + statusText : ''}${extraCount}</div>
     `;
   }
   
@@ -545,15 +571,15 @@ const createPanicIcon = (panicType: string, responderNames: string[] = []) => {
     html: `
       <div style="
         width: 44px;
-        height: ${responderNames.length > 0 ? '56px' : '44px'};
+        height: ${responderInfos.length > 0 ? '56px' : '44px'};
         position: relative;
         display: flex;
-        align-items: ${responderNames.length > 0 ? 'flex-end' : 'center'};
+        align-items: ${responderInfos.length > 0 ? 'flex-end' : 'center'};
         justify-content: center;
       ">
         ${responderBadge}
         <div style="
-          position: ${responderNames.length > 0 ? 'absolute' : 'relative'};
+          position: ${responderInfos.length > 0 ? 'absolute' : 'relative'};
           bottom: 0;
           width: 44px;
           height: 44px;
@@ -585,17 +611,45 @@ const createPanicIcon = (panicType: string, responderNames: string[] = []) => {
         </div>
       </div>
     `,
-    iconSize: [44, responderNames.length > 0 ? 56 : 44],
-    iconAnchor: [22, responderNames.length > 0 ? 44 : 22],
-    popupAnchor: [0, responderNames.length > 0 ? -44 : -22],
+    iconSize: [44, responderInfos.length > 0 ? 56 : 44],
+    iconAnchor: [22, responderInfos.length > 0 ? 44 : 22],
+    popupAnchor: [0, responderInfos.length > 0 ? -44 : -22],
   });
 };
 
-// Responder icon - shows RESCATISTA responding to emergency with their name
-const createResponderIcon = (responderName?: string) => {
-  const displayName = responderName 
-    ? (responderName.length > 10 ? responderName.substring(0, 10) + '...' : responderName)
+// Responder icon - shows RESCATISTA responding to emergency with their name, transport, and ETA
+interface ResponderMarkerInfo {
+  name?: string;
+  transport_mode?: string | null;
+  eta_minutes?: number | null;
+  arrived?: boolean;
+}
+
+const createResponderIcon = (info?: ResponderMarkerInfo) => {
+  const displayName = info?.name 
+    ? (info.name.length > 8 ? info.name.substring(0, 8) + '..' : info.name)
     : null;
+  
+  // Transport mode emojis
+  const transportEmojis: Record<string, string> = {
+    'car': '🚗',
+    'motorcycle': '🏍️',
+    'walking': '🚶',
+    'bicycle': '🚲',
+  };
+  
+  const transportEmoji = info?.transport_mode ? (transportEmojis[info.transport_mode] || '') : '';
+  
+  // Build ETA text
+  let etaText = '';
+  if (info?.arrived) {
+    etaText = '✅';
+  } else if (info?.eta_minutes != null && info.eta_minutes > 0) {
+    const etaMin = Math.round(info.eta_minutes);
+    etaText = etaMin < 60 ? `${etaMin}m` : `${Math.round(etaMin / 60)}h`;
+  }
+  
+  const badgeColor = info?.arrived ? '#22c55e' : '#3b82f6';
   
   const nameBadge = displayName ? `
     <div style="
@@ -603,7 +657,7 @@ const createResponderIcon = (responderName?: string) => {
       bottom: -4px;
       left: 50%;
       transform: translateX(-50%);
-      background: #3b82f6;
+      background: ${badgeColor};
       color: white;
       font-size: 9px;
       font-weight: bold;
@@ -613,7 +667,10 @@ const createResponderIcon = (responderName?: string) => {
       white-space: nowrap;
       z-index: 10;
       box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    ">${displayName}</div>
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    ">${transportEmoji}${displayName}${etaText ? ' ' + etaText : ''}</div>
   ` : '';
   
   return L.divIcon({
@@ -647,7 +704,7 @@ const createResponderIcon = (responderName?: string) => {
           <div style="
             width: 32px;
             height: 32px;
-            background: #3b82f6;
+            background: ${badgeColor};
             border: 3px solid white;
             border-radius: 50%;
             display: flex;
@@ -1721,11 +1778,18 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     const map = mapInstanceRef.current;
 
     // Collect responder names per panic event
-    const respondersPerEvent = new Map<string, { names: string[]; count: number }>();
+    // Build responder info per panic event including transport mode, ETA, and arrival status
+    const respondersPerEvent = new Map<string, { infos: ResponderInfo[]; names: string[]; count: number }>();
     activeResponders.forEach(r => {
       // Check if this responder is for a panic event
       if (panicEvents.some(e => e.id === r.request_id)) {
-        const current = respondersPerEvent.get(r.request_id) || { names: [], count: 0 };
+        const current = respondersPerEvent.get(r.request_id) || { infos: [], names: [], count: 0 };
+        current.infos.push({
+          name: r.responder_name,
+          transport_mode: r.transport_mode,
+          eta_minutes: r.estimated_eta_minutes ?? r.eta_minutes,
+          arrived: !!r.arrived_at,
+        });
         current.names.push(r.responder_name);
         current.count++;
         respondersPerEvent.set(r.request_id, current);
@@ -1744,7 +1808,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     panicEvents.forEach((event) => {
       const key = `panic-${event.id}`;
       const existingMarker = markersRef.current.get(key);
-      const responderInfo = respondersPerEvent.get(event.id) || { names: [], count: 0 };
+      const responderInfo = respondersPerEvent.get(event.id) || { infos: [], names: [], count: 0 };
+      const responderInfos = responderInfo.infos;
       const responderNames = responderInfo.names;
 
       const typeLabels: Record<string, string> = {
@@ -1785,11 +1850,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
 
       if (existingMarker) {
         existingMarker.setLatLng([event.lat, event.lng]);
-        existingMarker.setIcon(createPanicIcon(event.panic_type, responderNames));
+        existingMarker.setIcon(createPanicIcon(event.panic_type, responderInfos));
         existingMarker.setPopupContent(popupContent);
       } else {
         const marker = L.marker([event.lat, event.lng], {
-          icon: createPanicIcon(event.panic_type, responderNames),
+          icon: createPanicIcon(event.panic_type, responderInfos),
           zIndexOffset: 600,
         })
           .addTo(map);
@@ -1907,14 +1972,21 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         </div>
       `;
 
-      // Update or create responder marker with name
+      // Update or create responder marker with name, transport, and ETA
+      const responderMarkerInfo: ResponderMarkerInfo = {
+        name: responder.responder_name,
+        transport_mode: responder.transport_mode,
+        eta_minutes: responder.estimated_eta_minutes ?? responder.eta_minutes,
+        arrived: !!responder.arrived_at,
+      };
+      
       if (existingMarker) {
         existingMarker.setLatLng(responderLatLng);
-        existingMarker.setIcon(createResponderIcon(responder.responder_name));
+        existingMarker.setIcon(createResponderIcon(responderMarkerInfo));
         existingMarker.setPopupContent(popupContent);
       } else {
         const marker = L.marker(responderLatLng, {
-          icon: createResponderIcon(responder.responder_name),
+          icon: createResponderIcon(responderMarkerInfo),
           zIndexOffset: 700 + index, // Stagger z-index for multiple markers
         })
           .addTo(map)
