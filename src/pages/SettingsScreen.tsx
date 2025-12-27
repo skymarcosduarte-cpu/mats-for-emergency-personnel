@@ -31,7 +31,6 @@ import {
   Pill,
   FileHeart,
   Wifi,
-  FlaskConical,
   MapPin,
   FileText,
   Database,
@@ -78,12 +77,10 @@ import QRCode from 'qrcode';
 
 interface SettingsScreenProps {
   onLogout?: () => void;
-  onSimulatePanicAlert?: (type: string) => void;
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
-  onLogout,
-  onSimulatePanicAlert
+  onLogout
 }) => {
   const { profile, role, signOut, updateProfile, updateRole, deleteAccount } = useAuth();
   const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
@@ -111,8 +108,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [passwordError, setPasswordError] = useState('');
   const [showMedicalDialog, setShowMedicalDialog] = useState(false);
   const [savingMedicalData, setSavingMedicalData] = useState(false);
-  const [showAlertTypeDrawer, setShowAlertTypeDrawer] = useState(false);
-  const [selectedAlertType, setSelectedAlertType] = useState('AMBULANCIA_PROPIA');
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [shareLocation, setShareLocation] = useState(profile?.share_location ?? false);
@@ -430,9 +425,29 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </CardContent>
         </Card>
 
+        {/* Force Update - Top priority */}
+        <Card className="bg-card border-border border-primary/30">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <RefreshCw className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Forzar Actualización</p>
+                  <p className="text-xs text-muted-foreground">
+                    Limpia caché y recarga la app
+                  </p>
+                </div>
+              </div>
+              <UpdateButton />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Connection Status */}
         <Card className="bg-card border-border">
-          <CardHeader>
+          <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Wifi className="w-5 h-5" />
               Estado de Conexión
@@ -1071,7 +1086,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         {/* Emergency Contacts Section */}
         <EmergencyContactsManager />
 
-        {/* Application (Install + Version + Update) */}
+        {/* Application (Install + Version) */}
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -1103,14 +1118,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 </span>
               </div>
             </div>
-            
-            {/* Update Button */}
-            <div className="border-t border-border pt-4">
-              <p className="text-xs text-muted-foreground mb-2">
-                Busca actualizaciones o limpia caché si tienes problemas.
-              </p>
-              <UpdateButton />
-            </div>
 
             {/* Branding */}
             <div className="border-t border-border pt-4">
@@ -1125,165 +1132,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </CardContent>
         </Card>
 
-        {/* Privacy Settings */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Shield className="w-5 h-5" />
-              Privacidad
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Show name on map toggle */}
-            <div className="flex items-center justify-between py-2">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center",
-                  profile?.show_name_on_map ? "bg-primary/10" : "bg-muted"
-                )}>
-                  {profile?.show_name_on_map ? (
-                    <Eye className="w-5 h-5 text-primary" />
-                  ) : (
-                    <EyeOff className="w-5 h-5 text-muted-foreground" />
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="show-name-map" className="text-foreground font-medium">
-                    Mostrar nombre en el mapa
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    {profile?.show_name_on_map 
-                      ? 'Tu apodo es visible para otros usuarios'
-                      : 'Solo se ve tu icono, sin nombre'}
-                  </p>
-                </div>
-              </div>
-              <Switch
-                id="show-name-map"
-                checked={profile?.show_name_on_map ?? true}
-                onCheckedChange={async (checked) => {
-                  await updateProfile({ show_name_on_map: checked });
-                }}
-              />
-            </div>
 
-            {/* Share location toggle */}
-            <div className="flex items-center justify-between py-2">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center",
-                  shareLocation ? "bg-primary/10" : "bg-muted"
-                )}>
-                  <MapPin className={cn(
-                    "w-5 h-5",
-                    shareLocation ? "text-primary" : "text-muted-foreground"
-                  )} />
-                </div>
-                <div>
-                  <Label htmlFor="share-location-toggle" className="text-foreground font-medium">
-                    Compartir ubicación en tiempo real
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    {shareLocation 
-                      ? 'Tu ubicación es visible para la comunidad'
-                      : 'Tu ubicación no se comparte'}
-                  </p>
-                </div>
-              </div>
-              <Switch
-                id="share-location-toggle"
-                checked={shareLocation}
-                onCheckedChange={(value) => handlePrivacyToggle('share_location', value)}
-                disabled={savingPrivacy}
-              />
-            </div>
-
-            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
-              <p className="text-xs text-muted-foreground">
-                Tu ubicación se comparte en tiempo real con la red M.A.T.S. para tu seguridad. 
-                Esto permite que la comunidad pueda localizarte en caso de emergencia y protegerte 
-                de situaciones de riesgo.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Developer Test Mode */}
-        <Card className="bg-card border-border border-dashed border-warning/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base text-warning">
-              <FlaskConical className="w-5 h-5" />
-              Modo de Prueba
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Simula una alerta de pánico para probar el flujo de cancelación sin enviar una alerta real a la comunidad.
-            </p>
-            
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1 justify-between"
-                onClick={() => setShowAlertTypeDrawer(true)}
-              >
-                <span>
-                  {selectedAlertType === 'AMBULANCIA_PROPIA' && '🚑 Ambulancia'}
-                  {selectedAlertType === 'PATRULLA' && '🚔 Patrulla'}
-                  {selectedAlertType === 'MECANICO' && '🔧 Mecánico'}
-                  {selectedAlertType === 'PROTECCION_CIVIL' && '🆘 Protección Civil'}
-                </span>
-                <FlaskConical className="w-4 h-4 opacity-50" />
-              </Button>
-              <Button
-                variant="outline"
-                className="border-warning text-warning hover:bg-warning/10"
-                onClick={() => onSimulatePanicAlert?.(selectedAlertType)}
-              >
-                <FlaskConical className="w-4 h-4 mr-2" />
-                Simular
-              </Button>
-            </div>
-
-            {/* Alert Type Drawer */}
-            <Drawer open={showAlertTypeDrawer} onOpenChange={setShowAlertTypeDrawer}>
-              <DrawerContent>
-                <DrawerHeader>
-                  <DrawerTitle className="text-center">Selecciona tipo de alerta</DrawerTitle>
-                </DrawerHeader>
-                <div className="px-4 pb-6 space-y-2">
-                  {[
-                    { value: 'AMBULANCIA_PROPIA', label: '🚑 Ambulancia', description: 'Emergencia médica' },
-                    { value: 'PATRULLA', label: '🚔 Patrulla', description: 'Seguridad' },
-                    { value: 'MECANICO', label: '🔧 Mecánico', description: 'Falla vehicular' },
-                    { value: 'PROTECCION_CIVIL', label: '🆘 Protección Civil', description: 'Desastre natural' },
-                  ].map((option) => (
-                    <DrawerClose asChild key={option.value}>
-                      <Button
-                        variant={selectedAlertType === option.value ? 'default' : 'outline'}
-                        className="w-full h-14 justify-start gap-3 text-left"
-                        onClick={() => {
-                          setSelectedAlertType(option.value);
-                          setShowAlertTypeDrawer(false);
-                        }}
-                      >
-                        <span className="text-xl">{option.label.split(' ')[0]}</span>
-                        <div className="flex flex-col items-start">
-                          <span className="font-semibold">{option.label.split(' ').slice(1).join(' ')}</span>
-                          <span className="text-xs text-muted-foreground">{option.description}</span>
-                        </div>
-                      </Button>
-                    </DrawerClose>
-                  ))}
-                </div>
-              </DrawerContent>
-            </Drawer>
-
-            <p className="text-xs text-muted-foreground italic">
-              La alerta de prueba aparecerá en la parte superior de la pantalla. Usa el botón "Cancelar" para probar el flujo de cancelación.
-            </p>
-          </CardContent>
-        </Card>
 
         {/* Logout Button */}
         <Button
