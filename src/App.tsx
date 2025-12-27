@@ -36,6 +36,7 @@ import { useStatusCheckin } from '@/hooks/useStatusCheckin';
 import { useAuth } from '@/hooks/useAuth';
 import { usePanicAlerts } from '@/hooks/usePanicAlerts';
 import { useMyAlertResponders } from '@/hooks/useMyAlertResponders';
+import { useMyPanicResponders } from '@/hooks/useMyPanicResponders';
 import { useTestMode } from '@/hooks/useTestMode';
 import { useBackgroundSync } from '@/hooks/useBackgroundSync';
 import { useOverdueTrips } from '@/hooks/useOverdueTrips';
@@ -140,6 +141,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   
   // Listen for responders to user's own alerts and track their location
   const { respondersToMyAlerts } = useMyAlertResponders();
+  
+  // Listen for responders to user's own panic alerts
+  const { respondersToMyPanics } = useMyPanicResponders();
   
   // Monitor for overdue trips (30+ minutes past ETA)
   useOverdueTrips();
