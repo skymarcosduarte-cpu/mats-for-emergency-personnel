@@ -25,7 +25,7 @@ import { SplashScreen } from '@/components/SplashScreen';
 import { SeismicAlert } from '@/components/SeismicAlert';
 import { EmergencyAlertOverlay } from '@/components/EmergencyAlertOverlay';
 import { ActiveAlertBanner } from '@/components/ActiveAlertBanner';
-import { ActiveUsersIndicator } from '@/components/ActiveUsersIndicator';
+
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import { useAppState } from '@/hooks/useRealtime';
@@ -292,11 +292,6 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     <div className="min-h-screen min-h-dvh bg-background flex flex-col overflow-x-hidden">
       <AppHeader onPanicClick={() => setPanicOpen(true)} />
       <ActiveAlertBanner testAlert={testAlert} onClearTestAlert={clearTestAlert} refreshTrigger={alertRefreshTrigger} />
-      
-      {/* Prominent active users indicator - positioned below header with proper spacing */}
-      <div className="fixed left-1/2 -translate-x-1/2 z-[90]" style={{ top: 'calc(52px + env(safe-area-inset-top, 0) + 8px)' }}>
-        <ActiveUsersIndicator variant="prominent" />
-      </div>
       <UpdatePrompt />
       <UpdateIndicator />
       <main className="main-content flex-1 overflow-y-auto overflow-x-hidden">{renderScreen()}</main>
