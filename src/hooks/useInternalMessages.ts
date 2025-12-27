@@ -84,10 +84,11 @@ export const useInternalMessages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [lastUnreadSender, setLastUnreadSender] = useState<{ id: string; name: string } | null>(null);
   const lastMessageCountRef = useRef<number>(0);
   const initialLoadDoneRef = useRef<boolean>(false);
   const senderNamesCache = useRef<Map<string, string>>(new Map());
-
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   // Fetch all messages for the current user
   const fetchMessages = useCallback(async () => {
     if (!user?.id) return;
@@ -374,11 +375,39 @@ export const useInternalMessages = () => {
     };
   }, [user?.id, fetchMessages, fetchConversations]);
 
+  // Reset banner dismissed when new messages arrive
+  const dismissBanner = useCallback(() => {
+    setBannerDismissed(true);
+  }, []);
+
+  // Reset dismissed state when unread count changes to a higher value
+  useEffect(() => {
+    if (unreadCount > 0) {
+      setBannerDismissed(false);
+    }
+  }, [unreadCount]);
+
+  // Calculate last unread sender from conversations
+  useEffect(() => {
+    const unreadConv = conversations.find(c => c.unread_count > 0);
+    if (unreadConv) {
+      setLastUnreadSender({
+        id: unreadConv.user_id,
+        name: unreadConv.display_name || 'Usuario'
+      });
+    } else {
+      setLastUnreadSender(null);
+    }
+  }, [conversations]);
+
   return {
     messages,
     conversations,
     loading,
     unreadCount,
+    lastUnreadSender,
+    bannerDismissed,
+    dismissBanner,
     sendMessage,
     deleteMessage,
     markAsRead,

@@ -29,6 +29,7 @@ import { QuakeDamageBanner } from '@/components/QuakeDamageBanner';
 import { ResponderComingOverlay } from '@/components/ResponderComingOverlay';
 import { ResponderTrackingMap } from '@/components/ResponderTrackingMap';
 import { InternalMessaging } from '@/components/InternalMessaging';
+import { UnreadMessagesBanner } from '@/components/UnreadMessagesBanner';
 
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
@@ -223,8 +224,13 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   // Emergency contact notification
   const { notifyEmergencyContacts } = useEmergencyNotification();
   
-  // Internal messages - unread count
-  const { unreadCount: unreadMessageCount } = useInternalMessages();
+  // Internal messages - unread count and last sender
+  const { 
+    unreadCount: unreadMessageCount, 
+    lastUnreadSender, 
+    bannerDismissed: messagesBannerDismissed,
+    dismissBanner: dismissMessagesBanner 
+  } = useInternalMessages();
   
   // New user notifications
   useNewUserNotification();
@@ -378,6 +384,22 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <main className="main-content flex-1 overflow-y-auto overflow-x-hidden">{renderScreen()}</main>
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} onPanicTriggered={handlePanicTriggered} />
       
+      {/* Unread Messages Banner */}
+      {!messagesBannerDismissed && unreadMessageCount > 0 && (
+        <UnreadMessagesBanner
+          unreadCount={unreadMessageCount}
+          senderName={lastUnreadSender?.name}
+          onOpen={() => {
+            if (lastUnreadSender) {
+              handleOpenMessaging(lastUnreadSender.id, lastUnreadSender.name);
+            } else {
+              setMessagingOpen(true);
+            }
+          }}
+          onDismiss={dismissMessagesBanner}
+        />
+      )}
+
       <InstallPrompt />
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS'} disasterMode={disasterMode} messageCount={unreadMessageCount} />
       
