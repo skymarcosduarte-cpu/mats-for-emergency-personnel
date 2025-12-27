@@ -14,6 +14,7 @@ import { usePanicResponse } from '@/hooks/usePanicResponse';
 import { usePOIs, type POI } from '@/hooks/usePOIs';
 import { useEmergencyContactsDB } from '@/hooks/useEmergencyContactsDB';
 import { AlertsPanel } from '@/components/AlertsPanel';
+import { AlertDetailModal } from '@/components/AlertDetailModal';
 import { ActiveUsersPanel } from '@/components/ActiveUsersPanel';
 import { InternalMessaging } from '@/components/InternalMessaging';
 import { cn } from '@/lib/utils';
@@ -818,6 +819,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   const [messagingUserId, setMessagingUserId] = useState<string | null>(null);
   const [messagingUserName, setMessagingUserName] = useState<string | null>(null);
 
+  // Alert detail modal state (for clicking markers on map)
+  const [selectedMapAlert, setSelectedMapAlert] = useState<any | null>(null);
+  const [selectedMapAlertType, setSelectedMapAlertType] = useState<'panic' | 'help' | null>(null);
+  const [isDeletingMapAlert, setIsDeletingMapAlert] = useState(false);
+
   // POI visibility state
   const [poiVisibility, setPoiVisibility] = useState<POIVisibility>({
     hospital: false,
@@ -912,6 +918,38 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     setMessagingUserName(displayName);
     setMessagingOpen(true);
   }, []);
+
+  // Handle opening alert detail from map marker
+  const handleOpenAlertFromMap = useCallback((alert: any, type: 'panic' | 'help') => {
+    setSelectedMapAlert(alert);
+    setSelectedMapAlertType(type);
+  }, []);
+
+  const handleCloseAlertFromMap = useCallback(() => {
+    setSelectedMapAlert(null);
+    setSelectedMapAlertType(null);
+  }, []);
+
+  // Handle delete from map alert modal
+  const handleDeleteMapAlert = useCallback(async () => {
+    if (!selectedMapAlert || !selectedMapAlertType) return;
+    
+    setIsDeletingMapAlert(true);
+    try {
+      let success = false;
+      if (selectedMapAlertType === 'panic') {
+        success = await resolveEvent(selectedMapAlert.id);
+      } else {
+        success = await resolveRequest(selectedMapAlert.id);
+      }
+      
+      if (success) {
+        handleCloseAlertFromMap();
+      }
+    } finally {
+      setIsDeletingMapAlert(false);
+    }
+  }, [selectedMapAlert, selectedMapAlertType, resolveEvent, resolveRequest, handleCloseAlertFromMap]);
 
   // Default center (Mexico City)
   const defaultCenter: [number, number] = [19.4326, -99.1332];
@@ -1265,7 +1303,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     });
   }, [locations, mapReady]);
 
-  // Update help 14 markers
+  // Update help 14 markers - clicking opens detail modal
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
     const map = mapInstanceRef.current;
@@ -1292,20 +1330,31 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           icon: createHelp14Icon(),
           zIndexOffset: 500,
         })
-          .addTo(map)
-          .bindPopup(`
-            <div style="text-align: center; padding: 4px;">
-              <div style="font-size: 16px; font-weight: bold; color: #ef4444;">⚠️ AYUDA 14</div>
-              <div style="font-size: 11px; color: #666; margin-top: 4px;">
-                ${new Date(req.created_at).toLocaleTimeString()}
-              </div>
-              ${req.message ? `<div style="font-size: 13px; margin-top: 8px;">${sanitize(req.message)}</div>` : ''}
+          .addTo(map);
+        
+        // Click opens the detail modal
+        marker.on('click', () => {
+          handleOpenAlertFromMap(req, 'help');
+        });
+        
+        // Popup for quick info
+        marker.bindPopup(`
+          <div style="text-align: center; padding: 4px;">
+            <div style="font-size: 16px; font-weight: bold; color: #ef4444;">⚠️ AYUDA 14</div>
+            <div style="font-size: 11px; color: #666; margin-top: 4px;">
+              ${new Date(req.created_at).toLocaleTimeString()}
             </div>
-          `);
+            ${req.message ? `<div style="font-size: 13px; margin-top: 8px;">${sanitize(req.message)}</div>` : ''}
+            <div style="font-size: 12px; color: #3b82f6; margin-top: 8px;">
+              Toca para ver detalles
+            </div>
+          </div>
+        `);
+        
         markersRef.current.set(key, marker);
       }
     });
-  }, [helpRequests, mapReady]);
+  }, [helpRequests, mapReady, handleOpenAlertFromMap]);
 
   // Update report markers
   useEffect(() => {
@@ -1491,7 +1540,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     }
   }, [locations, poiVisibility.first_aid_kit, poiVisibility.ambulance, mapReady, helpRequests.length, panicEvents.length]);
 
-  // Update panic event markers
+  // Update panic event markers - clicking opens detail modal
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
     const map = mapInstanceRef.current;
@@ -1525,25 +1574,31 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           icon: createPanicIcon(event.panic_type),
           zIndexOffset: 600,
         })
-          .addTo(map)
-          .bindPopup(`
-            <div style="text-align: center; padding: 4px;">
-              <div style="font-size: 16px; font-weight: bold; color: #ef4444;">⚠️ ALERTA SOS</div>
-              <div style="font-size: 13px; margin-top: 4px;">${label}</div>
-              <div style="font-size: 11px; color: #666; margin-top: 4px;">
-                ${new Date(event.created_at).toLocaleTimeString()}
-              </div>
-              <a href="https://maps.google.com/?q=${event.lat},${event.lng}" 
-                 target="_blank" 
-                 style="display: inline-block; margin-top: 8px; font-size: 12px; color: #3b82f6;">
-                Abrir en Google Maps
-              </a>
+          .addTo(map);
+        
+        // Click opens the detail modal instead of popup
+        marker.on('click', () => {
+          handleOpenAlertFromMap(event, 'panic');
+        });
+        
+        // Also add popup for quick info on hover/long press
+        marker.bindPopup(`
+          <div style="text-align: center; padding: 4px;">
+            <div style="font-size: 16px; font-weight: bold; color: #ef4444;">⚠️ ALERTA SOS</div>
+            <div style="font-size: 13px; margin-top: 4px;">${label}</div>
+            <div style="font-size: 11px; color: #666; margin-top: 4px;">
+              ${new Date(event.created_at).toLocaleTimeString()}
             </div>
-          `);
+            <div style="font-size: 12px; color: #3b82f6; margin-top: 8px; cursor: pointer;">
+              Toca para ver detalles
+            </div>
+          </div>
+        `);
+        
         markersRef.current.set(key, marker);
       }
     });
-  }, [panicEvents, mapReady]);
+  }, [panicEvents, mapReady, handleOpenAlertFromMap]);
 
   // Update responder markers and route lines
   useEffect(() => {
@@ -2009,6 +2064,27 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         }}
         initialUserId={messagingUserId}
         initialUserName={messagingUserName}
+      />
+
+      {/* Alert Detail Modal - opened from map markers */}
+      <AlertDetailModal
+        alert={selectedMapAlert}
+        alertType={selectedMapAlertType}
+        isOpen={!!selectedMapAlert}
+        onClose={handleCloseAlertFromMap}
+        onViewLocation={handleViewLocation}
+        onDelete={handleDeleteMapAlert}
+        isDeleting={isDeletingMapAlert}
+        isOwner={selectedMapAlert?.user_id === currentUserId}
+        isRescatista={isRescatista}
+        canDelete={selectedMapAlert?.user_id === currentUserId}
+        responders={activeResponders}
+        currentUserId={currentUserId}
+        userPosition={position}
+        onRespond={handleRespondToRequest}
+        onCancelResponse={handleCancelResponse}
+        onMarkAsArrived={handleMarkAsArrived}
+        onResolve={handleMarkAsResolved}
       />
     </div>
   );
