@@ -266,11 +266,62 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     return conv?.display_name || `Usuario ${userId.slice(0, 6)}...`;
   };
 
+  // Get supported audio mime type for recording
+  const getSupportedMimeType = (): string => {
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/ogg;codecs=opus',
+      'audio/ogg',
+      'audio/wav',
+      ''  // Empty string = browser default
+    ];
+    
+    for (const type of types) {
+      if (type === '' || MediaRecorder.isTypeSupported(type)) {
+        return type;
+      }
+    }
+    return '';
+  };
+
   // Voice recording functions
   const startRecording = async () => {
+    // Prevent multiple clicks
+    if (isRecording) return;
+    
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      // Check for microphone permission first
+      if (navigator.permissions) {
+        try {
+          const permResult = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+          if (permResult.state === 'denied') {
+            toast.error('Permiso de micrófono denegado. Habilítalo en configuración.');
+            return;
+          }
+        } catch {
+          // Some browsers don't support permissions API for microphone
+        }
+      }
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        }
+      });
+      
+      const mimeType = getSupportedMimeType();
+      const options: MediaRecorderOptions = mimeType ? { mimeType } : {};
+      
+      let mediaRecorder: MediaRecorder;
+      try {
+        mediaRecorder = new MediaRecorder(stream, options);
+      } catch {
+        // Fallback without options
+        mediaRecorder = new MediaRecorder(stream);
+      }
       
       audioChunksRef.current = [];
       mediaRecorderRef.current = mediaRecorder;
@@ -282,12 +333,19 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
       };
       
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const actualMime = mediaRecorder.mimeType || 'audio/webm';
+        const blob = new Blob(audioChunksRef.current, { type: actualMime });
         setAudioBlob(blob);
         stream.getTracks().forEach(track => track.stop());
       };
       
-      mediaRecorder.start();
+      mediaRecorder.onerror = (e) => {
+        console.error('MediaRecorder error:', e);
+        toast.error('Error al grabar audio');
+        stopRecording();
+      };
+      
+      mediaRecorder.start(1000); // Collect data every second for better compatibility
       setIsRecording(true);
       setRecordingDuration(0);
       
@@ -304,7 +362,17 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
       
     } catch (error) {
       console.error('Error starting recording:', error);
-      toast.error('No se pudo acceder al micrófono');
+      if (error instanceof DOMException) {
+        if (error.name === 'NotAllowedError') {
+          toast.error('Permiso de micrófono denegado');
+        } else if (error.name === 'NotFoundError') {
+          toast.error('No se encontró micrófono');
+        } else {
+          toast.error('Error al acceder al micrófono');
+        }
+      } else {
+        toast.error('No se pudo acceder al micrófono');
+      }
     }
   };
 
@@ -330,13 +398,20 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     
     setSending(true);
     try {
+      // Determine file extension based on blob type
+      const mimeType = audioBlob.type || 'audio/webm';
+      let ext = 'webm';
+      if (mimeType.includes('mp4') || mimeType.includes('m4a')) ext = 'm4a';
+      else if (mimeType.includes('ogg')) ext = 'ogg';
+      else if (mimeType.includes('wav')) ext = 'wav';
+      
       // Upload to Supabase storage
-      const fileName = `voice_messages/${user.id}/${Date.now()}.webm`;
+      const fileName = `voice_messages/${user.id}/${Date.now()}.${ext}`;
       
       const { error: uploadError } = await supabase.storage
         .from('reports_media')
         .upload(fileName, audioBlob, {
-          contentType: 'audio/webm',
+          contentType: mimeType,
           upsert: false
         });
 
@@ -420,9 +495,15 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     }
   };
 
-  // Image handling functions
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Image handling functions - async to prevent UI blocking on Android
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    
+    // Reset input immediately to allow re-selecting the same file
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
+    
     if (!file) return;
     
     // Validate file type
@@ -437,8 +518,18 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
       return;
     }
     
-    setSelectedImage(file);
-    setImagePreview(URL.createObjectURL(file));
+    // Use setTimeout to prevent UI blocking on Android
+    // This gives the browser time to close the file picker before processing
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    try {
+      setSelectedImage(file);
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    } catch (error) {
+      console.error('Error processing image:', error);
+      toast.error('Error al procesar la imagen');
+    }
   };
 
   const cancelImage = () => {
@@ -806,11 +897,12 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                   </Button>
                 </div>
               ) : (
-                <div className="flex gap-2">
+              <div className="flex gap-2">
                   <input
                     ref={imageInputRef}
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     onChange={handleImageSelect}
                     className="hidden"
                   />
