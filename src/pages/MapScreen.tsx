@@ -4,8 +4,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import DOMPurify from 'dompurify';
-import { Locate, ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame, AlertTriangle, Users } from 'lucide-react';
-import { ShareLocationButton } from '@/components/ShareLocationButton';
+import { ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame, AlertTriangle, Users } from 'lucide-react';
+import { MapControlsMenu } from '@/components/MapControlsMenu';
 import { ImOkButton } from '@/components/ImOkButton';
 import { useLocation } from '@/hooks/useLocation';
 import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders, usePanicEvents, useActiveResponders } from '@/hooks/useRealtime';
@@ -2001,31 +2001,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
 
       {/* Active users count + center button + alerts panel */}
       <div className="map-fixed-header flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-2 pointer-events-auto">
-          <div className="bg-card/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-border">
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <div className="w-2.5 h-2.5 rounded-full bg-safe" />
-                <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-safe animate-ping opacity-75" />
-              </div>
-              <span className="text-sm font-medium text-foreground">
-                {locations.length} {locations.length === 1 ? 'activo' : 'activos'}
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={centerOnMe}
-            disabled={!position}
-            className="bg-card/95 backdrop-blur-sm rounded-lg p-2.5 shadow-lg border border-border hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Centrar en mi ubicación"
-          >
-            <Locate className="w-5 h-5 text-primary" />
-          </button>
-          
-          {/* Share location button */}
-          <ShareLocationButton 
-            position={position} 
-            className="relative"
+        <div className="pointer-events-auto">
+          <MapControlsMenu 
+            position={position}
+            onCenterOnMe={centerOnMe}
+            activeUsersCount={locations.length}
           />
         </div>
         
