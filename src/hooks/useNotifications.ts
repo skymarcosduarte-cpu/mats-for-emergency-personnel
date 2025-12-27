@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { playPositiveAlert, playCancelledAlert } from '@/lib/alertSound';
+import { playPositiveAlert, playCancelledAlert, playUrgentAlert } from '@/lib/alertSound';
 
 export interface Notification {
   id: string;
@@ -110,6 +110,28 @@ export function useNotifications() {
 
       if ('vibrate' in navigator) {
         navigator.vibrate([100, 50, 100]);
+      }
+    }
+    // MAXIMUM PRIORITY: Earthquake damage report notification
+    else if (notification.type === 'quake_damage_priority' || notification.type === 'quake_damage') {
+      // Play urgent alert sound with persistent vibration
+      playUrgentAlert();
+      
+      toast.error(notification.title, {
+        description: notification.message || 'Se reportaron daños por sismo',
+        duration: 30000, // Keep visible for 30 seconds
+        icon: '🚨',
+      });
+
+      // Strong SOS-like vibration pattern
+      if ('vibrate' in navigator) {
+        navigator.vibrate([
+          500, 200, 500, 200, 500,  // S
+          200,
+          1000, 200, 1000, 200, 1000,  // O
+          200,
+          500, 200, 500, 200, 500  // S
+        ]);
       }
     }
   }, []);
