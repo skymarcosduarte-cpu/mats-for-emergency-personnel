@@ -149,7 +149,7 @@ export function usePanicResponse() {
           .select('*', { count: 'exact', head: true })
           .eq('panic_id', panicId);
 
-        // Notify the creator via edge function
+        // Notify the creator via edge function with ETA and transport mode
         supabase.functions.invoke('notify-responder-coming', {
           body: {
             alertId: panicId,
@@ -157,7 +157,9 @@ export function usePanicResponse() {
             creatorUserId: panicEvent.user_id,
             responderUserId: user.id,
             responderCount: count || 1,
-            eventType: 'responding'
+            eventType: 'responding',
+            estimatedEtaMinutes: estimatedEtaMinutes || null,
+            transportMode: transportMode || null
           }
         }).catch(err => console.warn('Failed to notify creator:', err));
       }

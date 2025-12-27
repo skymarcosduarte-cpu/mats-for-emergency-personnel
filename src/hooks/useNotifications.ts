@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { playPositiveAlert } from '@/lib/alertSound';
+import { playPositiveAlert, playCancelledAlert } from '@/lib/alertSound';
 
 export interface Notification {
   id: string;
@@ -40,35 +40,74 @@ export function useNotifications() {
     }
   }, []);
 
-  // Show toast for new notifications
+  // Show toast for new notifications based on type
   const showContactNotification = useCallback((notification: Notification) => {
-    if (notification.type === 'responder_contact') {
-      // Play positive alert sound
+    // Responder coming notification - positive sound!
+    if (notification.type === 'responder_coming') {
       playPositiveAlert();
       
-      // Show prominent toast
+      toast.success(notification.title, {
+        description: notification.message || 'Alguien está en camino a ayudarte',
+        duration: 10000,
+        icon: '🚨',
+      });
+
+      if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200, 100, 200]);
+      }
+    }
+    // Responder arrived notification - positive sound!
+    else if (notification.type === 'responder_arrived') {
+      playPositiveAlert();
+      
+      toast.success(notification.title, {
+        description: notification.message || 'El rescatista llegó a tu ubicación',
+        duration: 10000,
+        icon: '✅',
+      });
+
+      if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200, 100, 200]);
+      }
+    }
+    // Alert cancelled notification - cancelled sound
+    else if (notification.type === 'alert_cancelled') {
+      playCancelledAlert();
+      
+      toast.warning(notification.title, {
+        description: notification.message || 'La alerta ha sido cancelada',
+        duration: 8000,
+        icon: '⚠️',
+      });
+
+      if ('vibrate' in navigator) {
+        navigator.vibrate([100, 100, 200]);
+      }
+    }
+    // Responder contact notification
+    else if (notification.type === 'responder_contact') {
+      playPositiveAlert();
+      
       toast.success(notification.title, {
         description: notification.message || 'Un rescatista intenta contactarte',
         duration: 10000,
         icon: notification.title.includes('📞') ? '📞' : '💬',
       });
 
-      // Vibrate device
       if ('vibrate' in navigator) {
         navigator.vibrate([200, 100, 200, 100, 200]);
       }
-    } else if (notification.type === 'road_report') {
-      // Play alert sound for nearby road reports
+    } 
+    // Road report notification
+    else if (notification.type === 'road_report') {
       playPositiveAlert();
       
-      // Show toast for road report
       toast.warning(notification.title, {
         description: notification.message || 'Nuevo reporte de incidente',
         duration: 8000,
         icon: '🚧',
       });
 
-      // Vibrate device
       if ('vibrate' in navigator) {
         navigator.vibrate([100, 50, 100]);
       }
