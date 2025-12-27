@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import DOMPurify from 'dompurify';
-import { Locate, ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame } from 'lucide-react';
+import { Locate, ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame, AlertTriangle, Users } from 'lucide-react';
 import { ShareLocationButton } from '@/components/ShareLocationButton';
 import { ImOkButton } from '@/components/ImOkButton';
 import { useLocation } from '@/hooks/useLocation';
@@ -12,6 +12,7 @@ import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders,
 import { useEmergencyResponse } from '@/hooks/useEmergencyResponse';
 import { usePanicResponse } from '@/hooks/usePanicResponse';
 import { usePOIs, type POI } from '@/hooks/usePOIs';
+import { useEmergencyContactsDB } from '@/hooks/useEmergencyContactsDB';
 import { AlertsPanel } from '@/components/AlertsPanel';
 import { ActiveUsersPanel } from '@/components/ActiveUsersPanel';
 import { InternalMessaging } from '@/components/InternalMessaging';
@@ -844,6 +845,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     activeResponse: activePanicResponse
   } = usePanicResponse();
   const { pois, loading: poisLoading, fetchPOIs } = usePOIs();
+  const { hasMinimumContacts } = useEmergencyContactsDB();
   
   const isRescatista = role === 'SOS_ACTIVO' || role === 'EX_SOS';
   const currentUserId = user?.id;
@@ -1911,6 +1913,18 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       {locationError && (
         <div className="absolute top-2 left-2 right-2 z-[1000] bg-warning/90 text-background p-2 rounded-lg text-sm font-medium">
           {locationError}
+        </div>
+      )}
+
+      {/* No emergency contacts warning banner */}
+      {!hasMinimumContacts && (
+        <div className="absolute top-2 left-2 right-2 z-[999] bg-destructive/95 text-destructive-foreground p-3 rounded-lg shadow-lg border border-destructive/50 flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">Sin contactos de emergencia</p>
+            <p className="text-xs opacity-90">Agrega al menos uno en Configuración para usar el botón SOS</p>
+          </div>
+          <Users className="w-5 h-5 shrink-0 opacity-70" />
         </div>
       )}
 

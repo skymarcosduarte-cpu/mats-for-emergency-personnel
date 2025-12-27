@@ -747,12 +747,26 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     </p>
                   </div>
                 </div>
-                <Switch
-                  id="kit-toggle"
-                  checked={hasFirstAidKit}
-                  onCheckedChange={(value) => handleMedicalToggle('has_first_aid_kit', value)}
-                  disabled={savingMedical}
-                />
+                <div className="flex items-center gap-2">
+                  {hasFirstAidKit && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                      onClick={() => handleMedicalToggle('has_first_aid_kit', false)}
+                      disabled={savingMedical}
+                      title="Ya no tengo botiquín disponible"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                  <Switch
+                    id="kit-toggle"
+                    checked={hasFirstAidKit}
+                    onCheckedChange={(value) => handleMedicalToggle('has_first_aid_kit', value)}
+                    disabled={savingMedical}
+                  />
+                </div>
               </div>
 
               {/* Ambulance toggle */}
@@ -770,12 +784,26 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     </p>
                   </div>
                 </div>
-                <Switch
-                  id="ambulance-toggle"
-                  checked={hasAmbulance}
-                  onCheckedChange={(value) => handleMedicalToggle('has_ambulance', value)}
-                  disabled={savingMedical}
-                />
+                <div className="flex items-center gap-2">
+                  {hasAmbulance && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                      onClick={() => handleMedicalToggle('has_ambulance', false)}
+                      disabled={savingMedical}
+                      title="Ya no tengo ambulancia disponible"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                  <Switch
+                    id="ambulance-toggle"
+                    checked={hasAmbulance}
+                    onCheckedChange={(value) => handleMedicalToggle('has_ambulance', value)}
+                    disabled={savingMedical}
+                  />
+                </div>
               </div>
             </div>
 
