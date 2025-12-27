@@ -17,26 +17,26 @@ export const MatsLogo: React.FC<MatsLogoProps> = ({
   const sizeClass = size <= 32 ? 'rounded-md' : size <= 64 ? 'rounded-lg' : 'rounded-xl';
   
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex items-center gap-2 min-w-0 ${className}`}>
       <img
         src={matsLogo}
         alt="M.A.T.S. Logo"
         width={size}
         height={size}
         className={`flex-shrink-0 ${sizeClass} object-contain`}
-        style={{ 
-          maxWidth: size, 
+        style={{
+          maxWidth: size,
           maxHeight: size,
         }}
         loading="lazy"
       />
-      
+
       {showText && (
-        <div className="flex flex-col">
-          <span className="text-lg font-bold tracking-wider text-foreground">
+        <div className="flex flex-col min-w-0">
+          <span className="text-base sm:text-lg font-bold tracking-wider text-foreground truncate leading-none">
             M.A.T.S.
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[10px] sm:text-xs text-muted-foreground truncate">
             COMUNIDAD SOS
           </span>
         </div>
