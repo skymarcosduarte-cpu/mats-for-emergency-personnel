@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useInternalMessages, InternalMessage, requestNotificationPermission } from '@/hooks/useInternalMessages';
 import { useAuth } from '@/hooks/useAuth';
+import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -105,6 +106,9 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
+  // Typing indicator
+  const { isUserTyping, sendTyping } = useTypingIndicator(selectedUserId);
+  
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
@@ -179,6 +183,7 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     const textToSend = messageText.trim();
     setSending(true);
     setMessageText(''); // Clear immediately for better UX
+    sendTyping(false); // Stop typing indicator
     
     try {
       const success = await sendMessage(selectedUserId, textToSend);
@@ -714,6 +719,18 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                     );
                   })
                 )}
+                {/* Typing indicator */}
+                {isUserTyping && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted text-foreground rounded-2xl rounded-bl-md px-4 py-2">
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
@@ -818,8 +835,12 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                   <Input
                     ref={inputRef}
                     value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
+                    onChange={(e) => {
+                      setMessageText(e.target.value);
+                      sendTyping(e.target.value.length > 0);
+                    }}
                     onKeyDown={handleKeyDown}
+                    onBlur={() => sendTyping(false)}
                     placeholder="Escribe un mensaje..."
                     className="flex-1"
                     disabled={sending}
