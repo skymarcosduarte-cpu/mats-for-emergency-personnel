@@ -1648,19 +1648,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
       {/* Privacy Terms Dialog */}
       <Dialog open={showPrivacyDialog} onOpenChange={setShowPrivacyDialog}>
-        <DialogContent className="sm:max-w-lg bg-card border-border max-h-[90vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-lg bg-card border-border max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-primary" />
               Aviso de Privacidad y Términos de Uso
             </DialogTitle>
-            <DialogDescription>
-              Información sobre el uso de tus datos
-            </DialogDescription>
+            <DialogDescription>Información sobre el uso de tus datos</DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 max-h-[60vh] pr-4">
-            <div className="space-y-4 text-sm">
+          <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
+            <div className="space-y-4 text-sm pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
               {/* Main Notice */}
               <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
                 <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
@@ -1668,8 +1666,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   Propósito de la Plataforma
                 </h3>
                 <p className="text-muted-foreground">
-                  COMUNIDAD EX SOS es una plataforma de apoyo voluntario para emergencias. 
-                  Su objetivo es facilitar la comunicación y coordinación entre miembros de la 
+                  Comunidad SOS es una plataforma de apoyo voluntario para emergencias.
+                  Su objetivo es facilitar la comunicación y coordinación entre miembros de la
                   comunidad durante situaciones de emergencia, sismos y desastres naturales.
                 </p>
               </div>
@@ -1681,7 +1679,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   Compartir Ubicación en Tiempo Real
                 </h3>
                 <p className="text-muted-foreground mb-3">
-                  Al activar esta opción, tu ubicación será visible para otros miembros 
+                  Al activar esta opción, tu ubicación será visible para otros miembros
                   verificados de la comunidad. Esta información se utiliza exclusivamente para:
                 </p>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
@@ -1698,8 +1696,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   Compartir Información Médica de Emergencia
                 </h3>
                 <p className="text-muted-foreground mb-3">
-                  Al activar esta opción, tu información médica (tipo de sangre, alergias, 
-                  condiciones médicas) será accesible para rescatistas verificados cuando 
+                  Al activar esta opción, tu información médica (tipo de sangre, alergias,
+                  condiciones médicas) será accesible para rescatistas verificados cuando
                   solicites ayuda. Esto permite:
                 </p>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
@@ -1716,7 +1714,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   Deslinde de Responsabilidad
                 </h3>
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                  La plataforma COMUNIDAD EX SOS y sus creadores no se hacen responsables por:
+                  La plataforma Comunidad SOS y sus creadores no se hacen responsables por:
                 </p>
                 <ul className="list-disc list-inside text-muted-foreground text-xs space-y-1 ml-2 mt-2">
                   <li>El mal uso de la información compartida por terceros</li>
@@ -1738,24 +1736,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
               {/* Data Protection */}
               <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                <h3 className="font-semibold text-foreground mb-2">
-                  Protección de Datos
-                </h3>
+                <h3 className="font-semibold text-foreground mb-2">Protección de Datos</h3>
                 <p className="text-muted-foreground text-xs">
-                  Tu información es almacenada de forma segura y solo es accesible para 
-                  usuarios autenticados de la comunidad. No vendemos ni compartimos tu 
-                  información con terceros externos. Puedes solicitar la eliminación de 
-                  tu cuenta y todos tus datos en cualquier momento desde la sección de 
+                  Tu información es almacenada de forma segura y solo es accesible para
+                  usuarios autenticados de la comunidad. No vendemos ni compartimos tu
+                  información con terceros externos. Puedes solicitar la eliminación de
+                  tu cuenta y todos tus datos en cualquier momento desde la sección de
                   Configuración.
                 </p>
               </div>
             </div>
           </ScrollArea>
 
-          <DialogFooter>
-            <Button onClick={() => setShowPrivacyDialog(false)}>
-              Entendido
-            </Button>
+          <DialogFooter className="flex-shrink-0 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+            <Button onClick={() => setShowPrivacyDialog(false)}>Entendido</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
