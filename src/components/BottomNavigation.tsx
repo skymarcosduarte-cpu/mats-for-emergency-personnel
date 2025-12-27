@@ -62,6 +62,7 @@ interface BottomNavigationProps {
   isRescatista?: boolean;
   disasterMode?: boolean;
   alertCount?: number;
+  messageCount?: number;
 }
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({
@@ -70,6 +71,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   isRescatista = true,
   disasterMode = false,
   alertCount = 0,
+  messageCount = 0,
 }) => {
   const updateAvailable = useUpdateAvailable();
   
@@ -105,6 +107,13 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                 {item.id === 'alerts' && alertCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
                     {alertCount > 9 ? '9+' : alertCount}
+                  </span>
+                )}
+                
+                {/* Message badge on map */}
+                {item.id === 'map' && messageCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {messageCount > 9 ? '9+' : messageCount}
                   </span>
                 )}
                 
