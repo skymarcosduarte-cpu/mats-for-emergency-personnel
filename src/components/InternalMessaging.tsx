@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, CheckCheck, Circle } from 'lucide-react';
+import { Check, CheckCheck, Circle, Maximize2, Minimize2 } from 'lucide-react';
 import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus, Camera, MapPin } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -139,6 +139,9 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   
   // Location state
   const [sendingLocation, setSendingLocation] = useState(false);
+  
+  // Fullscreen mode state
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   // User online status
   const [userOnlineStatus, setUserOnlineStatus] = useState<{
@@ -830,7 +833,12 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-[10000] flex items-start justify-center bg-black/70 p-4 pt-16 pb-24 overflow-y-auto"
+      className={cn(
+        "fixed inset-0 z-[10000] flex items-start justify-center overflow-y-auto",
+        isFullscreen 
+          ? "bg-background p-0" 
+          : "bg-black/70 p-4 pt-16 pb-24"
+      )}
       style={{ touchAction: 'none' }}
       onClick={(e) => {
         e.preventDefault();
@@ -854,13 +862,21 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div 
-        className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-md min-h-[400px] max-h-[calc(100dvh-10rem)] flex flex-col overflow-hidden"
+        className={cn(
+          "bg-card flex flex-col overflow-hidden",
+          isFullscreen 
+            ? "w-full h-full rounded-none border-0" 
+            : "border border-border rounded-xl shadow-2xl w-full max-w-md min-h-[400px] max-h-[calc(100dvh-10rem)]"
+        )}
         style={{ touchAction: 'auto' }}
         onClick={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
+        <div className={cn(
+          "flex items-center justify-between p-4 border-b border-border bg-muted/30",
+          isFullscreen && "safe-top"
+        )}>
           <div className="flex items-center gap-3">
             {selectedUserId && (
               <Button
@@ -913,6 +929,20 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                 <Trash2 className="w-4 h-4" />
               </Button>
             )}
+            {/* Fullscreen toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              title={isFullscreen ? 'Modo ventana' : 'Pantalla completa'}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="w-4 h-4" />
+              ) : (
+                <Maximize2 className="w-4 h-4" />
+              )}
+            </Button>
             {/* Notification toggle */}
             {notificationPermission !== 'unsupported' && (
               <Button
