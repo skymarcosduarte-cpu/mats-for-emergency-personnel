@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { X, Navigation, Timer, MapPin, User, Maximize2, RefreshCw } from 'lucide-react';
+import { X, Navigation, Timer, MapPin, User, Maximize2, RefreshCw, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,6 +28,7 @@ interface ResponderTrackingMapProps {
   alertLng: number;
   responders: ResponderLocation[];
   onNavigate?: () => void;
+  onMessageResponder?: (userId: string, nickname: string) => void;
 }
 
 const TRANSPORT_ICONS: Record<string, string> = {
@@ -86,6 +87,7 @@ export const ResponderTrackingMap: React.FC<ResponderTrackingMapProps> = ({
   alertLng,
   responders,
   onNavigate,
+  onMessageResponder,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -298,12 +300,24 @@ export const ResponderTrackingMap: React.FC<ResponderTrackingMapProps> = ({
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-1 text-green-600 font-medium">
-                        <Timer className="w-4 h-4" />
-                        {formatEta(responder.eta_minutes)}
+                    <div className="flex items-center gap-2">
+                      {onMessageResponder && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-primary hover:bg-primary/10"
+                          onClick={() => onMessageResponder(responder.user_id, responder.nickname)}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <div className="text-right">
+                        <div className="flex items-center gap-1 text-green-600 font-medium">
+                          <Timer className="w-4 h-4" />
+                          {formatEta(responder.eta_minutes)}
+                        </div>
+                        <p className="text-xs text-muted-foreground">En camino</p>
                       </div>
-                      <p className="text-xs text-muted-foreground">En camino</p>
                     </div>
                   </div>
                 ))}
@@ -323,7 +337,17 @@ export const ResponderTrackingMap: React.FC<ResponderTrackingMapProps> = ({
                         <p className="text-xs text-primary">¡Ya llegó!</p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="flex items-center gap-2">
+                      {onMessageResponder && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-primary hover:bg-primary/10"
+                          onClick={() => onMessageResponder(responder.user_id, responder.nickname)}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </Button>
+                      )}
                       <span className="inline-flex items-center gap-1 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
                         <MapPin className="w-3 h-3" />
                         En ubicación
