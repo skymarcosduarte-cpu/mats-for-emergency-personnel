@@ -51,7 +51,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     icon: <Bell className="w-12 h-12" />,
     title: 'Alertas Sísmicas',
-    description: 'Recibe notificaciones de sismos cercanos automáticamente. Después de un sismo, reporta tu estado con "4 de 10" o solicita ayuda con "14".',
+    description: 'Recibe notificaciones de sismos cercanos automáticamente. Después de un sismo, reporta que estás bien con "Todo bien" o solicita ayuda con "14".',
     tip: 'Activa las notificaciones para no perderte ninguna alerta',
     color: 'text-warning',
   },

@@ -1,5 +1,5 @@
 // Alerts Screen for COMUNIDAD SOS
-// USGS + SSN Mexico earthquakes + "4/10" quick report + "14" help + notifications + my alerts history
+// USGS + SSN Mexico earthquakes + "Todo bien" quick report + "14" help + notifications + my alerts history
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind, Route, X, CheckCircle2 } from 'lucide-react';
@@ -159,24 +159,39 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     getAEMETLevelColor,
   } = useGDACSAlerts();
 
-  // Handle quick "4 de 10" report
+  // Handle quick "Todo bien" report
   const handleQuickCheckin = async (quake: EarthquakeWithDistance) => {
     if (!position) {
-      alert('Se requiere ubicación GPS');
+      toast.error('Se requiere ubicación GPS');
       return;
     }
 
-    // Submit quick OK report
-    console.log('Quick checkin:', {
-      quake_id: quake.id,
-      intensity: 4,
-      damage: 'OK',
-      lat: position.lat,
-      lng: position.lng,
-    });
-    
-    // Show toast or feedback
-    alert('¡Reporte "4 de 10" enviado!');
+    if (!user) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('quake_checkins')
+        .insert({
+          user_id: user.id,
+          usgs_event_id: quake.id,
+          intensity: 4,
+          damage_report: 'OK',
+          lat: position.lat,
+          lng: position.lng,
+        });
+
+      if (error) throw error;
+
+      toast.success('¡Todo bien!', {
+        description: 'Reporte enviado - Gracias por reportar',
+      });
+    } catch (error) {
+      console.error('Error submitting quick checkin:', error);
+      toast.error('Error al enviar reporte');
+    }
   };
 
   // Handle "14" help request
