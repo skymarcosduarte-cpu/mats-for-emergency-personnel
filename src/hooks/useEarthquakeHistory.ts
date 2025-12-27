@@ -8,6 +8,8 @@ import { cacheEarthquakes, getCachedEarthquakes, isEarthquakeCacheFresh, updateL
 
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
 const SSN_FEED_URL = 'http://www.ssn.unam.mx/rss/ultimos-sismos.xml';
+// Use CORS proxy for SSN (HTTP only site)
+const SSN_PROXY_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(SSN_FEED_URL);
 
 export interface EarthquakeWithDistance extends USGSEarthquake {
   distanceKm: number | null;
@@ -17,8 +19,13 @@ export interface EarthquakeWithDistance extends USGSEarthquake {
 // Parse SSN RSS feed and convert to USGSEarthquake format
 async function parseSSNFeed(): Promise<USGSEarthquake[]> {
   try {
-    const response = await fetch(SSN_FEED_URL);
+    console.log('[SSN] Fetching SSN feed via proxy...');
+    const response = await fetch(SSN_PROXY_URL);
+    if (!response.ok) {
+      throw new Error(`SSN fetch failed: ${response.status}`);
+    }
     const text = await response.text();
+    console.log('[SSN] Received response, length:', text.length);
     const parser = new DOMParser();
     const xml = parser.parseFromString(text, 'text/xml');
     
@@ -77,9 +84,10 @@ async function parseSSNFeed(): Promise<USGSEarthquake[]> {
       }
     });
     
+    console.log('[SSN] Parsed earthquakes:', earthquakes.length);
     return earthquakes;
   } catch (error) {
-    console.error('Error fetching SSN feed:', error);
+    console.error('[SSN] Error fetching SSN feed:', error);
     return [];
   }
 }
