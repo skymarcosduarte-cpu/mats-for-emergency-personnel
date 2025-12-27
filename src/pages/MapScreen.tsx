@@ -843,12 +843,13 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   const { providers: medicalProviders } = useMedicalProviders();
   const { events: panicEvents, resolveEvent } = usePanicEvents();
   const { responders: activeResponders } = useActiveResponders();
-  const { startResponding, stopResponding, markAsArrived, markAsResolved } = useEmergencyResponse();
+  const { startResponding, stopResponding, markAsArrived, markAsResolved, updateTransportMode } = useEmergencyResponse();
   const { 
     startResponding: startPanicResponding, 
     stopResponding: stopPanicResponding, 
     markAsArrived: markPanicAsArrived, 
     markAsResolved: markPanicAsResolved,
+    updateTransportMode: updatePanicTransportMode,
     activeResponse: activePanicResponse
   } = usePanicResponse();
   const { pois, loading: poisLoading, fetchPOIs } = usePOIs();
@@ -911,6 +912,14 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     }
     return await markAsResolved();
   }, [activePanicResponse, markPanicAsResolved, markAsResolved]);
+
+  // Handle update transport mode - check which type of response is active
+  const handleUpdateTransport = useCallback(async (transportMode: string, estimatedEtaMinutes: number) => {
+    if (activePanicResponse) {
+      return await updatePanicTransportMode(transportMode, estimatedEtaMinutes);
+    }
+    return await updateTransportMode(transportMode, estimatedEtaMinutes);
+  }, [activePanicResponse, updatePanicTransportMode, updateTransportMode]);
 
   // Handle messaging a user
   const handleMessageUser = useCallback((userId: string, displayName: string | null) => {
@@ -2085,6 +2094,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         onCancelResponse={handleCancelResponse}
         onMarkAsArrived={handleMarkAsArrived}
         onResolve={handleMarkAsResolved}
+        onUpdateTransport={handleUpdateTransport}
       />
     </div>
   );

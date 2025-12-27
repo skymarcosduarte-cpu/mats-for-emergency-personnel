@@ -540,6 +540,38 @@ export function usePanicResponse() {
     checkExistingResponse();
   }, [user, startLocationTracking]);
 
+  // Update transport mode for active response
+  const updateTransportMode = useCallback(async (
+    transportMode: string,
+    estimatedEtaMinutes: number
+  ) => {
+    if (!activeResponse || !user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('panic_event_responders')
+        .update({
+          transport_mode: transportMode,
+          estimated_eta_minutes: estimatedEtaMinutes,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('panic_id', activeResponse.panicId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error updating transport mode:', error);
+        toast.error('Error al actualizar transporte');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating transport mode:', error);
+      toast.error('Error al actualizar transporte');
+      return false;
+    }
+  }, [activeResponse, user]);
+
   return {
     activeResponse,
     responderLocations,
@@ -549,6 +581,7 @@ export function usePanicResponse() {
     markAsResolved,
     fetchResponders,
     getResponderCount,
+    updateTransportMode,
     isResponding: activeResponse !== null,
   };
 }
