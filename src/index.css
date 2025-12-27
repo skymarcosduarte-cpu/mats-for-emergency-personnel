@@ -372,6 +372,13 @@ html, body {
   z-index: 9999 !important;
 }
 
+/* When chat modal is open, prevent any interaction with the Leaflet map behind it */
+.chat-modal-open .leaflet-container,
+.chat-modal-open .leaflet-pane,
+.chat-modal-open .leaflet-control-container {
+  pointer-events: none !important;
+}
+
 /* Slow pulse animation for urgent banners */
 @keyframes pulse-slow {
   0%, 100% {
