@@ -298,12 +298,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         return;
       }
 
-      // Update invite used_count
+      // Update invite used_count atomically using RPC
       if (inviteCode) {
-        await supabase
-          .from('invites')
-          .update({ used_count: (await supabase.from('invites').select('used_count').eq('code', inviteCode.toUpperCase()).single()).data?.used_count + 1 || 1 })
-          .eq('code', inviteCode.toUpperCase());
+        await supabase.rpc('use_invite_code', {
+          invite_code: inviteCode.toUpperCase()
+        });
       }
 
       onAuthComplete?.();
