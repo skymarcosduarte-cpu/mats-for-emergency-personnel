@@ -150,23 +150,50 @@ export function triggerVibration(): void {
 
 /**
  * Trigger a longer, more attention-grabbing vibration pattern for urgent alerts
- * SOS-like pattern: 3 short, 3 long, 3 short
+ * Extended SOS-like pattern with multiple repetitions for silent mode
  */
 export function triggerUrgentVibration(): void {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
-      // Enhanced SOS-style pattern for maximum attention
+      // Extended intense vibration pattern - longer and more persistent
+      // Perfect for when device is in silent mode (cine, junta, etc.)
       navigator.vibrate([
-        100, 50, 100, 50, 100,  // 3 short
-        150,                     // pause
-        200, 75, 200, 75, 200,  // 3 medium-long
-        150,                     // pause
-        100, 50, 100, 50, 100   // 3 short
+        // Round 1 - SOS pattern
+        150, 75, 150, 75, 150,   // 3 short bursts
+        200,                      // pause
+        300, 100, 300, 100, 300, // 3 long bursts
+        200,                      // pause
+        150, 75, 150, 75, 150,   // 3 short bursts
+        400,                      // longer pause
+        // Round 2 - continuous attention
+        200, 50, 200, 50, 200, 50, 200, 50, 200,
+        300,                      // pause
+        // Round 3 - final urgent bursts
+        100, 30, 100, 30, 100, 30, 100, 30, 100, 30, 100
       ]);
     } catch (e) {
       console.warn('Vibration not supported');
     }
   }
+}
+
+/**
+ * Trigger repeated urgent vibrations over time
+ * For maximum attention in silent mode scenarios
+ */
+export function triggerPersistentUrgentVibration(): void {
+  // Vibrate immediately
+  triggerUrgentVibration();
+  
+  // Repeat vibration after 3 seconds if user hasn't interacted
+  setTimeout(() => {
+    triggerUrgentVibration();
+  }, 3000);
+  
+  // One more time after 6 seconds
+  setTimeout(() => {
+    triggerUrgentVibration();
+  }, 6000);
 }
 
 /**
@@ -187,10 +214,11 @@ export function playSubtleAlert(): void {
 
 /**
  * Play urgent alert for nearby help requests
+ * Uses persistent vibration for silent mode scenarios
  */
 export function playUrgentAlert(): void {
   playUrgentSound();
-  triggerUrgentVibration();
+  triggerPersistentUrgentVibration();
 }
 
 /**
