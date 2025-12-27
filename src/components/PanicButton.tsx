@@ -15,6 +15,7 @@ import { useLocation } from '@/hooks/useLocation';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { requestNotificationPermission } from '@/hooks/useInternalMessages';
 
 interface PanicOption {
   type: PanicType;
@@ -295,6 +296,13 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
       audioUrl = await uploadAudio(audioBlob, tempId) || undefined;
       setIsUploadingAudio(false);
     }
+
+    // Request notification permission to receive messages from responders
+    requestNotificationPermission().then(granted => {
+      if (granted) {
+        console.log('[PanicButton] Notification permission granted for alert creator');
+      }
+    });
 
     // Notify parent component
     onPanicTriggered?.(

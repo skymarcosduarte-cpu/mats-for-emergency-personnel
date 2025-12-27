@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { playPositiveAlert } from '@/lib/alertSound';
+import { requestNotificationPermission } from '@/hooks/useInternalMessages';
 
 interface ActiveResponse {
   requestId: string;
@@ -134,6 +135,13 @@ export function useEmergencyResponse() {
 
       // Start tracking location
       startLocationTracking(requestId);
+
+      // Request notification permission for direct messages from the alert creator
+      requestNotificationPermission().then(granted => {
+        if (granted) {
+          console.log('[EmergencyResponse] Notification permission granted for responder');
+        }
+      });
 
       toast.success('¡En camino! Tu ubicación está siendo compartida');
       return true;
