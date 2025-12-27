@@ -373,13 +373,15 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
       // Upload audio if present
       if (reportAudio && reportData) {
-        const fileName = `report_${reportData.id}_${Date.now()}.webm`;
+        const mimeType = reportAudio.blob.type || 'audio/webm';
+        const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+        const fileName = `report_${reportData.id}_${Date.now()}.${ext}`;
         const filePath = `road-reports/${fileName}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from('reports_media')
           .upload(filePath, reportAudio.blob, {
-            contentType: 'audio/webm',
+            contentType: mimeType,
             upsert: false,
           });
 
@@ -388,7 +390,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
             report_id: reportData.id,
             report_type: 'road_report',
             media_type: 'audio',
-            mime_type: 'audio/webm',
+            mime_type: mimeType,
             storage_path: filePath,
             duration_ms: reportAudio.duration,
           });

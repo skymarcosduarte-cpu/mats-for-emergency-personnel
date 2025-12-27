@@ -184,13 +184,15 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   // Upload audio to storage
   const uploadAudio = async (blob: Blob, panicEventId: string): Promise<string | null> => {
     try {
-      const fileName = `panic_${panicEventId}_${Date.now()}.webm`;
+      const mimeType = blob.type || 'audio/webm';
+      const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+      const fileName = `panic_${panicEventId}_${Date.now()}.${ext}`;
       const filePath = `panic-audio/${fileName}`;
-      
+
       const { error: uploadError } = await supabase.storage
         .from('reports_media')
         .upload(filePath, blob, {
-          contentType: blob.type || 'audio/webm',
+          contentType: mimeType,
           upsert: false,
         });
 
@@ -199,12 +201,8 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         return null;
       }
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('reports_media')
-        .getPublicUrl(filePath);
-
-      return urlData?.publicUrl || null;
+      // Store path in DB (AudioPlayer will generate signed URL)
+      return filePath;
     } catch (error) {
       console.error('Failed to upload audio:', error);
       return null;

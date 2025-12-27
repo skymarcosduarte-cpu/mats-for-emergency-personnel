@@ -185,11 +185,14 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
 
       // Upload voice note to storage if present
       if (help14Audio) {
-        const audioFileName = `help-${Date.now()}-${user.id}.webm`;
+        const mimeType = help14Audio.blob.type || 'audio/webm';
+        const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+        const audioFileName = `help-${Date.now()}-${user.id}.${ext}`;
+
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('reports_media')
           .upload(`audio/${audioFileName}`, help14Audio.blob, {
-            contentType: 'audio/webm',
+            contentType: mimeType,
             upsert: false,
           });
 
