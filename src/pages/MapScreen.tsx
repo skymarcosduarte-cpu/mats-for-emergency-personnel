@@ -37,10 +37,10 @@ L.Icon.Default.mergeOptions({
 
 // Custom icons
 // Star icon for FAMILIAR users (5-pointed star)
-const createFamiliarIcon = (isCurrentUser: boolean = false, hasFirstAidKit: boolean = false) => L.divIcon({
+const createFamiliarIcon = (isCurrentUser: boolean = false, hasFirstAidKit: boolean = false, updatedAgo?: string) => L.divIcon({
   className: `mats-marker familiar-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
   html: `
-    <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : '32px'};">
+    <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : (updatedAgo ? '48px' : '32px')};">
       ${isCurrentUser ? `
         <div style="
           position: absolute;
@@ -94,7 +94,7 @@ const createFamiliarIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bool
       ${isCurrentUser ? `
         <div style="
           position: absolute;
-          bottom: 0;
+          bottom: ${updatedAgo ? '16px' : '0'};
           left: 50%;
           transform: translateX(-50%);
           background: #fbbf24;
@@ -107,18 +107,34 @@ const createFamiliarIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bool
           box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         ">TÚ</div>
       ` : ''}
+      ${!isCurrentUser && updatedAgo ? `
+        <div style="
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.75);
+          color: #fff;
+          font-size: 8px;
+          font-weight: 600;
+          padding: 1px 4px;
+          border-radius: 3px;
+          white-space: nowrap;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        ">${updatedAgo}</div>
+      ` : ''}
     </div>
   `,
-  iconSize: [32, isCurrentUser ? 40 : 32],
-  iconAnchor: [16, isCurrentUser ? 20 : 16],
-  popupAnchor: [0, isCurrentUser ? -20 : -16],
+  iconSize: [32, isCurrentUser ? 40 : (updatedAgo && !isCurrentUser ? 48 : 32)],
+  iconAnchor: [16, isCurrentUser ? 20 : (updatedAgo && !isCurrentUser ? 24 : 16)],
+  popupAnchor: [0, isCurrentUser ? -20 : (updatedAgo && !isCurrentUser ? -24 : -16)],
 });
 
 // Simple green cross icon for SOS ACTIVO / EX-SOS users
-const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: boolean = false) => L.divIcon({
+const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: boolean = false, updatedAgo?: string) => L.divIcon({
   className: `mats-marker rescatista-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
   html: `
-    <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : '32px'};">
+    <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : (updatedAgo ? '48px' : '32px')};">
       ${isCurrentUser ? `
         <div style="
           position: absolute;
@@ -172,7 +188,7 @@ const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bo
       ${isCurrentUser ? `
         <div style="
           position: absolute;
-          bottom: 0;
+          bottom: ${updatedAgo ? '16px' : '0'};
           left: 50%;
           transform: translateX(-50%);
           background: #fbbf24;
@@ -185,18 +201,34 @@ const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bo
           box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         ">TÚ</div>
       ` : ''}
+      ${!isCurrentUser && updatedAgo ? `
+        <div style="
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.75);
+          color: #fff;
+          font-size: 8px;
+          font-weight: 600;
+          padding: 1px 4px;
+          border-radius: 3px;
+          white-space: nowrap;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        ">${updatedAgo}</div>
+      ` : ''}
     </div>
   `,
-  iconSize: [32, isCurrentUser ? 40 : 32],
-  iconAnchor: [16, isCurrentUser ? 20 : 16],
-  popupAnchor: [0, isCurrentUser ? -20 : -16],
+  iconSize: [32, isCurrentUser ? 40 : (updatedAgo && !isCurrentUser ? 48 : 32)],
+  iconAnchor: [16, isCurrentUser ? 20 : (updatedAgo && !isCurrentUser ? 24 : 16)],
+  popupAnchor: [0, isCurrentUser ? -20 : (updatedAgo && !isCurrentUser ? -24 : -16)],
 });
 
 // Transit icon for users with active road trips (orange/amber color with car icon)
-const createTransitIcon = (isCurrentUser: boolean = false) => L.divIcon({
+const createTransitIcon = (isCurrentUser: boolean = false, updatedAgo?: string) => L.divIcon({
   className: `mats-marker transit-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
   html: `
-    <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : '32px'};">
+    <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : (updatedAgo ? '48px' : '32px')};">
       ${isCurrentUser ? `
         <div style="
           position: absolute;
@@ -233,7 +265,7 @@ const createTransitIcon = (isCurrentUser: boolean = false) => L.divIcon({
       ${isCurrentUser ? `
         <div style="
           position: absolute;
-          bottom: 0;
+          bottom: ${updatedAgo ? '16px' : '0'};
           left: 50%;
           transform: translateX(-50%);
           background: #fbbf24;
@@ -246,11 +278,27 @@ const createTransitIcon = (isCurrentUser: boolean = false) => L.divIcon({
           box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         ">TÚ</div>
       ` : ''}
+      ${!isCurrentUser && updatedAgo ? `
+        <div style="
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.75);
+          color: #fff;
+          font-size: 8px;
+          font-weight: 600;
+          padding: 1px 4px;
+          border-radius: 3px;
+          white-space: nowrap;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        ">${updatedAgo}</div>
+      ` : ''}
     </div>
   `,
-  iconSize: [32, isCurrentUser ? 40 : 32],
-  iconAnchor: [16, isCurrentUser ? 20 : 16],
-  popupAnchor: [0, isCurrentUser ? -20 : -16],
+  iconSize: [32, isCurrentUser ? 40 : (updatedAgo && !isCurrentUser ? 48 : 32)],
+  iconAnchor: [16, isCurrentUser ? 20 : (updatedAgo && !isCurrentUser ? 24 : 16)],
+  popupAnchor: [0, isCurrentUser ? -20 : (updatedAgo && !isCurrentUser ? -24 : -16)],
 });
 
 // Ambulance icon for users with ambulance - with emergency pulsing animation
@@ -1141,30 +1189,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const canProvideMedical = loc.can_provide_medical_assistance ?? false;
       const hasAmbulance = (loc as any).has_ambulance ?? false;
       
-      // Priority: Transit > SOS Activo/EX-SOS > Familiar
-      let icon;
-      let roleLabel;
-      let bgColor;
-      let badgeColor;
-      
-      if (isInTransit) {
-        icon = createTransitIcon(isMe);
-        roleLabel = 'En tránsito';
-        bgColor = '#f59e0b';
-        badgeColor = '#f59e0b';
-      } else if (isSosActivo) {
-        icon = createRescatistaIcon(isMe, hasFirstAidKit);
-        roleLabel = loc.role === 'SOS_ACTIVO' ? 'SOS ACTIVO' : 'EX-SOS';
-        bgColor = loc.role === 'SOS_ACTIVO' ? '#22c55e' : '#3b82f6';
-        badgeColor = loc.role === 'SOS_ACTIVO' ? '#22c55e' : '#3b82f6';
-      } else {
-        icon = createFamiliarIcon(isMe, hasFirstAidKit);
-        roleLabel = 'FAMILIAR';
-        bgColor = '#2e8b57';
-        badgeColor = '#2e8b57';
-      }
-      
-      // Calculate time since last update
+      // Calculate time since last update FIRST (needed for icon badge)
       let updatedAgo = '';
       if (loc.updated_at) {
         const updatedDate = new Date(loc.updated_at);
@@ -1175,12 +1200,35 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         const diffHrs = Math.floor(diffMin / 60);
         
         if (diffSec < 60) {
-          updatedAgo = `hace ${diffSec}s`;
+          updatedAgo = `${diffSec}s`;
         } else if (diffMin < 60) {
-          updatedAgo = `hace ${diffMin}m`;
+          updatedAgo = `${diffMin}m`;
         } else {
-          updatedAgo = `hace ${diffHrs}h`;
+          updatedAgo = `${diffHrs}h`;
         }
+      }
+      
+      // Priority: Transit > SOS Activo/EX-SOS > Familiar
+      let icon;
+      let roleLabel;
+      let bgColor;
+      let badgeColor;
+      
+      if (isInTransit) {
+        icon = createTransitIcon(isMe, isMe ? undefined : updatedAgo);
+        roleLabel = 'En tránsito';
+        bgColor = '#f59e0b';
+        badgeColor = '#f59e0b';
+      } else if (isSosActivo) {
+        icon = createRescatistaIcon(isMe, hasFirstAidKit, isMe ? undefined : updatedAgo);
+        roleLabel = loc.role === 'SOS_ACTIVO' ? 'SOS ACTIVO' : 'EX-SOS';
+        bgColor = loc.role === 'SOS_ACTIVO' ? '#22c55e' : '#3b82f6';
+        badgeColor = loc.role === 'SOS_ACTIVO' ? '#22c55e' : '#3b82f6';
+      } else {
+        icon = createFamiliarIcon(isMe, hasFirstAidKit, isMe ? undefined : updatedAgo);
+        roleLabel = 'FAMILIAR';
+        bgColor = '#2e8b57';
+        badgeColor = '#2e8b57';
       }
       
       const displayName = loc.display_name ? sanitize(loc.display_name) : null;
@@ -1210,9 +1258,9 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         letter-spacing: 0.5px;
       ">${roleLabel}</span>`;
       
-      // Updated ago HTML
+      // Updated ago HTML (for popup, use "hace X" format)
       const updatedInfo = updatedAgo 
-        ? `<div style="font-size: 10px; color: #888; margin-top: 4px;">⏱ Actualizado ${updatedAgo}</div>`
+        ? `<div style="font-size: 10px; color: #888; margin-top: 4px;">⏱ Actualizado hace ${updatedAgo}</div>`
         : '';
 
       const popupContent = `
