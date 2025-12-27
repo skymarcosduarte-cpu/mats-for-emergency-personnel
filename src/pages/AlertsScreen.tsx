@@ -1040,17 +1040,38 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                             </>
                           )}
                           
-                          {/* Show resolve button for owner or SOS_ACTIVO/EX_SOS */}
+                          {/* Show resolve/delete buttons for owner or SOS_ACTIVO/EX_SOS */}
                           {(user?.id === req.user_id || userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-muted-foreground hover:text-destructive"
-                              onClick={() => setDeleteConfirmId(req.id)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-1" />
-                              Eliminar
-                            </Button>
+                            <>
+                              {/* Quick resolve button with checkmark */}
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="bg-success hover:bg-success/90"
+                                onClick={async () => {
+                                  const success = await resolveRequest(req.id, user?.id);
+                                  if (success) {
+                                    toast.success('Alerta resuelta correctamente');
+                                  } else {
+                                    toast.error('Error al resolver la alerta');
+                                  }
+                                }}
+                              >
+                                <Check className="w-4 h-4 mr-1" />
+                                Resolver
+                              </Button>
+                              
+                              {/* Delete button (confirmation dialog) */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground hover:text-destructive"
+                                onClick={() => setDeleteConfirmId(req.id)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Eliminar
+                              </Button>
+                            </>
                           )}
                         </div>
                       </div>

@@ -302,19 +302,37 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
     }
   }, [userPosition]);
 
-  // Resolve (eliminate) a help request
+  // Resolve (eliminate) a help request or panic event
+  // Tries help_requests first, if no rows affected, tries panic_events
   const resolveRequest = useCallback(async (requestId: string, resolverId?: string) => {
-    const { error } = await supabase
+    // Try to update in help_requests first
+    const { data: helpData, error: helpError } = await supabase
       .from('help_requests')
       .update({ 
         resolved: true, 
         resolved_at: new Date().toISOString(),
         resolved_by: resolverId || null
       })
-      .eq('id', requestId);
+      .eq('id', requestId)
+      .select('id');
 
-    if (error) {
-      console.error('Error resolving help request:', error);
+    // If help_requests didn't match (no data returned), try panic_events
+    if ((!helpData || helpData.length === 0) && !helpError) {
+      const { error: panicError } = await supabase
+        .from('panic_events')
+        .update({ 
+          resolved: true, 
+          resolved_at: new Date().toISOString(),
+          resolved_by: resolverId || null
+        })
+        .eq('id', requestId);
+
+      if (panicError) {
+        console.error('Error resolving panic event:', panicError);
+        return false;
+      }
+    } else if (helpError) {
+      console.error('Error resolving help request:', helpError);
       return false;
     }
 
