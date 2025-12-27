@@ -3,7 +3,7 @@
 // Also supports test mode for simulating alerts without database
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, AlertTriangle, Loader2, FlaskConical } from 'lucide-react';
+import { X, AlertTriangle, Loader2, FlaskConical, Navigation, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,12 +31,16 @@ interface ActiveAlertBannerProps {
   testAlert?: TestPanicAlert | null;
   onClearTestAlert?: () => void;
   refreshTrigger?: number; // Trigger refetch when this changes
+  responderCount?: number; // Number of responders to user's alert
+  onViewResponders?: () => void; // Callback to open responder tracking map
 }
 
 export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
   testAlert,
   onClearTestAlert,
   refreshTrigger,
+  responderCount = 0,
+  onViewResponders,
 }) => {
   const { user } = useAuth();
   const [activeAlert, setActiveAlert] = useState<ActiveAlert | null>(null);
@@ -358,36 +362,60 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
         </div>
         <p className="text-sm opacity-90 truncate">
           {typeInfo.label} • hace {timeAgo} min
+          {responderCount > 0 && !isTestAlert && (
+            <span className="ml-2 font-medium">• {responderCount} rescatista{responderCount > 1 ? 's' : ''} 🚀</span>
+          )}
         </p>
       </div>
 
-      {/* Cancel button */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleCancelAlert}
-        onTouchEnd={(e) => {
-          e.preventDefault();
-          handleCancelAlert();
-        }}
-        disabled={cancelling}
-        className={cn(
-          "flex-shrink-0 font-semibold px-4 touch-manipulation border-0",
-          isTestAlert 
-            ? "bg-black text-white hover:bg-black/80"
-            : "bg-white text-destructive hover:bg-white/90"
+      {/* Buttons */}
+      <div className="flex gap-2 flex-shrink-0">
+        {/* View responders button - only show if there are responders */}
+        {responderCount > 0 && onViewResponders && !isTestAlert && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onViewResponders}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              onViewResponders();
+            }}
+            className="font-semibold px-3 touch-manipulation border-0 bg-green-600 text-white hover:bg-green-700"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            <Users className="w-4 h-4 mr-1" />
+            Ver
+          </Button>
         )}
-        style={{ WebkitTapHighlightColor: 'transparent' }}
-      >
-        {cancelling ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <>
-            <X className="w-4 h-4 mr-1" />
-            Cancelar
-          </>
-        )}
-      </Button>
+
+        {/* Cancel button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCancelAlert}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            handleCancelAlert();
+          }}
+          disabled={cancelling}
+          className={cn(
+            "font-semibold px-4 touch-manipulation border-0",
+            isTestAlert 
+              ? "bg-black text-white hover:bg-black/80"
+              : "bg-white text-destructive hover:bg-white/90"
+          )}
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+        >
+          {cancelling ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              <X className="w-4 h-4 mr-1" />
+              Cancelar
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 };
