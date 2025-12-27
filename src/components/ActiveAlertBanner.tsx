@@ -157,16 +157,33 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
     setCancelling(true);
 
     try {
-      // Cancel from the correct table based on alert type
-      const tableName = activeAlert.type === 'panic' ? 'panic_events' : 'help_requests';
+      // First, get responders to notify them about the cancellation
+      let responderIds: string[] = [];
       
-      const { error } = await supabase
-        .from(tableName)
-        .update({ 
-          resolved: true, 
-          resolved_at: new Date().toISOString() 
-        })
-        .eq('id', activeAlert.id);
+      if (activeAlert.type === 'panic') {
+        const { data: responders } = await supabase
+          .from('panic_event_responders')
+          .select('user_id')
+          .eq('panic_id', activeAlert.id);
+        responderIds = responders?.map(r => r.user_id) || [];
+      } else {
+        const { data: responders } = await supabase
+          .from('help_request_responders')
+          .select('user_id')
+          .eq('request_id', activeAlert.id);
+        responderIds = responders?.map(r => r.user_id) || [];
+      }
+
+      // Cancel from the correct table based on alert type
+      const { error } = activeAlert.type === 'panic' 
+        ? await supabase
+            .from('panic_events')
+            .update({ resolved: true, resolved_at: new Date().toISOString() })
+            .eq('id', activeAlert.id)
+        : await supabase
+            .from('help_requests')
+            .update({ resolved: true, resolved_at: new Date().toISOString() })
+            .eq('id', activeAlert.id);
 
       if (error) {
         console.error('[ActiveAlertBanner] Cancel error:', error);
@@ -179,6 +196,18 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
         } catch {}
         setCancelling(false);
         return;
+      }
+
+      // Notify responders that the alert was cancelled
+      if (responderIds.length > 0) {
+        supabase.functions.invoke('notify-responder-coming', {
+          body: {
+            alertId: activeAlert.id,
+            alertType: activeAlert.type,
+            eventType: 'cancelled',
+            targetUserIds: responderIds
+          }
+        }).catch(err => console.warn('Failed to notify responders of cancellation:', err));
       }
 
       toast.success('Alerta cancelada correctamente');

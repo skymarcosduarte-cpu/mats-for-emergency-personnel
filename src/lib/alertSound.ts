@@ -337,3 +337,58 @@ export function playMessageNotification(): void {
   playMessageSound();
   triggerMessageVibration();
 }
+
+/**
+ * Play a descending "cancelled/warning" sound
+ * Uses descending tones to convey something stopped or was cancelled
+ */
+export function playCancelledSound(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
+
+  const now = ctx.currentTime;
+  
+  // Descending two-tone sequence (like a "woop-woop" down)
+  const frequencies = [659, 440]; // E5 to A4 (descending)
+  const delays = [0, 0.2];
+  
+  frequencies.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    osc.type = 'triangle';
+    const startTime = now + delays[i];
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(0.2, startTime + 0.03);
+    gain.gain.linearRampToValueAtTime(0, startTime + 0.18);
+    osc.start(startTime);
+    osc.stop(startTime + 0.18);
+  });
+}
+
+/**
+ * Trigger a soft vibration for cancellation
+ */
+export function triggerCancelVibration(): void {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate([100, 100, 200]);
+    } catch (e) {
+      console.warn('Vibration not supported');
+    }
+  }
+}
+
+/**
+ * Play cancelled alert (sound + vibration)
+ */
+export function playCancelledAlert(): void {
+  playCancelledSound();
+  triggerCancelVibration();
+}

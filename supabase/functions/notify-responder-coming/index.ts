@@ -41,12 +41,44 @@ serve(async (req) => {
       creatorUserId, 
       responderUserId,
       responderCount,
-      eventType // 'responding', 'arrived', 'resolved'
+      eventType, // 'responding', 'arrived', 'resolved', 'cancelled'
+      estimatedEtaMinutes,
+      transportMode,
+      targetUserIds // array of user IDs to notify (for cancelled event)
     } = await req.json();
 
-    console.log(`Notifying user ${creatorUserId} about responder for ${alertType} ${alertId}`);
+    console.log(`Notifying about ${eventType} for ${alertType} ${alertId}`);
 
-    // Get responder's name
+    // For cancelled events, notify multiple responders
+    if (eventType === 'cancelled' && targetUserIds && targetUserIds.length > 0) {
+      const notifications = targetUserIds.map((userId: string) => ({
+        user_id: userId,
+        type: 'alert_cancelled',
+        title: '⚠️ Alerta cancelada',
+        message: 'La alerta a la que estabas respondiendo ha sido cancelada por el creador.',
+        read: false
+      }));
+
+      const { error: insertError } = await supabase
+        .from('notifications')
+        .insert(notifications);
+
+      if (insertError) {
+        console.error('Error creating cancellation notifications:', insertError);
+      }
+
+      console.log(`Notified ${notifications.length} responders about cancellation`);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          notificationsCreated: notifications.length
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get responder's name for non-cancelled events
     const { data: responderProfile } = await supabase
       .from('profiles')
       .select('nickname, full_name')
@@ -54,6 +86,16 @@ serve(async (req) => {
       .maybeSingle();
 
     const responderName = responderProfile?.nickname || responderProfile?.full_name || 'Un rescatista';
+
+    // Transport mode labels
+    const transportLabels: Record<string, string> = {
+      'walking': 'caminando',
+      'bike': 'en bicicleta',
+      'motorcycle': 'en moto',
+      'car': 'en auto',
+      'public_transport': 'en transporte público',
+      'ambulance': 'en ambulancia'
+    };
 
     // Determine notification content based on event type
     let title: string;
@@ -63,9 +105,11 @@ serve(async (req) => {
     switch (eventType) {
       case 'responding':
         title = '🚨 ¡Ayuda en camino!';
+        const transportText = transportMode ? ` ${transportLabels[transportMode] || ''}` : '';
+        const etaText = estimatedEtaMinutes ? ` (llegada ~${estimatedEtaMinutes} min)` : '';
         message = responderCount > 1 
           ? `${responderCount} personas están respondiendo a tu alerta.`
-          : `${responderName} está en camino a ayudarte.`;
+          : `${responderName} está en camino${transportText}${etaText}.`;
         notificationType = 'responder_coming';
         break;
       case 'arrived':
