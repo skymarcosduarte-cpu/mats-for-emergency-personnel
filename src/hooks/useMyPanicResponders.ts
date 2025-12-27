@@ -46,12 +46,26 @@ export interface ActivePanicResponderInfo {
   eta_minutes: number | null;
 }
 
+export interface NewResponderAlert {
+  nickname: string;
+  transport_mode: string | null;
+  eta_minutes: number | null;
+  distance_km: number;
+}
+
 export function useMyPanicResponders() {
   const { user } = useAuth();
   const notifiedResponderIds = useRef<Set<string>>(new Set());
   const notifiedArrivalIds = useRef<Set<string>>(new Set());
   const [respondersToMyPanics, setRespondersToMyPanics] = useState<ActivePanicResponderInfo[]>([]);
   const panicLocationsRef = useRef<Map<string, { lat: number; lng: number }>>(new Map());
+  
+  // State for showing the visual overlay when a new responder starts
+  const [newResponderAlert, setNewResponderAlert] = useState<NewResponderAlert | null>(null);
+
+  const dismissNewResponderAlert = useCallback(() => {
+    setNewResponderAlert(null);
+  }, []);
 
   // Vibrate helper
   const vibrate = useCallback((pattern: number | number[]) => {
@@ -209,9 +223,19 @@ export function useMyPanicResponders() {
 
     // Show toast if app is visible
     if (document.visibilityState === 'visible') {
-      toast.success('🚨 ¡Ayuda en camino!', {
-        description: notificationBody,
-        duration: 8000,
+      // Set the new responder alert for the visual overlay
+      setNewResponderAlert({
+        nickname,
+        transport_mode: responder.transport_mode,
+        eta_minutes: calculateEta(
+          responder.lat && responder.lng && panicLocation
+            ? calculateDistance(responder.lat, responder.lng, panicLocation.lat, panicLocation.lng)
+            : 0,
+          speed
+        ),
+        distance_km: responder.lat && responder.lng && panicLocation
+          ? calculateDistance(responder.lat, responder.lng, panicLocation.lat, panicLocation.lng)
+          : 0,
       });
     }
 
@@ -453,5 +477,9 @@ export function useMyPanicResponders() {
     };
   }, [user?.id, notifyResponderStarted, notifyResponderArrived, updateResponderLocation]);
 
-  return { respondersToMyPanics };
+  return { 
+    respondersToMyPanics,
+    newResponderAlert,
+    dismissNewResponderAlert,
+  };
 }
