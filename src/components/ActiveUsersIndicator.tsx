@@ -2,7 +2,7 @@
 // Shows the count of online users who can receive alerts in real-time
 
 import React from 'react';
-import { Users } from 'lucide-react';
+import { Users, Radio } from 'lucide-react';
 import { useUserLocations } from '@/hooks/useRealtime';
 import { cn } from '@/lib/utils';
 
@@ -10,12 +10,14 @@ interface ActiveUsersIndicatorProps {
   className?: string;
   showIcon?: boolean;
   compact?: boolean;
+  variant?: 'default' | 'prominent';
 }
 
 export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
   className,
   showIcon = true,
   compact = false,
+  variant = 'default',
 }) => {
   const { locations } = useUserLocations();
   
@@ -27,6 +29,40 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
     const updatedMs = new Date(loc.updated_at).getTime();
     return (now - updatedMs) < STALE_THRESHOLD_MS;
   }).length;
+
+  if (variant === 'prominent') {
+    return (
+      <div
+        className={cn(
+          'flex items-center justify-center gap-3 bg-gradient-to-r from-safe/20 via-safe/10 to-safe/20 backdrop-blur-md rounded-full px-5 py-2.5 shadow-lg border border-safe/30',
+          className
+        )}
+      >
+        {/* Animated broadcast icon */}
+        <div className="relative">
+          <Radio className="w-5 h-5 text-safe" />
+          <div className="absolute inset-0 animate-ping">
+            <Radio className="w-5 h-5 text-safe opacity-50" />
+          </div>
+        </div>
+        
+        {/* Count with larger text */}
+        <div className="flex items-center gap-2">
+          <span className="text-2xl font-bold text-safe">{activeCount}</span>
+          <div className="flex flex-col leading-tight">
+            <span className="text-xs font-medium text-foreground">usuarios</span>
+            <span className="text-xs text-muted-foreground">en línea</span>
+          </div>
+        </div>
+
+        {/* Pulsing dot */}
+        <div className="relative ml-1">
+          <div className="w-3 h-3 rounded-full bg-safe" />
+          <div className="absolute inset-0 w-3 h-3 rounded-full bg-safe animate-ping opacity-60" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

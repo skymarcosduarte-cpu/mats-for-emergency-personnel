@@ -135,10 +135,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
     <>
       <header className="app-header fixed top-0 left-0 right-0 z-[100]">
         <MatsLogo size={36} showText />
-        
-        {/* Active users indicator */}
-        <ActiveUsersIndicator compact className="hidden sm:flex" />
-        <ActiveUsersIndicator compact showIcon={false} className="sm:hidden" />
 
         {/* Messages button with badge */}
         <button
