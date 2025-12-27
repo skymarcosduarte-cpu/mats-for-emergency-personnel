@@ -858,21 +858,25 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
 
   // Handle respond to help request or panic event from modal
   const handleRespondToRequest = useCallback(async (requestId: string) => {
+    console.log('[MapScreen] handleRespondToRequest called', { requestId, isRescatista, role });
+    
     // First try to find in help requests
     const request = helpRequests.find(r => r.id === requestId);
     if (request) {
+      console.log('[MapScreen] Found help request, responding...');
       return await startResponding(requestId, request.lat, request.lng, isRescatista);
     }
     
     // If not found in help requests, try panic events
     const panicEvent = panicEvents.find(e => e.id === requestId);
     if (panicEvent) {
+      console.log('[MapScreen] Found panic event, responding...');
       return await startPanicResponding(requestId, panicEvent.lat, panicEvent.lng, isRescatista);
     }
     
     console.error('[MapScreen] Alert not found:', requestId);
     return false;
-  }, [helpRequests, panicEvents, startResponding, startPanicResponding, isRescatista]);
+  }, [helpRequests, panicEvents, startResponding, startPanicResponding, isRescatista, role]);
 
   // Handle cancel response - check which type of response is active
   const handleCancelResponse = useCallback(async () => {

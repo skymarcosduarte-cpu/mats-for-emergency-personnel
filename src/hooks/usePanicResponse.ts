@@ -57,6 +57,10 @@ export function usePanicResponse() {
     panicLng: number,
     skipRadiusCheck: boolean = false
   ) => {
+    console.log('[usePanicResponse] startResponding called', { 
+      panicId, panicLat, panicLng, skipRadiusCheck, hasUser: !!user 
+    });
+    
     if (!user) {
       toast.error('Debes iniciar sesión para responder');
       return false;
@@ -64,6 +68,7 @@ export function usePanicResponse() {
 
     try {
       // Get current location first
+      console.log('[usePanicResponse] Getting current position...');
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
@@ -73,19 +78,24 @@ export function usePanicResponse() {
 
       const responderLat = position.coords.latitude;
       const responderLng = position.coords.longitude;
+      console.log('[usePanicResponse] Got position:', { responderLat, responderLng });
 
       // Check if user is within radius (skip for RESCATISTAS)
       if (!skipRadiusCheck) {
         const distance = calculateDistance(responderLat, responderLng, panicLat, panicLng);
+        console.log('[usePanicResponse] Distance check:', { distance, maxRadius: MAX_RESPONSE_RADIUS });
         if (distance > MAX_RESPONSE_RADIUS) {
           toast.error('Estás demasiado lejos para responder a esta alerta', {
             description: `Distancia: ${(distance / 1000).toFixed(1)} km (máximo ${MAX_RESPONSE_RADIUS / 1000} km)`,
           });
           return false;
         }
+      } else {
+        console.log('[usePanicResponse] Skipping radius check (rescatista)');
       }
 
       // Insert into the panic responders table
+      console.log('[usePanicResponse] Inserting into panic_event_responders...');
       const { error: responderError } = await supabase
         .from('panic_event_responders')
         .insert({
@@ -96,17 +106,19 @@ export function usePanicResponse() {
         });
 
       if (responderError) {
+        console.error('[usePanicResponse] Insert error:', responderError);
         if (responderError.code === '23505') {
           toast.error('Ya estás respondiendo a esta alerta');
           return false;
         }
-        console.error('Error starting panic response:', responderError);
-        toast.error('Error al iniciar respuesta');
+        toast.error(`Error al iniciar respuesta: ${responderError.message}`);
         return false;
       }
 
+      console.log('[usePanicResponse] Successfully inserted responder, updating panic_event...');
+
       // Update the panic event's responding_by field for backward compatibility
-      await supabase
+      const { error: updateError } = await supabase
         .from('panic_events')
         .update({
           responding_by: user.id,
@@ -114,6 +126,10 @@ export function usePanicResponse() {
         })
         .eq('id', panicId)
         .is('responding_by', null);
+
+      if (updateError) {
+        console.warn('[usePanicResponse] Warning updating panic_event (non-fatal):', updateError);
+      }
 
       setActiveResponse({
         panicId,
@@ -128,7 +144,7 @@ export function usePanicResponse() {
       toast.success('¡En camino! Tu ubicación está siendo compartida');
       return true;
     } catch (error) {
-      console.error('Error getting location:', error);
+      console.error('[usePanicResponse] Error:', error);
       toast.error('No se pudo obtener tu ubicación');
       return false;
     }
