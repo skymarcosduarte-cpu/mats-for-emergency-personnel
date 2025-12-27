@@ -428,21 +428,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
         {/* Force Update - Top priority */}
         <Card className="bg-card border-border border-primary/30">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <RefreshCw className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Forzar Actualización</p>
-                  <p className="text-xs text-muted-foreground">
-                    Limpia caché y recarga la app
-                  </p>
-                </div>
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <RefreshCw className="w-5 h-5 text-primary" />
               </div>
-              <UpdateButton />
+              <div className="min-w-0">
+                <p className="font-medium text-foreground">Forzar Actualización</p>
+                <p className="text-xs text-muted-foreground">
+                  Limpia caché y recarga la app
+                </p>
+              </div>
             </div>
+            <UpdateButton />
           </CardContent>
         </Card>
 
