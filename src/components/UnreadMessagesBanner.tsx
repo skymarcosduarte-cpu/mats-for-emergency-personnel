@@ -35,7 +35,7 @@ export const UnreadMessagesBanner: React.FC<UnreadMessagesBannerProps> = ({
         }}
         exit={{ y: 100, opacity: 0, scale: 0.8 }}
         transition={{ type: 'spring', damping: 20, stiffness: 400 }}
-        className="fixed bottom-20 left-4 right-4 z-[200] md:left-auto md:right-4 md:max-w-sm"
+        className="fixed bottom-20 left-4 right-4 z-[9999] md:left-auto md:right-4 md:max-w-sm"
       >
         <motion.div 
           onClick={onOpen}
