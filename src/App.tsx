@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -27,6 +27,7 @@ import { EmergencyAlertOverlay } from '@/components/EmergencyAlertOverlay';
 import { ActiveAlertBanner } from '@/components/ActiveAlertBanner';
 import { QuakeDamageBanner } from '@/components/QuakeDamageBanner';
 import { ResponderComingOverlay } from '@/components/ResponderComingOverlay';
+import { ResponderTrackingMap } from '@/components/ResponderTrackingMap';
 
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
@@ -147,12 +148,61 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   // Listen for responders to user's own panic alerts
   const { respondersToMyPanics, newResponderAlert: newPanicResponder, dismissNewResponderAlert: dismissPanicResponder } = useMyPanicResponders();
   
+  // State for showing responder tracking map
+  const [showResponderMap, setShowResponderMap] = useState(false);
+  
   // Combined new responder alert state (from either hook)
   const activeNewResponder = newAlertResponder || newPanicResponder;
   const dismissNewResponder = useCallback(() => {
     if (newAlertResponder) dismissAlertResponder();
     if (newPanicResponder) dismissPanicResponder();
   }, [newAlertResponder, newPanicResponder, dismissAlertResponder, dismissPanicResponder]);
+  
+  // Combine responders from both hooks for the tracking map
+  const allMyResponders = useMemo(() => {
+    const combined = [
+      ...respondersToMyAlerts.map(r => ({
+        id: r.id,
+        user_id: r.user_id,
+        nickname: r.nickname,
+        lat: r.lat,
+        lng: r.lng,
+        transport_mode: r.transport_mode,
+        distance_km: r.distance_km,
+        eta_minutes: r.eta_minutes,
+        arrived_at: r.arrived_at,
+        alert_lat: r.alert_lat,
+        alert_lng: r.alert_lng,
+      })),
+      ...respondersToMyPanics.map(r => ({
+        id: r.id,
+        user_id: r.user_id,
+        nickname: r.nickname,
+        lat: r.lat,
+        lng: r.lng,
+        transport_mode: r.transport_mode,
+        distance_km: r.distance_km,
+        eta_minutes: r.eta_minutes,
+        arrived_at: r.arrived_at,
+        alert_lat: r.alert_lat,
+        alert_lng: r.alert_lng,
+      })),
+    ];
+    return combined;
+  }, [respondersToMyAlerts, respondersToMyPanics]);
+  
+  // Get the alert location from the first active responder (they're all responding to same alert)
+  const activeAlertLocation = useMemo(() => {
+    const activeResponder = allMyResponders.find(r => !r.arrived_at);
+    if (activeResponder) {
+      return { lat: activeResponder.alert_lat, lng: activeResponder.alert_lng };
+    }
+    // Fallback: if all have arrived, use first responder's alert location
+    if (allMyResponders.length > 0) {
+      return { lat: allMyResponders[0].alert_lat, lng: allMyResponders[0].alert_lng };
+    }
+    return null;
+  }, [allMyResponders]);
   
   // Monitor for overdue trips (30+ minutes past ETA)
   useOverdueTrips();
@@ -301,7 +351,13 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     <div className="min-h-screen min-h-dvh bg-background flex flex-col overflow-x-hidden">
       <AppHeader onPanicClick={() => setPanicOpen(true)} />
       <QuakeDamageBanner />
-      <ActiveAlertBanner testAlert={testAlert} onClearTestAlert={clearTestAlert} refreshTrigger={alertRefreshTrigger} />
+      <ActiveAlertBanner 
+        testAlert={testAlert} 
+        onClearTestAlert={clearTestAlert} 
+        refreshTrigger={alertRefreshTrigger}
+        responderCount={allMyResponders.filter(r => !r.arrived_at).length}
+        onViewResponders={() => setShowResponderMap(true)}
+      />
       <UpdatePrompt />
       <UpdateIndicator />
       <main className="main-content flex-1 overflow-y-auto overflow-x-hidden">{renderScreen()}</main>
@@ -355,10 +411,26 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
         responder={activeNewResponder}
         onDismiss={dismissNewResponder}
         onViewOnMap={() => {
-          setActiveTab('map');
+          setShowResponderMap(true);
           dismissNewResponder();
         }}
       />
+
+      {/* Real-time responder tracking map */}
+      {activeAlertLocation && (
+        <ResponderTrackingMap
+          isOpen={showResponderMap}
+          onClose={() => setShowResponderMap(false)}
+          alertLat={activeAlertLocation.lat}
+          alertLng={activeAlertLocation.lng}
+          responders={allMyResponders}
+          onNavigate={() => {
+            if (activeAlertLocation) {
+              window.open(`https://maps.google.com/maps?q=${activeAlertLocation.lat},${activeAlertLocation.lng}`, '_blank');
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
