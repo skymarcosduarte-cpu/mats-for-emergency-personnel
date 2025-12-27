@@ -134,47 +134,53 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
   return (
     <>
       <header className="app-header fixed top-0 left-0 right-0 z-[100]">
-        <MatsLogo size={36} showText />
+        <div className="flex items-center gap-2">
+          <MatsLogo size={36} showText />
+          {/* Inline active users count */}
+          <ActiveUsersIndicator compact showIcon={false} className="ml-1" />
+        </div>
 
-        {/* Messages button with badge */}
-        <button
-          onClick={() => setShowMessages(true)}
-          className="relative p-2 rounded-full hover:bg-muted/50 transition-colors"
-          aria-label="Mensajes internos"
-        >
-          <MessageCircle className="w-5 h-5 text-foreground" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Messages button with badge */}
+          <button
+            onClick={() => setShowMessages(true)}
+            className="relative p-2 rounded-full hover:bg-muted/50 transition-colors"
+            aria-label="Mensajes internos"
+          >
+            <MessageCircle className="w-5 h-5 text-foreground" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
 
-        <button
-          onPointerUp={handlePointerUp}
-          onClick={handleClick}
-          onKeyDown={handleKeyDown}
-          className="relative flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-panic to-red-600 text-white shadow-lg shadow-panic/40 touch-manipulation select-none active:scale-95 transition-all hover:shadow-panic/60"
-          aria-label="Botón de pánico - SOS"
-          type="button"
-          style={{
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation",
-            userSelect: "none",
-            WebkitUserSelect: "none",
-          }}
-        >
-          <AlertTriangle className="w-5 h-5 pointer-events-none" />
-          <span className="font-bold text-sm pointer-events-none">SOS</span>
+          <button
+            onPointerUp={handlePointerUp}
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+            className="relative flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-panic to-red-600 text-white shadow-lg shadow-panic/40 touch-manipulation select-none active:scale-95 transition-all hover:shadow-panic/60"
+            aria-label="Botón de pánico - SOS"
+            type="button"
+            style={{
+              WebkitTapHighlightColor: "transparent",
+              touchAction: "manipulation",
+              userSelect: "none",
+              WebkitUserSelect: "none",
+            }}
+          >
+            <AlertTriangle className="w-5 h-5 pointer-events-none" />
+            <span className="font-bold text-sm pointer-events-none">SOS</span>
 
-          {/* Pulsing border effect */}
-          <span className="absolute inset-0 rounded-full border-2 border-white/50 animate-ping opacity-40 pointer-events-none" />
+            {/* Pulsing border effect */}
+            <span className="absolute inset-0 rounded-full border-2 border-white/50 animate-ping opacity-40 pointer-events-none" />
 
-          {/* Visual feedback overlay */}
-          {showFeedback && (
-            <span className="absolute inset-0 rounded-full bg-white/30 pointer-events-none animate-pulse" />
-          )}
-        </button>
+            {/* Visual feedback overlay */}
+            {showFeedback && (
+              <span className="absolute inset-0 rounded-full bg-white/30 pointer-events-none animate-pulse" />
+            )}
+          </button>
+        </div>
       </header>
 
       {/* Confirmation Dialog */}
