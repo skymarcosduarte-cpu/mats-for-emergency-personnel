@@ -2,7 +2,7 @@
 // USGS + SSN Mexico earthquakes + "Todo bien" quick report + "14" help + notifications + my alerts history
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind, Route, X, CheckCircle2, Map } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind, Route, X, CheckCircle2, Map, MessageCircle } from 'lucide-react';
 import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
 import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
 import { useMexicoAlerts, TropicalCycloneAlert, FireHotspot } from '@/hooks/useMexicoAlerts';
@@ -33,6 +33,7 @@ import { EmergencyRouteMap } from '@/components/EmergencyRouteMap';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { ResponderEtaCountdown } from '@/components/ResponderEtaCountdown';
 import { ThankYouDialog } from '@/components/ThankYouDialog';
+import { InternalMessaging } from '@/components/InternalMessaging';
 import { useLocation, getGoogleMapsLink } from '@/hooks/useLocation';
 import { useHelpRequests, useActiveResponders } from '@/hooks/useRealtime';
 
@@ -70,6 +71,11 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showRouteMap, setShowRouteMap] = useState<{ requestId: string; lat: number; lng: number } | null>(null);
+  
+  // Messaging state
+  const [messagingOpen, setMessagingOpen] = useState(false);
+  const [messagingUserId, setMessagingUserId] = useState<string | null>(null);
+  const [messagingUserName, setMessagingUserName] = useState<string | null>(null);
   
   const { position } = useLocation();
   const { requests: helpRequests, resolvedRequests, resolveRequest } = useHelpRequests(position);
@@ -173,6 +179,13 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       clearInterval(intervalId);
     };
   }, [loadEarthquakes, refreshWeather, refreshGDACS, refreshMexico]);
+
+  // Handle messaging a user
+  const handleMessageUser = useCallback((userId: string, displayName: string | null) => {
+    setMessagingUserId(userId);
+    setMessagingUserName(displayName);
+    setMessagingOpen(true);
+  }, []);
 
   // Handle quick "Todo bien" report
   const handleQuickCheckin = async (quake: EarthquakeWithDistance) => {
@@ -459,7 +472,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
 
         {/* My Alerts History Tab */}
         <TabsContent value="myalerts" className="mt-4">
-          <MyAlertsHistory />
+          <MyAlertsHistory onOpenMessaging={handleMessageUser} />
         </TabsContent>
 
         {/* Earthquakes Tab */}
@@ -1327,6 +1340,18 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       <ThankYouDialog
         open={showThankYou}
         onClose={dismissThankYou}
+      />
+
+      {/* Internal Messaging Modal */}
+      <InternalMessaging
+        isOpen={messagingOpen}
+        onClose={() => {
+          setMessagingOpen(false);
+          setMessagingUserId(null);
+          setMessagingUserName(null);
+        }}
+        initialUserId={messagingUserId}
+        initialUserName={messagingUserName}
       />
     </div>
   );

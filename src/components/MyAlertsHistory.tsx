@@ -55,12 +55,30 @@ const KIND_ICONS: Record<string, string> = {
   'SISMO_AYUDA_14': '🏚️',
 };
 
-export const MyAlertsHistory: React.FC = () => {
+interface MyAlertsHistoryProps {
+  onOpenMessaging?: (userId: string, displayName: string | null) => void;
+}
+
+export const MyAlertsHistory: React.FC<MyAlertsHistoryProps> = ({ onOpenMessaging }) => {
   const { user } = useAuth();
   const [alerts, setAlerts] = useState<MyHelpRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState<MyHelpRequest | null>(null);
   const [responderCounts, setResponderCounts] = useState<Map<string, number>>(new Map());
+  const [activeResponders, setActiveResponders] = useState<Array<{
+    request_id: string;
+    responder_id: string;
+    responder_lat: number;
+    responder_lng: number;
+    emergency_lat: number;
+    emergency_lng: number;
+    responding_started_at: string;
+    speed: number | null;
+    distance_km: number;
+    eta_minutes: number | null;
+    arrived_at: string | null;
+    transport_mode: string | null;
+  }>>([]);
 
   // Fetch user's alerts
   useEffect(() => {
@@ -83,21 +101,56 @@ export const MyAlertsHistory: React.FC = () => {
 
         setAlerts(data || []);
 
-        // Fetch responder counts for active alerts
+        // Fetch responder counts and details for active alerts
         if (data && data.length > 0) {
           const activeAlertIds = data.filter(a => !a.resolved).map(a => a.id);
           if (activeAlertIds.length > 0) {
             const { data: responders } = await supabase
               .from('help_request_responders')
-              .select('request_id')
+              .select('*')
               .in('request_id', activeAlertIds);
 
             if (responders) {
               const counts = new Map<string, number>();
-              responders.forEach(r => {
+              const responderDetails: Array<{
+                request_id: string;
+                responder_id: string;
+                responder_lat: number;
+                responder_lng: number;
+                emergency_lat: number;
+                emergency_lng: number;
+                responding_started_at: string;
+                speed: number | null;
+                distance_km: number;
+                eta_minutes: number | null;
+                arrived_at: string | null;
+                transport_mode: string | null;
+              }> = [];
+
+              responders.forEach((r: any) => {
                 counts.set(r.request_id, (counts.get(r.request_id) || 0) + 1);
+                
+                // Get the alert for this responder
+                const alertData = data.find(a => a.id === r.request_id);
+                if (alertData) {
+                  responderDetails.push({
+                    request_id: r.request_id,
+                    responder_id: r.user_id,
+                    responder_lat: r.lat || 0,
+                    responder_lng: r.lng || 0,
+                    emergency_lat: alertData.lat,
+                    emergency_lng: alertData.lng,
+                    responding_started_at: r.started_at,
+                    speed: null,
+                    distance_km: 0,
+                    eta_minutes: r.estimated_eta_minutes,
+                    arrived_at: r.arrived_at,
+                    transport_mode: r.transport_mode,
+                  });
+                }
               });
               setResponderCounts(counts);
+              setActiveResponders(responderDetails);
             }
           }
         }
@@ -227,6 +280,8 @@ export const MyAlertsHistory: React.FC = () => {
           isOwner={true}
           isRescatista={false}
           currentUserId={user.id}
+          responders={activeResponders}
+          onOpenMessaging={onOpenMessaging}
           onResolve={async () => {
             const { error } = await supabase
               .from('help_requests')
