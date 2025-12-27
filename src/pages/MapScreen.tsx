@@ -845,9 +845,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   const currentLocationMarkerRef = useRef<L.Marker | null>(null);
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const [mapReady, setMapReady] = useState(false);
-  
   // Messaging state
   const [messagingOpen, setMessagingOpen] = useState(false);
+  
+  // Active users panel state for legend auto-hide
+  const [usersPanelOpen, setUsersPanelOpen] = useState(false);
   const [messagingUserId, setMessagingUserId] = useState<string | null>(null);
   const [messagingUserName, setMessagingUserName] = useState<string | null>(null);
 
@@ -2066,7 +2068,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         poiVisibility={poiVisibility}
         onTogglePOI={handleTogglePOI}
         poisLoading={poisLoading}
-        isNavigating={!!selectedMapAlert}
+        isNavigating={!!selectedMapAlert || usersPanelOpen}
       />
 
       {/* Active Users Panel */}
@@ -2074,6 +2076,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         users={locations}
         onCenterOnUser={handleViewLocation}
         onMessageUser={handleMessageUser}
+        onOpenChange={setUsersPanelOpen}
       />
 
       {/* Internal Messaging Modal */}

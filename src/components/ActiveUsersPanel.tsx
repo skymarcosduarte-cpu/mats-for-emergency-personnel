@@ -26,6 +26,7 @@ interface ActiveUsersPanelProps {
   users: UserLocationSummary[];
   onCenterOnUser: (lat: number, lng: number) => void;
   onMessageUser?: (userId: string, displayName: string | null) => void;
+  onOpenChange?: (isOpen: boolean) => void;
   className?: string;
 }
 
@@ -33,10 +34,17 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
   users,
   onCenterOnUser,
   onMessageUser,
+  onOpenChange,
   className,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { user: currentUser } = useAuth();
+
+  const handleToggle = () => {
+    const newState = !isOpen;
+    setIsOpen(newState);
+    onOpenChange?.(newState);
+  };
 
   const getTimeAgo = (updatedAt: string | null): string => {
     if (!updatedAt) return '';
@@ -117,7 +125,7 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
     <div className={cn('absolute top-20 right-4 z-[1000] flex', className)}>
       {/* Toggle Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="flex items-center justify-center w-10 h-10 bg-card/95 backdrop-blur-sm border border-border rounded-l-lg shadow-lg hover:bg-accent transition-colors"
         aria-label={isOpen ? 'Cerrar panel' : 'Abrir panel de usuarios'}
       >
