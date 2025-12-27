@@ -293,8 +293,8 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <AppHeader onPanicClick={() => setPanicOpen(true)} />
       <ActiveAlertBanner testAlert={testAlert} onClearTestAlert={clearTestAlert} refreshTrigger={alertRefreshTrigger} />
       
-      {/* Prominent active users indicator */}
-      <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[90]">
+      {/* Prominent active users indicator - positioned below header with proper spacing */}
+      <div className="fixed left-1/2 -translate-x-1/2 z-[90]" style={{ top: 'calc(52px + env(safe-area-inset-top, 0) + 8px)' }}>
         <ActiveUsersIndicator variant="prominent" />
       </div>
       <UpdatePrompt />

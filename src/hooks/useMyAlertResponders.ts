@@ -8,6 +8,16 @@ import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { playPositiveAlert } from '@/lib/alertSound';
 
+// Transport mode labels for notifications
+const TRANSPORT_LABELS: Record<string, string> = {
+  walking: '🚶 Caminando',
+  bicycle: '🚴 Bicicleta',
+  motorcycle: '🏍️ Moto',
+  car: '🚗 Automóvil',
+  public_transport: '🚌 Transporte Público',
+  ambulance: '🚑 Ambulancia',
+};
+
 interface ResponderEvent {
   id: string;
   request_id: string;
@@ -16,6 +26,7 @@ interface ResponderEvent {
   arrived_at: string | null;
   lat: number | null;
   lng: number | null;
+  transport_mode: string | null;
 }
 
 interface ResponderWithProfile extends ResponderEvent {
@@ -31,6 +42,7 @@ export interface ActiveResponderInfo {
   lng: number | null;
   started_at: string;
   arrived_at: string | null;
+  transport_mode: string | null;
   // Alert/emergency location
   alert_lat: number;
   alert_lng: number;
@@ -194,17 +206,23 @@ export function useMyAlertResponders() {
       // Ignore sound errors
     }
 
+    // Build notification message with transport mode
+    const transportLabel = responder.transport_mode ? TRANSPORT_LABELS[responder.transport_mode] : null;
+    const notificationBody = transportLabel 
+      ? `${nickname} está respondiendo (${transportLabel})`
+      : `${nickname} está respondiendo a tu alerta`;
+
     // Show browser notification with name
     showBrowserNotification(
       '🚨 ¡Ayuda en camino!',
-      `${nickname} está respondiendo a tu alerta`,
+      notificationBody,
       `responder-started-${responder.id}`
     );
 
     // Show toast if app is visible
     if (document.visibilityState === 'visible') {
       toast.success('🚨 ¡Ayuda en camino!', {
-        description: `${nickname} está respondiendo a tu alerta`,
+        description: notificationBody,
         duration: 8000,
       });
     }
@@ -332,7 +350,7 @@ export function useMyAlertResponders() {
       // Get all responders for these requests
       const { data: responders } = await supabase
         .from('help_request_responders')
-        .select('id, request_id, user_id, lat, lng, started_at, arrived_at')
+        .select('id, request_id, user_id, lat, lng, started_at, arrived_at, transport_mode')
         .in('request_id', requestIds);
 
       if (!responders || responders.length === 0) {
