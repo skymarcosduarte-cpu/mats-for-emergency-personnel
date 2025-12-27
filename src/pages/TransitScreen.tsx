@@ -108,6 +108,11 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const [editingReport, setEditingReport] = useState<string | null>(null);
   const [deletingReport, setDeletingReport] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  // ETA update state
+  const [editingEtaTripId, setEditingEtaTripId] = useState<string | null>(null);
+  const [newEta, setNewEta] = useState<string>('');
+  const [updatingEta, setUpdatingEta] = useState(false);
 
   const { position } = useLocation();
   const { reports, refetch: refetchReports } = useRoadReports();
@@ -580,6 +585,23 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             hour: '2-digit', 
                             minute: '2-digit' 
                           })}</span>
+                          {isActive && (
+                            <button
+                              onClick={() => {
+                                // Set default to current ETA + 30 min
+                                const newTime = new Date(trip.eta);
+                                newTime.setMinutes(newTime.getMinutes() + 30);
+                                const localDateTime = new Date(newTime.getTime() - newTime.getTimezoneOffset() * 60000)
+                                  .toISOString()
+                                  .slice(0, 16);
+                                setNewEta(localDateTime);
+                                setEditingEtaTripId(trip.id);
+                              }}
+                              className="text-primary hover:underline"
+                            >
+                              (cambiar)
+                            </button>
+                          )}
                           {trip.plates && (
                             <>
                               <span>•</span>
@@ -1296,6 +1318,98 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                 Se requiere ubicación GPS para reportar
               </p>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ETA Update Dialog */}
+      <Dialog open={!!editingEtaTripId} onOpenChange={(open) => !open && setEditingEtaTripId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Actualizar hora de llegada
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-eta">Nueva hora estimada de llegada</Label>
+              <Input
+                id="new-eta"
+                type="datetime-local"
+                value={newEta}
+                onChange={(e) => setNewEta(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            
+            <p className="text-sm text-muted-foreground">
+              Tus contactos de emergencia serán notificados del cambio de ETA.
+            </p>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setEditingEtaTripId(null)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!editingEtaTripId || !newEta) return;
+                  
+                  setUpdatingEta(true);
+                  try {
+                    const trip = myTrips.find(t => t.id === editingEtaTripId);
+                    if (!trip) throw new Error('Trip not found');
+                    
+                    const oldEta = trip.eta;
+                    const newEtaISO = new Date(newEta).toISOString();
+                    
+                    // Update trip ETA
+                    const { error } = await supabase
+                      .from('transit_trips')
+                      .update({ eta: newEtaISO })
+                      .eq('id', editingEtaTripId);
+
+                    if (error) throw error;
+                    
+                    // Notify contacts about ETA change
+                    try {
+                      await supabase.functions.invoke('notify-trip-update', {
+                        body: {
+                          tripId: trip.id,
+                          tripUserId: trip.user_id,
+                          eventType: 'eta_updated',
+                          origin: trip.origin,
+                          destination: trip.destination,
+                          eta: newEtaISO,
+                          oldEta: oldEta,
+                        }
+                      });
+                    } catch (notifyError) {
+                      console.error('Error notifying contacts:', notifyError);
+                    }
+                    
+                    toast.success('ETA actualizado. Tus contactos fueron notificados.');
+                    setEditingEtaTripId(null);
+                    setNewEta('');
+                    fetchMyTrips();
+                  } catch (e) {
+                    console.error('Error updating ETA:', e);
+                    toast.error('Error al actualizar ETA');
+                  } finally {
+                    setUpdatingEta(false);
+                  }
+                }}
+                disabled={updatingEta || !newEta}
+                className="flex-1"
+              >
+                {updatingEta && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                Actualizar
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

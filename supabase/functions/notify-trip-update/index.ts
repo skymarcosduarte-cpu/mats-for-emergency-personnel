@@ -19,10 +19,11 @@ serve(async (req) => {
     const { 
       tripId,
       tripUserId,
-      eventType, // 'arrived', 'overdue', 'cancelled'
+      eventType, // 'arrived', 'overdue', 'cancelled', 'eta_updated'
       origin,
       destination,
       eta,
+      oldEta, // for eta_updated events
       overdueMinutes, // for overdue events
     } = await req.json();
 
@@ -80,6 +81,14 @@ serve(async (req) => {
       timeZone: 'America/Mexico_City'
     }) : 'desconocida';
 
+    const oldEtaFormatted = oldEta ? new Date(oldEta).toLocaleString('es-MX', { 
+      day: 'numeric', 
+      month: 'short', 
+      hour: '2-digit', 
+      minute: '2-digit',
+      timeZone: 'America/Mexico_City'
+    }) : null;
+
     switch (eventType) {
       case 'arrived':
         title = '✅ Llegada confirmada';
@@ -100,6 +109,13 @@ serve(async (req) => {
         message = `${userName} ha cancelado su viaje a ${destination}. Origen era: ${origin}.`;
         smsMessage = `M.A.T.S.: ${userName} canceló viaje a ${destination}.`;
         urgency = 'low';
+        break;
+
+      case 'eta_updated':
+        title = '🕐 Cambio de hora de llegada';
+        message = `${userName} actualizó su hora de llegada a ${destination}. Nueva ETA: ${etaFormatted}${oldEtaFormatted ? ` (antes: ${oldEtaFormatted})` : ''}.`;
+        smsMessage = `M.A.T.S.: ${userName} cambió ETA a ${destination}. Nueva hora: ${etaFormatted}.`;
+        urgency = 'normal';
         break;
 
       default:
@@ -135,16 +151,20 @@ serve(async (req) => {
     });
 
     // Create internal notification for the trip user as confirmation
+    const notificationTitle = eventType === 'arrived' 
+      ? '✅ Llegada notificada'
+      : eventType === 'overdue'
+        ? '⚠️ Alerta de retraso enviada'
+        : eventType === 'eta_updated'
+          ? '🕐 Cambio de ETA notificado'
+          : '🚫 Cancelación notificada';
+
     await supabase
       .from('notifications')
       .insert({
         user_id: tripUserId,
         type: `trip_${eventType}`,
-        title: eventType === 'arrived' 
-          ? '✅ Llegada notificada'
-          : eventType === 'overdue'
-            ? '⚠️ Alerta de retraso enviada'
-            : '🚫 Cancelación notificada',
+        title: notificationTitle,
         message: `Tus ${contacts.length} contacto(s) de emergencia han sido notificados sobre tu viaje.`,
         read: false
       });
