@@ -161,6 +161,27 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     getAEMETLevelColor,
   } = useGDACSAlerts();
 
+  // Auto-refresh all alerts every 2 minutes while on this screen
+  useEffect(() => {
+    const REFRESH_INTERVAL = 2 * 60 * 1000; // 2 minutes
+
+    const refreshAllAlerts = () => {
+      console.log('[AlertsScreen] Auto-refreshing all alerts...');
+      loadEarthquakes();
+      refreshWeather();
+      refreshGDACS();
+      refreshMexico();
+    };
+
+    // Set up interval for automatic refresh
+    const intervalId = setInterval(refreshAllAlerts, REFRESH_INTERVAL);
+
+    // Cleanup on unmount
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [loadEarthquakes, refreshWeather, refreshGDACS, refreshMexico]);
+
   // Handle quick "Todo bien" report
   const handleQuickCheckin = async (quake: EarthquakeWithDistance) => {
     if (!position) {
