@@ -724,6 +724,7 @@ export function usePanicEvents() {
 interface ActiveResponder {
   request_id: string;
   responder_id: string;
+  responder_name: string;
   responder_lat: number;
   responder_lng: number;
   emergency_lat: number;
@@ -752,8 +753,59 @@ export function useActiveResponders() {
       .select('id, lat, lng, responding_by, responding_started_at')
       .eq('resolved', false);
 
+    // Collect all responder IDs to fetch their names
+    const allResponderIds: string[] = [];
+
     if (helpData) {
       // Process responders from the help_request_responders table
+      if (helpRespondersData && helpRespondersData.length > 0) {
+        const activeRequestIds = helpData.map(h => h.id);
+        const activeResponders = helpRespondersData.filter(r => activeRequestIds.includes(r.request_id));
+        allResponderIds.push(...activeResponders.map(r => r.user_id));
+      }
+      // Legacy responders
+      const legacyIds = helpData.filter(h => h.responding_by).map(h => h.responding_by!);
+      allResponderIds.push(...legacyIds);
+    }
+
+    // ====== PANIC EVENTS RESPONDERS ======
+    const { data: panicRespondersData } = await supabase
+      .from('panic_event_responders')
+      .select('panic_id, user_id, lat, lng, started_at, arrived_at, updated_at, transport_mode');
+
+    const { data: panicData } = await supabase
+      .from('panic_events')
+      .select('id, lat, lng, responding_by, responding_started_at')
+      .eq('resolved', false);
+
+    if (panicData && panicRespondersData) {
+      const activePanicIds = panicData.map(p => p.id);
+      const activePanicResponders = panicRespondersData.filter(r => activePanicIds.includes(r.panic_id));
+      allResponderIds.push(...activePanicResponders.map(r => r.user_id));
+      // Legacy responders
+      const legacyPanicIds = panicData.filter(p => p.responding_by).map(p => p.responding_by!);
+      allResponderIds.push(...legacyPanicIds);
+    }
+
+    // Fetch names for all responders
+    const uniqueResponderIds = [...new Set(allResponderIds.filter(Boolean))];
+    let responderNames: Record<string, string> = {};
+    
+    if (uniqueResponderIds.length > 0) {
+      const { data: profilesData } = await supabase
+        .from('profiles_public')
+        .select('user_id, nickname')
+        .in('user_id', uniqueResponderIds);
+      
+      if (profilesData) {
+        profilesData.forEach(p => {
+          responderNames[p.user_id] = p.nickname || 'Rescatista';
+        });
+      }
+    }
+
+    // Now process help request responders with names
+    if (helpData) {
       if (helpRespondersData && helpRespondersData.length > 0) {
         const activeRequestIds = helpData.map(h => h.id);
         const activeResponders = helpRespondersData.filter(r => activeRequestIds.includes(r.request_id));
@@ -782,6 +834,7 @@ export function useActiveResponders() {
             activeRespondersList.push({
               request_id: responder.request_id,
               responder_id: responder.user_id,
+              responder_name: responderNames[responder.user_id] || 'Rescatista',
               responder_lat: responderLat,
               responder_lng: responderLng,
               emergency_lat: helpRequest.lat,
@@ -804,13 +857,13 @@ export function useActiveResponders() {
 
       if (legacyResponders.length > 0) {
         const legacyIds = legacyResponders.map(h => h.responding_by).filter(Boolean) as string[];
-        const { data: locData } = await supabase
+        const { data: legacyLocData } = await supabase
           .from('user_locations')
           .select('user_id, lat, lng, speed')
           .in('user_id', legacyIds);
 
         for (const h of legacyResponders) {
-          const loc = locData?.find(l => l.user_id === h.responding_by);
+          const loc = legacyLocData?.find(l => l.user_id === h.responding_by);
           if (!loc) continue;
 
           const distanceKm = calculateDistance(loc.lat, loc.lng, h.lat, h.lng);
@@ -820,6 +873,7 @@ export function useActiveResponders() {
           activeRespondersList.push({
             request_id: h.id,
             responder_id: h.responding_by!,
+            responder_name: responderNames[h.responding_by!] || 'Rescatista',
             responder_lat: loc.lat,
             responder_lng: loc.lng,
             emergency_lat: h.lat,
@@ -836,31 +890,23 @@ export function useActiveResponders() {
     }
 
     // ====== PANIC EVENTS RESPONDERS ======
-    const { data: panicRespondersData } = await supabase
-      .from('panic_event_responders')
-      .select('panic_id, user_id, lat, lng, started_at, arrived_at, updated_at, transport_mode');
-
-    const { data: panicData } = await supabase
-      .from('panic_events')
-      .select('id, lat, lng, responding_by, responding_started_at')
-      .eq('resolved', false);
-
+    // Use the already fetched data from earlier
     if (panicData && panicRespondersData && panicRespondersData.length > 0) {
       const activePanicIds = panicData.map(p => p.id);
       const activePanicResponders = panicRespondersData.filter(r => activePanicIds.includes(r.panic_id));
-      const responderIds = activePanicResponders.map(r => r.user_id);
+      const panicResponderIds = activePanicResponders.map(r => r.user_id);
 
-      if (responderIds.length > 0) {
-        const { data: locData } = await supabase
+      if (panicResponderIds.length > 0) {
+        const { data: panicLocData } = await supabase
           .from('user_locations')
           .select('user_id, lat, lng, speed')
-          .in('user_id', responderIds);
+          .in('user_id', panicResponderIds);
 
         for (const responder of activePanicResponders) {
           const panicEvent = panicData.find(p => p.id === responder.panic_id);
           if (!panicEvent) continue;
 
-          const loc = locData?.find(l => l.user_id === responder.user_id);
+          const loc = panicLocData?.find(l => l.user_id === responder.user_id);
           const responderLat = responder.lat || loc?.lat;
           const responderLng = responder.lng || loc?.lng;
 
@@ -871,8 +917,9 @@ export function useActiveResponders() {
           const etaMinutes = speedKmh > 0 ? (distanceKm / speedKmh) * 60 : null;
 
           activeRespondersList.push({
-            request_id: responder.panic_id, // Using request_id field for both types
+            request_id: responder.panic_id,
             responder_id: responder.user_id,
+            responder_name: responderNames[responder.user_id] || 'Rescatista',
             responder_lat: responderLat,
             responder_lng: responderLng,
             emergency_lat: panicEvent.lat,
@@ -895,14 +942,14 @@ export function useActiveResponders() {
       );
 
       if (legacyPanicResponders.length > 0) {
-        const legacyIds = legacyPanicResponders.map(p => p.responding_by).filter(Boolean) as string[];
-        const { data: locData } = await supabase
+        const legacyPanicIds = legacyPanicResponders.map(p => p.responding_by).filter(Boolean) as string[];
+        const { data: legacyPanicLocData } = await supabase
           .from('user_locations')
           .select('user_id, lat, lng, speed')
-          .in('user_id', legacyIds);
+          .in('user_id', legacyPanicIds);
 
         for (const p of legacyPanicResponders) {
-          const loc = locData?.find(l => l.user_id === p.responding_by);
+          const loc = legacyPanicLocData?.find(l => l.user_id === p.responding_by);
           if (!loc) continue;
 
           const distanceKm = calculateDistance(loc.lat, loc.lng, p.lat, p.lng);
@@ -912,6 +959,7 @@ export function useActiveResponders() {
           activeRespondersList.push({
             request_id: p.id,
             responder_id: p.responding_by!,
+            responder_name: responderNames[p.responding_by!] || 'Rescatista',
             responder_lat: loc.lat,
             responder_lng: loc.lng,
             emergency_lat: p.lat,
