@@ -38,6 +38,7 @@ import { useMyAlertResponders } from '@/hooks/useMyAlertResponders';
 import { useTestMode } from '@/hooks/useTestMode';
 import { useOverdueTrips } from '@/hooks/useOverdueTrips';
 import { useEmergencyNotification } from '@/hooks/useEmergencyNotification';
+import { useInternalMessages } from '@/hooks/useInternalMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { UserRole, USGSEarthquake, PanicType } from '@/types';
@@ -142,6 +143,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   
   // Emergency contact notification
   const { notifyEmergencyContacts } = useEmergencyNotification();
+  
+  // Internal messages - unread count
+  const { unreadCount: unreadMessageCount } = useInternalMessages();
 
   // Push notifications
   const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
@@ -281,7 +285,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} onPanicTriggered={handlePanicTriggered} />
       
       <InstallPrompt />
-      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS'} disasterMode={disasterMode} />
+      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS'} disasterMode={disasterMode} messageCount={unreadMessageCount} />
       
       {/* Seismic Alert Dialog */}
       {nearbyQuake && position && distanceKm !== null && (
