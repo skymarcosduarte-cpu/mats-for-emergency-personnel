@@ -269,7 +269,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       community: <CommunityScreen />,
       market: <MarketScreen userRole={userRole} />,
       status: <StatusScreen userRole={userRole} />,
-      settings: <SettingsScreen onLogout={handleLogout} onSimulatePanicAlert={simulatePanicAlert} />,
+      settings: <SettingsScreen onLogout={handleLogout} />,
     };
 
     return (
