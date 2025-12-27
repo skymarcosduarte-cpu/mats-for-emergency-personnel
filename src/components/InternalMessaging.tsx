@@ -36,6 +36,7 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
   const [messageText, setMessageText] = useState('');
   const [sending, setSending] = useState(false);
+  const [justSentId, setJustSentId] = useState<string | null>(null);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -97,7 +98,18 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     
     try {
       const success = await sendMessage(selectedUserId, textToSend);
-      if (!success) {
+      if (success) {
+        // Find the latest message we just sent and animate it
+        setTimeout(() => {
+          const latestMessages = getConversationMessages(selectedUserId);
+          const lastSent = latestMessages.filter(m => m.sender_id === user?.id).pop();
+          if (lastSent) {
+            setJustSentId(lastSent.id);
+            // Clear animation after it plays
+            setTimeout(() => setJustSentId(null), 600);
+          }
+        }, 100);
+      } else {
         // Restore text if send failed
         setMessageText(textToSend);
       }
@@ -254,20 +266,23 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                 ) : (
                   conversationMessages.map((msg: InternalMessage) => {
                     const isMine = msg.sender_id === user?.id;
+                    const isJustSent = msg.id === justSentId;
                     return (
                       <div
                         key={msg.id}
                         className={cn(
-                          'flex',
-                          isMine ? 'justify-end' : 'justify-start'
+                          'flex transition-all duration-300',
+                          isMine ? 'justify-end' : 'justify-start',
+                          isJustSent && 'animate-scale-in'
                         )}
                       >
                         <div
                           className={cn(
-                            'max-w-[80%] rounded-2xl px-4 py-2',
+                            'max-w-[80%] rounded-2xl px-4 py-2 transition-all duration-300',
                             isMine
                               ? 'bg-primary text-primary-foreground rounded-br-md'
-                              : 'bg-muted text-foreground rounded-bl-md'
+                              : 'bg-muted text-foreground rounded-bl-md',
+                            isJustSent && 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background'
                           )}
                         >
                           <p className="text-sm whitespace-pre-wrap break-words">
