@@ -789,6 +789,43 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     };
   }, [imagePreview]);
 
+  // Lock background scroll + disable map interactions while chat is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const html = document.documentElement;
+    const body = document.body;
+    const scrollY = window.scrollY;
+
+    const prev = {
+      overflow: body.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      touchAction: body.style.touchAction,
+    };
+
+    html.classList.add('chat-modal-open');
+
+    body.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.width = '100%';
+    body.style.touchAction = 'none';
+
+    return () => {
+      html.classList.remove('chat-modal-open');
+
+      body.style.overflow = prev.overflow;
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.width = prev.width;
+      body.style.touchAction = prev.touchAction;
+
+      window.scrollTo(0, scrollY);
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -800,6 +837,7 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
         e.stopPropagation();
       }}
       onTouchStart={(e) => {
+        e.preventDefault();
         e.stopPropagation();
       }}
       onTouchMove={(e) => {
