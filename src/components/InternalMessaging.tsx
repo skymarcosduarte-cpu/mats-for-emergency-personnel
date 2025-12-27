@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus } from 'lucide-react';
+import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -90,10 +90,15 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     conversations, 
     sendMessage,
     deleteMessage,
+    clearConversation,
     markAsRead, 
     getConversationMessages,
     loading
   } = useInternalMessages();
+  
+  // Clear conversation state
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearingConversation, setClearingConversation] = useState(false);
   
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
@@ -243,11 +248,32 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   const handleBack = () => {
     setSelectedUserId(null);
     setSelectedUserName(null);
+    setShowClearConfirm(false);
   };
 
   const handleSelectConversation = (userId: string, displayName: string | null) => {
     setSelectedUserId(userId);
     setSelectedUserName(displayName);
+  };
+
+  const handleClearConversation = async () => {
+    if (!selectedUserId) return;
+    
+    setClearingConversation(true);
+    try {
+      const success = await clearConversation(selectedUserId);
+      if (success) {
+        toast.success('Tus mensajes fueron eliminados');
+      } else {
+        toast.error('No se pudo limpiar el chat');
+      }
+    } catch (error) {
+      console.error('Error clearing conversation:', error);
+      toast.error('Error al limpiar el chat');
+    } finally {
+      setClearingConversation(false);
+      setShowClearConfirm(false);
+    }
   };
 
   const formatMessageTime = (dateStr: string) => {
@@ -648,30 +674,44 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                 : 'Mensajes'}
             </h2>
           </div>
-          {/* Notification toggle */}
-          {notificationPermission !== 'unsupported' && (
+          <div className="flex items-center gap-1">
+            {/* Clear conversation button - only when in conversation */}
+            {selectedUserId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                onClick={() => setShowClearConfirm(true)}
+                title="Limpiar mis mensajes"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+            {/* Notification toggle */}
+            {notificationPermission !== 'unsupported' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={handleEnableNotifications}
+                title={notificationPermission === 'granted' ? 'Notificaciones activadas' : 'Activar notificaciones'}
+              >
+                {notificationPermission === 'granted' ? (
+                  <Bell className="w-4 h-4 text-primary" />
+                ) : (
+                  <BellOff className="w-4 h-4 text-muted-foreground" />
+                )}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0"
-              onClick={handleEnableNotifications}
-              title={notificationPermission === 'granted' ? 'Notificaciones activadas' : 'Activar notificaciones'}
+              onClick={onClose}
             >
-              {notificationPermission === 'granted' ? (
-                <Bell className="w-4 h-4 text-primary" />
-              ) : (
-                <BellOff className="w-4 h-4 text-muted-foreground" />
-              )}
+              <X className="w-4 h-4" />
             </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={onClose}
-          >
-            <X className="w-4 h-4" />
-          </Button>
+          </div>
         </div>
 
         {/* Content */}
@@ -970,6 +1010,29 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear conversation confirmation dialog */}
+      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Limpiar tus mensajes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminarán todos los mensajes que <strong>tú enviaste</strong> en esta conversación. 
+              Los mensajes del otro usuario permanecerán visibles para él. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearingConversation}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClearConversation}
+              disabled={clearingConversation}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {clearingConversation ? 'Limpiando...' : 'Limpiar mis mensajes'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

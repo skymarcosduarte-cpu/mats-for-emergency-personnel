@@ -281,6 +281,29 @@ export const useInternalMessages = () => {
     }
   };
 
+  // Clear all messages in a conversation (only deletes user's own sent messages)
+  const clearConversation = async (otherUserId: string): Promise<boolean> => {
+    if (!user?.id) return false;
+
+    try {
+      // Delete all messages sent by the current user to this recipient
+      const { error } = await supabase
+        .from('internal_messages')
+        .delete()
+        .eq('sender_id', user.id)
+        .eq('receiver_id', otherUserId);
+
+      if (error) throw error;
+      
+      await fetchMessages();
+      await fetchConversations();
+      return true;
+    } catch (err) {
+      console.error('Error clearing conversation:', err);
+      return false;
+    }
+  };
+
   // Mark messages as read
   const markAsRead = async (senderId: string) => {
     if (!user?.id) return;
@@ -445,6 +468,7 @@ export const useInternalMessages = () => {
     dismissBanner,
     sendMessage,
     deleteMessage,
+    clearConversation,
     markAsRead,
     getConversationMessages,
     refetch: fetchMessages
