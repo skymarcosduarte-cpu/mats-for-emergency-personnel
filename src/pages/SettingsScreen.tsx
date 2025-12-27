@@ -433,8 +433,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <RefreshCw className="w-5 h-5 text-primary" />
               </div>
-              <div className="min-w-0">
-                <p className="font-medium text-foreground">Forzar Actualización</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium text-foreground">Forzar Actualización</p>
+                  <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                    v{APP_VERSION}
+                  </Badge>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Limpia caché y recarga la app
                 </p>
