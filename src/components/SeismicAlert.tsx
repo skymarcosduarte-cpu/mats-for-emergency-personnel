@@ -211,7 +211,9 @@ export function SeismicAlert({
       toast({
         title: felt ? "Reporte enviado" : "Gracias por reportar",
         description: felt 
-          ? `Intensidad ${reportIntensity}/10 - ${reportStatus}${mediaFiles.length > 0 ? ` • ${mediaFiles.length} foto(s)` : ''}${voiceBlob ? ' • Nota de voz' : ''}` 
+          ? (reportStatus === 'OK' && reportIntensity === 4 
+              ? "Todo bien - Gracias por reportar" 
+              : `Intensidad ${reportIntensity}/10 - ${reportStatus}${mediaFiles.length > 0 ? ` • ${mediaFiles.length} foto(s)` : ''}${voiceBlob ? ' • Nota de voz' : ''}`)
           : "No sentiste el sismo, tu ubicación ayuda a mapear el evento",
       });
 
@@ -316,9 +318,10 @@ export function SeismicAlert({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => { setIntensity(4); handleIntensityNext(); }}
+                onClick={() => { setIntensity(4); setStatus('OK'); submitReport(true, 4, 'OK'); }}
+                disabled={submitting}
               >
-                4 de 10 (Rápido)
+                Todo bien (Rápido)
               </Button>
               <Button
                 onClick={handleIntensityNext}
