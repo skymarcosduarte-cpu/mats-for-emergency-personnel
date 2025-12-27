@@ -187,6 +187,8 @@ export const useInternalMessages = () => {
   useEffect(() => {
     if (!user?.id) return;
 
+    console.log('[InternalMessages] Setting up realtime subscription for user:', user.id);
+
     fetchMessages();
     fetchConversations();
 
@@ -201,9 +203,11 @@ export const useInternalMessages = () => {
           filter: `receiver_id=eq.${user.id}`
         },
         (payload) => {
+          console.log('[InternalMessages] Received INSERT event:', payload);
           // Play notification for new incoming message
           const newMessage = payload.new as InternalMessage;
           if (newMessage && newMessage.sender_id !== user.id) {
+            console.log('[InternalMessages] Playing notification for new message from:', newMessage.sender_id);
             playMessageNotification();
           }
           fetchMessages();
