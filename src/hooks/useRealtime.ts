@@ -74,8 +74,17 @@ interface AppState {
 // Hook for user locations with real-time updates (includes role info)
 export function useUserLocations() {
   const [locations, setLocations] = useState<UserLocation[]>([]);
+  const lastFetchRef = useRef<number>(0);
+  const DEBOUNCE_MS = 500; // Debounce rapid updates
 
   const fetchLocations = useCallback(async () => {
+    // Debounce rapid fetches
+    const now = Date.now();
+    if (now - lastFetchRef.current < DEBOUNCE_MS) {
+      return;
+    }
+    lastFetchRef.current = now;
+
     // Use the view that joins locations with roles
     const { data, error } = await supabase
       .from('user_locations_with_roles')
@@ -157,11 +166,23 @@ export function useUserLocations() {
       )
       .subscribe((status) => {
         console.log('[useUserLocations] Subscription status:', status);
+        // If subscription failed, try to reconnect
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('[useUserLocations] Subscription error, will rely on polling');
+        }
       });
+
+    // Fallback polling every 30 seconds to ensure locations stay updated
+    // This handles cases where realtime events might be missed
+    const pollInterval = setInterval(() => {
+      console.log('[useUserLocations] Polling for location updates...');
+      fetchLocations();
+    }, 30000);
 
     return () => {
       console.log('[useUserLocations] Cleaning up subscription');
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, [fetchLocations]);
 
