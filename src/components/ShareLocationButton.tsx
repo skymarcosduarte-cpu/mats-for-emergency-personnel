@@ -1,8 +1,9 @@
 // ShareLocationButton - Quick share current location via WhatsApp or copy coordinates
 import React, { useState, useCallback } from 'react';
-import { Share2, Copy, MessageCircle, Check, MapPin, X } from 'lucide-react';
+import { Share2, Copy, MessageCircle, Check, MapPin, X, Users, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useEmergencyContactsDB, type EmergencyContactDB } from '@/hooks/useEmergencyContactsDB';
 
 interface ShareLocationButtonProps {
   position: { lat: number; lng: number } | null;
@@ -12,6 +13,8 @@ interface ShareLocationButtonProps {
 export function ShareLocationButton({ position, className }: ShareLocationButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sendingToContacts, setSendingToContacts] = useState(false);
+  const { contacts, loading: contactsLoading } = useEmergencyContactsDB();
 
   const getGoogleMapsLink = useCallback((lat: number, lng: number) => {
     return `https://maps.google.com/?q=${lat},${lng}`;
@@ -80,6 +83,44 @@ export function ShareLocationButton({ position, className }: ShareLocationButton
     window.open(whatsappUrl, '_blank');
   }, [position, getGoogleMapsLink, formatCoordinates]);
 
+  // Share with all emergency contacts at once
+  const handleShareWithEmergencyContacts = useCallback(async () => {
+    if (!position) {
+      toast.error('Ubicación no disponible');
+      return;
+    }
+    
+    const contactsWithWhatsapp = contacts.filter(c => c.whatsapp || c.phone);
+    
+    if (contactsWithWhatsapp.length === 0) {
+      toast.error('No tienes contactos de emergencia guardados');
+      return;
+    }
+
+    setSendingToContacts(true);
+    
+    const link = getGoogleMapsLink(position.lat, position.lng);
+    const coords = formatCoordinates(position.lat, position.lng);
+    
+    // Open WhatsApp for each contact
+    let opened = 0;
+    for (const contact of contactsWithWhatsapp) {
+      const phoneNumber = (contact.whatsapp || contact.phone).replace(/\D/g, '');
+      const message = `🆘 *EMERGENCIA*\n\n${contact.name}, te comparto mi ubicación actual:\n\n📍 ${link}\n\nCoordenadas: ${coords}\n\nPor favor revisa si estoy bien.`;
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+      
+      // Small delay between opening each to avoid browser blocking
+      setTimeout(() => {
+        window.open(whatsappUrl, '_blank');
+      }, opened * 500);
+      opened++;
+    }
+    
+    toast.success(`Abriendo WhatsApp para ${contactsWithWhatsapp.length} contacto(s)`);
+    setSendingToContacts(false);
+    setIsOpen(false);
+  }, [position, contacts, getGoogleMapsLink, formatCoordinates]);
+
   if (!position) return null;
 
   return (
@@ -114,6 +155,30 @@ export function ShareLocationButton({ position, className }: ShareLocationButton
 
           {/* Action buttons */}
           <div className="space-y-1">
+            {/* Emergency contacts button - prominent at top */}
+            {contacts.length > 0 && (
+              <button
+                onClick={handleShareWithEmergencyContacts}
+                disabled={sendingToContacts || contactsLoading}
+                className="w-full flex items-center gap-2 px-2 py-2.5 text-sm rounded bg-destructive/10 hover:bg-destructive/20 transition-colors text-destructive font-medium border border-destructive/20"
+              >
+                {sendingToContacts ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Users className="w-4 h-4" />
+                )}
+                <span>Enviar a contactos ({contacts.length})</span>
+              </button>
+            )}
+            
+            {contacts.length === 0 && !contactsLoading && (
+              <div className="px-2 py-1.5 text-xs text-muted-foreground bg-muted/30 rounded">
+                Sin contactos de emergencia
+              </div>
+            )}
+
+            <div className="border-t border-border my-2" />
+
             <button
               onClick={handleCopyCoordinates}
               className="w-full flex items-center gap-2 px-2 py-2 text-sm rounded hover:bg-accent transition-colors"
