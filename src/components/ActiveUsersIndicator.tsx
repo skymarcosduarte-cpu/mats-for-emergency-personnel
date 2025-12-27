@@ -2,7 +2,7 @@
 // Shows the count of online users who can receive alerts in real-time
 
 import React, { useState } from 'react';
-import { Users, Radio, MapPin, Clock, MessageCircle, X } from 'lucide-react';
+import { Users, Radio, Clock, MessageCircle, Stethoscope, Cross, Ambulance } from 'lucide-react';
 import { useUserLocations } from '@/hooks/useRealtime';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -188,7 +188,7 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
                       <span className="text-2xl flex-shrink-0">
                         {getRoleIcon(user.role, user.is_in_transit)}
                       </span>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         {user.show_name_on_map && user.display_name && (
                           <div className="text-sm font-medium text-foreground truncate max-w-[180px]">
                             {user.display_name}
@@ -197,6 +197,31 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
                         <div className="flex items-center gap-1 mt-1">
                           {getRoleBadge(user.role, user.is_in_transit)}
                         </div>
+                        
+                        {/* Medical capabilities indicators */}
+                        {(user.can_provide_medical_assistance || user.has_first_aid_kit || user.has_ambulance) && (
+                          <div className="flex items-center gap-2 mt-1.5">
+                            {user.can_provide_medical_assistance && (
+                              <div className="flex items-center gap-1 text-xs text-blue-400 bg-blue-500/20 px-1.5 py-0.5 rounded">
+                                <Stethoscope className="w-3 h-3" />
+                                <span className="hidden sm:inline">Médico</span>
+                              </div>
+                            )}
+                            {user.has_first_aid_kit && (
+                              <div className="flex items-center gap-1 text-xs text-red-400 bg-red-500/20 px-1.5 py-0.5 rounded">
+                                <Cross className="w-3 h-3" />
+                                <span className="hidden sm:inline">Botiquín</span>
+                              </div>
+                            )}
+                            {user.has_ambulance && (
+                              <div className="flex items-center gap-1 text-xs text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded">
+                                <Ambulance className="w-3 h-3" />
+                                <span className="hidden sm:inline">Ambulancia</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
                         {user.is_in_transit && user.transit_destination && (
                           <div className="text-xs text-amber-500 truncate mt-1">
                             → {user.transit_destination}
@@ -214,11 +239,11 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-9 gap-2"
+                        className="h-9 gap-2 flex-shrink-0"
                         onClick={() => handleMessageUser(user.user_id, user.show_name_on_map ? user.display_name || null : null)}
                       >
                         <MessageCircle className="w-4 h-4" />
-                        Mensaje
+                        <span className="hidden sm:inline">Mensaje</span>
                       </Button>
                     )}
                   </div>
