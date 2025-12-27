@@ -133,7 +133,7 @@ export function MapControlsMenu({
                 <Share2 className="w-5 h-5 text-primary" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48">
+            <DropdownMenuContent align="start" className="w-48 z-[9999]" sideOffset={8}>
               <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/50 rounded text-xs font-mono mx-1 mb-1">
                 <MapPin className="w-3 h-3 text-primary flex-shrink-0" />
                 <span className="truncate">{formatCoordinates(position.lat, position.lng)}</span>
@@ -181,7 +181,7 @@ export function MapControlsMenu({
               <MoreHorizontal className="w-5 h-5 text-primary" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-52">
+          <DropdownMenuContent align="start" className="w-52 z-[9999]" sideOffset={8}>
             <DropdownMenuItem onClick={onCenterOnMe} disabled={!position}>
               <Locate className="w-4 h-4 mr-2 text-primary" />
               Centrar en mi ubicación
