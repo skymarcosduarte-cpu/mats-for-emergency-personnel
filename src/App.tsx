@@ -36,6 +36,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePanicAlerts } from '@/hooks/usePanicAlerts';
 import { useMyAlertResponders } from '@/hooks/useMyAlertResponders';
 import { useTestMode } from '@/hooks/useTestMode';
+import { useBackgroundSync } from '@/hooks/useBackgroundSync';
 import { useOverdueTrips } from '@/hooks/useOverdueTrips';
 import { useEmergencyNotification } from '@/hooks/useEmergencyNotification';
 import { useInternalMessages } from '@/hooks/useInternalMessages';
@@ -150,6 +151,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   
   // New user notifications
   useNewUserNotification();
+  
+  // Background sync - keeps data fresh every 2 minutes
+  useBackgroundSync();
 
   // Push notifications
   const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
