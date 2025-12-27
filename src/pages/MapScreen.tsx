@@ -1915,11 +1915,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       )}
 
       {/* Map container */}
-      <div ref={mapRef} className="w-full h-full" />
+      <div ref={mapRef} className="w-full h-full map-container" />
 
       {/* Active users count + center button + alerts panel */}
-      <div className="absolute top-4 left-4 right-4 z-[1000] flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="map-fixed-header flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-2 pointer-events-auto">
           <div className="bg-card/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-border">
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -1954,21 +1954,23 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         </div>
         
         {/* Alerts Panel Button */}
-        <AlertsPanel
-          panicEvents={panicEvents}
-          helpRequests={helpRequests}
-          onViewLocation={handleViewLocation}
-          isRescatista={isRescatista}
-          currentUserId={currentUserId}
-          onResolveHelpRequest={resolveRequest}
-          onResolvePanicEvent={resolveEvent}
-          activeResponders={activeResponders}
-          userPosition={position}
-          onRespondToRequest={handleRespondToRequest}
-          onCancelResponse={handleCancelResponse}
-          onMarkAsArrived={handleMarkAsArrived}
-          onResolve={handleMarkAsResolved}
-        />
+        <div className="pointer-events-auto">
+          <AlertsPanel
+            panicEvents={panicEvents}
+            helpRequests={helpRequests}
+            onViewLocation={handleViewLocation}
+            isRescatista={isRescatista}
+            currentUserId={currentUserId}
+            onResolveHelpRequest={resolveRequest}
+            onResolvePanicEvent={resolveEvent}
+            activeResponders={activeResponders}
+            userPosition={position}
+            onRespondToRequest={handleRespondToRequest}
+            onCancelResponse={handleCancelResponse}
+            onMarkAsArrived={handleMarkAsArrived}
+            onResolve={handleMarkAsResolved}
+          />
+        </div>
       </div>
 
       {/* Map legend with POI toggles */}
