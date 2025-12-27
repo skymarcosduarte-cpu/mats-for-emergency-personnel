@@ -3,13 +3,13 @@
 
 export const IMAGE_LIMITS = {
   MAX_FILES: 3,
-  MAX_ORIGINAL_BYTES: 8 * 1024 * 1024, // 8MB
+  MAX_ORIGINAL_BYTES: 15 * 1024 * 1024, // 15MB - increased for camera photos
   MAX_DIM: 1280, // Max dimension (width or height)
-  TARGET_BYTES: 450 * 1024, // 450KB target
-  HARD_MAX_BYTES: 900 * 1024, // 900KB absolute max
-  QUALITY_START: 0.72,
-  QUALITY_MIN: 0.45,
-  QUALITY_STEP: 0.07,
+  TARGET_BYTES: 500 * 1024, // 500KB target
+  HARD_MAX_BYTES: 1200 * 1024, // 1.2MB absolute max
+  QUALITY_START: 0.80,
+  QUALITY_MIN: 0.40,
+  QUALITY_STEP: 0.05,
 } as const;
 
 export interface CompressResult {

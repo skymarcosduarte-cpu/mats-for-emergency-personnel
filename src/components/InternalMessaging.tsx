@@ -627,14 +627,13 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     }
   };
 
-  // Image handling functions - async to prevent UI blocking on Android
+  // Image handling functions - with compression to prevent freezing
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     
-    // Reset input immediately to allow re-selecting the same file
-    if (imageInputRef.current) {
-      imageInputRef.current.value = '';
-    }
+    // Reset inputs immediately to allow re-selecting the same file
+    if (imageInputRef.current) imageInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
     
     if (!file) return;
     
@@ -644,24 +643,54 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
       return;
     }
     
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('La imagen es muy grande (máx 5MB)');
+    // Validate file size (max 15MB before compression)
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error('La imagen es muy grande (máx 15MB)');
       return;
     }
     
-    // Use setTimeout to prevent UI blocking on Android
-    // This gives the browser time to close the file picker before processing
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    try {
-      setSelectedImage(file);
-      const previewUrl = URL.createObjectURL(file);
-      setImagePreview(previewUrl);
-    } catch (error) {
-      console.error('Error processing image:', error);
-      toast.error('Error al procesar la imagen');
-    }
+    // Use requestAnimationFrame to prevent UI blocking
+    requestAnimationFrame(async () => {
+      try {
+        // Show loading state
+        setSendingImage(true);
+        toast.info('Procesando imagen...');
+        
+        // Compress the image using our utility
+        const { compressImages } = await import('@/lib/imageCompress');
+        const { results, errors } = await compressImages([file]);
+        
+        if (errors.length > 0) {
+          toast.error(errors[0].error);
+          setSendingImage(false);
+          return;
+        }
+        
+        if (results.length === 0) {
+          toast.error('Error al procesar la imagen');
+          setSendingImage(false);
+          return;
+        }
+        
+        const compressedFile = results[0].file;
+        setSelectedImage(compressedFile);
+        const previewUrl = URL.createObjectURL(compressedFile);
+        setImagePreview(previewUrl);
+        
+        // Show compression info
+        const savedPercent = Math.round((1 - results[0].compressedSize / results[0].originalSize) * 100);
+        if (savedPercent > 10) {
+          toast.success(`Imagen optimizada (${savedPercent}% más ligera)`);
+        } else {
+          toast.dismiss();
+        }
+      } catch (error) {
+        console.error('Error processing image:', error);
+        toast.error('Error al procesar la imagen');
+      } finally {
+        setSendingImage(false);
+      }
+    });
   };
 
   const cancelImage = () => {
@@ -676,47 +705,52 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   };
 
   const sendImageMessage = async () => {
-    if (!selectedImage || !selectedUserId || !user?.id) return;
+    if (!selectedImage || !selectedUserId || !user?.id || sendingImage) return;
     
     setSendingImage(true);
-    try {
-      // Upload to Supabase storage
-      const fileExt = selectedImage.name.split('.').pop() || 'jpg';
-      const fileName = `chat_images/${user.id}/${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('reports_media')
-        .upload(fileName, selectedImage, {
-          contentType: selectedImage.type,
-          upsert: false
-        });
+    
+    // Use setTimeout to prevent UI blocking
+    setTimeout(async () => {
+      try {
+        // Upload to Supabase storage
+        const fileExt = selectedImage.type === 'image/webp' ? 'webp' : 
+                        selectedImage.type === 'image/png' ? 'png' : 'jpg';
+        const fileName = `chat_images/${user.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('reports_media')
+          .upload(fileName, selectedImage, {
+            contentType: selectedImage.type,
+            upsert: false
+          });
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw new Error('Error al subir la imagen');
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          throw new Error('Error al subir la imagen');
+        }
+
+        // Send message with image URL
+        const success = await sendMessage(
+          selectedUserId, 
+          '📷 Imagen',
+          null,
+          null,
+          fileName
+        );
+
+        if (success) {
+          cancelImage();
+          toast.success('Imagen enviada');
+        } else {
+          throw new Error('Error al enviar');
+        }
+      } catch (error) {
+        console.error('Error sending image:', error);
+        toast.error('Error al enviar imagen');
+      } finally {
+        setSendingImage(false);
       }
-
-      // Send message with image URL
-      const success = await sendMessage(
-        selectedUserId, 
-        '📷 Imagen',
-        null,
-        null,
-        fileName
-      );
-
-      if (success) {
-        cancelImage();
-        toast.success('Imagen enviada');
-      } else {
-        throw new Error('Error al enviar');
-      }
-    } catch (error) {
-      console.error('Error sending image:', error);
-      toast.error('Error al enviar imagen');
-    } finally {
-      setSendingImage(false);
-    }
+    }, 50);
   };
 
   const getSignedImageUrl = async (imagePath: string): Promise<string | null> => {
