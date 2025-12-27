@@ -136,10 +136,34 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     }
   };
 
-  // Load trips on mount
+  // Load trips on mount + keep in sync across devices
   useEffect(() => {
     fetchMyTrips();
-  }, []);
+
+    if (!currentUserId) return;
+
+    const channel = supabase
+      .channel('transit_trips_my_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'transit_trips' },
+        (payload) => {
+          const changedUserId =
+            (payload.new as { user_id?: string } | null)?.user_id ??
+            (payload.old as { user_id?: string } | null)?.user_id;
+
+          if (changedUserId === currentUserId) {
+            console.log('[TransitScreen] transit_trips changed for current user; refetching');
+            fetchMyTrips();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId]);
 
   // Handle report verification (upvote)
   const handleVerifyReport = async (reportId: string) => {

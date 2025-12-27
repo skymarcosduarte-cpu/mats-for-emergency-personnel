@@ -575,6 +575,39 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles_public: {
+        Row: {
+          can_provide_medical_assistance: boolean | null
+          has_ambulance: boolean | null
+          has_first_aid_kit: boolean | null
+          nickname: string | null
+          share_location: boolean
+          show_name_on_map: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_provide_medical_assistance?: boolean | null
+          has_ambulance?: boolean | null
+          has_first_aid_kit?: boolean | null
+          nickname?: string | null
+          share_location?: boolean
+          show_name_on_map?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_provide_medical_assistance?: boolean | null
+          has_ambulance?: boolean | null
+          has_first_aid_kit?: boolean | null
+          nickname?: string | null
+          share_location?: boolean
+          show_name_on_map?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
