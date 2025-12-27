@@ -390,8 +390,32 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         )}
       </div>
 
-      <Tabs defaultValue="help" className="p-4">
+      <Tabs 
+        defaultValue="help" 
+        className="p-4"
+        onValueChange={(value) => {
+          // Auto-refresh when entering specific tabs
+          if (value === 'earthquakes') {
+            loadEarthquakes();
+          } else if (value === 'otros') {
+            refreshGDACS();
+          } else if (value === 'weather') {
+            refreshWeather();
+          }
+        }}
+      >
         <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="help" className="relative text-xs px-1 font-semibold">
+            🆘 Comunidad
+            {helpRequests.filter(r => !r.resolved).length > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] animate-pulse"
+              >
+                {helpRequests.filter(r => !r.resolved).length}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="help" className="relative text-xs px-1 font-semibold">
             🆘 Comunidad
             {helpRequests.filter(r => !r.resolved).length > 0 && (
