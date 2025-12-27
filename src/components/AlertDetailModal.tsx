@@ -435,18 +435,14 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
             : "Has comenzado a responder a esta emergencia. Tu ubicación se compartirá con el solicitante.",
         });
         setShowTransportSelector(false);
-      } else {
-        toast({
-          title: "Error",
-          description: "No se pudo iniciar la respuesta. Revisa los permisos o tu ubicación.",
-          variant: "destructive",
-        });
       }
+      // Note: If success is false, the hook (usePanicResponse/useEmergencyResponse) already showed a toast
+      // so we don't show another one here to avoid duplicate error messages
     } catch (error) {
       console.error('[AlertDetailModal] Error responding:', error);
       toast({
-        title: "Error",
-        description: `Error al responder: ${error instanceof Error ? error.message : 'desconocido'}`,
+        title: "Error al responder",
+        description: error instanceof Error ? error.message : 'Error desconocido. Intenta de nuevo.',
         variant: "destructive",
       });
     } finally {
