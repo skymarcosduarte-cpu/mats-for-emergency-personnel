@@ -678,6 +678,14 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
             <span className="text-foreground">Miembro</span>
           </div>
           <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-white border-2 flex items-center justify-center" style={{ borderColor: '#16a34a' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <path d="M12 4v16M4 12h16" stroke="#16a34a" strokeWidth="4" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <span className="text-foreground">SOS Activo / Ex-SOS</span>
+          </div>
+          <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full" style={{ background: '#22c55e' }} />
             <span className="text-foreground">Paramédico/Botiquín</span>
           </div>
