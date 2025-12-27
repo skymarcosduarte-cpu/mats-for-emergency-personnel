@@ -31,7 +31,9 @@ import {
   Pill,
   FileHeart,
   Wifi,
-  FlaskConical
+  FlaskConical,
+  MapPin,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,6 +56,7 @@ import {
   DrawerTitle,
   DrawerClose,
 } from '@/components/ui/drawer';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { MatsLogo } from '@/components/MatsLogo';
 import { EmergencyContactsManager } from '@/components/EmergencyContactsManager';
 import { AppFooter } from '@/components/AppFooter';
@@ -104,6 +107,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [savingMedicalData, setSavingMedicalData] = useState(false);
   const [showAlertTypeDrawer, setShowAlertTypeDrawer] = useState(false);
   const [selectedAlertType, setSelectedAlertType] = useState('AMBULANCIA_PROPIA');
+  const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
+  const [shareLocation, setShareLocation] = useState(profile?.share_location ?? false);
+  const [shareMedicalInfo, setShareMedicalInfo] = useState(profile?.share_medical_info ?? false);
   const [medicalForm, setMedicalForm] = useState({
     blood_type: profile?.blood_type || '',
     allergies: profile?.allergies || '',
@@ -176,6 +183,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       setCanProvideMedical(profile.can_provide_medical_assistance ?? false);
       setHasFirstAidKit(profile.has_first_aid_kit ?? false);
       setHasAmbulance(profile.has_ambulance ?? false);
+      setShareLocation(profile.share_location ?? false);
+      setShareMedicalInfo(profile.share_medical_info ?? false);
       setMedicalForm({
         blood_type: profile.blood_type || '',
         allergies: profile.allergies || '',
@@ -185,6 +194,39 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       });
     }
   }, [profile]);
+
+  // Handle privacy toggle
+  const handlePrivacyToggle = async (field: 'share_location' | 'share_medical_info', value: boolean) => {
+    setSavingPrivacy(true);
+    
+    if (field === 'share_location') {
+      setShareLocation(value);
+    } else {
+      setShareMedicalInfo(value);
+    }
+
+    try {
+      const updates: Record<string, unknown> = { [field]: value };
+      
+      // Set consent timestamp if enabling for first time
+      if (value && field === 'share_location' && !profile?.privacy_consent_at) {
+        updates.privacy_consent_at = new Date().toISOString();
+        updates.terms_accepted_at = new Date().toISOString();
+      }
+      
+      await updateProfile(updates);
+    } catch (error) {
+      console.error('Error updating privacy settings:', error);
+      // Revert on error
+      if (field === 'share_location') {
+        setShareLocation(!value);
+      } else {
+        setShareMedicalInfo(!value);
+      }
+    } finally {
+      setSavingPrivacy(false);
+    }
+  };
 
   // Update medical assistance settings
   const handleMedicalToggle = async (field: 'can_provide_medical_assistance' | 'has_first_aid_kit' | 'has_ambulance', value: boolean) => {
@@ -483,6 +525,101 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 </Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Privacy Settings Card */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Shield className="w-5 h-5 text-primary" />
+              Privacidad y Compartir Datos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Controla qué información compartes con la comunidad. Esta información es voluntaria 
+              y se utiliza exclusivamente para emergencias.
+            </p>
+
+            {/* Location Sharing Toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center",
+                  shareLocation ? "bg-primary/10" : "bg-muted"
+                )}>
+                  <MapPin className={cn(
+                    "w-5 h-5",
+                    shareLocation ? "text-primary" : "text-muted-foreground"
+                  )} />
+                </div>
+                <div>
+                  <Label htmlFor="share-location" className="text-foreground font-medium">
+                    Compartir ubicación en tiempo real
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Otros miembros verán tu ubicación en el mapa
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="share-location"
+                checked={shareLocation}
+                onCheckedChange={(value) => handlePrivacyToggle('share_location', value)}
+                disabled={savingPrivacy}
+              />
+            </div>
+
+            {/* Medical Info Sharing Toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center",
+                  shareMedicalInfo ? "bg-safe/10" : "bg-muted"
+                )}>
+                  <HeartPulse className={cn(
+                    "w-5 h-5",
+                    shareMedicalInfo ? "text-safe" : "text-muted-foreground"
+                  )} />
+                </div>
+                <div>
+                  <Label htmlFor="share-medical" className="text-foreground font-medium">
+                    Compartir info médica con rescatistas
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Visible cuando solicites ayuda de emergencia
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="share-medical"
+                checked={shareMedicalInfo}
+                onCheckedChange={(value) => handlePrivacyToggle('share_medical_info', value)}
+                disabled={savingPrivacy}
+              />
+            </div>
+
+            {/* Privacy Status */}
+            {(shareLocation || shareMedicalInfo) && profile?.privacy_consent_at && (
+              <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                <p className="text-xs text-primary flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  Términos aceptados el {new Date(profile.privacy_consent_at).toLocaleDateString('es-MX')}
+                </p>
+              </div>
+            )}
+
+            {/* View Terms Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => setShowPrivacyDialog(true)}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Ver Aviso de Privacidad y Términos
+            </Button>
           </CardContent>
         </Card>
 
@@ -1536,6 +1673,120 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   Guardar
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Privacy Terms Dialog */}
+      <Dialog open={showPrivacyDialog} onOpenChange={setShowPrivacyDialog}>
+        <DialogContent className="sm:max-w-lg bg-card border-border max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" />
+              Aviso de Privacidad y Términos de Uso
+            </DialogTitle>
+            <DialogDescription>
+              Información sobre el uso de tus datos
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="flex-1 max-h-[60vh] pr-4">
+            <div className="space-y-4 text-sm">
+              {/* Main Notice */}
+              <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Propósito de la Plataforma
+                </h3>
+                <p className="text-muted-foreground">
+                  COMUNIDAD EX SOS es una plataforma de apoyo voluntario para emergencias. 
+                  Su objetivo es facilitar la comunicación y coordinación entre miembros de la 
+                  comunidad durante situaciones de emergencia, sismos y desastres naturales.
+                </p>
+              </div>
+
+              {/* Location Sharing */}
+              <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  Compartir Ubicación en Tiempo Real
+                </h3>
+                <p className="text-muted-foreground mb-3">
+                  Al activar esta opción, tu ubicación será visible para otros miembros 
+                  verificados de la comunidad. Esta información se utiliza exclusivamente para:
+                </p>
+                <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
+                  <li>Facilitar la asistencia en caso de emergencia</li>
+                  <li>Permitir que rescatistas te localicen si solicitas ayuda</li>
+                  <li>Coordinar respuestas comunitarias ante desastres</li>
+                </ul>
+              </div>
+
+              {/* Medical Info Sharing */}
+              <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <HeartPulse className="w-4 h-4 text-safe" />
+                  Compartir Información Médica de Emergencia
+                </h3>
+                <p className="text-muted-foreground mb-3">
+                  Al activar esta opción, tu información médica (tipo de sangre, alergias, 
+                  condiciones médicas) será accesible para rescatistas verificados cuando 
+                  solicites ayuda. Esto permite:
+                </p>
+                <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
+                  <li>Atención médica más rápida y segura</li>
+                  <li>Evitar administración de medicamentos que te afecten</li>
+                  <li>Comunicar tu información vital a servicios de emergencia</li>
+                </ul>
+              </div>
+
+              {/* Disclaimer */}
+              <div className="p-4 rounded-lg bg-warning/10 border border-warning/30">
+                <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-warning" />
+                  Deslinde de Responsabilidad
+                </h3>
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  La plataforma COMUNIDAD EX SOS y sus creadores no se hacen responsables por:
+                </p>
+                <ul className="list-disc list-inside text-muted-foreground text-xs space-y-1 ml-2 mt-2">
+                  <li>El mal uso de la información compartida por terceros</li>
+                  <li>La precisión o veracidad de la información proporcionada por los usuarios</li>
+                  <li>Daños derivados de la respuesta o falta de respuesta ante emergencias</li>
+                  <li>La disponibilidad o funcionamiento continuo de la plataforma</li>
+                  <li>Las acciones u omisiones de otros miembros de la comunidad</li>
+                </ul>
+                <p className="text-muted-foreground text-xs mt-3">
+                  <strong>Al usar esta plataforma, reconoces que:</strong>
+                </p>
+                <ul className="list-disc list-inside text-muted-foreground text-xs space-y-1 ml-2 mt-1">
+                  <li>Proporcionas tu información de forma <strong>voluntaria</strong></li>
+                  <li>La ayuda proporcionada es <strong>voluntaria y sin garantías</strong></li>
+                  <li>Eres responsable de mantener tu información actualizada</li>
+                  <li>Puedes desactivar el compartir en cualquier momento desde Configuración</li>
+                </ul>
+              </div>
+
+              {/* Data Protection */}
+              <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                <h3 className="font-semibold text-foreground mb-2">
+                  Protección de Datos
+                </h3>
+                <p className="text-muted-foreground text-xs">
+                  Tu información es almacenada de forma segura y solo es accesible para 
+                  usuarios autenticados de la comunidad. No vendemos ni compartimos tu 
+                  información con terceros externos. Puedes solicitar la eliminación de 
+                  tu cuenta y todos tus datos en cualquier momento desde la sección de 
+                  Configuración.
+                </p>
+              </div>
+            </div>
+          </ScrollArea>
+
+          <DialogFooter>
+            <Button onClick={() => setShowPrivacyDialog(false)}>
+              Entendido
             </Button>
           </DialogFooter>
         </DialogContent>

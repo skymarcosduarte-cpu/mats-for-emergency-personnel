@@ -519,8 +519,12 @@ export type Database = {
           medical_conditions: string | null
           nickname: string
           phone: string
+          privacy_consent_at: string | null
+          share_location: boolean
+          share_medical_info: boolean
           show_name_on_map: boolean
           specialty: string | null
+          terms_accepted_at: string | null
           updated_at: string | null
         }
         Insert: {
@@ -538,8 +542,12 @@ export type Database = {
           medical_conditions?: string | null
           nickname: string
           phone: string
+          privacy_consent_at?: string | null
+          share_location?: boolean
+          share_medical_info?: boolean
           show_name_on_map?: boolean
           specialty?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -557,8 +565,12 @@ export type Database = {
           medical_conditions?: string | null
           nickname?: string
           phone?: string
+          privacy_consent_at?: string | null
+          share_location?: boolean
+          share_medical_info?: boolean
           show_name_on_map?: boolean
           specialty?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string | null
         }
         Relationships: []
