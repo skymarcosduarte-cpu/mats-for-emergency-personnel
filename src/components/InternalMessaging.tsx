@@ -794,18 +794,32 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   return (
     <div 
       className="fixed inset-0 z-[10000] flex items-start justify-center bg-black/70 p-4 pt-16 pb-24 overflow-y-auto"
+      style={{ touchAction: 'none' }}
       onClick={(e) => {
-        // Prevent clicks from propagating to the map
+        e.preventDefault();
         e.stopPropagation();
       }}
-      onTouchStart={(e) => e.stopPropagation()}
-      onTouchMove={(e) => e.stopPropagation()}
-      onWheel={(e) => e.stopPropagation()}
+      onTouchStart={(e) => {
+        e.stopPropagation();
+      }}
+      onTouchMove={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onTouchEnd={(e) => e.stopPropagation()}
+      onWheel={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       onPointerDown={(e) => e.stopPropagation()}
+      onPointerMove={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
     >
       <div 
         className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-md min-h-[400px] max-h-[calc(100dvh-10rem)] flex flex-col overflow-hidden"
+        style={{ touchAction: 'auto' }}
         onClick={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
