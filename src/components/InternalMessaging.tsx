@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2 } from 'lucide-react';
+import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +54,19 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Audio playback state
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const [loadingAudioId, setLoadingAudioId] = useState<string | null>(null);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
   // Check notification permission on mount
   useEffect(() => {
@@ -189,6 +203,172 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     const conv = conversations.find(c => c.user_id === userId);
     return conv?.display_name || `Usuario ${userId.slice(0, 6)}...`;
   };
+
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = mediaRecorder;
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingDuration(0);
+      
+      // Update duration every second
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingDuration(prev => {
+          if (prev >= 30) {
+            stopRecording();
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast.error('No se pudo acceder al micrófono');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+    setIsRecording(false);
+  };
+
+  const cancelRecording = () => {
+    stopRecording();
+    setAudioBlob(null);
+    setRecordingDuration(0);
+  };
+
+  const sendVoiceMessage = async () => {
+    if (!audioBlob || !selectedUserId || !user?.id) return;
+    
+    setSending(true);
+    try {
+      // Upload to Supabase storage
+      const fileName = `voice_messages/${user.id}/${Date.now()}.webm`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('reports_media')
+        .upload(fileName, audioBlob, {
+          contentType: 'audio/webm',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error('Error al subir el audio');
+      }
+
+      // Send message with audio URL
+      const success = await sendMessage(
+        selectedUserId, 
+        '🎤 Nota de voz',
+        fileName,
+        recordingDuration * 1000
+      );
+
+      if (success) {
+        setAudioBlob(null);
+        setRecordingDuration(0);
+        toast.success('Nota de voz enviada');
+      } else {
+        throw new Error('Error al enviar');
+      }
+    } catch (error) {
+      console.error('Error sending voice message:', error);
+      toast.error('Error al enviar nota de voz');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Audio playback function
+  const playAudio = async (msg: InternalMessage) => {
+    if (!msg.audio_url) return;
+    
+    // If already playing this audio, stop it
+    if (playingAudioId === msg.id) {
+      if (audioElementRef.current) {
+        audioElementRef.current.pause();
+        audioElementRef.current = null;
+      }
+      setPlayingAudioId(null);
+      return;
+    }
+    
+    // Stop any currently playing audio
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+    }
+    
+    setLoadingAudioId(msg.id);
+    
+    try {
+      const { data, error } = await supabase.storage
+        .from('reports_media')
+        .createSignedUrl(msg.audio_url, 3600);
+      
+      if (error) throw error;
+      
+      const audio = new Audio(data.signedUrl);
+      audioElementRef.current = audio;
+      
+      audio.onended = () => {
+        setPlayingAudioId(null);
+        audioElementRef.current = null;
+      };
+      
+      audio.onerror = () => {
+        toast.error('Error al reproducir audio');
+        setPlayingAudioId(null);
+        setLoadingAudioId(null);
+      };
+      
+      await audio.play();
+      setPlayingAudioId(msg.id);
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      toast.error('Error al reproducir audio');
+    } finally {
+      setLoadingAudioId(null);
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+      if (audioElementRef.current) {
+        audioElementRef.current.pause();
+      }
+    };
+  }, []);
 
   if (!isOpen) return null;
 
@@ -330,9 +510,34 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                             isJustSent && 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background'
                           )}
                         >
-                          <p className="text-sm whitespace-pre-wrap break-words">
-                            {msg.message}
-                          </p>
+                          {/* Audio message */}
+                          {msg.audio_url ? (
+                            <button
+                              onClick={() => playAudio(msg)}
+                              disabled={loadingAudioId === msg.id}
+                              className={cn(
+                                'flex items-center gap-2 py-1',
+                                isMine ? 'text-primary-foreground' : 'text-foreground'
+                              )}
+                            >
+                              {loadingAudioId === msg.id ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                              ) : playingAudioId === msg.id ? (
+                                <Pause className="w-5 h-5" />
+                              ) : (
+                                <Play className="w-5 h-5" />
+                              )}
+                              <span className="text-sm">
+                                {msg.audio_duration_ms 
+                                  ? `${Math.round(msg.audio_duration_ms / 1000)}s`
+                                  : 'Nota de voz'}
+                              </span>
+                            </button>
+                          ) : (
+                            <p className="text-sm whitespace-pre-wrap break-words">
+                              {msg.message}
+                            </p>
+                          )}
                           <p
                             className={cn(
                               'text-[10px] mt-1',
@@ -353,25 +558,77 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
 
             {/* Input */}
             <div className="p-4 border-t border-border">
-              <div className="flex gap-2">
-                <Input
-                  ref={inputRef}
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Escribe un mensaje..."
-                  className="flex-1"
-                  disabled={sending}
-                />
-                <Button
-                  onClick={handleSend}
-                  disabled={!messageText.trim() || sending}
-                  size="icon"
-                  className="flex-shrink-0"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
+              {/* Recording UI */}
+              {isRecording || audioBlob ? (
+                <div className="flex items-center gap-2">
+                  {isRecording ? (
+                    <>
+                      <div className="flex-1 flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-destructive animate-pulse" />
+                        <span className="text-sm font-mono">{recordingDuration}s / 30s</span>
+                      </div>
+                      <Button
+                        onClick={stopRecording}
+                        size="icon"
+                        variant="destructive"
+                      >
+                        <Square className="w-4 h-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex-1 flex items-center gap-2">
+                        <Mic className="w-4 h-4 text-primary" />
+                        <span className="text-sm">Nota de voz ({recordingDuration}s)</span>
+                      </div>
+                      <Button
+                        onClick={cancelRecording}
+                        size="icon"
+                        variant="ghost"
+                        disabled={sending}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        onClick={sendVoiceMessage}
+                        size="icon"
+                        disabled={sending}
+                      >
+                        {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Button
+                    onClick={startRecording}
+                    size="icon"
+                    variant="ghost"
+                    disabled={sending}
+                    title="Grabar nota de voz"
+                  >
+                    <Mic className="w-4 h-4" />
+                  </Button>
+                  <Input
+                    ref={inputRef}
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Escribe un mensaje..."
+                    className="flex-1"
+                    disabled={sending}
+                  />
+                  <Button
+                    onClick={handleSend}
+                    disabled={!messageText.trim() || sending}
+                    size="icon"
+                    className="flex-shrink-0"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           </>
         )}

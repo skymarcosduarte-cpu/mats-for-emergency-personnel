@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { playMessageNotification } from '@/lib/alertSound';
+import { playMessageNotification, triggerMessageVibration } from '@/lib/alertSound';
 import { toast } from 'sonner';
 
 export interface InternalMessage {
@@ -11,6 +11,8 @@ export interface InternalMessage {
   message: string;
   read: boolean;
   created_at: string;
+  audio_url: string | null;
+  audio_duration_ms: number | null;
 }
 
 export interface Conversation {
@@ -185,9 +187,15 @@ export const useInternalMessages = () => {
     }
   }, [user?.id]);
 
-  // Send a message
-  const sendMessage = async (receiverId: string, message: string): Promise<boolean> => {
-    if (!user?.id || !message.trim()) return false;
+  // Send a message (text or voice)
+  const sendMessage = async (
+    receiverId: string, 
+    message: string,
+    audioUrl?: string | null,
+    audioDurationMs?: number | null
+  ): Promise<boolean> => {
+    if (!user?.id) return false;
+    if (!message.trim() && !audioUrl) return false;
 
     try {
       const { error } = await supabase
@@ -195,7 +203,9 @@ export const useInternalMessages = () => {
         .insert({
           sender_id: user.id,
           receiver_id: receiverId,
-          message: message.trim()
+          message: message.trim() || '🎤 Nota de voz',
+          audio_url: audioUrl || null,
+          audio_duration_ms: audioDurationMs || null
         });
 
       if (error) throw error;
@@ -287,8 +297,9 @@ export const useInternalMessages = () => {
           if (newMessage && newMessage.sender_id !== user.id) {
             console.log('[InternalMessages] New message from:', newMessage.sender_id);
             
-            // Play notification sound
+            // Play notification sound and vibration
             playMessageNotification();
+            triggerMessageVibration();
             
             // Get sender name for notification
             let senderName = senderNamesCache.current.get(newMessage.sender_id);
