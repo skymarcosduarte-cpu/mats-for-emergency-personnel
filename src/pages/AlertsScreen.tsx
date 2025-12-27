@@ -35,7 +35,7 @@ import { ResponderEtaCountdown } from '@/components/ResponderEtaCountdown';
 import { ThankYouDialog } from '@/components/ThankYouDialog';
 import { useLocation, getGoogleMapsLink } from '@/hooks/useLocation';
 import { useHelpRequests, useActiveResponders } from '@/hooks/useRealtime';
-import { useNotifications } from '@/hooks/useNotifications';
+
 import { useAuth } from '@/hooks/useAuth';
 import { useEmergencyResponse } from '@/hooks/useEmergencyResponse';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,14 +85,6 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     dismissThankYou 
   } = useEmergencyResponse();
   const { responders } = useActiveResponders();
-  const { 
-    notifications, 
-    unreadCount, 
-    loading: notificationsLoading, 
-    markAsRead, 
-    markAllAsRead, 
-    deleteNotification 
-  } = useNotifications();
 
   // Use earthquake history hook with offline caching
   const { 
@@ -425,18 +417,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
           }
         }}
       >
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="help" className="relative text-xs px-1 font-semibold">
-            🆘 Comunidad
-            {helpRequests.filter(r => !r.resolved).length > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] animate-pulse"
-              >
-                {helpRequests.filter(r => !r.resolved).length}
-              </Badge>
-            )}
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="help" className="relative text-xs px-1 font-semibold">
             🆘 Comunidad
             {helpRequests.filter(r => !r.resolved).length > 0 && (
@@ -471,17 +452,6 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
               >
                 {weatherAlerts.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="relative text-xs px-1">
-            Avisos
-            {unreadCount > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
-              >
-                {unreadCount > 9 ? '9+' : unreadCount}
               </Badge>
             )}
           </TabsTrigger>
@@ -1155,101 +1125,6 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Notifications Tab */}
-        <TabsContent value="notifications" className="space-y-3 mt-4">
-          {notifications.length > 0 && (
-            <div className="flex justify-end mb-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={markAllAsRead}
-                className="text-xs"
-              >
-                <Check className="w-3 h-3 mr-1" />
-                Marcar todo como leído
-              </Button>
-            </div>
-          )}
-          
-          {notificationsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No tienes notificaciones</p>
-            </div>
-          ) : (
-            notifications.map((notification) => (
-              <Card 
-                key={notification.id} 
-                className={cn(
-                  "bg-card border-border transition-colors",
-                  !notification.read && "border-l-4 border-l-primary"
-                )}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className={cn(
-                        "p-2 rounded-full",
-                        notification.type === 'marketplace_contact' 
-                          ? "bg-primary/10 text-primary"
-                          : "bg-muted text-muted-foreground"
-                      )}>
-                        {notification.type === 'marketplace_contact' ? (
-                          <ShoppingBag className="w-4 h-4" />
-                        ) : (
-                          <Bell className="w-4 h-4" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn(
-                          "text-sm",
-                          !notification.read && "font-semibold"
-                        )}>
-                          {notification.title}
-                        </p>
-                        {notification.message && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {notification.message}
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {formatDistanceToNow(new Date(notification.created_at), { 
-                            addSuffix: true,
-                            locale: es 
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      {!notification.read && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          <Check className="w-4 h-4" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => deleteNotification(notification.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </TabsContent>
       </Tabs>
 
       {/* Quake Detail Dialog with Checkin Map */}
