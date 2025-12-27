@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { playMessageNotification } from '@/lib/alertSound';
+import { toast } from 'sonner';
 
 export interface InternalMessage {
   id: string;
@@ -308,6 +309,12 @@ export const useInternalMessages = () => {
             
             // Show browser notification when tab is in background
             showBrowserNotification(senderName, newMessage.message, newMessage.sender_id);
+            
+            // Always show toast notification (visible even when tab is in foreground)
+            toast.info(`💬 ${senderName}`, {
+              description: newMessage.message.substring(0, 80) + (newMessage.message.length > 80 ? '...' : ''),
+              duration: 5000,
+            });
           }
           
           fetchMessages();
