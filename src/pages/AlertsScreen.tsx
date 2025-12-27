@@ -471,7 +471,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                         handleQuickCheckin(quake);
                       }}
                     >
-                      4 de 10 ✓
+                      Todo bien ✓
                     </Button>
                     <Button
                       variant="destructive"
@@ -483,7 +483,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                         setShowHelp14Dialog(true);
                       }}
                     >
-                      14 AYUDA
+                      Reporto Daños
                     </Button>
                   </div>
                 </CardContent>
@@ -848,7 +848,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                               ? 'bg-destructive text-destructive-foreground' 
                               : 'bg-warning text-warning-foreground'
                           )}>
-                            {req.kind === 'SISMO_AYUDA_14' ? '14 AYUDA' : 'AYUDA'}
+                            {req.kind === 'SISMO_AYUDA_14' ? 'Daños / Ayuda' : 'Ayuda'}
                           </span>
                           {(req as any).responding_by && (
                             <Badge variant="outline" className="text-xs text-primary border-primary/50">
@@ -1006,7 +1006,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-muted text-muted-foreground line-through">
-                              {req.kind === 'SISMO_AYUDA_14' ? '14 AYUDA' : 'AYUDA'}
+                              {req.kind === 'SISMO_AYUDA_14' ? 'Daños / Ayuda' : 'Ayuda'}
                             </span>
                             <Badge variant="secondary" className="text-xs">
                               <Check className="w-3 h-3 mr-1" />
