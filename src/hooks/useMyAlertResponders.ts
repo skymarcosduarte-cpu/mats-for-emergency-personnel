@@ -203,12 +203,32 @@ export function useMyAlertResponders() {
 
     console.log('[useMyAlertResponders] Responder started:', responder);
 
-    // Fetch responder's nickname and alert location in parallel
-    const [nickname, alertLocation, speed] = await Promise.all([
+    // Fetch responder's nickname, credentials, and alert location in parallel
+    const [nickname, alertLocation, speed, profileData] = await Promise.all([
       fetchResponderProfile(responder.user_id),
       fetchAlertLocation(responder.request_id),
       fetchResponderSpeed(responder.user_id),
+      supabase
+        .from('profiles')
+        .select('can_provide_medical_assistance, has_ambulance, has_first_aid_kit')
+        .eq('id', responder.user_id)
+        .maybeSingle()
+        .then(r => r.data),
     ]);
+
+    // Build credentials badges
+    const credentials: string[] = [];
+    if (profileData?.can_provide_medical_assistance) credentials.push('👨‍⚕️');
+    if (profileData?.has_ambulance) credentials.push('🚑');
+    if (profileData?.has_first_aid_kit) credentials.push('🩹');
+    const credentialsBadge = credentials.length > 0 ? ` ${credentials.join('')}` : '';
+
+    // Calculate distance and ETA
+    const distanceKm = responder.lat && responder.lng && alertLocation
+      ? calculateDistance(responder.lat, responder.lng, alertLocation.lat, alertLocation.lng)
+      : 0;
+    
+    const eta = calculateEta(distanceKm, speed);
 
     // Vibrate positively
     vibrate([100, 50, 100, 50, 200]);
@@ -220,33 +240,35 @@ export function useMyAlertResponders() {
       // Ignore sound errors
     }
 
-    // Build notification message with transport mode
+    // Build notification message with transport mode, ETA, and credentials
     const transportLabel = responder.transport_mode ? TRANSPORT_LABELS[responder.transport_mode] : null;
+    const etaText = eta ? ` • ETA: ~${Math.round(eta)} min` : '';
+    const distanceText = distanceKm > 0 ? ` (${distanceKm.toFixed(1)} km)` : '';
+    
     const notificationBody = transportLabel 
-      ? `${nickname} está respondiendo (${transportLabel})`
-      : `${nickname} está respondiendo a tu alerta`;
+      ? `${nickname}${credentialsBadge} viene ${transportLabel}${distanceText}${etaText}`
+      : `${nickname}${credentialsBadge} está respondiendo${distanceText}${etaText}`;
 
-    // Show browser notification with name
+    // Show browser notification with detailed info
     showBrowserNotification(
       '🚨 ¡Ayuda en camino!',
       notificationBody,
       `responder-started-${responder.id}`
     );
 
-    // Show visual overlay if app is visible
+    // Show toast with detailed info if app is visible
     if (document.visibilityState === 'visible') {
+      toast.success(`${nickname}${credentialsBadge} viene en camino`, {
+        description: `${transportLabel || 'En camino'}${distanceText}${etaText}`,
+        duration: 8000,
+      });
+      
+      // Set the new responder alert for the visual overlay
       setNewResponderAlert({
-        nickname,
+        nickname: `${nickname}${credentialsBadge}`,
         transport_mode: responder.transport_mode,
-        eta_minutes: calculateEta(
-          responder.lat && responder.lng && alertLocation
-            ? calculateDistance(responder.lat, responder.lng, alertLocation.lat, alertLocation.lng)
-            : 0,
-          speed
-        ),
-        distance_km: responder.lat && responder.lng && alertLocation
-          ? calculateDistance(responder.lat, responder.lng, alertLocation.lat, alertLocation.lng)
-          : 0,
+        eta_minutes: eta,
+        distance_km: distanceKm,
       });
     }
 
