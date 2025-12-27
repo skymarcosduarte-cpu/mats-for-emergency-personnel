@@ -606,6 +606,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                               className="text-xs"
                               onClick={async () => {
                                 try {
+                                  // Update trip status
                                   await supabase
                                     .from('transit_trips')
                                     .update({ 
@@ -613,7 +614,23 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                       arrived_at: new Date().toISOString() 
                                     })
                                     .eq('id', trip.id);
-                                  toast.success('¡Viaje completado!');
+                                  
+                                  // Notify emergency contacts
+                                  try {
+                                    await supabase.functions.invoke('notify-trip-update', {
+                                      body: {
+                                        tripId: trip.id,
+                                        tripUserId: trip.user_id,
+                                        eventType: 'arrived',
+                                        origin: trip.origin,
+                                        destination: trip.destination,
+                                      }
+                                    });
+                                  } catch (notifyError) {
+                                    console.error('Error notifying contacts:', notifyError);
+                                  }
+                                  
+                                  toast.success('¡Viaje completado! Tus contactos fueron notificados.');
                                   fetchMyTrips();
                                 } catch (e) {
                                   toast.error('Error al completar viaje');
@@ -630,10 +647,27 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                               className="text-xs text-muted-foreground"
                               onClick={async () => {
                                 try {
+                                  // Update trip status
                                   await supabase
                                     .from('transit_trips')
                                     .update({ status: 'CANCELLED' })
                                     .eq('id', trip.id);
+                                  
+                                  // Notify contacts about cancellation
+                                  try {
+                                    await supabase.functions.invoke('notify-trip-update', {
+                                      body: {
+                                        tripId: trip.id,
+                                        tripUserId: trip.user_id,
+                                        eventType: 'cancelled',
+                                        origin: trip.origin,
+                                        destination: trip.destination,
+                                      }
+                                    });
+                                  } catch (notifyError) {
+                                    console.error('Error notifying contacts:', notifyError);
+                                  }
+                                  
                                   toast.success('Viaje cancelado');
                                   fetchMyTrips();
                                 } catch (e) {

@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.notify-quake-damage]
 verify_jwt = false
+
+[functions.notify-trip-update]
+verify_jwt = false

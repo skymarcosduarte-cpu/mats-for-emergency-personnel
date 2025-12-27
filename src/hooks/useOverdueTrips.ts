@@ -8,7 +8,54 @@ const CHECK_INTERVAL_MS = 60 * 1000; // Check every minute
 
 export function useOverdueTrips() {
   const notifiedTripsRef = useRef<Set<string>>(new Set());
+  const contactsNotifiedRef = useRef<Set<string>>(new Set()); // Track trips where contacts were notified
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Notify emergency contacts about overdue trip
+  const notifyContactsOverdue = useCallback(async (trip: {
+    id: string;
+    user_id: string;
+    origin: string;
+    destination: string;
+    eta: string;
+  }, overdueMinutes: number) => {
+    // Only notify contacts once per trip
+    if (contactsNotifiedRef.current.has(trip.id)) {
+      console.log('[useOverdueTrips] Contacts already notified for trip:', trip.id);
+      return;
+    }
+
+    try {
+      console.log('[useOverdueTrips] Notifying contacts about overdue trip:', trip.id);
+      
+      const { data, error } = await supabase.functions.invoke('notify-trip-update', {
+        body: {
+          tripId: trip.id,
+          tripUserId: trip.user_id,
+          eventType: 'overdue',
+          origin: trip.origin,
+          destination: trip.destination,
+          eta: trip.eta,
+          overdueMinutes: Math.round(overdueMinutes),
+        }
+      });
+
+      if (error) {
+        console.error('[useOverdueTrips] Error notifying contacts:', error);
+        return;
+      }
+
+      contactsNotifiedRef.current.add(trip.id);
+      
+      if (data?.contactsNotified > 0) {
+        toast.info(`Tus ${data.contactsNotified} contacto(s) de emergencia fueron notificados de tu retraso`);
+      }
+      
+      console.log('[useOverdueTrips] Contacts notified:', data);
+    } catch (error) {
+      console.error('[useOverdueTrips] Error calling notify-trip-update:', error);
+    }
+  }, []);
 
   const checkOverdueTrips = useCallback(async () => {
     try {
@@ -36,6 +83,7 @@ export function useOverdueTrips() {
         // Check if trip is overdue by 30+ minutes
         if (overdueMs >= OVERDUE_THRESHOLD_MS) {
           const tripKey = trip.id;
+          const overdueMinutes = Math.floor(overdueMs / 60000);
           
           // Only notify once per trip
           if (!notifiedTripsRef.current.has(tripKey)) {
@@ -49,13 +97,16 @@ export function useOverdueTrips() {
                 duration: Infinity,
                 action: {
                   label: '✓ Llegué',
-                  onClick: () => markTripArrived(trip.id),
+                  onClick: () => markTripArrived(trip.id, trip.user_id, trip.origin, trip.destination),
                 },
               }
             );
 
             // Send browser notification if permitted
             sendBrowserNotification(trip);
+
+            // Notify emergency contacts
+            notifyContactsOverdue(trip, overdueMinutes);
 
             // Vibrate if supported
             if ('vibrate' in navigator) {
@@ -69,9 +120,9 @@ export function useOverdueTrips() {
     } catch (error) {
       console.error('[useOverdueTrips] Error checking overdue trips:', error);
     }
-  }, []);
+  }, [notifyContactsOverdue]);
 
-  const markTripArrived = async (tripId: string) => {
+  const markTripArrived = async (tripId: string, userId: string, origin: string, destination: string) => {
     try {
       const { error } = await supabase
         .from('transit_trips')
@@ -83,8 +134,24 @@ export function useOverdueTrips() {
 
       if (error) throw error;
       
+      // Notify contacts about arrival
+      try {
+        await supabase.functions.invoke('notify-trip-update', {
+          body: {
+            tripId,
+            tripUserId: userId,
+            eventType: 'arrived',
+            origin,
+            destination,
+          }
+        });
+      } catch (notifyError) {
+        console.error('[useOverdueTrips] Error notifying contacts of arrival:', notifyError);
+      }
+      
       toast.success('¡Viaje completado! Tu comunidad ha sido notificada.');
       notifiedTripsRef.current.delete(tripId);
+      contactsNotifiedRef.current.delete(tripId);
     } catch (error) {
       console.error('[useOverdueTrips] Error marking trip arrived:', error);
       toast.error('Error al actualizar viaje');
