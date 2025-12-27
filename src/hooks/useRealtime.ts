@@ -168,6 +168,7 @@ export function useUserLocations() {
 }
 
 // Hook for help requests with distance-based alert sounds
+// Also includes panic_events mapped to HelpRequest format for unified display
 export function useHelpRequests(userPosition?: { lat: number; lng: number } | null) {
   const [requests, setRequests] = useState<HelpRequest[]>([]);
   const [resolvedRequests, setResolvedRequests] = useState<HelpRequest[]>([]);
@@ -177,23 +178,56 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
   const NEARBY_THRESHOLD_KM = 30 * 1.60934; // 30 miles in km
 
   const fetchRequests = useCallback(async () => {
-    // Fetch active requests
-    const { data, error } = await supabase
+    // Fetch active help_requests
+    const { data: helpData, error: helpError } = await supabase
       .from('help_requests')
       .select('*')
       .eq('resolved', false)
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (!error && data) {
-      setRequests(data as HelpRequest[]);
+    // Fetch active panic_events and map them to HelpRequest format
+    const { data: panicData, error: panicError } = await supabase
+      .from('panic_events')
+      .select('*')
+      .eq('resolved', false)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    // Map panic_events to HelpRequest format for unified display
+    const mappedPanicEvents: HelpRequest[] = (panicData || []).map((pe: any) => ({
+      id: pe.id,
+      user_id: pe.user_id,
+      kind: pe.panic_type, // Map panic_type to kind
+      quake_event_id: null,
+      lat: pe.lat,
+      lng: pe.lng,
+      message: pe.message,
+      resolved: pe.resolved || false,
+      created_at: pe.created_at,
+      resolved_at: pe.resolved_at,
+      resolved_by: pe.resolved_by,
+      responding_by: pe.responding_by,
+      responding_started_at: pe.responding_started_at,
+      audio_url: pe.audio_url,
+      audio_duration_ms: pe.audio_duration_ms,
+      arrived_at: pe.arrived_at,
+    }));
+
+    // Combine both sources and sort by created_at
+    const allRequests = [...(helpData || []), ...mappedPanicEvents]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 50);
+
+    if (!helpError && !panicError) {
+      setRequests(allRequests as HelpRequest[]);
     }
 
-    // Fetch recently resolved requests (last 24 hours)
+    // Fetch recently resolved requests from both tables (last 24 hours)
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     
-    const { data: resolvedData, error: resolvedError } = await supabase
+    const { data: resolvedHelpData } = await supabase
       .from('help_requests')
       .select('*')
       .eq('resolved', true)
@@ -201,9 +235,39 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
       .order('resolved_at', { ascending: false })
       .limit(20);
 
-    if (!resolvedError && resolvedData) {
-      setResolvedRequests(resolvedData as HelpRequest[]);
-    }
+    const { data: resolvedPanicData } = await supabase
+      .from('panic_events')
+      .select('*')
+      .eq('resolved', true)
+      .gte('resolved_at', yesterday.toISOString())
+      .order('resolved_at', { ascending: false })
+      .limit(20);
+
+    // Map resolved panic_events
+    const mappedResolvedPanic: HelpRequest[] = (resolvedPanicData || []).map((pe: any) => ({
+      id: pe.id,
+      user_id: pe.user_id,
+      kind: pe.panic_type,
+      quake_event_id: null,
+      lat: pe.lat,
+      lng: pe.lng,
+      message: pe.message,
+      resolved: pe.resolved || false,
+      created_at: pe.created_at,
+      resolved_at: pe.resolved_at,
+      resolved_by: pe.resolved_by,
+      responding_by: pe.responding_by,
+      responding_started_at: pe.responding_started_at,
+      audio_url: pe.audio_url,
+      audio_duration_ms: pe.audio_duration_ms,
+      arrived_at: pe.arrived_at,
+    }));
+
+    const allResolved = [...(resolvedHelpData || []), ...mappedResolvedPanic]
+      .sort((a, b) => new Date(b.resolved_at || b.created_at).getTime() - new Date(a.resolved_at || a.created_at).getTime())
+      .slice(0, 20);
+
+    setResolvedRequests(allResolved as HelpRequest[]);
   }, []);
 
   // Play alert sound based on distance
@@ -282,6 +346,42 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'help_requests' },
+        () => fetchRequests()
+      )
+      // Also listen to panic_events for unified display
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'panic_events' },
+        (payload) => {
+          const pe = payload.new as any;
+          // Map panic_event to HelpRequest format
+          const mappedRequest: HelpRequest = {
+            id: pe.id,
+            user_id: pe.user_id,
+            kind: pe.panic_type,
+            quake_event_id: null,
+            lat: pe.lat,
+            lng: pe.lng,
+            message: pe.message,
+            resolved: pe.resolved || false,
+            created_at: pe.created_at,
+            resolved_at: pe.resolved_at,
+            resolved_by: pe.resolved_by,
+            responding_by: pe.responding_by,
+            responding_started_at: pe.responding_started_at,
+            audio_url: pe.audio_url,
+            audio_duration_ms: pe.audio_duration_ms,
+            arrived_at: pe.arrived_at,
+          };
+          setRequests(prev => [mappedRequest, ...prev].slice(0, 50));
+          
+          // Play distance-based alert sound
+          playHelpAlert(mappedRequest);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'panic_events' },
         () => fetchRequests()
       )
       .subscribe();
