@@ -18,6 +18,7 @@ import { AlertDetailModal } from '@/components/AlertDetailModal';
 import { ActiveUsersPanel } from '@/components/ActiveUsersPanel';
 import { InternalMessaging } from '@/components/InternalMessaging';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import 'leaflet/dist/leaflet.css';
 
@@ -1089,26 +1090,30 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   }, []);
 
   // Handle respond to help request or panic event from modal
-  const handleRespondToRequest = useCallback(async (requestId: string, transportMode?: string, estimatedEtaMinutes?: number) => {
-    console.log('[MapScreen] handleRespondToRequest called', { requestId, isRescatista, role, transportMode, estimatedEtaMinutes });
+  const handleRespondToRequest = useCallback(async (
+    requestId: string, 
+    alertType: 'panic' | 'help', 
+    alertLat: number, 
+    alertLng: number,
+    transportMode?: string, 
+    estimatedEtaMinutes?: number
+  ) => {
+    console.log('[MapScreen] handleRespondToRequest called', { requestId, alertType, alertLat, alertLng, isRescatista, role, transportMode, estimatedEtaMinutes });
     
-    // First try to find in help requests
-    const request = helpRequests.find(r => r.id === requestId);
-    if (request) {
-      console.log('[MapScreen] Found help request, responding...');
-      return await startResponding(requestId, request.lat, request.lng, isRescatista, transportMode, estimatedEtaMinutes);
+    if (alertType === 'help') {
+      console.log('[MapScreen] Responding to help request...');
+      return await startResponding(requestId, alertLat, alertLng, isRescatista, transportMode, estimatedEtaMinutes);
     }
     
-    // If not found in help requests, try panic events
-    const panicEvent = panicEvents.find(e => e.id === requestId);
-    if (panicEvent) {
-      console.log('[MapScreen] Found panic event, responding...');
-      return await startPanicResponding(requestId, panicEvent.lat, panicEvent.lng, isRescatista, transportMode, estimatedEtaMinutes);
+    if (alertType === 'panic') {
+      console.log('[MapScreen] Responding to panic event...');
+      return await startPanicResponding(requestId, alertLat, alertLng, isRescatista, transportMode, estimatedEtaMinutes);
     }
     
-    console.error('[MapScreen] Alert not found:', requestId);
+    console.error('[MapScreen] Invalid alert type:', alertType);
+    toast.error('Tipo de alerta no válido');
     return false;
-  }, [helpRequests, panicEvents, startResponding, startPanicResponding, isRescatista, role]);
+  }, [startResponding, startPanicResponding, isRescatista, role]);
 
   // Handle cancel response - check which type of response is active
   const handleCancelResponse = useCallback(async () => {

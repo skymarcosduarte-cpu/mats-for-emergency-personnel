@@ -90,7 +90,7 @@ interface AlertsPanelProps {
   onResolvePanicEvent?: (eventId: string) => Promise<boolean>;
   activeResponders?: ActiveResponder[];
   userPosition?: GeoPosition | null;
-  onRespondToRequest?: (requestId: string, transportMode?: string, estimatedEtaMinutes?: number) => Promise<boolean>;
+  onRespondToRequest?: (requestId: string, alertType: 'panic' | 'help', alertLat: number, alertLng: number, transportMode?: string, estimatedEtaMinutes?: number) => Promise<boolean>;
   onCancelResponse?: () => Promise<void>;
   onMarkAsArrived?: () => Promise<boolean>;
   onResolve?: () => Promise<boolean>;
