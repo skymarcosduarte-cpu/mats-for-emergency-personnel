@@ -637,10 +637,33 @@ interface MapLegendProps {
   poiVisibility: POIVisibility;
   onTogglePOI: (type: keyof POIVisibility) => void;
   poisLoading?: boolean;
+  isNavigating?: boolean;
 }
 
-const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisLoading }) => {
+const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisLoading, isNavigating = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
+
+  // Auto-hide when navigating (viewing an alert/user)
+  React.useEffect(() => {
+    if (isNavigating) {
+      setIsHidden(true);
+      setIsExpanded(false);
+    }
+  }, [isNavigating]);
+
+  // If hidden, show only a small restore button
+  if (isHidden) {
+    return (
+      <button
+        onClick={() => setIsHidden(false)}
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-[500] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border p-2 hover:bg-accent/50 transition-colors"
+        aria-label="Mostrar leyenda"
+      >
+        <Info className="w-4 h-4 text-muted-foreground" />
+      </button>
+    );
+  }
 
   const poiItems: { type: keyof POIVisibility; label: string; color: string; emoji: string }[] = [
     { type: 'first_aid_kit', label: 'Botiquines', color: '#22c55e', emoji: '🩹' },
@@ -654,22 +677,31 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
 
   return (
     <div className="absolute left-4 top-1/2 -translate-y-1/2 z-[500] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border overflow-hidden max-h-[60vh] overflow-y-auto">
-      <button 
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-2.5 hover:bg-accent/50 transition-colors"
-        aria-label={isExpanded ? 'Ocultar leyenda' : 'Mostrar leyenda'}
-      >
-        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <Info className="w-3.5 h-3.5" />
-          <span>Leyenda</span>
-          {poisLoading && <span className="text-[10px] text-primary animate-pulse">Cargando...</span>}
-        </div>
-        {isExpanded ? (
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-        ) : (
-          <ChevronUp className="w-4 h-4 text-muted-foreground" />
-        )}
-      </button>
+      <div className="flex items-center">
+        <button 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex-1 flex items-center justify-between p-2.5 hover:bg-accent/50 transition-colors"
+          aria-label={isExpanded ? 'Ocultar leyenda' : 'Mostrar leyenda'}
+        >
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <Info className="w-3.5 h-3.5" />
+            <span>Leyenda</span>
+            {poisLoading && <span className="text-[10px] text-primary animate-pulse">Cargando...</span>}
+          </div>
+          {isExpanded ? (
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          ) : (
+            <ChevronUp className="w-4 h-4 text-muted-foreground" />
+          )}
+        </button>
+        <button
+          onClick={() => setIsHidden(true)}
+          className="p-2 hover:bg-accent/50 transition-colors border-l border-border"
+          aria-label="Minimizar leyenda"
+        >
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground rotate-90" />
+        </button>
+      </div>
       
       {isExpanded && (
         <div className="px-3 pb-3 pt-1 space-y-2 text-xs animate-in slide-in-from-bottom-2 duration-200">
@@ -2034,6 +2066,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         poiVisibility={poiVisibility}
         onTogglePOI={handleTogglePOI}
         poisLoading={poisLoading}
+        isNavigating={!!selectedMapAlert}
       />
 
       {/* Active Users Panel */}
