@@ -121,6 +121,7 @@ interface AlertDetailModalProps {
   onMarkAsArrived?: () => Promise<boolean>;
   onResolve?: () => Promise<boolean>;
   onUpdateTransport?: (transportMode: string, estimatedEtaMinutes: number) => Promise<boolean>;
+  onOpenMessaging?: (userId: string, userName: string) => void;
 }
 
 const CANCELLATION_REASONS = [
@@ -178,6 +179,7 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   onMarkAsArrived,
   onResolve,
   onUpdateTransport,
+  onOpenMessaging,
 }) => {
   const [isResponding, setIsResponding] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -820,9 +822,22 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
                           </Badge>
                         )}
                       </div>
-                      <Badge variant="secondary" className="bg-blue-500/20 text-blue-600">
-                        En camino
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        {isOwner && onOpenMessaging && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => onOpenMessaging(responder.responder_id, `Rescatista ${alertResponders.length > 1 ? index + 1 : ''}`)}
+                          >
+                            <MessageCircle className="w-3 h-3 mr-1" />
+                            Chat
+                          </Button>
+                        )}
+                        <Badge variant="secondary" className="bg-blue-500/20 text-blue-600">
+                          En camino
+                        </Badge>
+                      </div>
                     </div>
                     <ResponderEtaCountdown
                       distanceKm={responder.distance_km}
@@ -856,15 +871,15 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
             <p className="text-xs text-muted-foreground mb-3">
               Estás respondiendo a esta alerta. Comunícate para coordinar la ayuda.
             </p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <Button 
                 variant="default"
                 className="w-full touch-manipulation bg-green-600 hover:bg-green-700"
                 onClick={callCreator}
                 style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                <Phone className="w-4 h-4 mr-2" />
-                Llamar ahora
+                <Phone className="w-4 h-4 mr-1" />
+                Llamar
               </Button>
               <Button 
                 variant="default"
@@ -872,9 +887,20 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
                 onClick={whatsappCreator}
                 style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                <MessageCircle className="w-4 h-4 mr-2" />
+                <MessageCircle className="w-4 h-4 mr-1" />
                 WhatsApp
               </Button>
+              {onOpenMessaging && alert?.user_id && (
+                <Button 
+                  variant="default"
+                  className="w-full touch-manipulation bg-primary hover:bg-primary/90"
+                  onClick={() => onOpenMessaging(alert.user_id, creatorName || 'Usuario')}
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                >
+                  <MessageCircle className="w-4 h-4 mr-1" />
+                  Chat
+                </Button>
+              )}
             </div>
           </section>
         )}

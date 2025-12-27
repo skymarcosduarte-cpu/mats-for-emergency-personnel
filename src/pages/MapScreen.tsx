@@ -2075,6 +2075,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         onMarkAsArrived={handleMarkAsArrived}
         onResolve={handleMarkAsResolved}
         onUpdateTransport={handleUpdateTransport}
+        onOpenMessaging={handleMessageUser}
       />
     </div>
   );
