@@ -1,9 +1,10 @@
-// Audio Player Component for playing stored audio from Supabase
+// Audio Player Component for playing stored audio
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface AudioPlayerProps {
   storagePath: string;
@@ -17,11 +18,18 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ storagePath, className
   const [error, setError] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Get signed URL for audio
+  // Get URL for audio
   useEffect(() => {
     const getAudioUrl = async () => {
       setLoading(true);
+      setError(false);
       try {
+        // Backwards compatible: if DB stored a full URL, use it directly
+        if (/^https?:\/\//i.test(storagePath)) {
+          setAudioUrl(storagePath);
+          return;
+        }
+
         const { data, error } = await supabase.storage
           .from('reports_media')
           .createSignedUrl(storagePath, 3600); // 1 hour validity
@@ -46,15 +54,21 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ storagePath, className
     }
   }, [storagePath]);
 
-  const togglePlayback = () => {
+  const togglePlayback = async () => {
     if (!audioUrl || !audioRef.current) return;
 
-    if (isPlaying) {
-      audioRef.current.pause();
+    try {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        await audioRef.current.play();
+        setIsPlaying(true);
+      }
+    } catch (e) {
+      console.error('Audio play error:', e);
       setIsPlaying(false);
-    } else {
-      audioRef.current.play();
-      setIsPlaying(true);
+      toast.error('No se pudo reproducir la nota de voz');
     }
   };
 
@@ -90,7 +104,12 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ storagePath, className
           ref={audioRef}
           src={audioUrl}
           onEnded={handleEnded}
+          onError={() => {
+            setIsPlaying(false);
+            toast.error('Error al cargar la nota de voz');
+          }}
           preload="metadata"
+          playsInline
         />
       )}
     </div>

@@ -186,18 +186,20 @@ export function SeismicAlert({
 
       // Upload voice recording if present
       if (voiceBlob) {
-        const voicePath = `${user.id}/${reportType}/${reportId}/voice_${Date.now()}.webm`;
-        
+        const mimeType = voiceBlob.type || 'audio/webm';
+        const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+        const voicePath = `${user.id}/${reportType}/${reportId}/voice_${Date.now()}.${ext}`;
+
         const { error: voiceUploadError } = await supabase.storage
           .from('reports_media')
-          .upload(voicePath, voiceBlob, { contentType: 'audio/webm' });
+          .upload(voicePath, voiceBlob, { contentType: mimeType });
 
         if (!voiceUploadError) {
           await supabase.from('report_media').insert({
             report_id: reportId,
             report_type: reportType,
             media_type: 'audio',
-            mime_type: 'audio/webm',
+            mime_type: mimeType,
             storage_path: voicePath,
             duration_ms: voiceDurationMs,
           });
