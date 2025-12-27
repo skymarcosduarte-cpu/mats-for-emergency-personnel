@@ -28,7 +28,8 @@ import {
   Download,
   Car,
   Bike,
-  Footprints
+  Footprints,
+  Ambulance
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -91,6 +92,7 @@ interface ActiveResponder {
   distance_km: number;
   eta_minutes: number | null;
   arrived_at: string | null;
+  transport_mode: string | null;
 }
 
 interface GeoPosition {
@@ -113,7 +115,7 @@ interface AlertDetailModalProps {
   responders?: ActiveResponder[];
   currentUserId?: string;
   userPosition?: GeoPosition | null;
-  onRespond?: (requestId: string) => Promise<boolean>;
+  onRespond?: (requestId: string, transportMode?: string, estimatedEtaMinutes?: number) => Promise<boolean>;
   onCancelResponse?: () => Promise<void>;
   onMarkAsArrived?: () => Promise<boolean>;
   onResolve?: () => Promise<boolean>;
@@ -340,9 +342,10 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   };
 
   // Transport options with icons and estimated speeds
-  const TRANSPORT_OPTIONS = [
+const TRANSPORT_OPTIONS = [
     { id: 'car', label: 'Auto', icon: Car, speedKmh: 40 },
     { id: 'motorcycle', label: 'Moto', icon: Bike, speedKmh: 50 },
+    { id: 'ambulance', label: 'Ambulancia', icon: Ambulance, speedKmh: 60 },
     { id: 'walking', label: 'A pie', icon: Footprints, speedKmh: 5 },
   ];
 
@@ -378,7 +381,7 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
     
     setIsResponding(true);
     try {
-      const success = await onRespond(alert.id);
+      const success = await onRespond(alert.id, selectedTransport || undefined, estimatedEta || undefined);
       console.log('[AlertDetailModal] Response result:', success);
       if (success) {
         toast({
@@ -753,24 +756,41 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
                 </div>
               )}
               
-              {alertResponders.filter(r => !r.arrived_at).map((responder, index) => (
-                <div key={responder.responder_id} className="bg-muted/50 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-foreground">
-                      Rescatista {alertResponders.length > 1 ? index + 1 : ''}
-                    </span>
-                    <Badge variant="secondary" className="bg-blue-500/20 text-blue-600">
-                      En camino
-                    </Badge>
+              {alertResponders.filter(r => !r.arrived_at).map((responder, index) => {
+                const transportLabel = responder.transport_mode 
+                  ? TRANSPORT_OPTIONS.find(t => t.id === responder.transport_mode)?.label 
+                  : null;
+                const TransportIcon = responder.transport_mode 
+                  ? TRANSPORT_OPTIONS.find(t => t.id === responder.transport_mode)?.icon 
+                  : null;
+                
+                return (
+                  <div key={responder.responder_id} className="bg-muted/50 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-foreground">
+                          Rescatista {alertResponders.length > 1 ? index + 1 : ''}
+                        </span>
+                        {transportLabel && TransportIcon && (
+                          <Badge variant="outline" className="text-xs gap-1 bg-background">
+                            <TransportIcon className="w-3 h-3" />
+                            {transportLabel}
+                          </Badge>
+                        )}
+                      </div>
+                      <Badge variant="secondary" className="bg-blue-500/20 text-blue-600">
+                        En camino
+                      </Badge>
+                    </div>
+                    <ResponderEtaCountdown
+                      distanceKm={responder.distance_km}
+                      etaMinutes={responder.eta_minutes}
+                      speed={responder.speed}
+                      respondingStartedAt={responder.responding_started_at}
+                    />
                   </div>
-                  <ResponderEtaCountdown
-                    distanceKm={responder.distance_km}
-                    etaMinutes={responder.eta_minutes}
-                    speed={responder.speed}
-                    respondingStartedAt={responder.responding_started_at}
-                  />
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-4">

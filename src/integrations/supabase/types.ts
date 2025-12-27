@@ -173,31 +173,37 @@ export type Database = {
       help_request_responders: {
         Row: {
           arrived_at: string | null
+          estimated_eta_minutes: number | null
           id: string
           lat: number | null
           lng: number | null
           request_id: string
           started_at: string
+          transport_mode: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           arrived_at?: string | null
+          estimated_eta_minutes?: number | null
           id?: string
           lat?: number | null
           lng?: number | null
           request_id: string
           started_at?: string
+          transport_mode?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           arrived_at?: string | null
+          estimated_eta_minutes?: number | null
           id?: string
           lat?: number | null
           lng?: number | null
           request_id?: string
           started_at?: string
+          transport_mode?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -417,31 +423,37 @@ export type Database = {
       panic_event_responders: {
         Row: {
           arrived_at: string | null
+          estimated_eta_minutes: number | null
           id: string
           lat: number | null
           lng: number | null
           panic_id: string
           started_at: string
+          transport_mode: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           arrived_at?: string | null
+          estimated_eta_minutes?: number | null
           id?: string
           lat?: number | null
           lng?: number | null
           panic_id: string
           started_at?: string
+          transport_mode?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           arrived_at?: string | null
+          estimated_eta_minutes?: number | null
           id?: string
           lat?: number | null
           lng?: number | null
           panic_id?: string
           started_at?: string
+          transport_mode?: string | null
           updated_at?: string
           user_id?: string
         }
