@@ -7,6 +7,16 @@ import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { playPositiveAlert } from '@/lib/alertSound';
 
+// Transport mode labels for notifications
+const TRANSPORT_LABELS: Record<string, string> = {
+  walking: '🚶 Caminando',
+  bicycle: '🚴 Bicicleta',
+  motorcycle: '🏍️ Moto',
+  car: '🚗 Automóvil',
+  public_transport: '🚌 Transporte Público',
+  ambulance: '🚑 Ambulancia',
+};
+
 interface PanicResponderEvent {
   id: string;
   panic_id: string;
@@ -15,6 +25,7 @@ interface PanicResponderEvent {
   arrived_at: string | null;
   lat: number | null;
   lng: number | null;
+  transport_mode: string | null;
 }
 
 export interface ActivePanicResponderInfo {
@@ -26,6 +37,7 @@ export interface ActivePanicResponderInfo {
   lng: number | null;
   started_at: string;
   arrived_at: string | null;
+  transport_mode: string | null;
   // Alert location
   alert_lat: number;
   alert_lng: number;
@@ -182,17 +194,23 @@ export function useMyPanicResponders() {
       // Ignore sound errors
     }
 
+    // Build notification message with transport mode
+    const transportLabel = responder.transport_mode ? TRANSPORT_LABELS[responder.transport_mode] : null;
+    const notificationBody = transportLabel 
+      ? `${nickname} está respondiendo (${transportLabel})`
+      : `${nickname} está respondiendo a tu emergencia`;
+
     // Show browser notification
     showBrowserNotification(
       '🚨 ¡Ayuda en camino!',
-      `${nickname} está respondiendo a tu alerta de emergencia`,
+      notificationBody,
       `panic-responder-started-${responder.id}`
     );
 
     // Show toast if app is visible
     if (document.visibilityState === 'visible') {
       toast.success('🚨 ¡Ayuda en camino!', {
-        description: `${nickname} está respondiendo a tu alerta de emergencia`,
+        description: notificationBody,
         duration: 8000,
       });
     }
@@ -305,7 +323,7 @@ export function useMyPanicResponders() {
 
       const { data: responders } = await supabase
         .from('panic_event_responders')
-        .select('id, panic_id, user_id, lat, lng, started_at, arrived_at')
+        .select('id, panic_id, user_id, lat, lng, started_at, arrived_at, transport_mode')
         .in('panic_id', panicIds);
 
       if (!responders || responders.length === 0) {
