@@ -1,6 +1,6 @@
 // MapControlsMenu - Collapsible map controls for mobile screens
 import React, { useState } from 'react';
-import { Locate, Share2, Copy, MessageCircle, Check, MapPin, X, MoreHorizontal, Users } from 'lucide-react';
+import { Locate, Share2, Copy, MessageCircle, Check, MapPin, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,17 +15,28 @@ import { cn } from '@/lib/utils';
 interface MapControlsMenuProps {
   position: { lat: number; lng: number } | null;
   onCenterOnMe: () => void;
+  onRefreshLocations?: () => void;
+  isRefreshing?: boolean;
   activeUsersCount: number;
   className?: string;
 }
 
 export function MapControlsMenu({ 
   position, 
-  onCenterOnMe, 
+  onCenterOnMe,
+  onRefreshLocations,
+  isRefreshing = false,
   activeUsersCount,
   className 
 }: MapControlsMenuProps) {
   const [copied, setCopied] = useState(false);
+
+  const handleRefresh = () => {
+    if (onRefreshLocations) {
+      onRefreshLocations();
+      toast.success('Ubicaciones actualizadas');
+    }
+  };
 
   const getGoogleMapsLink = (lat: number, lng: number) => {
     return `https://maps.google.com/?q=${lat},${lng}`;
@@ -110,6 +121,18 @@ export function MapControlsMenu({
           </div>
         </div>
 
+        {/* Refresh locations button */}
+        {onRefreshLocations && (
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="bg-card/95 backdrop-blur-sm rounded-lg p-2.5 shadow-lg border border-border hover:bg-accent transition-colors disabled:opacity-50"
+            aria-label="Refrescar ubicaciones"
+          >
+            <RefreshCw className={cn("w-5 h-5 text-primary", isRefreshing && "animate-spin")} />
+          </button>
+        )}
+
         {/* Center on me button */}
         <button
           onClick={onCenterOnMe}
@@ -182,6 +205,12 @@ export function MapControlsMenu({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-52 z-[9999]" sideOffset={8}>
+            {onRefreshLocations && (
+              <DropdownMenuItem onClick={handleRefresh} disabled={isRefreshing}>
+                <RefreshCw className={cn("w-4 h-4 mr-2 text-primary", isRefreshing && "animate-spin")} />
+                Refrescar ubicaciones
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={onCenterOnMe} disabled={!position}>
               <Locate className="w-4 h-4 mr-2 text-primary" />
               Centrar en mi ubicación

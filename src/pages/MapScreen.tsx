@@ -919,7 +919,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
 
   const { position, error: locationError } = useLocation();
   const { role, user } = useAuth();
-  const { locations } = useUserLocations();
+  const { locations, refetch: refetchLocations } = useUserLocations();
   const { requests: helpRequests, resolveRequest } = useHelpRequests(position);
   const { reports } = useRoadReports();
   const { providers: medicalProviders } = useMedicalProviders();
@@ -2087,6 +2087,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           <MapControlsMenu 
             position={position}
             onCenterOnMe={centerOnMe}
+            onRefreshLocations={refetchLocations}
             activeUsersCount={locations.length}
           />
         </div>
