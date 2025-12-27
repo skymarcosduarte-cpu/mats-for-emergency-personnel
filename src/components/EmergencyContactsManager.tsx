@@ -1,7 +1,7 @@
 // Emergency Contacts Manager Component for COMUNIDAD EX SOS
 // Manage emergency contacts in database for WhatsApp integration
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserPlus, Trash2, MessageCircle, Edit2, Check, X, Phone, Users, Star, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,8 @@ import {
 import { useEmergencyContactsDB, EmergencyContactDB, MAX_EMERGENCY_CONTACTS, MIN_EMERGENCY_CONTACTS } from '@/hooks/useEmergencyContactsDB';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useLocation } from '@/hooks/useLocation';
 
 interface EmergencyContactsManagerProps {
   className?: string;
@@ -36,6 +38,8 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
     canAddMore,
     hasMinimumContacts
   } = useEmergencyContactsDB();
+  const { profile } = useAuth();
+  const { position } = useLocation();
   const { toast } = useToast();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -132,7 +136,19 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
   };
 
   const testWhatsApp = (contact: EmergencyContactDB) => {
-    const url = getWhatsAppUrl(contact, '🧪 Prueba de contacto de emergencia - COMUNIDAD EX SOS');
+    const userName = profile?.full_name || profile?.nickname || 'Usuario';
+    let message = `🧪 *PRUEBA DE CONTACTO DE EMERGENCIA*\n\n`;
+    message += `👤 De: ${userName}\n`;
+    message += `📱 App: COMUNIDAD EX SOS\n`;
+    
+    if (position) {
+      message += `\n📍 Mi ubicación actual:\n`;
+      message += `https://maps.google.com/?q=${position.lat},${position.lng}\n`;
+    }
+    
+    message += `\n_Este es un mensaje de prueba para verificar que este contacto funciona correctamente._`;
+    
+    const url = getWhatsAppUrl(contact, message);
     window.open(url, '_blank');
   };
 
