@@ -112,18 +112,18 @@ const createFamiliarIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bool
   popupAnchor: [0, isCurrentUser ? -20 : -16],
 });
 
-// Star of Life icon for SOS ACTIVO / EX-SOS users (proper 6-pointed paramedic star)
+// Simple green cross icon for SOS ACTIVO / EX-SOS users
 const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: boolean = false) => L.divIcon({
   className: `mats-marker rescatista-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
   html: `
-    <div style="position: relative; width: 36px; height: ${isCurrentUser ? '44px' : '36px'};">
+    <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : '32px'};">
       ${isCurrentUser ? `
         <div style="
           position: absolute;
           top: 0;
           left: 0;
-          width: 36px;
-          height: 36px;
+          width: 32px;
+          height: 32px;
           background: rgba(251, 191, 36, 0.4);
           border-radius: 50%;
           animation: pulse-current-user 1.5s ease-out infinite;
@@ -133,28 +133,18 @@ const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bo
         position: absolute;
         top: 0;
         left: 0;
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         background: #ffffff;
-        border: 2px solid ${isCurrentUser ? '#fbbf24' : '#2563eb'};
+        border: 2px solid ${isCurrentUser ? '#fbbf24' : '#16a34a'};
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(37,99,235,0.4)' : '0 2px 8px rgba(37,99,235,0.4)'};
+        box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(22,163,74,0.4)' : '0 2px 8px rgba(22,163,74,0.4)'};
       ">
-        <svg width="26" height="26" viewBox="0 0 100 100" fill="none">
-          <!-- Star of Life - 6 arms with Rod of Asclepius -->
-          <g fill="#2563eb">
-            <!-- 6 arms of the star -->
-            <polygon points="50,5 42,25 38,25 38,38 25,38 25,42 5,50 25,58 25,62 38,62 38,75 42,75 50,95 58,75 62,75 62,62 75,62 75,58 95,50 75,42 75,38 62,38 62,25 58,25"/>
-          </g>
-          <!-- Rod of Asclepius (snake and staff) - white -->
-          <g fill="#ffffff" stroke="#ffffff" stroke-width="0.5">
-            <rect x="47" y="28" width="6" height="44" rx="1"/>
-            <path d="M53 35 Q60 38 55 44 Q48 48 55 54 Q60 58 53 64 Q48 68 50 72" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="53" cy="32" r="3"/>
-          </g>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M12 4v16M4 12h16" stroke="#16a34a" stroke-width="4" stroke-linecap="round"/>
         </svg>
       </div>
       ${hasFirstAidKit ? `
@@ -195,9 +185,9 @@ const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bo
       ` : ''}
     </div>
   `,
-  iconSize: [34, isCurrentUser ? 42 : 34],
-  iconAnchor: [17, isCurrentUser ? 21 : 17],
-  popupAnchor: [0, isCurrentUser ? -21 : -17],
+  iconSize: [32, isCurrentUser ? 40 : 32],
+  iconAnchor: [16, isCurrentUser ? 20 : 16],
+  popupAnchor: [0, isCurrentUser ? -20 : -16],
 });
 
 // Transit icon for users with active road trips (orange/amber color with car icon)
