@@ -185,6 +185,7 @@ export interface AppRelease {
 // USGS Earthquake data
 export interface USGSEarthquake {
   id: string;
+  source?: 'USGS' | 'SSN';
   properties: {
     mag: number;
     place: string;
@@ -194,6 +195,7 @@ export interface USGSEarthquake {
     title: string;
     alert: string | null;
     tsunami: number;
+    depth?: number; // SSN includes depth here
   };
   geometry: {
     coordinates: [number, number, number]; // lng, lat, depth

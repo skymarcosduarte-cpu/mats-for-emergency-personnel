@@ -1,5 +1,5 @@
-// Earthquake History Hook for COMUNIDAD EX SOS
-// Fetches and caches earthquake data with distance calculations
+// Earthquake History Hook for COMUNIDAD SOS
+// Fetches and caches earthquake data from USGS and SSN (Mexico) with distance calculations
 
 import { useState, useEffect, useCallback } from 'react';
 import type { USGSEarthquake, GeoPosition } from '@/types';
@@ -7,10 +7,81 @@ import { calculateDistance } from '@/hooks/useLocation';
 import { cacheEarthquakes, getCachedEarthquakes, isEarthquakeCacheFresh, updateLastSync } from '@/lib/offlineDataCache';
 
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
+const SSN_FEED_URL = 'http://www.ssn.unam.mx/rss/ultimos-sismos.xml';
 
 export interface EarthquakeWithDistance extends USGSEarthquake {
   distanceKm: number | null;
   distanceMiles: number | null;
+}
+
+// Parse SSN RSS feed and convert to USGSEarthquake format
+async function parseSSNFeed(): Promise<USGSEarthquake[]> {
+  try {
+    const response = await fetch(SSN_FEED_URL);
+    const text = await response.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, 'text/xml');
+    
+    const items = xml.querySelectorAll('item');
+    const earthquakes: USGSEarthquake[] = [];
+    
+    items.forEach((item, index) => {
+      try {
+        const title = item.querySelector('title')?.textContent || '';
+        const description = item.querySelector('description')?.textContent || '';
+        const lat = parseFloat(item.getElementsByTagNameNS('http://www.w3.org/2003/01/geo/wgs84_pos#', 'lat')[0]?.textContent || '0');
+        const lng = parseFloat(item.getElementsByTagNameNS('http://www.w3.org/2003/01/geo/wgs84_pos#', 'long')[0]?.textContent || '0');
+        
+        // Parse magnitude from title (e.g., "3.1, 14 km al SUROESTE de ZIHUATANEJO, GRO")
+        const magMatch = title.match(/^([\d.]+)/);
+        const mag = magMatch ? parseFloat(magMatch[1]) : 0;
+        
+        // Parse date and depth from description
+        // Format: "Fecha:2025-12-26 15:47:43 (Hora de México)<br>Lat/Lon: 17.527/-101.59<br>Profundidad: 19.9 km"
+        const dateMatch = description.match(/Fecha:(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/);
+        const depthMatch = description.match(/Profundidad:\s*([\d.]+)\s*km/);
+        
+        let timestamp = Date.now();
+        if (dateMatch) {
+          // SSN uses Mexico City time (UTC-6)
+          const mexicoTime = new Date(dateMatch[1].replace(' ', 'T') + '-06:00');
+          timestamp = mexicoTime.getTime();
+        }
+        
+        const depth = depthMatch ? parseFloat(depthMatch[1]) : 10;
+        
+        // Clean up place name
+        const placeMatch = title.match(/,\s*(.+)/);
+        const place = placeMatch ? placeMatch[1].trim() : title;
+        
+        earthquakes.push({
+          id: `ssn-${timestamp}-${index}`,
+          source: 'SSN',
+          properties: {
+            mag,
+            place,
+            time: timestamp,
+            updated: timestamp,
+            url: 'http://www.ssn.unam.mx/',
+            title: `M ${mag} - ${place}`,
+            alert: null,
+            tsunami: 0,
+            depth,
+          },
+          geometry: {
+            coordinates: [lng, lat, depth],
+          },
+        });
+      } catch (e) {
+        console.warn('Error parsing SSN earthquake item:', e);
+      }
+    });
+    
+    return earthquakes;
+  } catch (error) {
+    console.error('Error fetching SSN feed:', error);
+    return [];
+  }
 }
 
 export function useEarthquakeHistory(userPosition: GeoPosition | null) {
@@ -53,14 +124,14 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
   }, []);
 
   // Fetch from USGS API
-  const fetchFromApi = useCallback(async (): Promise<USGSEarthquake[]> => {
+  const fetchFromUSGS = useCallback(async (): Promise<USGSEarthquake[]> => {
     const response = await fetch(USGS_FEED_URL);
-    if (!response.ok) throw new Error('Failed to fetch earthquakes');
+    if (!response.ok) throw new Error('Failed to fetch USGS earthquakes');
     const data = await response.json();
-    return data.features;
+    return (data.features || []).map((q: USGSEarthquake) => ({ ...q, source: 'USGS' as const }));
   }, []);
 
-  // Main fetch function - doesn't depend on userPosition
+  // Main fetch function - fetches from both USGS and SSN
   const fetchEarthquakes = useCallback(async (forceRefresh = false) => {
     setLoading(true);
     setError(null);
@@ -80,8 +151,21 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
             setLastUpdated(new Date(cached.cachedAt));
           }
         } else {
-          // Fetch fresh data
-          quakes = await fetchFromApi();
+          // Fetch fresh data from both sources in parallel
+          const [usgsQuakes, ssnQuakes] = await Promise.all([
+            fetchFromUSGS().catch(err => {
+              console.warn('Error fetching USGS:', err);
+              return [] as USGSEarthquake[];
+            }),
+            parseSSNFeed().catch(err => {
+              console.warn('Error fetching SSN:', err);
+              return [] as USGSEarthquake[];
+            }),
+          ]);
+          
+          // Merge and deduplicate (SSN quakes are prioritized for Mexico region)
+          quakes = [...usgsQuakes, ...ssnQuakes];
+          
           await cacheEarthquakes(quakes);
           await updateLastSync();
           setLastUpdated(new Date());
@@ -120,7 +204,7 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
     } finally {
       setLoading(false);
     }
-  }, [fetchFromApi]);
+  }, [fetchFromUSGS]);
 
   // Initial fetch and set up refresh interval (only runs once)
   useEffect(() => {
