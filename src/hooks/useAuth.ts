@@ -20,6 +20,10 @@ interface Profile {
   current_medications: string | null;
   emergency_medical_notes: string | null;
   show_name_on_map: boolean;
+  share_location: boolean;
+  share_medical_info: boolean;
+  privacy_consent_at: string | null;
+  terms_accepted_at: string | null;
   created_at: string;
   updated_at: string;
 }

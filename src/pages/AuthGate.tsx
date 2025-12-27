@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MatsLogo } from '@/components/MatsLogo';
+import { PrivacyConsentDialog } from '@/components/PrivacyConsentDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -74,6 +75,13 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     canProvideMedicalAssistance: false,
     hasFirstAidKit: false,
     hasAmbulance: false,
+  });
+  
+  // Privacy consent state
+  const [showPrivacyConsent, setShowPrivacyConsent] = useState(false);
+  const [privacySettings, setPrivacySettings] = useState({
+    shareLocation: true,
+    shareMedicalInfo: true,
   });
 
   const { signUp, signIn, createProfile, user, isProfileComplete } = useAuth();
@@ -254,18 +262,26 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     return errorMessage;
   };
 
-  // Handle profile creation
+  // Handle profile creation - show privacy consent first
   const handleProfileSubmit = async () => {
     if (!profileForm.fullName.trim() || !profileForm.phone.trim() || !profileForm.birthday) {
       setError('Completa todos los campos obligatorios');
       return;
     }
+    
+    // Show privacy consent dialog
+    setShowPrivacyConsent(true);
+  };
 
+  // Handle privacy consent and complete profile creation
+  const handlePrivacyAccept = async (shareLocation: boolean, shareMedicalInfo: boolean) => {
+    setShowPrivacyConsent(false);
+    setPrivacySettings({ shareLocation, shareMedicalInfo });
+    
     setLoading(true);
     setError(null);
 
     try {
-      // Check if profile already exists
       const { data: existingProfile } = await supabase
         .from('profiles')
         .select('id')
@@ -273,12 +289,10 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         .maybeSingle();
 
       if (existingProfile) {
-        // Profile exists, redirect to app
         onAuthComplete?.();
         return;
       }
 
-      // Use first name as nickname if not provided
       const nickname = profileForm.nickname.trim() || profileForm.fullName.split(' ')[0];
       
       const { error: profileError } = await createProfile({
@@ -298,7 +312,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         return;
       }
 
-      // Update invite used_count atomically using RPC
+      // Update privacy settings
+      await supabase
+        .from('profiles')
+        .update({
+          share_location: shareLocation,
+          share_medical_info: shareMedicalInfo,
+          privacy_consent_at: new Date().toISOString(),
+          terms_accepted_at: new Date().toISOString(),
+        })
+        .eq('id', user?.id);
+
       if (inviteCode) {
         await supabase.rpc('use_invite_code', {
           invite_code: inviteCode.toUpperCase()
@@ -315,6 +339,13 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col" style={{ minHeight: '100vh' }}>
+      {/* Privacy Consent Dialog */}
+      <PrivacyConsentDialog
+        open={showPrivacyConsent}
+        onAccept={handlePrivacyAccept}
+        onDecline={() => setShowPrivacyConsent(false)}
+      />
+      
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <MatsLogo size={80} showText className="mb-8" />
 
