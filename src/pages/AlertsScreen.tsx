@@ -1,5 +1,5 @@
 // Alerts Screen for COMUNIDAD SOS
-// USGS earthquakes + "4/10" quick report + "14" help + notifications + my alerts history
+// USGS + SSN Mexico earthquakes + "4/10" quick report + "14" help + notifications + my alerts history
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind, Route, X, CheckCircle2 } from 'lucide-react';
@@ -396,18 +396,23 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         {/* Earthquakes Tab */}
         <TabsContent value="earthquakes" className="space-y-3 mt-4">
           {/* Offline/Cache status indicator */}
-          {(isOffline || lastUpdated) && (
-            <div className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs",
-              isOffline ? "bg-warning/10 text-warning" : "bg-muted/50 text-muted-foreground"
-            )}>
+          <div className={cn(
+            "flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs",
+            isOffline ? "bg-warning/10 text-warning" : "bg-muted/50 text-muted-foreground"
+          )}>
+            <div className="flex items-center gap-2">
               {isOffline && <WifiOff className="w-4 h-4" />}
               <span>
                 {isOffline ? 'Sin conexión - ' : ''}
                 {lastUpdated && `Actualizado: ${lastUpdated.toLocaleTimeString()}`}
               </span>
             </div>
-          )}
+            <div className="flex items-center gap-1.5">
+              <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-primary text-primary">USGS</Badge>
+              <span className="text-muted-foreground">+</span>
+              <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-success text-success">SSN México</Badge>
+            </div>
+          </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -438,11 +443,17 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                         {quake.properties.tsunami === 1 && (
                           <span className="badge-emergency">TSUNAMI</span>
                         )}
+                        <Badge variant="outline" className={cn(
+                          "text-[10px] px-1.5 py-0 h-4",
+                          quake.source === 'SSN' ? "border-success text-success" : "border-primary text-primary"
+                        )}>
+                          {quake.source === 'SSN' ? 'SSN México' : 'USGS'}
+                        </Badge>
                       </div>
                       <div className="text-sm text-foreground font-medium">
                         {quake.properties.place}
                       </div>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {formatTime(quake.properties.time)}
