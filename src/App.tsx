@@ -39,6 +39,7 @@ import { useTestMode } from '@/hooks/useTestMode';
 import { useOverdueTrips } from '@/hooks/useOverdueTrips';
 import { useEmergencyNotification } from '@/hooks/useEmergencyNotification';
 import { useInternalMessages } from '@/hooks/useInternalMessages';
+import { useNewUserNotification } from '@/hooks/useNewUserNotification';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { UserRole, USGSEarthquake, PanicType } from '@/types';
@@ -146,6 +147,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   
   // Internal messages - unread count
   const { unreadCount: unreadMessageCount } = useInternalMessages();
+  
+  // New user notifications
+  useNewUserNotification();
 
   // Push notifications
   const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
