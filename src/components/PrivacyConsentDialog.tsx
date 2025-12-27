@@ -39,19 +39,19 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onDecline()}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
             Aviso de Privacidad y Términos de Uso
           </DialogTitle>
           <DialogDescription>
-            Lee y acepta los términos antes de continuar
+            Información sobre el uso de tus datos
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 max-h-[50vh] pr-4">
-          <div className="space-y-4 text-sm">
+        <ScrollArea className="flex-1 min-h-0 pr-4">
+          <div className="space-y-4 text-sm pb-4">
             {/* Main Notice */}
             <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
               <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
@@ -59,7 +59,7 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
                 Propósito de la Plataforma
               </h3>
               <p className="text-muted-foreground">
-                COMUNIDAD EX SOS es una plataforma de apoyo voluntario para emergencias. 
+                Comunidad SOS es una plataforma de apoyo voluntario para emergencias. 
                 Su objetivo es facilitar la comunicación y coordinación entre miembros de la 
                 comunidad durante situaciones de emergencia, sismos y desastres naturales.
               </p>
@@ -107,7 +107,7 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
                 Deslinde de Responsabilidad
               </h3>
               <p className="text-muted-foreground text-xs leading-relaxed">
-                La plataforma COMUNIDAD EX SOS y sus creadores no se hacen responsables por:
+                La plataforma Comunidad SOS y sus creadores no se hacen responsables por:
               </p>
               <ul className="list-disc list-inside text-muted-foreground text-xs space-y-1 ml-2 mt-2">
                 <li>El mal uso de la información compartida por terceros</li>
