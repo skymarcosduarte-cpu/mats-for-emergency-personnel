@@ -21,7 +21,10 @@ import {
   CheckCircle2,
   ChevronDown,
   MessageCircle,
-  PhoneCall
+  PhoneCall,
+  Image as ImageIcon,
+  Volume2,
+  ZoomIn
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +37,11 @@ import { MiniMap } from './MiniMap';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useReportMedia } from '@/hooks/useReportMedia';
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
 
 interface PanicEvent {
   id: string;
@@ -172,6 +180,13 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   const [creatorPhone, setCreatorPhone] = useState<string | null>(null);
   const [creatorName, setCreatorName] = useState<string | null>(null);
   const [loadingCreatorInfo, setLoadingCreatorInfo] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // Fetch attached media (photos and audio from report_media table)
+  const { images: attachedImages, audios: attachedAudios, loading: mediaLoading, hasMedia } = useReportMedia({
+    reportId: alert?.id || null,
+    reportType: alertType === 'help' ? 'help_request' : 'quake_checkin',
+  });
 
   // Fetch creator's info for contact and display
   useEffect(() => {
@@ -354,6 +369,7 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   const canRespond = isRescatista && !isOwner && !isAlreadyResponding && onRespond;
 
   return (
+    <>
     <div 
       className="fixed inset-0 z-[3000] bg-background flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-200"
       style={{ touchAction: 'pan-y' }}
@@ -557,6 +573,75 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
               storagePath={(alert as PanicEvent | HelpRequest).audio_url!} 
               className="w-full"
             />
+          </section>
+        )}
+
+        {/* Attached Photos Section */}
+        {attachedImages.length > 0 && (
+          <section className="bg-card rounded-lg p-4 border border-border">
+            <h2 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+              <ImageIcon className="w-4 h-4" />
+              Fotos Adjuntas
+              <Badge variant="secondary" className="text-xs">
+                {attachedImages.length}
+              </Badge>
+            </h2>
+            <div className="grid grid-cols-2 gap-2">
+              {attachedImages.map((img) => (
+                <div 
+                  key={img.id} 
+                  className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group"
+                  onClick={() => setSelectedImage(img.publicUrl || null)}
+                >
+                  <img 
+                    src={img.publicUrl} 
+                    alt="Foto adjunta del reporte"
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Attached Audio Recordings Section */}
+        {attachedAudios.length > 0 && (
+          <section className="bg-card rounded-lg p-4 border border-border">
+            <h2 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+              <Volume2 className="w-4 h-4" />
+              Audios Adjuntos
+              <Badge variant="secondary" className="text-xs">
+                {attachedAudios.length}
+              </Badge>
+            </h2>
+            <div className="space-y-2">
+              {attachedAudios.map((audio) => (
+                <div key={audio.id} className="bg-muted/50 rounded-lg p-2">
+                  <AudioPlayer 
+                    storagePath={audio.storage_path} 
+                    className="w-full"
+                  />
+                  {audio.duration_ms && (
+                    <div className="text-xs text-muted-foreground mt-1 text-center">
+                      Duración: {Math.round(audio.duration_ms / 1000)}s
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Media Loading Indicator */}
+        {mediaLoading && (
+          <section className="bg-card rounded-lg p-4 border border-border">
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Cargando archivos adjuntos...</span>
+            </div>
           </section>
         )}
 
@@ -981,6 +1066,26 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
         )}
       </footer>
     </div>
+
+    {/* Image Lightbox Modal */}
+    <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none">
+        <button 
+          onClick={() => setSelectedImage(null)}
+          className="absolute top-4 right-4 z-50 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+        {selectedImage && (
+          <img 
+            src={selectedImage} 
+            alt="Foto ampliada"
+            className="w-full h-full object-contain max-h-[90vh]"
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 
