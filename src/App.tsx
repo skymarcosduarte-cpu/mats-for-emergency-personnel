@@ -25,6 +25,7 @@ import { SplashScreen } from '@/components/SplashScreen';
 import { SeismicAlert } from '@/components/SeismicAlert';
 import { EmergencyAlertOverlay } from '@/components/EmergencyAlertOverlay';
 import { ActiveAlertBanner } from '@/components/ActiveAlertBanner';
+import { QuakeDamageBanner } from '@/components/QuakeDamageBanner';
 
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
@@ -291,6 +292,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   return (
     <div className="min-h-screen min-h-dvh bg-background flex flex-col overflow-x-hidden">
       <AppHeader onPanicClick={() => setPanicOpen(true)} />
+      <QuakeDamageBanner />
       <ActiveAlertBanner testAlert={testAlert} onClearTestAlert={clearTestAlert} refreshTrigger={alertRefreshTrigger} />
       <UpdatePrompt />
       <UpdateIndicator />
