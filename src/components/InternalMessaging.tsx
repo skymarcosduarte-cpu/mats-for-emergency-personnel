@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Check, CheckCheck } from 'lucide-react';
 import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus, MoreVertical, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -837,15 +838,23 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                               {msg.message}
                             </p>
                           )}
-                          <p
+                          <div
                             className={cn(
-                              'text-[10px] mt-1',
+                              'flex items-center justify-end gap-1 mt-1',
                               isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'
                             )}
                           >
-                            {formatMessageTime(msg.created_at)}
-                            {isMine && msg.read && ' ✓✓'}
-                          </p>
+                            <span className="text-[10px]">
+                              {formatMessageTime(msg.created_at)}
+                            </span>
+                            {isMine && (
+                              msg.read ? (
+                                <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
+                              ) : (
+                                <Check className="w-3.5 h-3.5" />
+                              )
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
