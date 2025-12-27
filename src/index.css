@@ -371,3 +371,18 @@ html, body {
 [data-radix-popper-content-wrapper] {
   z-index: 9999 !important;
 }
+
+/* Slow pulse animation for urgent banners */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
