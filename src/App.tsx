@@ -28,6 +28,7 @@ import { ActiveAlertBanner } from '@/components/ActiveAlertBanner';
 import { QuakeDamageBanner } from '@/components/QuakeDamageBanner';
 import { ResponderComingOverlay } from '@/components/ResponderComingOverlay';
 import { ResponderTrackingMap } from '@/components/ResponderTrackingMap';
+import { InternalMessaging } from '@/components/InternalMessaging';
 
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
@@ -150,6 +151,18 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   
   // State for showing responder tracking map
   const [showResponderMap, setShowResponderMap] = useState(false);
+  
+  // State for messaging modal
+  const [messagingOpen, setMessagingOpen] = useState(false);
+  const [messagingUserId, setMessagingUserId] = useState<string | null>(null);
+  const [messagingUserName, setMessagingUserName] = useState<string | null>(null);
+  
+  // Handler to open messaging with a specific user
+  const handleOpenMessaging = useCallback((userId: string, userName: string | null) => {
+    setMessagingUserId(userId);
+    setMessagingUserName(userName);
+    setMessagingOpen(true);
+  }, []);
   
   // Combined new responder alert state (from either hook)
   const activeNewResponder = newAlertResponder || newPanicResponder;
@@ -429,8 +442,17 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
               window.open(`https://maps.google.com/maps?q=${activeAlertLocation.lat},${activeAlertLocation.lng}`, '_blank');
             }
           }}
+          onMessageResponder={handleOpenMessaging}
         />
       )}
+      
+      {/* Internal Messaging Modal */}
+      <InternalMessaging
+        isOpen={messagingOpen}
+        onClose={() => setMessagingOpen(false)}
+        initialUserId={messagingUserId}
+        initialUserName={messagingUserName}
+      />
     </div>
   );
 }
