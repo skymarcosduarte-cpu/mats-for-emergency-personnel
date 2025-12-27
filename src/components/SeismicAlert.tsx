@@ -155,6 +155,28 @@ export function SeismicAlert({
           console.error('Error creating help request:', helpError);
         } else {
           helpRequestId = helpData.id;
+          
+          // Notify nearby users about damage report
+          try {
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            await fetch(`${supabaseUrl}/functions/v1/notify-quake-damage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                lat: position.lat,
+                lng: position.lng,
+                magnitude: mag,
+                place: place,
+                intensity: reportIntensity,
+                damageReport: reportStatus,
+                creatorId: user.id,
+              }),
+            });
+            console.log('Nearby users notified about quake damage');
+          } catch (notifyError) {
+            console.error('Error notifying nearby users:', notifyError);
+            // Don't fail the report if notification fails
+          }
         }
       }
 
