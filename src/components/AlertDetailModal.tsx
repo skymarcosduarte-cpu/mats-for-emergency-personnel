@@ -25,7 +25,10 @@ import {
   Image as ImageIcon,
   Volume2,
   ZoomIn,
-  Download
+  Download,
+  Car,
+  Bike,
+  Footprints
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -182,6 +185,11 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   const [creatorName, setCreatorName] = useState<string | null>(null);
   const [loadingCreatorInfo, setLoadingCreatorInfo] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  
+  // Transport mode state for responders
+  const [showTransportSelector, setShowTransportSelector] = useState(false);
+  const [selectedTransport, setSelectedTransport] = useState<string | null>(null);
+  const [estimatedEta, setEstimatedEta] = useState<number | null>(null);
 
   // Fetch attached media (photos and audio from report_media table)
   const { images: attachedImages, audios: attachedAudios, loading: mediaLoading, hasMedia } = useReportMedia({
@@ -331,13 +339,36 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
     window.location.href = `tel:${number}`;
   };
 
+  // Transport options with icons and estimated speeds
+  const TRANSPORT_OPTIONS = [
+    { id: 'car', label: 'Auto', icon: Car, speedKmh: 40 },
+    { id: 'motorcycle', label: 'Moto', icon: Bike, speedKmh: 50 },
+    { id: 'walking', label: 'A pie', icon: Footprints, speedKmh: 5 },
+  ];
+
+  // Calculate ETA based on transport mode
+  const calculateTransportEta = (transportId: string) => {
+    if (!distanceToAlert) return null;
+    const transport = TRANSPORT_OPTIONS.find(t => t.id === transportId);
+    if (!transport) return null;
+    return Math.ceil((distanceToAlert / transport.speedKmh) * 60);
+  };
+
+  const handleSelectTransport = (transportId: string) => {
+    setSelectedTransport(transportId);
+    const eta = calculateTransportEta(transportId);
+    setEstimatedEta(eta);
+  };
+
   const handleRespond = async () => {
     console.log('[AlertDetailModal] handleRespond called', { 
       alertId: alert?.id, 
       hasOnRespond: !!onRespond,
       isRescatista,
       userPosition,
-      isWithinRadius
+      isWithinRadius,
+      selectedTransport,
+      estimatedEta
     });
     
     if (!onRespond || !alert) {
@@ -352,8 +383,11 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
       if (success) {
         toast({
           title: "¡Respondiendo!",
-          description: "Has comenzado a responder a esta emergencia. Tu ubicación se compartirá con el solicitante.",
+          description: selectedTransport 
+            ? `En camino en ${TRANSPORT_OPTIONS.find(t => t.id === selectedTransport)?.label}. ETA: ~${estimatedEta} min`
+            : "Has comenzado a responder a esta emergencia. Tu ubicación se compartirá con el solicitante.",
         });
+        setShowTransportSelector(false);
       } else {
         toast({
           title: "Error",
@@ -895,25 +929,94 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
                 )}
               </div>
             )}
-            <Button 
-              variant="default"
-              className="w-full touch-manipulation bg-primary hover:bg-primary/90"
-              onClick={handleRespond}
-              disabled={isResponding || (!isRescatista && !isWithinRadius) || !userPosition}
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              {isResponding ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
+            
+            {/* Transport Selector */}
+            {showTransportSelector ? (
+              <div className="space-y-3 bg-muted/50 rounded-lg p-4 border border-border">
+                <p className="text-sm font-medium text-foreground text-center">
+                  ¿Cómo te desplazas?
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {TRANSPORT_OPTIONS.map((transport) => {
+                    const Icon = transport.icon;
+                    const isSelected = selectedTransport === transport.id;
+                    const eta = calculateTransportEta(transport.id);
+                    return (
+                      <button
+                        key={transport.id}
+                        onClick={() => handleSelectTransport(transport.id)}
+                        className={cn(
+                          "flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all",
+                          isSelected 
+                            ? "border-primary bg-primary/10" 
+                            : "border-border bg-card hover:border-primary/50"
+                        )}
+                      >
+                        <Icon className={cn("w-6 h-6", isSelected ? "text-primary" : "text-muted-foreground")} />
+                        <span className={cn("text-xs font-medium", isSelected ? "text-primary" : "text-foreground")}>
+                          {transport.label}
+                        </span>
+                        {distanceToAlert && (
+                          <span className="text-[10px] text-muted-foreground">
+                            ~{eta} min
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                
+                {selectedTransport && estimatedEta && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-primary bg-primary/10 rounded-lg p-2">
+                    <Clock className="w-4 h-4" />
+                    <span>Tiempo estimado: <strong>~{estimatedEta} minutos</strong></span>
+                  </div>
+                )}
+                
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setShowTransportSelector(false);
+                      setSelectedTransport(null);
+                      setEstimatedEta(null);
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    variant="default"
+                    className="flex-1 bg-primary hover:bg-primary/90"
+                    onClick={handleRespond}
+                    disabled={isResponding}
+                  >
+                    {isResponding ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <HeartHandshake className="w-4 h-4 mr-2" />
+                    )}
+                    Confirmar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button 
+                variant="default"
+                className="w-full touch-manipulation bg-primary hover:bg-primary/90"
+                onClick={() => setShowTransportSelector(true)}
+                disabled={(!isRescatista && !isWithinRadius) || !userPosition}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
                 <HeartHandshake className="w-4 h-4 mr-2" />
-              )}
-              {!userPosition 
-                ? 'Esperando ubicación...'
-                : !isRescatista && isWithinRadius === false 
-                  ? 'Fuera de rango (10km)'
-                  : 'Responder a esta alerta'
-              }
-            </Button>
+                {!userPosition 
+                  ? 'Esperando ubicación...'
+                  : !isRescatista && isWithinRadius === false 
+                    ? 'Fuera de rango (10km)'
+                    : 'Responder a esta alerta'
+                }
+              </Button>
+            )}
           </>
         )}
 

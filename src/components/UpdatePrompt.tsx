@@ -241,7 +241,7 @@ export function UpdateButton() {
   };
 
   return (
-    <div className="space-y-3 max-w-[200px]">
+    <div className="space-y-3 w-full">
       {hasUpdate ? (
         <Button
           className="w-full bg-primary hover:bg-primary/90"
@@ -269,11 +269,11 @@ export function UpdateButton() {
         onClick={forceRefresh}
       >
         <RefreshCw className="h-3 w-3 mr-2" />
-        Forzar Recarga Completa
+        Forzar Recarga
       </Button>
       
-      <p className="text-xs text-muted-foreground text-center break-words">
-        Si hay problemas, usa "Forzar Recarga Completa" para limpiar caché y reinstalar la app
+      <p className="text-xs text-muted-foreground text-center">
+        Si hay problemas, usa "Forzar Recarga" para limpiar caché y reinstalar
       </p>
       
       {lastChecked && (
@@ -283,8 +283,8 @@ export function UpdateButton() {
       )}
       
       {checkFailed && !checking && (
-        <p className="text-xs text-destructive text-center break-words">
-          La verificación falló. Usa "Forzar Recarga Completa" si hay problemas.
+        <p className="text-xs text-destructive text-center">
+          La verificación falló. Usa "Forzar Recarga" si hay problemas.
         </p>
       )}
     </div>
