@@ -208,6 +208,28 @@ export const useInternalMessages = () => {
     }
   };
 
+  // Delete own message
+  const deleteMessage = async (messageId: string): Promise<boolean> => {
+    if (!user?.id) return false;
+
+    try {
+      const { error } = await supabase
+        .from('internal_messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('sender_id', user.id); // Only allow deleting own messages
+
+      if (error) throw error;
+      
+      await fetchMessages();
+      await fetchConversations();
+      return true;
+    } catch (err) {
+      console.error('Error deleting message:', err);
+      return false;
+    }
+  };
+
   // Mark messages as read
   const markAsRead = async (senderId: string) => {
     if (!user?.id) return;
@@ -331,6 +353,7 @@ export const useInternalMessages = () => {
     loading,
     unreadCount,
     sendMessage,
+    deleteMessage,
     markAsRead,
     getConversationMessages,
     refetch: fetchMessages

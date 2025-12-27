@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff } from 'lucide-react';
+import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -9,6 +9,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface InternalMessagingProps {
   isOpen: boolean;
@@ -26,7 +36,8 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   const { user } = useAuth();
   const { 
     conversations, 
-    sendMessage, 
+    sendMessage,
+    deleteMessage,
     markAsRead, 
     getConversationMessages,
     loading
@@ -37,6 +48,8 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   const [messageText, setMessageText] = useState('');
   const [sending, setSending] = useState(false);
   const [justSentId, setJustSentId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -121,6 +134,26 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
       setSending(false);
       // Re-focus the input
       setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  };
+
+  const handleDeleteMessage = async () => {
+    if (!messageToDelete) return;
+    
+    setDeletingId(messageToDelete);
+    try {
+      const success = await deleteMessage(messageToDelete);
+      if (success) {
+        toast.success('Mensaje eliminado');
+      } else {
+        toast.error('No se pudo eliminar el mensaje');
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast.error('Error al eliminar mensaje');
+    } finally {
+      setDeletingId(null);
+      setMessageToDelete(null);
     }
   };
 
@@ -267,15 +300,27 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                   conversationMessages.map((msg: InternalMessage) => {
                     const isMine = msg.sender_id === user?.id;
                     const isJustSent = msg.id === justSentId;
+                    const isDeleting = msg.id === deletingId;
                     return (
                       <div
                         key={msg.id}
                         className={cn(
-                          'flex transition-all duration-300',
+                          'flex transition-all duration-300 group',
                           isMine ? 'justify-end' : 'justify-start',
-                          isJustSent && 'animate-scale-in'
+                          isJustSent && 'animate-scale-in',
+                          isDeleting && 'animate-slide-out-right opacity-0'
                         )}
                       >
+                        {/* Delete button for own messages */}
+                        {isMine && !isDeleting && (
+                          <button
+                            onClick={() => setMessageToDelete(msg.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 mr-1 self-center text-muted-foreground hover:text-destructive"
+                            title="Eliminar mensaje"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
                         <div
                           className={cn(
                             'max-w-[80%] rounded-2xl px-4 py-2 transition-all duration-300',
@@ -331,6 +376,27 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
           </>
         )}
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!messageToDelete} onOpenChange={(open) => !open && setMessageToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar mensaje?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El mensaje será eliminado permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteMessage}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

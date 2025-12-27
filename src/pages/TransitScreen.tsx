@@ -613,24 +613,46 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                               ✓ Llegué
                             </Button>
                           )}
+                          {isActive && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-xs text-muted-foreground"
+                              onClick={async () => {
+                                try {
+                                  await supabase
+                                    .from('transit_trips')
+                                    .update({ status: 'CANCELLED' })
+                                    .eq('id', trip.id);
+                                  toast.success('Viaje cancelado');
+                                  fetchMyTrips();
+                                } catch (e) {
+                                  toast.error('Error al cancelar');
+                                }
+                              }}
+                            >
+                              Cancelar
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-xs text-muted-foreground"
+                            className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
                             onClick={async () => {
+                              if (!confirm('¿Eliminar este viaje permanentemente?')) return;
                               try {
                                 await supabase
                                   .from('transit_trips')
-                                  .update({ status: 'CANCELLED' })
+                                  .delete()
                                   .eq('id', trip.id);
-                                toast.success('Viaje cancelado');
+                                toast.success('Viaje eliminado');
                                 fetchMyTrips();
                               } catch (e) {
-                                toast.error('Error al cancelar');
+                                toast.error('Error al eliminar viaje');
                               }
                             }}
                           >
-                            Cancelar
+                            <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
                       </div>
