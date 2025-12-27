@@ -26,15 +26,8 @@ export interface Conversation {
 
 // Helper to show browser notification when tab is in background
 const showBrowserNotification = (senderName: string, message: string, senderId: string) => {
-  // Only show if tab is not focused/visible
-  if (document.visibilityState === 'visible') {
-    return;
-  }
-
-  // Check if notifications are supported and permission granted
-  if (!('Notification' in window) || Notification.permission !== 'granted') {
-    return;
-  }
+  if (document.visibilityState === 'visible') return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
   try {
     const notification = new Notification('💬 Nuevo mensaje', {
@@ -43,38 +36,25 @@ const showBrowserNotification = (senderName: string, message: string, senderId: 
       badge: '/icon-192.png',
       tag: `message-${senderId}-${Date.now()}`,
       requireInteraction: false,
-      silent: false, // Allow sound
+      silent: false,
     });
-
-    // Focus window when notification is clicked
     notification.onclick = () => {
       window.focus();
       notification.close();
     };
-
-    // Auto-close after 5 seconds
     setTimeout(() => notification.close(), 5000);
   } catch (error) {
     console.error('Error showing browser notification:', error);
   }
 };
 
-// Request notification permission
 export const requestNotificationPermission = async (): Promise<boolean> => {
-  if (!('Notification' in window)) {
-    console.warn('Browser does not support notifications');
-    return false;
-  }
-
-  if (Notification.permission === 'granted') {
-    return true;
-  }
-
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
   if (Notification.permission !== 'denied') {
     const permission = await Notification.requestPermission();
     return permission === 'granted';
   }
-
   return false;
 };
 
@@ -85,15 +65,25 @@ export const useInternalMessages = () => {
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [lastUnreadSender, setLastUnreadSender] = useState<{ id: string; name: string } | null>(null);
-  const lastMessageCountRef = useRef<number>(0);
-  const initialLoadDoneRef = useRef<boolean>(false);
   const senderNamesCache = useRef<Map<string, string>>(new Map());
   const [bannerDismissed, setBannerDismissed] = useState(false);
-  // Fetch all messages for the current user
-  const fetchMessages = useCallback(async () => {
-    if (!user?.id) return;
+  const fetchInProgressRef = useRef(false);
+  const lastFetchRef = useRef(0);
+  const userNamesMapRef = useRef<Map<string, string | null>>(new Map());
 
-    setLoading(true);
+  // Debounced fetch - prevents multiple rapid calls
+  const fetchData = useCallback(async (force = false) => {
+    if (!user?.id) return;
+    
+    const now = Date.now();
+    // Prevent fetching more than once every 500ms unless forced
+    if (!force && (fetchInProgressRef.current || now - lastFetchRef.current < 500)) {
+      return;
+    }
+    
+    fetchInProgressRef.current = true;
+    lastFetchRef.current = now;
+
     try {
       const { data, error } = await supabase
         .from('internal_messages')
@@ -102,41 +92,27 @@ export const useInternalMessages = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      const messagesData = data || [];
+      setMessages(messagesData);
 
       // Calculate unread count
-      const unread = (data || []).filter(
-        m => m.receiver_id === user.id && !m.read
-      ).length;
+      const unread = messagesData.filter(m => m.receiver_id === user.id && !m.read).length;
       setUnreadCount(unread);
-    } catch (err) {
-      console.error('Error fetching messages:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id]);
 
-  // Fetch conversations (grouped by user)
-  const fetchConversations = useCallback(async () => {
-    if (!user?.id) return;
-
-    try {
-      const { data: messagesData, error: messagesError } = await supabase
-        .from('internal_messages')
-        .select('*')
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
-
-      if (messagesError) throw messagesError;
-
-      // Group by other user
+      // Build conversations from messages
       const conversationMap = new Map<string, {
         last_message: string;
         last_message_at: string;
         unread_count: number;
       }>();
 
-      (messagesData || []).forEach(msg => {
+      // Sort by date descending for conversation building
+      const sortedForConv = [...messagesData].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      sortedForConv.forEach(msg => {
         const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
         
         if (!conversationMap.has(otherUserId)) {
@@ -153,43 +129,41 @@ export const useInternalMessages = () => {
         }
       });
 
-      // Fetch display names for all users in conversations
+      // Fetch display names only for new users
       const userIds = Array.from(conversationMap.keys());
+      const newUserIds = userIds.filter(id => !userNamesMapRef.current.has(id));
       
-      if (userIds.length === 0) {
-        setConversations([]);
-        return;
+      if (newUserIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('user_locations_with_roles')
+          .select('user_id, display_name, show_name_on_map')
+          .in('user_id', newUserIds);
+
+        (usersData || []).forEach(u => {
+          userNamesMapRef.current.set(u.user_id!, u.show_name_on_map ? u.display_name : null);
+        });
       }
 
-      // Get names from user_locations_with_roles view
-      const { data: usersData } = await supabase
-        .from('user_locations_with_roles')
-        .select('user_id, display_name, show_name_on_map')
-        .in('user_id', userIds);
-
-      const userNameMap = new Map<string, string | null>();
-      (usersData || []).forEach(u => {
-        userNameMap.set(u.user_id!, u.show_name_on_map ? u.display_name : null);
-      });
-
-      const convList: Conversation[] = Array.from(conversationMap.entries()).map(([userId, data]) => ({
+      const convList: Conversation[] = userIds.map(userId => ({
         user_id: userId,
-        display_name: userNameMap.get(userId) || null,
-        ...data
+        display_name: userNamesMapRef.current.get(userId) || null,
+        ...conversationMap.get(userId)!
       }));
 
-      // Sort by last message date
       convList.sort((a, b) => 
         new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
       );
 
       setConversations(convList);
     } catch (err) {
-      console.error('Error fetching conversations:', err);
+      console.error('Error fetching messages:', err);
+    } finally {
+      fetchInProgressRef.current = false;
+      setLoading(false);
     }
   }, [user?.id]);
 
-  // Send a message (text, voice or image)
+  // Send a message with optimistic update
   const sendMessage = async (
     receiverId: string, 
     message: string,
@@ -200,14 +174,31 @@ export const useInternalMessages = () => {
     if (!user?.id) return false;
     if (!message.trim() && !audioUrl && !imageUrl) return false;
 
-    try {
-      let displayMessage = message.trim();
-      if (!displayMessage) {
-        if (audioUrl) displayMessage = '🎤 Nota de voz';
-        else if (imageUrl) displayMessage = '📷 Imagen';
-      }
+    let displayMessage = message.trim();
+    if (!displayMessage) {
+      if (audioUrl) displayMessage = '🎤 Nota de voz';
+      else if (imageUrl) displayMessage = '📷 Imagen';
+    }
 
-      const { error } = await supabase
+    // Create optimistic message
+    const optimisticId = `temp-${Date.now()}`;
+    const optimisticMessage: InternalMessage = {
+      id: optimisticId,
+      sender_id: user.id,
+      receiver_id: receiverId,
+      message: displayMessage,
+      read: false,
+      created_at: new Date().toISOString(),
+      audio_url: audioUrl || null,
+      audio_duration_ms: audioDurationMs || null,
+      image_url: imageUrl || null
+    };
+
+    // Optimistically add message to state
+    setMessages(prev => [...prev, optimisticMessage]);
+
+    try {
+      const { data, error } = await supabase
         .from('internal_messages')
         .insert({
           sender_id: user.id,
@@ -216,77 +207,92 @@ export const useInternalMessages = () => {
           audio_url: audioUrl || null,
           audio_duration_ms: audioDurationMs || null,
           image_url: imageUrl || null
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
-      
-      // Get sender name for push notification
-      let senderName = 'Usuario';
-      const { data: profileData } = await supabase
+
+      // Replace optimistic message with real one
+      setMessages(prev => prev.map(m => 
+        m.id === optimisticId ? data : m
+      ));
+
+      // Update conversations optimistically
+      setConversations(prev => {
+        const existing = prev.find(c => c.user_id === receiverId);
+        if (existing) {
+          return prev.map(c => 
+            c.user_id === receiverId 
+              ? { ...c, last_message: displayMessage, last_message_at: data.created_at }
+              : c
+          ).sort((a, b) => 
+            new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
+          );
+        }
+        return prev;
+      });
+
+      // Send broadcast notification (fire and forget)
+      supabase
         .from('profiles')
         .select('nickname, full_name')
         .eq('id', user.id)
-        .single();
-      
-      if (profileData) {
-        senderName = profileData.nickname || profileData.full_name || 'Usuario';
-      }
-
-      // Send real-time broadcast notification to receiver
-      try {
-        const notificationChannel = supabase.channel(`user-notifications:${receiverId}`);
-        await notificationChannel.send({
-          type: 'broadcast',
-          event: 'new_message',
-          payload: {
-            senderName,
-            messagePreview: displayMessage.substring(0, 100),
-            senderId: user.id
-          }
+        .single()
+        .then(({ data: profileData }) => {
+          const senderName = profileData?.nickname || profileData?.full_name || 'Usuario';
+          const notificationChannel = supabase.channel(`user-notifications:${receiverId}`);
+          notificationChannel.send({
+            type: 'broadcast',
+            event: 'new_message',
+            payload: { senderName, messagePreview: displayMessage.substring(0, 100), senderId: user.id }
+          }).finally(() => supabase.removeChannel(notificationChannel));
         });
-        supabase.removeChannel(notificationChannel);
-        console.log('[Messages] Broadcast notification sent to:', receiverId);
-      } catch (broadcastError) {
-        console.log('Broadcast notification failed:', broadcastError);
-      }
-      
-      await fetchMessages();
-      await fetchConversations();
+
       return true;
     } catch (err) {
       console.error('Error sending message:', err);
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== optimisticId));
       return false;
     }
   };
 
-  // Delete own message
+  // Delete own message with optimistic update
   const deleteMessage = async (messageId: string): Promise<boolean> => {
     if (!user?.id) return false;
+
+    // Optimistically remove message
+    const originalMessages = messages;
+    setMessages(prev => prev.filter(m => m.id !== messageId));
 
     try {
       const { error } = await supabase
         .from('internal_messages')
         .delete()
         .eq('id', messageId)
-        .eq('sender_id', user.id); // Only allow deleting own messages
+        .eq('sender_id', user.id);
 
       if (error) throw error;
-      
-      await fetchMessages();
-      await fetchConversations();
       return true;
     } catch (err) {
       console.error('Error deleting message:', err);
+      // Restore on error
+      setMessages(originalMessages);
       return false;
     }
   };
 
-  // Clear all messages in a conversation (only deletes user's own sent messages)
+  // Clear conversation with optimistic update
   const clearConversation = async (otherUserId: string): Promise<boolean> => {
     if (!user?.id) return false;
 
+    const originalMessages = messages;
+    setMessages(prev => prev.filter(m => 
+      !(m.sender_id === user.id && m.receiver_id === otherUserId)
+    ));
+
     try {
-      // Delete all messages sent by the current user to this recipient
       const { error } = await supabase
         .from('internal_messages')
         .delete()
@@ -295,53 +301,67 @@ export const useInternalMessages = () => {
 
       if (error) throw error;
       
-      await fetchMessages();
-      await fetchConversations();
+      // Refresh to update conversations list
+      fetchData(true);
       return true;
     } catch (err) {
       console.error('Error clearing conversation:', err);
+      setMessages(originalMessages);
       return false;
     }
   };
 
-  // Mark messages as read
-  const markAsRead = async (senderId: string) => {
+  // Mark messages as read with optimistic update
+  const markAsRead = useCallback(async (senderId: string) => {
     if (!user?.id) return;
 
+    // Optimistically mark as read
+    setMessages(prev => prev.map(m => 
+      m.sender_id === senderId && m.receiver_id === user.id && !m.read
+        ? { ...m, read: true }
+        : m
+    ));
+
+    // Update unread count
+    setUnreadCount(prev => {
+      const unreadFromSender = messages.filter(
+        m => m.sender_id === senderId && m.receiver_id === user.id && !m.read
+      ).length;
+      return Math.max(0, prev - unreadFromSender);
+    });
+
+    // Update conversations
+    setConversations(prev => prev.map(c => 
+      c.user_id === senderId ? { ...c, unread_count: 0 } : c
+    ));
+
     try {
-      const { error } = await supabase
+      await supabase
         .from('internal_messages')
         .update({ read: true })
         .eq('sender_id', senderId)
         .eq('receiver_id', user.id)
         .eq('read', false);
-
-      if (error) throw error;
-      
-      await fetchMessages();
-      await fetchConversations();
     } catch (err) {
       console.error('Error marking messages as read:', err);
     }
-  };
+  }, [user?.id, messages]);
 
   // Get messages for a specific conversation
-  const getConversationMessages = (otherUserId: string): InternalMessage[] => {
+  const getConversationMessages = useCallback((otherUserId: string): InternalMessage[] => {
     if (!user?.id) return [];
     return messages.filter(
       m => (m.sender_id === user.id && m.receiver_id === otherUserId) ||
            (m.sender_id === otherUserId && m.receiver_id === user.id)
     );
-  };
+  }, [user?.id, messages]);
 
   // Subscribe to realtime updates
   useEffect(() => {
     if (!user?.id) return;
 
-    console.log('[InternalMessages] Setting up realtime subscription for user:', user.id);
-
-    fetchMessages();
-    fetchConversations();
+    setLoading(true);
+    fetchData(true);
 
     const channel = supabase
       .channel('internal_messages_changes')
@@ -354,12 +374,36 @@ export const useInternalMessages = () => {
           filter: `receiver_id=eq.${user.id}`
         },
         async (payload) => {
-          console.log('[InternalMessages] Received INSERT event:', payload);
           const newMessage = payload.new as InternalMessage;
           
           if (newMessage && newMessage.sender_id !== user.id) {
-            console.log('[InternalMessages] New message from:', newMessage.sender_id);
-            
+            // Add message if not already present (avoid duplicates)
+            setMessages(prev => {
+              if (prev.some(m => m.id === newMessage.id)) return prev;
+              return [...prev, newMessage];
+            });
+
+            // Update unread count
+            setUnreadCount(prev => prev + 1);
+
+            // Update conversations
+            setConversations(prev => {
+              const existing = prev.find(c => c.user_id === newMessage.sender_id);
+              if (existing) {
+                return prev.map(c => 
+                  c.user_id === newMessage.sender_id 
+                    ? { ...c, last_message: newMessage.message, last_message_at: newMessage.created_at, unread_count: c.unread_count + 1 }
+                    : c
+                ).sort((a, b) => 
+                  new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
+                );
+              } else {
+                // New conversation - fetch data to get user name
+                fetchData();
+                return prev;
+              }
+            });
+
             // Play notification sound and vibration
             playMessageNotification();
             triggerMessageVibration();
@@ -368,31 +412,23 @@ export const useInternalMessages = () => {
             let senderName = senderNamesCache.current.get(newMessage.sender_id);
             
             if (!senderName) {
-              // Fetch sender name
               const { data } = await supabase
                 .from('user_locations_with_roles')
                 .select('display_name, show_name_on_map')
                 .eq('user_id', newMessage.sender_id)
                 .single();
               
-              senderName = data?.show_name_on_map && data?.display_name 
-                ? data.display_name 
-                : 'Usuario';
+              senderName = data?.show_name_on_map && data?.display_name ? data.display_name : 'Usuario';
               senderNamesCache.current.set(newMessage.sender_id, senderName);
             }
             
-            // Show browser notification when tab is in background
             showBrowserNotification(senderName, newMessage.message, newMessage.sender_id);
             
-            // Always show toast notification (visible even when tab is in foreground)
             toast.info(`💬 ${senderName}`, {
               description: newMessage.message.substring(0, 80) + (newMessage.message.length > 80 ? '...' : ''),
               duration: 5000,
             });
           }
-          
-          fetchMessages();
-          fetchConversations();
         }
       )
       .on(
@@ -401,24 +437,24 @@ export const useInternalMessages = () => {
           event: 'UPDATE',
           schema: 'public',
           table: 'internal_messages',
-          filter: `receiver_id=eq.${user.id}`
+          filter: `sender_id=eq.${user.id}`
         },
-        () => {
-          fetchMessages();
-          fetchConversations();
+        (payload) => {
+          // Update read status for sent messages
+          const updated = payload.new as InternalMessage;
+          setMessages(prev => prev.map(m => m.id === updated.id ? updated : m));
         }
       )
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'DELETE',
           schema: 'public',
-          table: 'internal_messages',
-          filter: `sender_id=eq.${user.id}`
+          table: 'internal_messages'
         },
-        () => {
-          fetchMessages();
-          fetchConversations();
+        (payload) => {
+          const deleted = payload.old as { id: string };
+          setMessages(prev => prev.filter(m => m.id !== deleted.id));
         }
       )
       .subscribe();
@@ -426,20 +462,17 @@ export const useInternalMessages = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, fetchMessages, fetchConversations]);
+  }, [user?.id, fetchData]);
 
   // Reset banner dismissed when new messages arrive
   const dismissBanner = useCallback(() => {
     setBannerDismissed(true);
   }, []);
 
-  // Track the last unread count to detect NEW messages (not just any unread)
   const lastUnreadCountRef = useRef(unreadCount);
   
-  // Reset dismissed state ONLY when NEW messages arrive (count increases)
   useEffect(() => {
     if (unreadCount > lastUnreadCountRef.current) {
-      // New messages arrived, show banner again
       setBannerDismissed(false);
     }
     lastUnreadCountRef.current = unreadCount;
@@ -471,6 +504,6 @@ export const useInternalMessages = () => {
     clearConversation,
     markAsRead,
     getConversationMessages,
-    refetch: fetchMessages
+    refetch: () => fetchData(true)
   };
 };
