@@ -653,7 +653,7 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
   ];
 
   return (
-    <div className="absolute bottom-20 right-4 z-[500] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border overflow-hidden max-h-[60vh] overflow-y-auto">
+    <div className="absolute left-4 top-1/2 -translate-y-1/2 z-[500] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border overflow-hidden max-h-[60vh] overflow-y-auto">
       <button 
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between p-2.5 hover:bg-accent/50 transition-colors"
