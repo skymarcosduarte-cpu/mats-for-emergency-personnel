@@ -801,9 +801,10 @@ import type { ActiveResponderInfo } from '@/hooks/useMyAlertResponders';
 interface MapScreenProps {
   className?: string;
   respondersToMyAlerts?: ActiveResponderInfo[];
+  onNavigateToSettings?: () => void;
 }
 
-export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyAlerts = [] }) => {
+export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyAlerts = [], onNavigateToSettings }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -1918,14 +1919,17 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
 
       {/* No emergency contacts warning banner */}
       {!hasMinimumContacts && (
-        <div className="absolute top-2 left-2 right-2 z-[999] bg-destructive/95 text-destructive-foreground p-3 rounded-lg shadow-lg border border-destructive/50 flex items-center gap-2">
+        <button
+          onClick={onNavigateToSettings}
+          className="absolute top-2 left-2 right-2 z-[999] bg-destructive/95 text-destructive-foreground p-3 rounded-lg shadow-lg border border-destructive/50 flex items-center gap-2 hover:bg-destructive transition-colors cursor-pointer text-left"
+        >
           <AlertTriangle className="w-5 h-5 shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium">Sin contactos de emergencia</p>
-            <p className="text-xs opacity-90">Agrega al menos uno en Configuración para usar el botón SOS</p>
+            <p className="text-xs opacity-90">Toca aquí para agregar uno y usar el botón SOS</p>
           </div>
           <Users className="w-5 h-5 shrink-0 opacity-70" />
-        </div>
+        </button>
       )}
 
       {/* Map container */}

@@ -267,7 +267,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 
   const renderScreen = () => {
     const screens: Record<string, React.ReactNode> = {
-      map: <MapScreen className="h-[calc(100vh-120px)]" respondersToMyAlerts={respondersToMyAlerts} />,
+      map: <MapScreen className="h-[calc(100vh-120px)]" respondersToMyAlerts={respondersToMyAlerts} onNavigateToSettings={() => setActiveTab('settings')} />,
       transit: <TransitScreen userRole={userRole} />,
       alerts: <AlertsScreen userRole={userRole} />,
       community: <CommunityScreen />,
