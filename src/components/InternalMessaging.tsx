@@ -91,12 +91,25 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   const handleSend = async () => {
     if (!selectedUserId || !messageText.trim() || sending) return;
 
+    const textToSend = messageText.trim();
     setSending(true);
-    const success = await sendMessage(selectedUserId, messageText);
-    if (success) {
-      setMessageText('');
+    setMessageText(''); // Clear immediately for better UX
+    
+    try {
+      const success = await sendMessage(selectedUserId, textToSend);
+      if (!success) {
+        // Restore text if send failed
+        setMessageText(textToSend);
+      }
+    } catch (error) {
+      console.error('Error in handleSend:', error);
+      // Restore text on error
+      setMessageText(textToSend);
+    } finally {
+      setSending(false);
+      // Re-focus the input
+      setTimeout(() => inputRef.current?.focus(), 50);
     }
-    setSending(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
