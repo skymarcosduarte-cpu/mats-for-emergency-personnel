@@ -1945,12 +1945,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
             position={position} 
             className="relative"
           />
-          
-          {/* I'm OK button */}
-          <ImOkButton 
-            position={position} 
-            className="relative"
-          />
         </div>
         
         {/* Alerts Panel Button */}
