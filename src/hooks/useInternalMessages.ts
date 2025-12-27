@@ -232,17 +232,22 @@ export const useInternalMessages = () => {
         senderName = profileData.nickname || profileData.full_name || 'Usuario';
       }
 
-      // Send push notification to receiver
+      // Send real-time broadcast notification to receiver
       try {
-        await supabase.functions.invoke('send-message-push', {
-          body: {
-            receiverId,
+        const notificationChannel = supabase.channel(`user-notifications:${receiverId}`);
+        await notificationChannel.send({
+          type: 'broadcast',
+          event: 'new_message',
+          payload: {
             senderName,
-            messagePreview: displayMessage.substring(0, 100)
+            messagePreview: displayMessage.substring(0, 100),
+            senderId: user.id
           }
         });
-      } catch (pushError) {
-        console.log('Push notification failed (user may not have subscription):', pushError);
+        supabase.removeChannel(notificationChannel);
+        console.log('[Messages] Broadcast notification sent to:', receiverId);
+      } catch (broadcastError) {
+        console.log('Broadcast notification failed:', broadcastError);
       }
       
       await fetchMessages();
