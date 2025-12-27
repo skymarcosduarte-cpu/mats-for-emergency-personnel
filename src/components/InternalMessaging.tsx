@@ -872,13 +872,15 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
               ) : selectedImage ? (
                 // Image preview UI
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 flex items-center gap-2">
+                  <div className="flex-1 flex items-center gap-2 min-w-0">
                     <img 
                       src={imagePreview!} 
                       alt="Preview" 
-                      className="w-12 h-12 object-cover rounded-lg"
+                      className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
                     />
-                    <span className="text-sm truncate">{selectedImage.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      📷 Foto lista para enviar
+                    </span>
                   </div>
                   <Button
                     onClick={cancelImage}
