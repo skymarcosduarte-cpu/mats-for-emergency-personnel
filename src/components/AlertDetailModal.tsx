@@ -29,7 +29,8 @@ import {
   Car,
   Bike,
   Footprints,
-  Ambulance
+  Ambulance,
+  Bus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -341,12 +342,13 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
     window.location.href = `tel:${number}`;
   };
 
-  // Transport options with icons and estimated speeds
-const TRANSPORT_OPTIONS = [
-    { id: 'car', label: 'Auto', icon: Car, speedKmh: 40 },
-    { id: 'motorcycle', label: 'Moto', icon: Bike, speedKmh: 50 },
+  // Transport options with icons and estimated speeds (km/h)
+  const TRANSPORT_OPTIONS = [
+    { id: 'walking', label: 'Caminando', icon: Footprints, speedKmh: 5 },
+    { id: 'bicycle', label: 'Bicicleta', icon: Bike, speedKmh: 15 },
+    { id: 'car', label: 'Automóvil', icon: Car, speedKmh: 40 },
+    { id: 'public_transport', label: 'Transporte Público', icon: Bus, speedKmh: 25 },
     { id: 'ambulance', label: 'Ambulancia', icon: Ambulance, speedKmh: 60 },
-    { id: 'walking', label: 'A pie', icon: Footprints, speedKmh: 5 },
   ];
 
   // Calculate ETA based on transport mode
@@ -957,7 +959,7 @@ const TRANSPORT_OPTIONS = [
                   ¿Cómo te desplazas?
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {TRANSPORT_OPTIONS.map((transport) => {
+                  {TRANSPORT_OPTIONS.slice(0, 3).map((transport) => {
                     const Icon = transport.icon;
                     const isSelected = selectedTransport === transport.id;
                     const eta = calculateTransportEta(transport.id);
@@ -973,10 +975,39 @@ const TRANSPORT_OPTIONS = [
                         )}
                       >
                         <Icon className={cn("w-6 h-6", isSelected ? "text-primary" : "text-muted-foreground")} />
-                        <span className={cn("text-xs font-medium", isSelected ? "text-primary" : "text-foreground")}>
+                        <span className={cn("text-xs font-medium text-center leading-tight", isSelected ? "text-primary" : "text-foreground")}>
                           {transport.label}
                         </span>
-                        {distanceToAlert && (
+                        {distanceToAlert && eta && (
+                          <span className="text-[10px] text-muted-foreground">
+                            ~{eta} min
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {TRANSPORT_OPTIONS.slice(3).map((transport) => {
+                    const Icon = transport.icon;
+                    const isSelected = selectedTransport === transport.id;
+                    const eta = calculateTransportEta(transport.id);
+                    return (
+                      <button
+                        key={transport.id}
+                        onClick={() => handleSelectTransport(transport.id)}
+                        className={cn(
+                          "flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all",
+                          isSelected 
+                            ? "border-primary bg-primary/10" 
+                            : "border-border bg-card hover:border-primary/50"
+                        )}
+                      >
+                        <Icon className={cn("w-6 h-6", isSelected ? "text-primary" : "text-muted-foreground")} />
+                        <span className={cn("text-xs font-medium text-center leading-tight", isSelected ? "text-primary" : "text-foreground")}>
+                          {transport.label}
+                        </span>
+                        {distanceToAlert && eta && (
                           <span className="text-[10px] text-muted-foreground">
                             ~{eta} min
                           </span>
