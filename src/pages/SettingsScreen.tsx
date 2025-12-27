@@ -1657,7 +1657,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <DialogDescription>Información sobre el uso de tus datos</DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
+          <div
+            className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6 overscroll-contain touch-pan-y"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="space-y-4 text-sm pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
               {/* Main Notice */}
               <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
@@ -1727,8 +1730,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   <strong>Al usar esta plataforma, reconoces que:</strong>
                 </p>
                 <ul className="list-disc list-inside text-muted-foreground text-xs space-y-1 ml-2 mt-1">
-                  <li>Proporcionas tu información de forma <strong>voluntaria</strong></li>
-                  <li>La ayuda proporcionada es <strong>voluntaria y sin garantías</strong></li>
+                  <li>
+                    Proporcionas tu información de forma <strong>voluntaria</strong>
+                  </li>
+                  <li>
+                    La ayuda proporcionada es <strong>voluntaria y sin garantías</strong>
+                  </li>
                   <li>Eres responsable de mantener tu información actualizada</li>
                   <li>Puedes desactivar el compartir en cualquier momento desde Configuración</li>
                 </ul>
@@ -1746,7 +1753,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 </p>
               </div>
             </div>
-          </ScrollArea>
+          </div>
+
 
           <DialogFooter className="flex-shrink-0 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
             <Button onClick={() => setShowPrivacyDialog(false)}>Entendido</Button>

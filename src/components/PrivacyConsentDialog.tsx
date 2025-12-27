@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { cn } from '@/lib/utils';
 
 interface PrivacyConsentDialogProps {
@@ -50,7 +50,10 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 pr-4">
+        <div
+          className="flex-1 min-h-0 overflow-y-auto pr-4 overscroll-contain touch-pan-y"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           <div className="space-y-4 text-sm pb-4">
             {/* Main Notice */}
             <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
@@ -59,8 +62,8 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
                 Propósito de la Plataforma
               </h3>
               <p className="text-muted-foreground">
-                Comunidad SOS es una plataforma de apoyo voluntario para emergencias. 
-                Su objetivo es facilitar la comunicación y coordinación entre miembros de la 
+                Comunidad SOS es una plataforma de apoyo voluntario para emergencias.
+                Su objetivo es facilitar la comunicación y coordinación entre miembros de la
                 comunidad durante situaciones de emergencia, sismos y desastres naturales.
               </p>
             </div>
@@ -72,7 +75,7 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
                 Compartir Ubicación en Tiempo Real
               </h3>
               <p className="text-muted-foreground mb-3">
-                Al activar esta opción, tu ubicación será visible para otros miembros 
+                Al activar esta opción, tu ubicación será visible para otros miembros
                 verificados de la comunidad. Esta información se utiliza exclusivamente para:
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
@@ -89,8 +92,8 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
                 Compartir Información Médica de Emergencia
               </h3>
               <p className="text-muted-foreground mb-3">
-                Al activar esta opción, tu información médica (tipo de sangre, alergias, 
-                condiciones médicas) será accesible para rescatistas verificados cuando 
+                Al activar esta opción, tu información médica (tipo de sangre, alergias,
+                condiciones médicas) será accesible para rescatistas verificados cuando
                 solicites ayuda. Esto permite:
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
@@ -120,8 +123,12 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
                 <strong>Al usar esta plataforma, reconoces que:</strong>
               </p>
               <ul className="list-disc list-inside text-muted-foreground text-xs space-y-1 ml-2 mt-1">
-                <li>Proporcionas tu información de forma <strong>voluntaria</strong></li>
-                <li>La ayuda proporcionada es <strong>voluntaria y sin garantías</strong></li>
+                <li>
+                  Proporcionas tu información de forma <strong>voluntaria</strong>
+                </li>
+                <li>
+                  La ayuda proporcionada es <strong>voluntaria y sin garantías</strong>
+                </li>
                 <li>Eres responsable de mantener tu información actualizada</li>
                 <li>Puedes desactivar el compartir en cualquier momento desde Configuración</li>
               </ul>
@@ -129,19 +136,18 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
 
             {/* Data Protection */}
             <div className="p-4 rounded-lg bg-muted/50 border border-border">
-              <h3 className="font-semibold text-foreground mb-2">
-                Protección de Datos
-              </h3>
+              <h3 className="font-semibold text-foreground mb-2">Protección de Datos</h3>
               <p className="text-muted-foreground text-xs">
-                Tu información es almacenada de forma segura y solo es accesible para 
-                usuarios autenticados de la comunidad. No vendemos ni compartimos tu 
-                información con terceros externos. Puedes solicitar la eliminación de 
-                tu cuenta y todos tus datos en cualquier momento desde la sección de 
+                Tu información es almacenada de forma segura y solo es accesible para
+                usuarios autenticados de la comunidad. No vendemos ni compartimos tu
+                información con terceros externos. Puedes solicitar la eliminación de
+                tu cuenta y todos tus datos en cualquier momento desde la sección de
                 Configuración.
               </p>
             </div>
           </div>
-        </ScrollArea>
+        </div>
+
 
         {/* Consent Options */}
         <div className="space-y-3 pt-4 border-t border-border">
