@@ -333,9 +333,18 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-8 w-8 text-destructive"
+                            className={cn(
+                              "h-8 w-8",
+                              contacts.length <= MIN_EMERGENCY_CONTACTS 
+                                ? "text-muted-foreground/40 cursor-not-allowed" 
+                                : "text-destructive hover:bg-destructive/10"
+                            )}
                             onClick={() => handleDelete(contact.id)}
                             disabled={contacts.length <= MIN_EMERGENCY_CONTACTS}
+                            title={contacts.length <= MIN_EMERGENCY_CONTACTS 
+                              ? "No se puede eliminar - se requiere al menos 1 contacto" 
+                              : "Eliminar contacto"
+                            }
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
