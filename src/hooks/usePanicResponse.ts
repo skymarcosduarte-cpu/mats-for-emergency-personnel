@@ -135,6 +135,33 @@ export function usePanicResponse() {
         console.warn('[usePanicResponse] Warning updating panic_event (non-fatal):', updateError);
       }
 
+      // Get panic event to find creator and notify them
+      const { data: panicEvent } = await supabase
+        .from('panic_events')
+        .select('user_id')
+        .eq('id', panicId)
+        .maybeSingle();
+
+      if (panicEvent && panicEvent.user_id !== user.id) {
+        // Count current responders
+        const { count } = await supabase
+          .from('panic_event_responders')
+          .select('*', { count: 'exact', head: true })
+          .eq('panic_id', panicId);
+
+        // Notify the creator via edge function
+        supabase.functions.invoke('notify-responder-coming', {
+          body: {
+            alertId: panicId,
+            alertType: 'panic',
+            creatorUserId: panicEvent.user_id,
+            responderUserId: user.id,
+            responderCount: count || 1,
+            eventType: 'responding'
+          }
+        }).catch(err => console.warn('Failed to notify creator:', err));
+      }
+
       setActiveResponse({
         panicId,
         panicLat,
@@ -228,6 +255,26 @@ export function usePanicResponse() {
         })
         .eq('id', activeResponse.panicId)
         .eq('responding_by', user.id);
+
+      // Get panic event to find creator and notify them
+      const { data: panicEvent } = await supabase
+        .from('panic_events')
+        .select('user_id')
+        .eq('id', activeResponse.panicId)
+        .maybeSingle();
+
+      if (panicEvent && panicEvent.user_id !== user.id) {
+        supabase.functions.invoke('notify-responder-coming', {
+          body: {
+            alertId: activeResponse.panicId,
+            alertType: 'panic',
+            creatorUserId: panicEvent.user_id,
+            responderUserId: user.id,
+            responderCount: 1,
+            eventType: 'arrived'
+          }
+        }).catch(err => console.warn('Failed to notify arrival:', err));
+      }
 
       toast.success('¡Llegaste al lugar!', {
         description: 'Marca como resuelto cuando termines',
