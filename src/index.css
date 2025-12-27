@@ -41,9 +41,12 @@
     --border: 0 0% 18%;
     --input: 0 0% 12%;
     --ring: 15 95% 55%;
-
+ 
     --radius: 0.75rem;
 
+    /* Layout tokens */
+    --app-header-height: calc(64px + env(safe-area-inset-top, 0px));
+ 
     /* Custom Emergency Colors */
     --panic: 15 95% 55%;
     --panic-glow: 15 100% 60%;
@@ -224,12 +227,13 @@
   .app-header {
     @apply flex items-center justify-between px-4 py-2 bg-card/95 backdrop-blur-xl border-b border-border;
     padding-top: calc(8px + env(safe-area-inset-top, 0));
-    height: calc(52px + env(safe-area-inset-top, 0));
+    min-height: var(--app-header-height);
+    overflow: hidden;
   }
 
   /* Main content wrapper - accounts for fixed header */
   .main-content {
-    padding-top: calc(52px + env(safe-area-inset-top, 0));
+    padding-top: var(--app-header-height);
     padding-bottom: calc(64px + env(safe-area-inset-bottom, 0));
   }
 
@@ -339,7 +343,7 @@
 /* Fixed map header - prevent movement on mobile */
 .map-fixed-header {
   position: fixed !important;
-  top: calc(env(safe-area-inset-top, 0px) + 16px);
+  top: calc(var(--app-header-height) + 16px);
   left: 16px;
   right: 16px;
   z-index: 1000;
