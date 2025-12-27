@@ -134,10 +134,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
   return (
     <>
       <header className="app-header fixed top-0 left-0 right-0 z-[100]">
-        <div className="flex items-center gap-2">
-          <MatsLogo size={36} showText />
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <MatsLogo size={36} showText className="min-w-0" />
           {/* Inline active users count */}
-          <ActiveUsersIndicator compact showIcon={false} className="ml-1" />
+          <ActiveUsersIndicator compact showIcon={false} className="ml-1 flex-shrink-0" />
         </div>
 
         <div className="flex items-center gap-2">
