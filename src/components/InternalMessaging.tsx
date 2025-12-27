@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, CheckCheck } from 'lucide-react';
-import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus, MoreVertical, Camera } from 'lucide-react';
+import { Check, CheckCheck, Circle } from 'lucide-react';
+import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus, Camera } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -135,6 +136,70 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  
+  // User online status
+  const [userOnlineStatus, setUserOnlineStatus] = useState<{
+    isOnline: boolean;
+    lastSeen: string | null;
+  } | null>(null);
+  
+  // Fetch user online status when selecting a conversation
+  useEffect(() => {
+    if (!selectedUserId) {
+      setUserOnlineStatus(null);
+      return;
+    }
+    
+    const fetchOnlineStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_locations')
+          .select('is_online, updated_at')
+          .eq('user_id', selectedUserId)
+          .maybeSingle();
+        
+        if (!error && data) {
+          setUserOnlineStatus({
+            isOnline: data.is_online ?? false,
+            lastSeen: data.updated_at
+          });
+        } else {
+          setUserOnlineStatus({ isOnline: false, lastSeen: null });
+        }
+      } catch (err) {
+        console.error('Error fetching online status:', err);
+        setUserOnlineStatus({ isOnline: false, lastSeen: null });
+      }
+    };
+    
+    fetchOnlineStatus();
+    
+    // Subscribe to real-time updates for this user's online status
+    const channel = supabase
+      .channel(`user-status-${selectedUserId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_locations',
+          filter: `user_id=eq.${selectedUserId}`
+        },
+        (payload: any) => {
+          if (payload.new) {
+            setUserOnlineStatus({
+              isOnline: payload.new.is_online ?? false,
+              lastSeen: payload.new.updated_at
+            });
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedUserId]);
 
   // Check notification permission on mount
   useEffect(() => {
@@ -670,11 +735,32 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
               </Button>
             )}
             <MessageCircle className="w-5 h-5 text-primary" />
-            <h2 className="font-semibold text-foreground">
-              {selectedUserId 
-                ? (selectedUserName || getDisplayName(selectedUserId))
-                : 'Mensajes'}
-            </h2>
+            <div className="flex flex-col">
+              <h2 className="font-semibold text-foreground leading-tight">
+                {selectedUserId 
+                  ? (selectedUserName || getDisplayName(selectedUserId))
+                  : 'Mensajes'}
+              </h2>
+              {selectedUserId && userOnlineStatus && (
+                <div className="flex items-center gap-1">
+                  <Circle 
+                    className={cn(
+                      "w-2 h-2",
+                      userOnlineStatus.isOnline 
+                        ? "fill-green-500 text-green-500" 
+                        : "fill-muted-foreground/50 text-muted-foreground/50"
+                    )} 
+                  />
+                  <span className="text-[10px] text-muted-foreground">
+                    {userOnlineStatus.isOnline 
+                      ? 'En línea' 
+                      : userOnlineStatus.lastSeen 
+                        ? `Últ. vez ${formatDistanceToNow(new Date(userOnlineStatus.lastSeen), { addSuffix: true, locale: es })}`
+                        : 'Desconectado'}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-1">
             {/* Clear conversation button - only when in conversation */}
