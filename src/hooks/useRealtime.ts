@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateDistance } from '@/hooks/useLocation';
-import { playSubtleAlert, playUrgentAlert } from '@/lib/alertSound';
+import { playSubtleAlert, playUrgentAlert, playPositiveAlert } from '@/lib/alertSound';
 import { areHelpSoundsEnabled } from '@/hooks/useAlertSettings';
+import { toast } from 'sonner';
 
 interface UserLocation {
   user_id: string;
@@ -735,18 +736,19 @@ interface ActiveResponder {
   eta_minutes: number | null;
   arrived_at: string | null;
   transport_mode: string | null;
+  estimated_eta_minutes: number | null; // From the database
 }
 
 export function useActiveResponders() {
   const [responders, setResponders] = useState<ActiveResponder[]>([]);
-
+  const arrivedNotifiedRef = useRef<Set<string>>(new Set()); // Track which arrivals we've notified
   const fetchResponders = useCallback(async () => {
     const activeRespondersList: ActiveResponder[] = [];
 
     // ====== HELP REQUESTS RESPONDERS ======
     const { data: helpRespondersData } = await supabase
       .from('help_request_responders')
-      .select('request_id, user_id, lat, lng, started_at, arrived_at, updated_at, transport_mode');
+      .select('request_id, user_id, lat, lng, started_at, arrived_at, updated_at, transport_mode, estimated_eta_minutes');
 
     const { data: helpData } = await supabase
       .from('help_requests')
@@ -771,7 +773,7 @@ export function useActiveResponders() {
     // ====== PANIC EVENTS RESPONDERS ======
     const { data: panicRespondersData } = await supabase
       .from('panic_event_responders')
-      .select('panic_id, user_id, lat, lng, started_at, arrived_at, updated_at, transport_mode');
+      .select('panic_id, user_id, lat, lng, started_at, arrived_at, updated_at, transport_mode, estimated_eta_minutes');
 
     const { data: panicData } = await supabase
       .from('panic_events')
@@ -845,6 +847,7 @@ export function useActiveResponders() {
               eta_minutes: etaMinutes,
               arrived_at: responder.arrived_at,
               transport_mode: responder.transport_mode || null,
+              estimated_eta_minutes: (responder as any).estimated_eta_minutes || null,
             });
           }
         }
@@ -884,6 +887,7 @@ export function useActiveResponders() {
             eta_minutes: etaMinutes,
             arrived_at: null,
             transport_mode: null,
+            estimated_eta_minutes: null,
           });
         }
       }
@@ -930,6 +934,7 @@ export function useActiveResponders() {
             eta_minutes: etaMinutes,
             arrived_at: responder.arrived_at,
             transport_mode: responder.transport_mode || null,
+            estimated_eta_minutes: (responder as any).estimated_eta_minutes || null,
           });
         }
       }
@@ -970,10 +975,36 @@ export function useActiveResponders() {
             eta_minutes: etaMinutes,
             arrived_at: null,
             transport_mode: null,
+            estimated_eta_minutes: null,
           });
         }
       }
     }
+
+    // Check for newly arrived responders and notify
+    activeRespondersList.forEach(responder => {
+      if (responder.arrived_at) {
+        const arrivalKey = `${responder.request_id}-${responder.responder_id}`;
+        if (!arrivedNotifiedRef.current.has(arrivalKey)) {
+          arrivedNotifiedRef.current.add(arrivalKey);
+          
+          // Play positive sound for arrival
+          if (areHelpSoundsEnabled()) {
+            try {
+              playPositiveAlert();
+            } catch {
+              // Ignore sound errors
+            }
+          }
+          
+          // Show global toast notification
+          toast.success('✅ Rescatista llegó a la emergencia', {
+            description: `${responder.responder_name} ha llegado a la ubicación`,
+            duration: 8000,
+          });
+        }
+      }
+    });
 
     setResponders(activeRespondersList);
   }, []);
