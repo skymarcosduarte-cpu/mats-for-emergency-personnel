@@ -6,6 +6,7 @@ import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loa
 import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
 import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
 import { useMexicoAlerts, TropicalCycloneAlert, FireHotspot } from '@/hooks/useMexicoAlerts';
+import { useGDACSAlerts, GDACSAlert, AEMETAlert } from '@/hooks/useGDACSAlerts';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -144,6 +145,19 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     onNewCyclone: handleNewCyclone,
     onNewFires: handleNewFires,
   });
+
+  // GDACS + AEMET international alerts
+  const {
+    gdacsAlerts,
+    aemetAlerts,
+    loading: gdacsLoading,
+    error: gdacsError,
+    refresh: refreshGDACS,
+    getCategoryIcon,
+    getCategoryLabel,
+    getAlertLevelColor,
+    getAEMETLevelColor,
+  } = useGDACSAlerts();
 
   // Handle quick "4 de 10" report
   const handleQuickCheckin = async (quake: EarthquakeWithDistance) => {
@@ -353,14 +367,14 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             📋 Mías
           </TabsTrigger>
           <TabsTrigger value="earthquakes" className="text-xs px-1">Sismos</TabsTrigger>
-          <TabsTrigger value="mexico" className="relative text-xs px-1">
-            México
-            {(cyclones.length > 0 || fires.length > 0) && (
+          <TabsTrigger value="otros" className="relative text-xs px-1">
+            Otros
+            {(gdacsAlerts.length > 0 || aemetAlerts.length > 0) && (
               <Badge 
                 variant="destructive" 
                 className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
               >
-                {cyclones.length + fires.length}
+                {gdacsAlerts.length + aemetAlerts.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -602,235 +616,207 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
           )}
         </TabsContent>
 
-        {/* Mexico Federal Alerts Tab - NHC Cyclones + Fire Hotspots */}
-        <TabsContent value="mexico" className="space-y-3 mt-4">
+        {/* Otros - GDACS + AEMET International Alerts Tab */}
+        <TabsContent value="otros" className="space-y-3 mt-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-muted-foreground">
-              Alertas federales mexicanas (NHC + CONABIO)
+              Alertas internacionales (GDACS + AEMET España)
             </p>
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={refreshMexico}
-                disabled={mexicoLoading}
+                onClick={refreshGDACS}
+                disabled={gdacsLoading}
               >
-                <RefreshCw className={cn('w-4 h-4', mexicoLoading && 'animate-spin')} />
+                <RefreshCw className={cn('w-4 h-4', gdacsLoading && 'animate-spin')} />
               </Button>
             </div>
           </div>
 
-          {/* Test notification buttons */}
-          {notifPermission === 'granted' && (
-            <div className="flex gap-2 p-3 rounded-lg bg-muted/50 border border-border">
-              <p className="text-xs text-muted-foreground flex-1">Probar notificaciones:</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs h-7"
-                onClick={() => {
-                  const testCyclone: TropicalCycloneAlert = {
-                    id: 'test-cyclone-' + Date.now(),
-                    name: 'Huracán Test',
-                    type: 'hurricane',
-                    category: 3,
-                    basin: 'atlantic',
-                    headline: 'Huracán de prueba para verificar notificaciones',
-                    description: 'Este es un ciclón de prueba generado para verificar que las notificaciones funcionan correctamente.',
-                    link: '',
-                    pubDate: new Date().toISOString(),
-                    windSpeed: 120,
-                    distanceKm: 150,
-                  };
-                  showCycloneNotification(testCyclone);
-                }}
-              >
-                <Wind className="w-3 h-3 mr-1" />
-                Ciclón
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs h-7"
-                onClick={() => {
-                  const testFires: FireHotspot[] = [{
-                    id: 'test-fire-' + Date.now(),
-                    lat: position?.lat || 19.4326,
-                    lng: position?.lng || -99.1332,
-                    brightness: 350,
-                    confidence: 'high',
-                    acqDate: new Date().toISOString().split('T')[0],
-                    acqTime: new Date().toTimeString().slice(0, 5).replace(':', ''),
-                    satellite: 'TEST',
-                    distanceKm: 25,
-                    frp: 50,
-                  }];
-                  showFireNotification(testFires, 25);
-                }}
-              >
-                <Flame className="w-3 h-3 mr-1" />
-                Incendio
-              </Button>
-            </div>
-          )}
-
-          {mexicoLoading ? (
+          {gdacsLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
-          ) : mexicoError ? (
+          ) : gdacsError ? (
             <div className="text-center py-12 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">{mexicoError}</p>
+              <p className="text-sm">{gdacsError}</p>
             </div>
-          ) : cyclones.length === 0 && fires.length === 0 ? (
+          ) : gdacsAlerts.length === 0 && aemetAlerts.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <Wind className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No hay alertas activas</p>
-              <p className="text-xs mt-1">Ciclones tropicales e incendios forestales</p>
+              <AlertTriangle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No hay alertas internacionales activas</p>
+              <p className="text-xs mt-1">GDACS global + AEMET España</p>
             </div>
           ) : (
             <>
-              {/* Tropical Cyclones Section */}
-              {cyclones.length > 0 && (
+              {/* GDACS Alerts Section */}
+              {gdacsAlerts.length > 0 && (
                 <div className="space-y-2">
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Wind className="w-4 h-4" />
-                    Ciclones Tropicales ({cyclones.length})
+                    🌍 GDACS - Alertas Globales ({gdacsAlerts.length})
                   </h3>
-                  {cyclones.map((cyclone) => (
+                  <p className="text-xs text-muted-foreground">
+                    Sistema Global de Alerta y Coordinación de Desastres
+                  </p>
+                  {gdacsAlerts.slice(0, 15).map((alert) => (
                     <Card 
-                      key={cyclone.id} 
+                      key={alert.id} 
                       className={cn(
                         "bg-card border-border",
-                        cyclone.type === 'hurricane' && "border-l-4 border-l-destructive",
-                        cyclone.type === 'tropical_storm' && "border-l-4 border-l-panic",
-                        cyclone.type === 'tropical_depression' && "border-l-4 border-l-warning"
+                        alert.alertLevel === 'red' && "border-l-4 border-l-destructive",
+                        alert.alertLevel === 'orange' && "border-l-4 border-l-panic",
+                        alert.alertLevel === 'green' && "border-l-4 border-l-success"
                       )}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3">
                           <div className={cn(
                             "p-2 rounded-full shrink-0 text-2xl",
-                            getCycloneSeverityColor(cyclone.type, cyclone.category)
+                            getAlertLevelColor(alert.alertLevel)
                           )}>
-                            {getCycloneIcon(cyclone.type)}
+                            {getCategoryIcon(alert.category)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span className={cn(
                                 "px-2 py-0.5 rounded-full text-xs font-bold uppercase",
-                                cyclone.type === 'hurricane' && "bg-destructive text-destructive-foreground",
-                                cyclone.type === 'tropical_storm' && "bg-panic text-white",
-                                cyclone.type === 'tropical_depression' && "bg-warning text-warning-foreground",
-                                cyclone.type === 'disturbance' && "bg-muted text-muted-foreground"
+                                alert.alertLevel === 'red' && "bg-destructive text-destructive-foreground",
+                                alert.alertLevel === 'orange' && "bg-panic text-white",
+                                alert.alertLevel === 'green' && "bg-success text-success-foreground",
+                                !alert.alertLevel && "bg-muted text-muted-foreground"
                               )}>
-                                {cyclone.type === 'hurricane' ? `HURACÁN${cyclone.category ? ` CAT ${cyclone.category}` : ''}` :
-                                 cyclone.type === 'tropical_storm' ? 'TORMENTA TROPICAL' :
-                                 cyclone.type === 'tropical_depression' ? 'DEPRESIÓN TROPICAL' : 'PERTURBACIÓN'}
+                                {getCategoryLabel(alert.category)}
                               </span>
-                              <Badge variant="outline" className="text-xs">
-                                {cyclone.basin === 'atlantic' ? 'Atlántico' : 'Pacífico'}
-                              </Badge>
-                              {cyclone.distanceKm && (
-                                <span className="text-xs text-primary font-medium flex items-center gap-1">
-                                  <Navigation className="w-3 h-3" />
-                                  {cyclone.distanceKm.toFixed(0)} km
+                              {alert.alertLevel && (
+                                <Badge variant="outline" className={cn(
+                                  "text-xs",
+                                  alert.alertLevel === 'red' && "border-destructive text-destructive",
+                                  alert.alertLevel === 'orange' && "border-panic text-panic",
+                                  alert.alertLevel === 'green' && "border-success text-success"
+                                )}>
+                                  {alert.alertLevel === 'red' ? 'ROJO' : alert.alertLevel === 'orange' ? 'NARANJA' : 'VERDE'}
+                                </Badge>
+                              )}
+                              {alert.magnitude && (
+                                <Badge variant="outline" className="text-xs">
+                                  M{alert.magnitude.toFixed(1)}
+                                </Badge>
+                              )}
+                              {alert.country && (
+                                <span className="text-xs text-muted-foreground">
+                                  📍 {alert.country}
                                 </span>
                               )}
                             </div>
-                            <h3 className="font-semibold text-foreground">{cyclone.name}</h3>
-                            {cyclone.windSpeed && (
-                              <p className="text-sm text-foreground mt-1">
-                                Vientos: {cyclone.windSpeed} mph ({Math.round(cyclone.windSpeed * 1.60934)} km/h)
-                              </p>
-                            )}
-                            <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
-                              {cyclone.description.substring(0, 150)}...
+                            <h3 className="font-semibold text-foreground text-sm line-clamp-2">{alert.title}</h3>
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {alert.description.substring(0, 150)}
+                              {alert.description.length > 150 && '...'}
                             </p>
-                            {cyclone.link && (
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="p-0 h-auto mt-2 text-xs"
-                                onClick={() => window.open(cyclone.link, '_blank')}
-                              >
-                                Ver detalles completos →
-                              </Button>
-                            )}
+                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {new Date(alert.pubDate).toLocaleDateString()}
+                              </span>
+                              {alert.link && (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="p-0 h-auto text-xs"
+                                  onClick={() => window.open(alert.link, '_blank')}
+                                >
+                                  Ver más →
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
+                  {gdacsAlerts.length > 15 && (
+                    <p className="text-xs text-center text-muted-foreground">
+                      +{gdacsAlerts.length - 15} alertas más
+                    </p>
+                  )}
                 </div>
               )}
 
-              {/* Fire Hotspots Section */}
-              {fires.length > 0 && (
+              {/* AEMET Spain Alerts Section */}
+              {aemetAlerts.length > 0 && (
                 <div className="space-y-2 mt-4">
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Flame className="w-4 h-4 text-panic" />
-                    Incendios Forestales Cercanos ({fires.length})
+                    🇪🇸 AEMET - Avisos España ({aemetAlerts.length})
                   </h3>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Puntos de calor detectados en las últimas 24h (VIIRS/NASA)
+                  <p className="text-xs text-muted-foreground">
+                    Agencia Estatal de Meteorología
                   </p>
-                  <div className="grid gap-2">
-                    {fires.slice(0, 10).map((fire) => (
-                      <Card key={fire.id} className="bg-card border-border">
-                        <CardContent className="p-3">
-                          <div className="flex items-center gap-3">
-                            <div className={cn(
-                              "p-2 rounded-full shrink-0",
-                              getFireConfidenceColor(fire.confidence)
-                            )}>
-                              <Flame className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className={cn(
-                                  "px-2 py-0.5 rounded-full text-xs font-bold",
-                                  fire.confidence === 'high' && "bg-destructive text-destructive-foreground",
-                                  fire.confidence === 'nominal' && "bg-warning text-warning-foreground",
-                                  fire.confidence === 'low' && "bg-muted text-muted-foreground"
-                                )}>
-                                  {fire.confidence === 'high' ? 'ALTA' : fire.confidence === 'nominal' ? 'MEDIA' : 'BAJA'} CONF.
-                                </span>
-                                {fire.distanceKm && (
-                                  <span className="text-xs text-primary font-medium flex items-center gap-1">
-                                    <Navigation className="w-3 h-3" />
-                                    {fire.distanceKm.toFixed(1)} km
-                                  </span>
-                                )}
-                                <span className="text-xs text-muted-foreground">
-                                  FRP: {fire.frp.toFixed(1)} MW
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                <MapPin className="w-3 h-3" />
-                                <span>{fire.lat.toFixed(4)}, {fire.lng.toFixed(4)}</span>
-                                <span>•</span>
-                                <span>{fire.acqDate} {fire.acqTime}</span>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => window.open(`https://maps.google.com/?q=${fire.lat},${fire.lng}`, '_blank')}
-                            >
-                              <MapPin className="w-4 h-4" />
-                            </Button>
+                  {aemetAlerts.map((alert) => (
+                    <Card 
+                      key={alert.id} 
+                      className={cn(
+                        "bg-card border-border",
+                        alert.level === 'rojo' && "border-l-4 border-l-destructive",
+                        alert.level === 'naranja' && "border-l-4 border-l-panic",
+                        alert.level === 'amarillo' && "border-l-4 border-l-warning"
+                      )}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-start gap-3">
+                          <div className={cn(
+                            "p-2 rounded-full shrink-0",
+                            getAEMETLevelColor(alert.level)
+                          )}>
+                            <CloudRain className="w-4 h-4" />
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                  {fires.length > 10 && (
-                    <p className="text-xs text-center text-muted-foreground">
-                      +{fires.length - 10} puntos de calor más
-                    </p>
-                  )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              {alert.level && (
+                                <span className={cn(
+                                  "px-2 py-0.5 rounded-full text-xs font-bold uppercase",
+                                  alert.level === 'rojo' && "bg-destructive text-destructive-foreground",
+                                  alert.level === 'naranja' && "bg-panic text-white",
+                                  alert.level === 'amarillo' && "bg-warning text-warning-foreground"
+                                )}>
+                                  {alert.level.toUpperCase()}
+                                </span>
+                              )}
+                              {alert.zone && (
+                                <span className="text-xs text-muted-foreground">
+                                  📍 {alert.zone}
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="font-medium text-foreground text-sm line-clamp-2">{alert.title}</h4>
+                            {alert.description && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {alert.description.substring(0, 120)}
+                                {alert.description.length > 120 && '...'}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {new Date(alert.pubDate).toLocaleDateString()}
+                              </span>
+                              {alert.link && (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="p-0 h-auto text-xs"
+                                  onClick={() => window.open(alert.link, '_blank')}
+                                >
+                                  Ver más →
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
             </>
