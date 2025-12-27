@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus, MoreVertical } from 'lucide-react';
+import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus, MoreVertical, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -132,6 +132,7 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   const [sendingImage, setSendingImage] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
   // Check notification permission on mount
@@ -940,20 +941,40 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                 </div>
               ) : (
               <div className="flex gap-2">
+                  {/* Hidden input for gallery */}
                   <input
                     ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  {/* Hidden input for camera */}
+                  <input
+                    ref={cameraInputRef}
                     type="file"
                     accept="image/*"
                     capture="environment"
                     onChange={handleImageSelect}
                     className="hidden"
                   />
+                  {/* Camera button */}
+                  <Button
+                    onClick={() => cameraInputRef.current?.click()}
+                    size="icon"
+                    variant="ghost"
+                    disabled={sending}
+                    title="Tomar foto"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </Button>
+                  {/* Gallery button */}
                   <Button
                     onClick={() => imageInputRef.current?.click()}
                     size="icon"
                     variant="ghost"
                     disabled={sending}
-                    title="Enviar imagen"
+                    title="Enviar imagen de galería"
                   >
                     <ImagePlus className="w-4 h-4" />
                   </Button>
