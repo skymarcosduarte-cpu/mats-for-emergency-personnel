@@ -136,6 +136,24 @@ export function useUserLocations() {
           fetchLocations();
         }
       )
+      // Listen to profiles_public for new users becoming visible
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles_public' },
+        (payload) => {
+          console.log('[useUserLocations] profiles_public changed - refetching for new user');
+          fetchLocations();
+        }
+      )
+      // Listen to user_roles for new user registrations
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'user_roles' },
+        (payload) => {
+          console.log('[useUserLocations] New user role created - refetching');
+          fetchLocations();
+        }
+      )
       .subscribe((status) => {
         console.log('[useUserLocations] Subscription status:', status);
       });
