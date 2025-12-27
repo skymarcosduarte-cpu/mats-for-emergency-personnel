@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Check, CheckCheck, Circle } from 'lucide-react';
-import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus, Camera } from 'lucide-react';
+import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus, Camera, MapPin } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,6 +136,9 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Location state
+  const [sendingLocation, setSendingLocation] = useState(false);
   
   // User online status
   const [userOnlineStatus, setUserOnlineStatus] = useState<{
@@ -316,6 +319,42 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     setSelectedUserId(null);
     setSelectedUserName(null);
     setShowClearConfirm(false);
+  };
+
+  const handleSendLocation = async () => {
+    if (!selectedUserId || sendingLocation) return;
+    
+    setSendingLocation(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      });
+      
+      const { latitude, longitude } = position.coords;
+      const locationMessage = `📍 Mi ubicación: https://www.google.com/maps?q=${latitude},${longitude}`;
+      
+      const success = await sendMessage(selectedUserId, locationMessage);
+      if (success) {
+        toast.success('Ubicación enviada');
+      }
+    } catch (error: any) {
+      console.error('Error getting location:', error);
+      if (error.code === 1) {
+        toast.error('Permiso de ubicación denegado');
+      } else if (error.code === 2) {
+        toast.error('No se pudo obtener la ubicación');
+      } else if (error.code === 3) {
+        toast.error('Tiempo de espera agotado');
+      } else {
+        toast.error('Error al enviar ubicación');
+      }
+    } finally {
+      setSendingLocation(false);
+    }
   };
 
   const handleSelectConversation = (userId: string, displayName: string | null) => {
@@ -1072,6 +1111,20 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                     title="Enviar imagen de galería"
                   >
                     <ImagePlus className="w-4 h-4" />
+                  </Button>
+                  {/* Location button */}
+                  <Button
+                    onClick={handleSendLocation}
+                    size="icon"
+                    variant="ghost"
+                    disabled={sending || sendingLocation}
+                    title="Enviar ubicación"
+                  >
+                    {sendingLocation ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <MapPin className="w-4 h-4" />
+                    )}
                   </Button>
                   <Button
                     onClick={startRecording}
