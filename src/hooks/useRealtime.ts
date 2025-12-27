@@ -107,7 +107,6 @@ export function useUserLocations() {
         { event: 'UPDATE', schema: 'public', table: 'user_locations' },
         (payload) => {
           console.log('[useUserLocations] UPDATE - refetching for role info');
-          // Refetch to get role info from view
           fetchLocations();
         }
       )
@@ -116,6 +115,24 @@ export function useUserLocations() {
         { event: 'DELETE', schema: 'public', table: 'user_locations' },
         (payload) => {
           console.log('[useUserLocations] DELETE:', payload.old);
+          fetchLocations();
+        }
+      )
+      // Also listen to transit_trips changes to update is_in_transit status
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'transit_trips' },
+        (payload) => {
+          console.log('[useUserLocations] transit_trips changed - refetching');
+          fetchLocations();
+        }
+      )
+      // Listen to profiles changes for share_location updates
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles' },
+        (payload) => {
+          console.log('[useUserLocations] profiles changed - refetching');
           fetchLocations();
         }
       )
