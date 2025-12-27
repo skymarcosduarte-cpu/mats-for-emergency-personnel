@@ -112,6 +112,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [shareLocation, setShareLocation] = useState(profile?.share_location ?? false);
   const [shareMedicalInfo, setShareMedicalInfo] = useState(profile?.share_medical_info ?? false);
+  const [pendingMedicalDisable, setPendingMedicalDisable] = useState<'has_first_aid_kit' | 'has_ambulance' | null>(null);
   const [medicalForm, setMedicalForm] = useState({
     blood_type: profile?.blood_type || '',
     allergies: profile?.allergies || '',
@@ -753,7 +754,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                      onClick={() => handleMedicalToggle('has_first_aid_kit', false)}
+                      onClick={() => setPendingMedicalDisable('has_first_aid_kit')}
                       disabled={savingMedical}
                       title="Ya no tengo botiquín disponible"
                     >
@@ -790,7 +791,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                      onClick={() => handleMedicalToggle('has_ambulance', false)}
+                      onClick={() => setPendingMedicalDisable('has_ambulance')}
                       disabled={savingMedical}
                       title="Ya no tengo ambulancia disponible"
                     >
@@ -1907,6 +1908,48 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </Button>
             <Button onClick={() => setShowDataExportDialog(false)}>
               Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm disable medical resource dialog */}
+      <Dialog open={!!pendingMedicalDisable} onOpenChange={(open) => !open && setPendingMedicalDisable(null)}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" />
+              {pendingMedicalDisable === 'has_first_aid_kit' 
+                ? '¿Desactivar botiquín?' 
+                : '¿Desactivar ambulancia?'}
+            </DialogTitle>
+            <DialogDescription>
+              {pendingMedicalDisable === 'has_first_aid_kit' 
+                ? 'Tu icono en el mapa dejará de mostrar que tienes botiquín disponible. ¿Estás seguro?' 
+                : 'Tu icono en el mapa dejará de mostrar que tienes ambulancia disponible. ¿Estás seguro?'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setPendingMedicalDisable(null)}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (pendingMedicalDisable) {
+                  await handleMedicalToggle(pendingMedicalDisable, false);
+                  setPendingMedicalDisable(null);
+                }
+              }}
+              disabled={savingMedical}
+              className="flex-1"
+            >
+              {savingMedical ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Sí, desactivar
             </Button>
           </DialogFooter>
         </DialogContent>
