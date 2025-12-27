@@ -1,8 +1,8 @@
 // Transit Screen for COMUNIDAD EX SOS
 // Road + Flight transit tracking with incident reports
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -64,13 +64,17 @@ interface TransitTrip {
 export const TransitScreen: React.FC<TransitScreenProps> = ({
   userRole = 'RESCATISTA'
 }) => {
-  const [activeTab, setActiveTab] = useState<'trips' | 'reports'>('trips');
+  const [activeTab, setActiveTab] = useState<'trips' | 'reports' | 'history'>('trips');
   const [showTripDialog, setShowTripDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [transitType, setTransitType] = useState<TransitType>('ROAD');
   const [submitting, setSubmitting] = useState(false);
   const [myTrips, setMyTrips] = useState<TransitTrip[]>([]);
   const [loadingTrips, setLoadingTrips] = useState(true);
+  
+  // History filters
+  const [historyStatusFilter, setHistoryStatusFilter] = useState<'ALL' | 'COMPLETED' | 'CANCELLED'>('ALL');
+  const [historyDateFilter, setHistoryDateFilter] = useState<'ALL' | 'WEEK' | 'MONTH' | 'YEAR'>('ALL');
   
   // Trip form state
   const [tripForm, setTripForm] = useState({
@@ -501,23 +505,27 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trips' | 'reports')} className="p-4">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="trips">Mis Viajes</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trips' | 'reports' | 'history')} className="p-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="trips">Activos</TabsTrigger>
+          <TabsTrigger value="history" className="gap-1">
+            <History className="w-3.5 h-3.5" />
+            Historial
+          </TabsTrigger>
           <TabsTrigger value="reports">Reportes</TabsTrigger>
         </TabsList>
 
-        {/* Trips Tab */}
+        {/* Active Trips Tab */}
         <TabsContent value="trips" className="space-y-3 mt-4">
           {loadingTrips ? (
             <div className="text-center py-12 text-muted-foreground">
               <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin" />
               <p>Cargando viajes...</p>
             </div>
-          ) : myTrips.length === 0 ? (
+          ) : myTrips.filter(t => t.status === 'ACTIVE').length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Car className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No hay viajes registrados</p>
+              <p>No hay viajes activos</p>
               <Button
                 variant="outline"
                 className="mt-4"
@@ -528,7 +536,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               </Button>
             </div>
           ) : (
-            myTrips.map((trip) => {
+            myTrips.filter(t => t.status === 'ACTIVE').map((trip) => {
               const isActive = trip.status === 'ACTIVE';
               const etaDate = new Date(trip.eta);
               const isOverdue = isActive && etaDate < new Date();
@@ -662,6 +670,160 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               );
             })
           )}
+        </TabsContent>
+
+        {/* History Tab */}
+        <TabsContent value="history" className="space-y-3 mt-4">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 pb-2 border-b border-border">
+            <Select value={historyStatusFilter} onValueChange={(v) => setHistoryStatusFilter(v as 'ALL' | 'COMPLETED' | 'CANCELLED')}>
+              <SelectTrigger className="w-[140px] h-8 text-xs">
+                <Filter className="w-3 h-3 mr-1" />
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todos</SelectItem>
+                <SelectItem value="COMPLETED">Completados</SelectItem>
+                <SelectItem value="CANCELLED">Cancelados</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={historyDateFilter} onValueChange={(v) => setHistoryDateFilter(v as 'ALL' | 'WEEK' | 'MONTH' | 'YEAR')}>
+              <SelectTrigger className="w-[140px] h-8 text-xs">
+                <Calendar className="w-3 h-3 mr-1" />
+                <SelectValue placeholder="Fecha" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todo el tiempo</SelectItem>
+                <SelectItem value="WEEK">Última semana</SelectItem>
+                <SelectItem value="MONTH">Último mes</SelectItem>
+                <SelectItem value="YEAR">Último año</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {(() => {
+            const now = new Date();
+            const filteredHistory = myTrips.filter(trip => {
+              // Filter by status
+              if (trip.status === 'ACTIVE') return false;
+              if (historyStatusFilter !== 'ALL' && trip.status !== historyStatusFilter) return false;
+              
+              // Filter by date
+              if (historyDateFilter !== 'ALL') {
+                const tripDate = new Date(trip.arrived_at || trip.created_at);
+                const diffDays = (now.getTime() - tripDate.getTime()) / (1000 * 60 * 60 * 24);
+                if (historyDateFilter === 'WEEK' && diffDays > 7) return false;
+                if (historyDateFilter === 'MONTH' && diffDays > 30) return false;
+                if (historyDateFilter === 'YEAR' && diffDays > 365) return false;
+              }
+              
+              return true;
+            });
+
+            if (loadingTrips) {
+              return (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin" />
+                  <p>Cargando historial...</p>
+                </div>
+              );
+            }
+
+            if (filteredHistory.length === 0) {
+              return (
+                <div className="text-center py-12 text-muted-foreground">
+                  <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No hay viajes en el historial</p>
+                  <p className="text-xs mt-1">Los viajes completados o cancelados aparecerán aquí</p>
+                </div>
+              );
+            }
+
+            return filteredHistory.map((trip) => {
+              const isCompleted = trip.status === 'COMPLETED';
+              const tripDate = new Date(trip.arrived_at || trip.created_at);
+              
+              return (
+                <Card key={trip.id} className="bg-card border-border">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className={cn(
+                        'w-10 h-10 rounded-lg flex items-center justify-center',
+                        isCompleted ? 'bg-safe' : 'bg-muted',
+                        'text-white'
+                      )}>
+                        {isCompleted ? (
+                          <CheckCircle className="w-5 h-5" />
+                        ) : (
+                          <XCircle className="w-5 h-5" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-foreground">
+                            {trip.origin} → {trip.destination}
+                          </h3>
+                          <span className={cn(
+                            "text-xs px-2 py-0.5 rounded",
+                            isCompleted ? "bg-safe/20 text-safe" : "bg-muted text-muted-foreground"
+                          )}>
+                            {isCompleted ? 'COMPLETADO' : 'CANCELADO'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          {trip.transit_type === 'ROAD' ? (
+                            <Car className="w-3 h-3" />
+                          ) : (
+                            <Plane className="w-3 h-3" />
+                          )}
+                          <span>{tripDate.toLocaleDateString('es-MX', { 
+                            day: 'numeric', 
+                            month: 'short',
+                            year: 'numeric'
+                          })}</span>
+                          {trip.plates && (
+                            <>
+                              <span>•</span>
+                              <span>🚗 {trip.plates}</span>
+                            </>
+                          )}
+                          {trip.flight_number && (
+                            <>
+                              <span>•</span>
+                              <span>✈️ {trip.flight_number}</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex justify-end mt-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={async () => {
+                              if (!confirm('¿Eliminar este viaje del historial?')) return;
+                              try {
+                                await supabase
+                                  .from('transit_trips')
+                                  .delete()
+                                  .eq('id', trip.id);
+                                toast.success('Viaje eliminado');
+                                fetchMyTrips();
+                              } catch (e) {
+                                toast.error('Error al eliminar viaje');
+                              }
+                            }}
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Eliminar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            });
+          })()}
         </TabsContent>
 
         {/* Reports Tab */}
