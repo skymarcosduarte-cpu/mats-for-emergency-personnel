@@ -346,6 +346,7 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   const TRANSPORT_OPTIONS = [
     { id: 'walking', label: 'Caminando', icon: Footprints, speedKmh: 5 },
     { id: 'bicycle', label: 'Bicicleta', icon: Bike, speedKmh: 15 },
+    { id: 'motorcycle', label: 'Moto', icon: Bike, speedKmh: 50 },
     { id: 'car', label: 'Automóvil', icon: Car, speedKmh: 40 },
     { id: 'public_transport', label: 'Transporte Público', icon: Bus, speedKmh: 25 },
     { id: 'ambulance', label: 'Ambulancia', icon: Ambulance, speedKmh: 60 },
@@ -987,7 +988,7 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
                     );
                   })}
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {TRANSPORT_OPTIONS.slice(3).map((transport) => {
                     const Icon = transport.icon;
                     const isSelected = selectedTransport === transport.id;
