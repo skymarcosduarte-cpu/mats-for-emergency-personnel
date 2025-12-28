@@ -715,6 +715,46 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               const etaDate = new Date(trip.eta);
               const isOverdue = isActive && etaDate < new Date();
               
+              // Calculate trip progress if we have all coordinates
+              const tripProgress = (() => {
+                if (!trip.origin_lat || !trip.origin_lng || !trip.destination_lat || !trip.destination_lng || !position) {
+                  return null;
+                }
+                
+                const totalDistance = calculateDistance(
+                  trip.origin_lat,
+                  trip.origin_lng,
+                  trip.destination_lat,
+                  trip.destination_lng
+                );
+                
+                const remainingDistance = calculateDistance(
+                  position.lat,
+                  position.lng,
+                  trip.destination_lat,
+                  trip.destination_lng
+                );
+                
+                const distanceFromOrigin = calculateDistance(
+                  trip.origin_lat,
+                  trip.origin_lng,
+                  position.lat,
+                  position.lng
+                );
+                
+                // Progress percentage (clamped between 0-100)
+                const progress = Math.min(100, Math.max(0, 
+                  ((totalDistance - remainingDistance) / totalDistance) * 100
+                ));
+                
+                return {
+                  totalDistance,
+                  remainingDistance,
+                  distanceFromOrigin,
+                  progress: Math.round(progress),
+                };
+              })();
+              
               return (
                 <Card key={trip.id} className={cn(
                   "bg-card border-border",
@@ -788,8 +828,31 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                           </div>
                         )}
                         
-                        {/* Distance and time estimate for trips with coordinates */}
-                        {trip.origin_lat && trip.origin_lng && trip.destination_lat && trip.destination_lng && (
+                        {/* Trip progress bar */}
+                        {tripProgress && (
+                          <div className="mt-3 space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground flex items-center gap-1">
+                                <Navigation className="w-3 h-3" />
+                                Progreso del viaje
+                              </span>
+                              <span className="font-medium text-primary">{tripProgress.progress}%</span>
+                            </div>
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-safe to-primary transition-all duration-500 rounded-full"
+                                style={{ width: `${tripProgress.progress}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-[10px] text-muted-foreground">
+                              <span>Recorrido: {formatDistance(tripProgress.distanceFromOrigin)}</span>
+                              <span>Restante: {formatDistance(tripProgress.remainingDistance)}</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Distance and time estimate for trips with coordinates (no progress available) */}
+                        {!tripProgress && trip.origin_lat && trip.origin_lng && trip.destination_lat && trip.destination_lng && (
                           <div className="flex items-center gap-3 mt-2 text-xs bg-muted/30 rounded px-2 py-1.5">
                             <div className="flex items-center gap-1">
                               <Route className="w-3 h-3 text-primary" />
