@@ -2262,12 +2262,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
 
   return (
     <div className={cn('relative w-full h-full', className)}>
-      {/* Location error banner */}
-      {locationError && (
-        <div className="absolute top-2 left-2 right-2 z-[1000] bg-warning/90 text-background p-2 rounded-lg text-sm font-medium">
-          {locationError}
-        </div>
-      )}
+      {/* Location error banner removed - was not legible on iPhone and adds clutter */}
 
       {/* No emergency contacts warning banner - only show after loading completes */}
       {!contactsLoading && !hasMinimumContacts && (
