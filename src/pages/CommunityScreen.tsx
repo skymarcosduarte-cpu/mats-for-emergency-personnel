@@ -30,7 +30,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 import TripRouteMap from '@/components/TripRouteMap';
 import { supabase } from '@/integrations/supabase/client';
-import { formatDistanceToNow, differenceInMinutes, isPast, format } from 'date-fns';
+import { formatDistanceToNow, differenceInMinutes, isPast, format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -114,46 +114,54 @@ export const CommunityScreen: React.FC = () => {
   }, [selectedTrip?.id, fetchRouteHistory]);
 
   // Format ETA for display - uses dynamic ETA if available
-  const formatEta = (trip: typeof communityTrips[0]) => {
-    // Use dynamic ETA if available (calculated from real GPS position)
-    if (trip.dynamic_eta_minutes !== null && trip.dynamic_eta_minutes !== undefined) {
-      const minutes = trip.dynamic_eta_minutes;
-      
-      if (minutes < 1) {
-        return { text: 'Llegando...', isLate: false, isDynamic: true };
+  const formatEta = (trip: typeof communityTrips[number]) => {
+    try {
+      // Use dynamic ETA if available (calculated from real GPS position)
+      if (trip.dynamic_eta_minutes !== null && trip.dynamic_eta_minutes !== undefined) {
+        const minutes = trip.dynamic_eta_minutes;
+
+        if (minutes < 1) {
+          return { text: 'Llegando...', isLate: false, isDynamic: true };
+        }
+
+        if (minutes < 60) {
+          return { text: `${minutes} min`, isLate: false, isDynamic: true };
+        } else {
+          const hours = Math.floor(minutes / 60);
+          const mins = minutes % 60;
+          return { text: `${hours}h ${mins > 0 ? `${mins}m` : ''}`, isLate: false, isDynamic: true };
+        }
       }
-      
-      if (minutes < 60) {
-        return { text: `${minutes} min`, isLate: false, isDynamic: true };
+
+      // Fallback to static ETA from database
+      const etaDate = new Date(trip.eta);
+      const now = new Date();
+
+      if (!isValid(etaDate)) {
+        return { text: 'ETA', isLate: false, isDynamic: false };
+      }
+
+      if (isPast(etaDate)) {
+        return { text: 'Llegando...', isLate: true, isDynamic: false };
+      }
+
+      const minutesRemaining = differenceInMinutes(etaDate, now);
+
+      if (minutesRemaining < 60) {
+        return { text: `${minutesRemaining} min`, isLate: false, isDynamic: false };
+      } else if (minutesRemaining < 1440) {
+        const hours = Math.floor(minutesRemaining / 60);
+        const mins = minutesRemaining % 60;
+        return { text: `${hours}h ${mins > 0 ? `${mins}m` : ''}`, isLate: false, isDynamic: false };
       } else {
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        return { text: `${hours}h ${mins > 0 ? `${mins}m` : ''}`, isLate: false, isDynamic: true };
+        return {
+          text: formatDistanceToNow(etaDate, { addSuffix: true, locale: es }),
+          isLate: false,
+          isDynamic: false,
+        };
       }
-    }
-    
-    // Fallback to static ETA from database
-    const etaDate = new Date(trip.eta);
-    const now = new Date();
-    
-    if (isPast(etaDate)) {
-      return { text: 'Llegando...', isLate: true, isDynamic: false };
-    }
-    
-    const minutesRemaining = differenceInMinutes(etaDate, now);
-    
-    if (minutesRemaining < 60) {
-      return { text: `${minutesRemaining} min`, isLate: false, isDynamic: false };
-    } else if (minutesRemaining < 1440) {
-      const hours = Math.floor(minutesRemaining / 60);
-      const mins = minutesRemaining % 60;
-      return { text: `${hours}h ${mins > 0 ? `${mins}m` : ''}`, isLate: false, isDynamic: false };
-    } else {
-      return { 
-        text: formatDistanceToNow(etaDate, { addSuffix: true, locale: es }),
-        isLate: false,
-        isDynamic: false,
-      };
+    } catch (e) {
+      return { text: 'ETA', isLate: false, isDynamic: false };
     }
   };
 
@@ -272,89 +280,6 @@ export const CommunityScreen: React.FC = () => {
                     </div>
                   </div>
                 ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Community Active Trips */}
-          {communityTrips.length > 0 && (
-            <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Car className="w-5 h-5 text-amber-500" />
-                  En Tránsito 🚗
-                  <Badge variant="secondary" className="ml-auto text-xs">
-                    {communityTrips.length}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {communityTrips.slice(0, 5).map((trip) => {
-                  const etaInfo = formatEta(trip);
-                  const hasLocation = trip.current_lat && trip.current_lng;
-                  return (
-                    <div 
-                      key={trip.id}
-                      onClick={() => setSelectedTrip(trip)}
-                      className={cn(
-                        "flex items-center justify-between p-2 bg-background/50 rounded-lg transition-all",
-                        "hover:bg-background/80 cursor-pointer active:scale-[0.98]"
-                      )}
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-xl flex-shrink-0 relative">
-                          {trip.transit_type === 'FLIGHT' ? '✈️' : '🚗'}
-                          {hasLocation && (
-                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-safe rounded-full border-2 border-background animate-pulse" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-foreground truncate">
-                            {trip.nickname || 'Usuario'}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                            <MapPin className="w-3 h-3 flex-shrink-0" />
-                            {trip.origin} → {trip.destination}
-                          </p>
-                          {/* Show remaining distance if available */}
-                          {trip.remaining_distance_km !== null && trip.remaining_distance_km !== undefined && (
-                            <p className="text-[10px] text-primary/80 mt-0.5">
-                              📍 {formatDistanceKm(trip.remaining_distance_km)} restantes
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                        <div className="flex flex-col items-end">
-                          <Badge 
-                            variant={etaInfo.isLate ? "destructive" : "secondary"}
-                            className={cn(
-                              "text-xs",
-                              !etaInfo.isLate && "bg-amber-500/20 text-amber-700 dark:text-amber-400"
-                            )}
-                          >
-                            <Clock className="w-3 h-3 mr-1" />
-                            {etaInfo.text}
-                            {etaInfo.isDynamic && (
-                              <span className="w-1.5 h-1.5 bg-safe rounded-full ml-1 animate-pulse" />
-                            )}
-                          </Badge>
-                          {trip.transit_type === 'FLIGHT' && trip.flight_number && (
-                            <span className="text-[10px] text-muted-foreground mt-0.5">
-                              {trip.airline} {trip.flight_number}
-                            </span>
-                          )}
-                        </div>
-                        <Map className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                    </div>
-                  );
-                })}
-                {communityTrips.length > 5 && (
-                  <p className="text-xs text-muted-foreground text-center pt-1">
-                    +{communityTrips.length - 5} más en tránsito
-                  </p>
-                )}
               </CardContent>
             </Card>
           )}
