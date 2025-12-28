@@ -961,6 +961,35 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
             <div className="w-4 h-4 rounded-full animate-pulse" style={{ background: '#3b82f6' }} />
             <span className="text-foreground">Rescatista</span>
           </div>
+          
+          {/* Viajes activos */}
+          <div className="border-t border-border my-2 pt-2">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Viajes en tránsito</div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full" style={{ background: '#f59e0b' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                  <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.3 1 12.1 1 13v3c0 .6.4 1 1 1h2"/>
+                </svg>
+              </div>
+              <span className="text-foreground">Usuario en viaje</span>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <div 
+                className="w-8 h-1 rounded" 
+                style={{ 
+                  background: 'repeating-linear-gradient(90deg, #f59e0b 0, #f59e0b 4px, transparent 4px, transparent 8px)',
+                  opacity: 0.7
+                }} 
+              />
+              <span className="text-foreground text-[11px]">Ruta de viaje activo</span>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="w-3 h-3 rounded-full" style={{ background: '#22c55e', border: '1px solid #fff' }} />
+              <span className="text-foreground text-[11px]">Origen</span>
+              <div className="w-3 h-3 rounded-full ml-2" style={{ background: '#f59e0b', border: '1px solid #fff' }} />
+              <span className="text-foreground text-[11px]">Destino</span>
+            </div>
+          </div>
 
           {/* Recursos comunitarios Toggles */}
           <div className="border-t border-border my-2 pt-2">
