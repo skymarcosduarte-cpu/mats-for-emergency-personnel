@@ -85,21 +85,28 @@ export function useLocation(options: UseLocationOptions = {}) {
 
   // Handle error
   const handleError = useCallback((err: GeolocationPositionError) => {
+    // Spec-defined codes: 1=PERMISSION_DENIED, 2=POSITION_UNAVAILABLE, 3=TIMEOUT
+    // iOS Safari doesn't reliably expose the PERMISSION_DENIED constants on the error instance.
     let errorMessage: string;
-    
+
     switch (err.code) {
-      case err.PERMISSION_DENIED:
+      case 1:
         errorMessage = 'Permiso de ubicación denegado. Por favor, habilita el acceso a la ubicación.';
         break;
-      case err.POSITION_UNAVAILABLE:
+      case 2:
         errorMessage = 'No se pudo obtener la ubicación. Verifica tu conexión GPS.';
         break;
-      case err.TIMEOUT:
+      case 3:
         errorMessage = 'La solicitud de ubicación expiró. Intenta de nuevo.';
         break;
       default:
         errorMessage = 'Error al obtener la ubicación.';
     }
+
+    console.warn('[useLocation] Geolocation error', {
+      code: err.code,
+      message: (err as any)?.message,
+    });
 
     setState(prev => ({
       ...prev,
@@ -123,6 +130,28 @@ export function useLocation(options: UseLocationOptions = {}) {
           resolve(geoPos);
         },
         (err) => {
+          // iOS can be picky with high accuracy + fresh fix; retry once with relaxed settings.
+          const code = (err as any)?.code;
+          if (code === 3 && opts.enableHighAccuracy) {
+            navigator.geolocation.getCurrentPosition(
+              (pos2) => {
+                const geoPos2 = convertPosition(pos2);
+                handlePosition(pos2);
+                resolve(geoPos2);
+              },
+              (err2) => {
+                handleError(err2);
+                reject(err2);
+              },
+              {
+                enableHighAccuracy: false,
+                timeout: Math.max(15000, opts.timeout ?? 0),
+                maximumAge: Math.max(60000, opts.maximumAge ?? 0),
+              }
+            );
+            return;
+          }
+
           handleError(err);
           reject(err);
         },
