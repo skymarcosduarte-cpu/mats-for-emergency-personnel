@@ -490,12 +490,15 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       )}
       
       {/* Internal Messaging Modal */}
-      <InternalMessaging
-        isOpen={messagingOpen}
-        onClose={() => setMessagingOpen(false)}
-        initialUserId={messagingUserId}
-        initialUserName={messagingUserName}
-      />
+      {messagingOpen && (
+        <InternalMessaging
+          isOpen={messagingOpen}
+          onClose={() => setMessagingOpen(false)}
+          initialUserId={messagingUserId}
+          initialUserName={messagingUserName}
+        />
+      )}
+
     </div>
   );
 }

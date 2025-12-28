@@ -261,15 +261,18 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
         </Sheet>
 
         {/* Internal Messages Modal */}
-        <InternalMessaging
-          isOpen={!!messageUserId}
-          onClose={() => {
-            setMessageUserId(null);
-            setMessageUserName(null);
-          }}
-          initialUserId={messageUserId}
-          initialUserName={messageUserName}
-        />
+        {!!messageUserId && (
+          <InternalMessaging
+            isOpen={!!messageUserId}
+            onClose={() => {
+              setMessageUserId(null);
+              setMessageUserName(null);
+            }}
+            initialUserId={messageUserId}
+            initialUserName={messageUserName}
+          />
+        )}
+
       </>
     );
   }
