@@ -849,7 +849,7 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
     return (
       <button
         onClick={() => setIsHidden(false)}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-[500] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border p-2 hover:bg-accent/50 transition-colors"
+        className="fixed left-4 bottom-28 z-[1200] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border p-2 hover:bg-accent/50 transition-colors"
         aria-label="Mostrar leyenda"
       >
         <Info className="w-4 h-4 text-muted-foreground" />
@@ -868,7 +868,7 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
   ];
 
   return (
-    <div className="absolute left-4 top-1/2 -translate-y-1/2 z-[500] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border overflow-hidden max-h-[60vh] overflow-y-auto">
+    <div className="fixed left-4 bottom-28 z-[1200] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border overflow-hidden max-h-[50vh] overflow-y-auto">
       <div className="flex items-center">
         <button 
           onClick={() => setIsExpanded(!isExpanded)}
@@ -1337,9 +1337,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     mapInstanceRef.current = map;
     setMapReady(true);
 
-    // Close menus when map is clicked/tapped
+    // Close menus/panels when map is clicked/tapped
     const handleMapClick = () => {
       setForceCloseMenus(prev => prev + 1);
+      setUsersPanelOpen(false);
     };
     map.on('click', handleMapClick);
 
@@ -2716,6 +2717,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         onCenterOnUser={handleViewLocation}
         onMessageUser={handleMessageUser}
         onOpenChange={setUsersPanelOpen}
+        forceCloseSignal={forceCloseMenus}
       />
 
       {/* Internal Messaging Modal */}

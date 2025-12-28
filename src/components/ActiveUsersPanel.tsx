@@ -1,7 +1,7 @@
 // Active Users Panel Component
 // Shows a list of active users without PII, with buttons to center on each and message
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Users, MapPin, ChevronLeft, ChevronRight, Clock, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -27,6 +27,7 @@ interface ActiveUsersPanelProps {
   onCenterOnUser: (lat: number, lng: number) => void;
   onMessageUser?: (userId: string, displayName: string | null) => void;
   onOpenChange?: (isOpen: boolean) => void;
+  forceCloseSignal?: number; // Incremented to force close when map is tapped
   className?: string;
 }
 
@@ -35,10 +36,19 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
   onCenterOnUser,
   onMessageUser,
   onOpenChange,
+  forceCloseSignal = 0,
   className,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { user: currentUser } = useAuth();
+
+  // Force close when the map is tapped
+  useEffect(() => {
+    if (forceCloseSignal > 0) {
+      setIsOpen(false);
+      onOpenChange?.(false);
+    }
+  }, [forceCloseSignal, onOpenChange]);
 
   const handleToggle = () => {
     const newState = !isOpen;
