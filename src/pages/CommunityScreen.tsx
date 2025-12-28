@@ -36,12 +36,15 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 
-const EVENT_TYPES: { value: CommunityEventType; label: string; icon: React.ReactNode }[] = [
-  { value: 'BIRTHDAY', label: '🎂 Cumpleaños', icon: <Cake className="w-4 h-4" /> },
-  { value: 'HEALTH_NOTICE', label: '🏥 Aviso de Salud', icon: <Heart className="w-4 h-4" /> },
-  { value: 'HOSPITAL_SUPPORT', label: '💊 Apoyo Hospitalario', icon: <Heart className="w-4 h-4" /> },
-  { value: 'DECEASE', label: '🕯️ Fallecimiento', icon: <Heart className="w-4 h-4" /> },
-  { value: 'ANNOUNCEMENT', label: '📢 Anuncio', icon: <Megaphone className="w-4 h-4" /> },
+const EVENT_TYPES: { value: CommunityEventType; label: string }[] = [
+  { value: 'BIRTHDAY', label: '🎂 Cumpleaños' },
+  { value: 'EVENT', label: '📅 Evento' },
+  { value: 'ANNIVERSARY', label: '💍 Aniversario' },
+  { value: 'DECEASE', label: '🕯️ Deceso' },
+  { value: 'VISIT', label: '👋 Visita' },
+  { value: 'CELEBRATION', label: '🎉 Hoy se Celebra' },
+  { value: 'RECOMMENDATION', label: '💡 Recomendación' },
+  { value: 'OTHER', label: '📝 Otro' },
 ];
 
 export const CommunityScreen: React.FC = () => {
@@ -551,9 +554,9 @@ export const CommunityScreen: React.FC = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona tipo" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[9999] bg-popover border-border">
                   {EVENT_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
+                    <SelectItem key={type.value} value={type.value} className="cursor-pointer">
                       {type.label}
                     </SelectItem>
                   ))}

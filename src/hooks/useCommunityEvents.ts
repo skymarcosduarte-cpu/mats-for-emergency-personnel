@@ -6,10 +6,13 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type CommunityEventType = 
   | 'BIRTHDAY' 
-  | 'HEALTH_NOTICE' 
-  | 'HOSPITAL_SUPPORT' 
-  | 'DECEASE' 
-  | 'ANNOUNCEMENT';
+  | 'EVENT'
+  | 'ANNIVERSARY'
+  | 'DECEASE'
+  | 'VISIT'
+  | 'CELEBRATION'
+  | 'RECOMMENDATION'
+  | 'OTHER';
 
 export interface CommunityEvent {
   id: string;
@@ -138,10 +141,13 @@ export function useCommunityEvents() {
   const getEventTypeLabel = (type: CommunityEventType) => {
     const labels: Record<CommunityEventType, string> = {
       'BIRTHDAY': '🎂 Cumpleaños',
-      'HEALTH_NOTICE': '🏥 Aviso de Salud',
-      'HOSPITAL_SUPPORT': '💊 Apoyo Hospitalario',
-      'DECEASE': '🕯️ Fallecimiento',
-      'ANNOUNCEMENT': '📢 Anuncio',
+      'EVENT': '📅 Evento',
+      'ANNIVERSARY': '💍 Aniversario',
+      'DECEASE': '🕯️ Deceso',
+      'VISIT': '👋 Visita',
+      'CELEBRATION': '🎉 Hoy se Celebra',
+      'RECOMMENDATION': '💡 Recomendación',
+      'OTHER': '📝 Otro',
     };
     return labels[type] || type;
   };
@@ -150,10 +156,13 @@ export function useCommunityEvents() {
   const getEventTypeColor = (type: CommunityEventType) => {
     const colors: Record<CommunityEventType, string> = {
       'BIRTHDAY': 'bg-primary/10 text-primary border-primary/30',
-      'HEALTH_NOTICE': 'bg-warning/10 text-warning border-warning/30',
-      'HOSPITAL_SUPPORT': 'bg-safe/10 text-safe border-safe/30',
+      'EVENT': 'bg-blue-500/10 text-blue-500 border-blue-500/30',
+      'ANNIVERSARY': 'bg-pink-500/10 text-pink-500 border-pink-500/30',
       'DECEASE': 'bg-muted text-muted-foreground border-muted',
-      'ANNOUNCEMENT': 'bg-accent/10 text-accent border-accent/30',
+      'VISIT': 'bg-safe/10 text-safe border-safe/30',
+      'CELEBRATION': 'bg-amber-500/10 text-amber-500 border-amber-500/30',
+      'RECOMMENDATION': 'bg-purple-500/10 text-purple-500 border-purple-500/30',
+      'OTHER': 'bg-accent/10 text-accent-foreground border-accent/30',
     };
     return colors[type] || 'bg-muted text-muted-foreground';
   };
