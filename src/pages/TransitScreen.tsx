@@ -3,6 +3,7 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users } from 'lucide-react';
+import { GpsStatusBanner } from '@/components/GpsStatusBanner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -728,8 +729,19 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
   return (
     <div className="flex-1 overflow-auto pb-20 scrollbar-thin">
+      {/* GPS Status Banner */}
+      <div className="p-2 bg-background sticky top-0 z-20">
+        <GpsStatusBanner
+          position={position}
+          loading={locationLoading}
+          error={locationError}
+          watching={watching}
+          onRetry={getCurrentPosition}
+        />
+      </div>
+
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4">
+      <div className="sticky top-12 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-foreground">Tránsito Seguro</h1>
           <div className="flex gap-2">

@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import DOMPurify from 'dompurify';
 import { ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame, AlertTriangle, Users } from 'lucide-react';
+import { GpsStatusBanner } from '@/components/GpsStatusBanner';
 import { MapControlsMenu } from '@/components/MapControlsMenu';
 import { ImOkButton } from '@/components/ImOkButton';
 import { useLocation } from '@/hooks/useLocation';
@@ -1088,7 +1089,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     ambulance: false,
   });
 
-  const { position, error: locationError, getCurrentPosition } = useLocation();
+  const { position, error: locationError, getCurrentPosition, loading: locationLoading, watching: locationWatching } = useLocation();
   const { role, user } = useAuth();
   const { locations, refetch: refetchLocations } = useUserLocations();
   const { requests: helpRequests, resolveRequest } = useHelpRequests(position);
@@ -2577,13 +2578,21 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
 
   return (
     <div className={cn('relative w-full h-full', className)}>
-      {/* Location error banner removed - was not legible on iPhone and adds clutter */}
+      {/* GPS Status Banner - helpful for iPhone debugging */}
+      <GpsStatusBanner
+        position={position}
+        loading={locationLoading}
+        error={locationError}
+        watching={locationWatching}
+        onRetry={getCurrentPosition}
+        className="absolute top-2 left-2 right-2 z-[998]"
+      />
 
       {/* No emergency contacts warning banner - only show after loading completes */}
       {!contactsLoading && !hasMinimumContacts && (
         <button
           onClick={onNavigateToSettings}
-          className="absolute top-2 left-2 right-2 z-[999] bg-destructive/95 text-destructive-foreground p-3 rounded-lg shadow-lg border border-destructive/50 flex items-center gap-2 hover:bg-destructive transition-colors cursor-pointer text-left"
+          className="absolute top-14 left-2 right-2 z-[999] bg-destructive/95 text-destructive-foreground p-3 rounded-lg shadow-lg border border-destructive/50 flex items-center gap-2 hover:bg-destructive transition-colors cursor-pointer text-left"
         >
           <AlertTriangle className="w-5 h-5 shrink-0" />
           <div className="flex-1">
