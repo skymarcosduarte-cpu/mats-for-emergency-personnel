@@ -812,6 +812,7 @@ export type Database = {
           arrival_airport: string | null
           arrival_time: string | null
           arrived_at: string | null
+          boarding_pass_url: string | null
           companions: string | null
           created_at: string | null
           departure_airport: string | null
@@ -829,6 +830,7 @@ export type Database = {
           status: string
           transit_type: string
           user_id: string
+          vehicle_photo_url: string | null
           vehicle_type: string | null
         }
         Insert: {
@@ -836,6 +838,7 @@ export type Database = {
           arrival_airport?: string | null
           arrival_time?: string | null
           arrived_at?: string | null
+          boarding_pass_url?: string | null
           companions?: string | null
           created_at?: string | null
           departure_airport?: string | null
@@ -853,6 +856,7 @@ export type Database = {
           status?: string
           transit_type: string
           user_id: string
+          vehicle_photo_url?: string | null
           vehicle_type?: string | null
         }
         Update: {
@@ -860,6 +864,7 @@ export type Database = {
           arrival_airport?: string | null
           arrival_time?: string | null
           arrived_at?: string | null
+          boarding_pass_url?: string | null
           companions?: string | null
           created_at?: string | null
           departure_airport?: string | null
@@ -877,6 +882,7 @@ export type Database = {
           status?: string
           transit_type?: string
           user_id?: string
+          vehicle_photo_url?: string | null
           vehicle_type?: string | null
         }
         Relationships: []
