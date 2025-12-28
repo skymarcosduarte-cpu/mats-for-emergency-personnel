@@ -69,15 +69,40 @@ export function useEmergencyResponse() {
 
     try {
       // Get current location first
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
+      let responderLat: number;
+      let responderLng: number;
+      
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+          });
         });
-      });
-
-      const responderLat = position.coords.latitude;
-      const responderLng = position.coords.longitude;
+        responderLat = position.coords.latitude;
+        responderLng = position.coords.longitude;
+      } catch (geoError: any) {
+        console.error('[useEmergencyResponse] Geolocation error:', geoError);
+        if (geoError?.code === 1) {
+          toast.error('Permiso de ubicación denegado', {
+            description: 'Por favor habilita la ubicación en la configuración de tu navegador para poder responder.',
+            duration: 8000,
+          });
+        } else if (geoError?.code === 2) {
+          toast.error('Ubicación no disponible', {
+            description: 'No se pudo obtener tu ubicación. Verifica que el GPS esté activado.',
+            duration: 8000,
+          });
+        } else if (geoError?.code === 3) {
+          toast.error('Tiempo de espera agotado', {
+            description: 'La obtención de ubicación tardó demasiado. Intenta de nuevo.',
+            duration: 5000,
+          });
+        } else {
+          toast.error('No se pudo obtener tu ubicación');
+        }
+        return false;
+      }
 
       // Check if user is within radius (skip for RESCATISTAS)
       if (!skipRadiusCheck) {
@@ -146,8 +171,13 @@ export function useEmergencyResponse() {
       toast.success('¡En camino! Tu ubicación está siendo compartida');
       return true;
     } catch (error) {
-      console.error('Error getting location:', error);
-      toast.error('No se pudo obtener tu ubicación');
+      console.error('[useEmergencyResponse] Error:', error);
+      // Only show error if not already handled by geolocation error handler
+      if (error instanceof Error && !error.message.includes('ubicación')) {
+        toast.error('Error al iniciar respuesta', {
+          description: error.message,
+        });
+      }
       return false;
     }
   }, [user]);
