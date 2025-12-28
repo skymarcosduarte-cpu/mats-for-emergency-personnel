@@ -95,7 +95,9 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     clearConversation,
     markAsRead, 
     getConversationMessages,
-    loading
+    loading,
+    isMuted,
+    toggleMute
   } = useInternalMessages();
   
   // Clear conversation state
@@ -1046,20 +1048,30 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                 <Maximize2 className="w-4 h-4" />
               )}
             </Button>
-            {/* Notification toggle */}
-            {notificationPermission !== 'unsupported' && (
+            {/* Mute notifications toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={toggleMute}
+              title={isMuted ? 'Activar sonidos' : 'Silenciar notificaciones'}
+            >
+              {isMuted ? (
+                <BellOff className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <Bell className="w-4 h-4 text-primary" />
+              )}
+            </Button>
+            {/* Browser notification permission */}
+            {notificationPermission !== 'unsupported' && notificationPermission !== 'granted' && (
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0"
                 onClick={handleEnableNotifications}
-                title={notificationPermission === 'granted' ? 'Notificaciones activadas' : 'Activar notificaciones'}
+                title="Activar notificaciones del navegador"
               >
-                {notificationPermission === 'granted' ? (
-                  <Bell className="w-4 h-4 text-primary" />
-                ) : (
-                  <BellOff className="w-4 h-4 text-muted-foreground" />
-                )}
+                <Bell className="w-4 h-4 text-muted-foreground animate-pulse" />
               </Button>
             )}
             <Button
