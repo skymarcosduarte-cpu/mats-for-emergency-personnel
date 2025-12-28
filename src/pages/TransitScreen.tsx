@@ -94,6 +94,10 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     destinationLat: null as number | null,
     destinationLng: null as number | null,
   });
+  
+  // Optional photo uploads for trips
+  const [vehiclePhoto, setVehiclePhoto] = useState<File[]>([]);
+  const [boardingPassPhoto, setBoardingPassPhoto] = useState<File[]>([]);
 
   // Report form state
   const [reportForm, setReportForm] = useState({
@@ -277,6 +281,51 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No autenticado');
 
+      let vehiclePhotoUrl: string | null = null;
+      let boardingPassUrl: string | null = null;
+
+      // Upload vehicle photo if provided (for road trips)
+      if (transitType === 'ROAD' && vehiclePhoto.length > 0) {
+        const photo = vehiclePhoto[0];
+        const fileName = `vehicle_${user.id}_${Date.now()}_${photo.name}`;
+        const filePath = `transit-photos/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('reports_media')
+          .upload(filePath, photo, {
+            contentType: photo.type,
+            upsert: false,
+          });
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
+            .from('reports_media')
+            .getPublicUrl(filePath);
+          vehiclePhotoUrl = urlData?.publicUrl || null;
+        }
+      }
+
+      // Upload boarding pass photo if provided (for flights)
+      if (transitType === 'FLIGHT' && boardingPassPhoto.length > 0) {
+        const photo = boardingPassPhoto[0];
+        const fileName = `boarding_${user.id}_${Date.now()}_${photo.name}`;
+        const filePath = `transit-photos/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('reports_media')
+          .upload(filePath, photo, {
+            contentType: photo.type,
+            upsert: false,
+          });
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
+            .from('reports_media')
+            .getPublicUrl(filePath);
+          boardingPassUrl = urlData?.publicUrl || null;
+        }
+      }
+
       const tripData = {
         user_id: user.id,
         transit_type: transitType,
@@ -297,6 +346,9 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         // Store destination coordinates if provided
         destination_lat: tripForm.destinationLat,
         destination_lng: tripForm.destinationLng,
+        // Optional photos
+        vehicle_photo_url: vehiclePhotoUrl,
+        boarding_pass_url: boardingPassUrl,
       };
 
       const { error } = await supabase.from('transit_trips').insert(tripData);
@@ -453,6 +505,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       destinationLng: null,
     });
     setTransitType('ROAD');
+    setVehiclePhoto([]);
+    setBoardingPassPhoto([]);
   };
 
   const resetReportForm = () => {
@@ -1117,6 +1171,20 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                     placeholder="Sedan, SUV, Pickup..."
                   />
                 </div>
+                
+                {/* Optional vehicle photo */}
+                <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+                  <Label className="text-sm flex items-center gap-2">
+                    📷 Foto del vehículo (opcional)
+                  </Label>
+                  <MediaCapture
+                    onImagesSelected={setVehiclePhoto}
+                    maxImages={1}
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Ayuda a identificar tu vehículo en caso de emergencia.
+                  </p>
+                </div>
               </>
             ) : (
               <>
@@ -1153,6 +1221,20 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                       placeholder="GDL"
                     />
                   </div>
+                </div>
+                
+                {/* Optional boarding pass photo */}
+                <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+                  <Label className="text-sm flex items-center gap-2">
+                    🎫 Foto del pase de abordar (opcional)
+                  </Label>
+                  <MediaCapture
+                    onImagesSelected={setBoardingPassPhoto}
+                    maxImages={1}
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Útil para verificar información de vuelo en emergencias.
+                  </p>
                 </div>
               </>
             )}
