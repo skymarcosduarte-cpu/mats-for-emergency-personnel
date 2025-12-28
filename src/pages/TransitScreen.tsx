@@ -34,6 +34,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { TransitType, ReportCategory, ReportSeverity, UserRole } from '@/types';
 import { cn } from '@/lib/utils';
+import { dateTimeLocalToISOString } from '@/lib/datetimeLocal';
 
 const REPORT_CATEGORIES: { value: ReportCategory; label: string; emoji: string }[] = [
   { value: 'BLOCKADE', label: 'Bloqueo', emoji: '🚧' },
@@ -173,7 +174,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
   // Check if there are active trips
   const hasActiveTrips = useMemo(() => {
-    return myTrips.some(trip => trip.status === 'IN_PROGRESS');
+    return myTrips.some(trip => trip.status === 'ACTIVE');
   }, [myTrips]);
 
   // Auto-enable GPS tracking when there are active trips
@@ -488,9 +489,9 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         origin: transitType === 'ROAD' ? tripForm.origin : tripForm.departureAirport,
         destination: transitType === 'ROAD' ? tripForm.destination : tripForm.arrivalAirport,
         eta: (() => {
-          const d = new Date(tripForm.eta);
-          if (Number.isNaN(d.getTime())) throw new Error('ETA inválida');
-          return d.toISOString();
+          const iso = dateTimeLocalToISOString(tripForm.eta);
+          if (!iso) throw new Error('ETA inválida');
+          return iso;
         })(),
         status: 'ACTIVE',
         plates: transitType === 'ROAD' ? tripForm.plates : null,
@@ -2078,7 +2079,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                     if (!trip) throw new Error('Trip not found');
                     
                     const oldEta = trip.eta;
-                    const newEtaISO = new Date(newEta).toISOString();
+                    const newEtaISO = dateTimeLocalToISOString(newEta);
+                    if (!newEtaISO) throw new Error('ETA inválida');
                     
                     // Update trip ETA
                     const { error } = await supabase
