@@ -379,14 +379,26 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       } catch (e) {
         toast.dismiss('gps-toast');
         setSubmitting(false);
+
+        const geoCode =
+          e && typeof e === 'object' && 'code' in e ? (e as any).code as number : null;
+
         const errorMsg =
           e instanceof Error && e.message === 'GPS timeout'
             ? 'No se pudo obtener ubicación a tiempo. Intenta de nuevo.'
-            : 'Activa permisos de ubicación para poder iniciar el viaje.';
+            : geoCode === 1
+            ? 'Permite la ubicación en Safari para poder iniciar el viaje.'
+            : geoCode === 2
+            ? 'Ubicación no disponible. Revisa GPS/señal e intenta de nuevo.'
+            : geoCode === 3
+            ? 'La solicitud de ubicación expiró. Intenta de nuevo.'
+            : getErrMsg(e);
+
         toast.error('Se requiere ubicación GPS', { description: errorMsg });
         console.warn('[TransitScreen] Cannot submit trip: missing position', {
           locationLoading,
           locationError,
+          geoCode,
           error: e,
         });
         return;
