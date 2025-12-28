@@ -747,11 +747,41 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                   ((totalDistance - remainingDistance) / totalDistance) * 100
                 ));
                 
+                // Estimate remaining time based on current speed
+                // Speed from GPS is in m/s, convert to km/h
+                const currentSpeedKmh = position.speed ? position.speed * 3.6 : null;
+                let estimatedTimeRemaining: string | null = null;
+                
+                if (currentSpeedKmh && currentSpeedKmh > 5) {
+                  // Use actual speed if moving (> 5 km/h)
+                  const hoursRemaining = remainingDistance / currentSpeedKmh;
+                  if (hoursRemaining < 1) {
+                    estimatedTimeRemaining = `${Math.round(hoursRemaining * 60)} min`;
+                  } else {
+                    const h = Math.floor(hoursRemaining);
+                    const m = Math.round((hoursRemaining - h) * 60);
+                    estimatedTimeRemaining = m > 0 ? `${h}h ${m}min` : `${h}h`;
+                  }
+                } else {
+                  // Fallback to average speed estimate
+                  const avgSpeed = trip.transit_type === 'FLIGHT' ? 800 : 60;
+                  const hoursRemaining = remainingDistance / avgSpeed;
+                  if (hoursRemaining < 1) {
+                    estimatedTimeRemaining = `~${Math.round(hoursRemaining * 60)} min`;
+                  } else {
+                    const h = Math.floor(hoursRemaining);
+                    const m = Math.round((hoursRemaining - h) * 60);
+                    estimatedTimeRemaining = `~${m > 0 ? `${h}h ${m}min` : `${h}h`}`;
+                  }
+                }
+                
                 return {
                   totalDistance,
                   remainingDistance,
                   distanceFromOrigin,
                   progress: Math.round(progress),
+                  currentSpeedKmh,
+                  estimatedTimeRemaining,
                 };
               })();
               
@@ -847,6 +877,21 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             <div className="flex justify-between text-[10px] text-muted-foreground">
                               <span>Recorrido: {formatDistance(tripProgress.distanceFromOrigin)}</span>
                               <span>Restante: {formatDistance(tripProgress.remainingDistance)}</span>
+                            </div>
+                            {/* Estimated time remaining and current speed */}
+                            <div className="flex items-center justify-between text-xs bg-primary/10 rounded px-2 py-1.5 mt-1">
+                              <div className="flex items-center gap-1.5">
+                                <Clock className="w-3 h-3 text-primary" />
+                                <span className="text-foreground font-medium">
+                                  Llegada en: {tripProgress.estimatedTimeRemaining}
+                                </span>
+                              </div>
+                              {tripProgress.currentSpeedKmh && tripProgress.currentSpeedKmh > 1 && (
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  <span>🚗</span>
+                                  <span>{Math.round(tripProgress.currentSpeedKmh)} km/h</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}
