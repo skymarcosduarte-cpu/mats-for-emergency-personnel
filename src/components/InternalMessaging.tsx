@@ -89,6 +89,7 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
 }) => {
   const { user } = useAuth();
   const { 
+    messages,
     conversations, 
     sendMessage,
     deleteMessage,
@@ -245,19 +246,37 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   }, [initialUserId, initialUserName, isOpen]);
 
   // Auto-scroll to bottom when messages change
+  // Use messages directly as dependency to trigger re-renders, but getConversationMessages for filtering
   const conversationMessages = useMemo(
     () => (selectedUserId ? getConversationMessages(selectedUserId) : []),
-    [selectedUserId, getConversationMessages]
+    [selectedUserId, getConversationMessages, messages]
   );
 
+  // Debounced scroll ref to prevent excessive scrolling
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   useEffect(() => {
     const el = messagesEndRef.current;
     if (!el) return;
 
-    const shouldSmooth = conversationMessages.length <= 40;
-    requestAnimationFrame(() => {
-      el.scrollIntoView({ behavior: shouldSmooth ? 'smooth' : 'auto', block: 'end' });
-    });
+    // Clear any pending scroll
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    
+    // Debounce scroll to prevent freezing
+    scrollTimeoutRef.current = setTimeout(() => {
+      const shouldSmooth = conversationMessages.length <= 40;
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: shouldSmooth ? 'smooth' : 'auto', block: 'end' });
+      });
+    }, 50);
+    
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
   }, [conversationMessages.length]);
 
   // Mark as read when opening conversation
