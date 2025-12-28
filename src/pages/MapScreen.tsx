@@ -1088,7 +1088,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     ambulance: false,
   });
 
-  const { position, error: locationError } = useLocation();
+  const { position, error: locationError, getCurrentPosition } = useLocation();
   const { role, user } = useAuth();
   const { locations, refetch: refetchLocations } = useUserLocations();
   const { requests: helpRequests, resolveRequest } = useHelpRequests(position);
@@ -1232,11 +1232,32 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   // Default center (Mexico City)
   const defaultCenter: [number, number] = [19.4326, -99.1332];
 
-  // Center map on user's location
-  const centerOnMe = useCallback(() => {
-    if (!mapInstanceRef.current || !position) return;
-    mapInstanceRef.current.setView([position.lat, position.lng], 16, { animate: true });
-  }, [position]);
+  // Center map on user's location - with iOS-friendly fallback
+  const centerOnMe = useCallback(async () => {
+    if (!mapInstanceRef.current) return;
+    
+    // If we already have position, center immediately
+    if (position) {
+      mapInstanceRef.current.setView([position.lat, position.lng], 16, { animate: true });
+      return;
+    }
+    
+    // Otherwise, request position first (important for iOS where GPS may not be active)
+    try {
+      toast.info('Obteniendo ubicación...', { id: 'center-gps', duration: 10000 });
+      const pos = await getCurrentPosition();
+      toast.dismiss('center-gps');
+      if (mapInstanceRef.current && pos) {
+        mapInstanceRef.current.setView([pos.lat, pos.lng], 16, { animate: true });
+        toast.success('Ubicación encontrada');
+      }
+    } catch (error) {
+      toast.dismiss('center-gps');
+      toast.error('No se pudo obtener tu ubicación', {
+        description: 'Verifica que los permisos de ubicación estén habilitados'
+      });
+    }
+  }, [position, getCurrentPosition]);
 
   // Initialize map
   useEffect(() => {

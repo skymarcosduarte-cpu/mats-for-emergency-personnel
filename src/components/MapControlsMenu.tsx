@@ -133,11 +133,10 @@ export function MapControlsMenu({
           </button>
         )}
 
-        {/* Center on me button */}
+        {/* Center on me button - always enabled to request location on iOS */}
         <button
           onClick={onCenterOnMe}
-          disabled={!position}
-          className="bg-card/95 backdrop-blur-sm rounded-lg p-2.5 shadow-lg border border-border hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-card/95 backdrop-blur-sm rounded-lg p-2.5 shadow-lg border border-border hover:bg-accent transition-colors"
           aria-label="Centrar en mi ubicación"
         >
           <Locate className="w-5 h-5 text-primary" />
@@ -211,7 +210,7 @@ export function MapControlsMenu({
                 Refrescar ubicaciones
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={onCenterOnMe} disabled={!position}>
+            <DropdownMenuItem onClick={onCenterOnMe}>
               <Locate className="w-4 h-4 mr-2 text-primary" />
               Centrar en mi ubicación
             </DropdownMenuItem>
