@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Check, CheckCheck, Circle, Maximize2, Minimize2 } from 'lucide-react';
 import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus, Camera, MapPin } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -235,10 +235,19 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   }, [initialUserId, initialUserName, isOpen]);
 
   // Auto-scroll to bottom when messages change
-  const conversationMessages = selectedUserId ? getConversationMessages(selectedUserId) : [];
-  
+  const conversationMessages = useMemo(
+    () => (selectedUserId ? getConversationMessages(selectedUserId) : []),
+    [selectedUserId, getConversationMessages]
+  );
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = messagesEndRef.current;
+    if (!el) return;
+
+    const shouldSmooth = conversationMessages.length <= 40;
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: shouldSmooth ? 'smooth' : 'auto', block: 'end' });
+    });
   }, [conversationMessages.length]);
 
   // Mark as read when opening conversation
@@ -385,16 +394,17 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     }
   };
 
-  const formatMessageTime = (dateStr: string) => {
+  const formatMessageTime = useCallback((dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
     const isToday = date.toDateString() === now.toDateString();
-    
+
     if (isToday) {
       return format(date, 'HH:mm', { locale: es });
     }
     return format(date, 'dd/MM HH:mm', { locale: es });
-  };
+  }, []);
+
 
   const getDisplayName = (userId: string) => {
     const conv = conversations.find(c => c.user_id === userId);
@@ -579,9 +589,9 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   };
 
   // Audio playback function
-  const playAudio = async (msg: InternalMessage) => {
+  const playAudio = useCallback(async (msg: InternalMessage) => {
     if (!msg.audio_url) return;
-    
+
     // If already playing this audio, stop it
     if (playingAudioId === msg.id) {
       if (audioElementRef.current) {
@@ -591,35 +601,35 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
       setPlayingAudioId(null);
       return;
     }
-    
+
     // Stop any currently playing audio
     if (audioElementRef.current) {
       audioElementRef.current.pause();
     }
-    
+
     setLoadingAudioId(msg.id);
-    
+
     try {
       const { data, error } = await supabase.storage
         .from('reports_media')
         .createSignedUrl(msg.audio_url, 3600);
-      
+
       if (error) throw error;
-      
+
       const audio = new Audio(data.signedUrl);
       audioElementRef.current = audio;
-      
+
       audio.onended = () => {
         setPlayingAudioId(null);
         audioElementRef.current = null;
       };
-      
+
       audio.onerror = () => {
         toast.error('Error al reproducir audio');
         setPlayingAudioId(null);
         setLoadingAudioId(null);
       };
-      
+
       await audio.play();
       setPlayingAudioId(msg.id);
     } catch (error) {
@@ -628,7 +638,8 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     } finally {
       setLoadingAudioId(null);
     }
-  };
+  }, [playingAudioId]);
+
 
   // Image handling functions - with compression to prevent freezing
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -756,26 +767,27 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     }, 50);
   };
 
-  const getSignedImageUrl = async (imagePath: string): Promise<string | null> => {
+  const getSignedImageUrl = useCallback(async (imagePath: string): Promise<string | null> => {
     try {
       const { data, error } = await supabase.storage
         .from('reports_media')
         .createSignedUrl(imagePath, 3600);
-      
+
       if (error) throw error;
       return data.signedUrl;
     } catch (error) {
       console.error('Error getting signed URL:', error);
       return null;
     }
-  };
+  }, []);
 
-  const handleViewImage = async (imagePath: string) => {
+  const handleViewImage = useCallback(async (imagePath: string) => {
     const url = await getSignedImageUrl(imagePath);
     if (url) {
       setViewingImage(url);
     }
-  };
+  }, [getSignedImageUrl]);
+
 
   // Cleanup on unmount
   useEffect(() => {
@@ -831,7 +843,92 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
 
   if (!isOpen) return null;
 
+  const renderedMessages = useMemo(() => {
+    if (conversationMessages.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          <p className="text-sm">Inicia la conversación</p>
+        </div>
+      );
+    }
+
+    return conversationMessages.map((msg: InternalMessage) => {
+      const isMine = msg.sender_id === user?.id;
+      const isJustSent = msg.id === justSentId;
+      const isDeleting = msg.id === deletingId;
+
+      return (
+        <div
+          key={msg.id}
+          className={cn(
+            'flex transition-all duration-300 group',
+            isMine ? 'justify-end' : 'justify-start',
+            isJustSent && 'animate-scale-in',
+            isDeleting && 'animate-slide-out-right opacity-0'
+          )}
+        >
+          {/* Delete button for own messages */}
+          {isMine && !isDeleting && (
+            <button
+              onClick={() => setMessageToDelete(msg.id)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 mr-1 self-center text-muted-foreground hover:text-destructive"
+              title="Eliminar mensaje"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          )}
+          <div
+            className={cn(
+              'max-w-[80%] rounded-2xl px-4 py-2 transition-all duration-300',
+              isMine
+                ? 'bg-primary text-primary-foreground rounded-br-md'
+                : 'bg-muted text-foreground rounded-bl-md',
+              isJustSent && 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background'
+            )}
+          >
+            {/* Image message */}
+            {msg.image_url ? (
+              <ImageMessageBubble imagePath={msg.image_url} onView={() => handleViewImage(msg.image_url!)} />
+            ) : msg.audio_url ? (
+              <button
+                onClick={() => playAudio(msg)}
+                disabled={loadingAudioId === msg.id}
+                className={cn(
+                  'flex items-center gap-2 py-1',
+                  isMine ? 'text-primary-foreground' : 'text-foreground'
+                )}
+              >
+                {loadingAudioId === msg.id ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : playingAudioId === msg.id ? (
+                  <Pause className="w-5 h-5" />
+                ) : (
+                  <Play className="w-5 h-5" />
+                )}
+                <span className="text-sm">
+                  {msg.audio_duration_ms ? `${Math.round(msg.audio_duration_ms / 1000)}s` : 'Nota de voz'}
+                </span>
+              </button>
+            ) : (
+              <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+            )}
+            <div
+              className={cn(
+                'flex items-center justify-end gap-1 mt-1',
+                isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'
+              )}
+            >
+              <span className="text-[10px]">{formatMessageTime(msg.created_at)}</span>
+              {isMine && (msg.read ? <CheckCheck className="w-3.5 h-3.5 text-blue-400" /> : <Check className="w-3.5 h-3.5" />)}
+            </div>
+          </div>
+        </div>
+      );
+    });
+  }, [conversationMessages, user?.id, justSentId, deletingId, loadingAudioId, playingAudioId, formatMessageTime, handleViewImage, playAudio]);
+
   return (
+
     <div 
       className={cn(
         "fixed inset-0 z-[10000] flex items-start justify-center overflow-y-auto",
