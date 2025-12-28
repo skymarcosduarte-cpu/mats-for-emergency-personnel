@@ -1855,19 +1855,22 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               >
                 Cancelar
               </Button>
-              <Button
+              <button
                 type="button"
-                onTouchEnd={(e) => {
+                onClick={(e) => {
                   e.preventDefault();
-                  handleTripSubmit();
+                  e.stopPropagation();
+                  if (!submitting) {
+                    handleTripSubmit();
+                  }
                 }}
-                onClick={handleTripSubmit}
                 disabled={submitting}
-                className="flex-1"
+                className="flex-1 inline-flex touch-manipulation items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                style={{ WebkitTapHighlightColor: 'transparent', WebkitUserSelect: 'none', userSelect: 'none' }}
               >
                 {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 Iniciar Viaje
-              </Button>
+              </button>
             </div>
           </div>
         </DialogContent>
