@@ -185,16 +185,16 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                 {sortedUsers.map((user, index) => (
                   <div
                     key={user.user_id}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/50 transition-colors group"
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/50 active:bg-accent/70 transition-colors group"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <span className="text-lg flex-shrink-0">
                         {getRoleIcon(user.role, user.is_in_transit)}
                       </span>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         {/* Show name if allowed */}
                         {user.show_name_on_map && user.display_name && (
-                          <div className="text-xs font-medium text-foreground truncate max-w-[120px]">
+                          <div className="text-xs font-medium text-foreground truncate max-w-[100px]">
                             {user.display_name}
                           </div>
                         )}
@@ -202,23 +202,23 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                           {getRoleBadge(user.role, user.is_in_transit)}
                         </div>
                         {user.is_in_transit && user.transit_destination && (
-                          <div className="text-[10px] text-amber-500 truncate mt-0.5">
+                          <div className="text-[10px] text-amber-500 truncate max-w-[100px] mt-0.5" title={user.transit_destination}>
                             → {user.transit_destination}
                           </div>
                         )}
                         <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
-                          <Clock className="w-3 h-3" />
+                          <Clock className="w-3 h-3 flex-shrink-0" />
                           <span>{getTimeAgo(user.updated_at) || '?'}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {/* Message button - only show for other users */}
+                    {/* Action buttons - always visible on mobile */}
+                    <div className="flex items-center gap-0.5 flex-shrink-0 ml-1">
                       {onMessageUser && user.user_id !== currentUser?.id && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="h-7 w-7 p-0 touch-manipulation"
                           onClick={() => onMessageUser(user.user_id, user.show_name_on_map ? user.display_name || null : null)}
                           aria-label="Enviar mensaje"
                         >
@@ -228,7 +228,7 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="h-7 w-7 p-0 touch-manipulation"
                         onClick={() => onCenterOnUser(user.lat, user.lng)}
                         aria-label="Centrar en usuario"
                       >

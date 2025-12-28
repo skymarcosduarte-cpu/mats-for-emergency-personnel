@@ -436,7 +436,14 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
     
     setIsResponding(true);
     try {
-      const success = await onRespond(alert.id, alertType, alert.lat, alert.lng, selectedTransport || undefined, estimatedEta || undefined);
+      // Add timeout to prevent indefinite loading
+      const timeoutPromise = new Promise<boolean>((_, reject) => {
+        setTimeout(() => reject(new Error('Tiempo de espera agotado. Verifica tu conexión e intenta de nuevo.')), 30000);
+      });
+      
+      const responsePromise = onRespond(alert.id, alertType, alert.lat, alert.lng, selectedTransport || undefined, estimatedEta || undefined);
+      
+      const success = await Promise.race([responsePromise, timeoutPromise]);
       console.log('[AlertDetailModal] Response result:', success);
       if (success) {
         toast({
