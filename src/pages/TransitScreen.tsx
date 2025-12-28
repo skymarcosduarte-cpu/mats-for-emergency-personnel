@@ -1,8 +1,8 @@
 // Transit Screen for COMUNIDAD EX SOS
 // Road + Flight transit tracking with incident reports
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MediaCapture } from '@/components/MediaCapture';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { TripLocationPicker } from '@/components/TripLocationPicker';
+import TripRouteMap from '@/components/TripRouteMap';
 import { useLocation, getGoogleMapsLink, calculateDistance, formatDistance } from '@/hooks/useLocation';
+import { useTripPositionHistory } from '@/hooks/useTripPositionHistory';
 import { useRoadReports } from '@/hooks/useRealtime';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -127,9 +129,44 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const [editingEtaTripId, setEditingEtaTripId] = useState<string | null>(null);
   const [newEta, setNewEta] = useState<string>('');
   const [updatingEta, setUpdatingEta] = useState(false);
+  
+  // Map display state
+  const [showRouteMapTripId, setShowRouteMapTripId] = useState<string | null>(null);
 
   const { position, getCurrentPosition, startWatching, stopWatching, watching, loading: locationLoading, error: locationError } = useLocation({ autoWatch: false });
   const { reports, refetch: refetchReports } = useRoadReports();
+  
+  // Get the first active IN_PROGRESS trip for position recording
+  const activeInProgressTrip = useMemo(() => {
+    return myTrips.find(trip => trip.status === 'ACTIVE');
+  }, [myTrips]);
+  
+  // Position history hook for the active trip
+  const { 
+    history: positionHistory, 
+    recordPosition, 
+    getRouteCoordinates,
+    positionCount,
+    fetchHistory: fetchPositionHistory,
+  } = useTripPositionHistory({
+    tripId: activeInProgressTrip?.id || null,
+    userId: currentUserId,
+    minDistanceMeters: 50,
+    minIntervalMs: 15000, // Record every 15 seconds if moved 50m+
+  });
+  
+  // Record position when GPS updates during active trip
+  useEffect(() => {
+    if (position && activeInProgressTrip && currentUserId) {
+      recordPosition(
+        position.lat,
+        position.lng,
+        position.accuracy,
+        position.speed,
+        position.heading
+      );
+    }
+  }, [position, activeInProgressTrip, currentUserId, recordPosition]);
 
   // Check if there are active trips
   const hasActiveTrips = useMemo(() => {
@@ -966,6 +1003,40 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                 })()}
                               </span>
                             </div>
+                          </div>
+                        )}
+                        
+                        {/* Route map toggle button and map display */}
+                        {(positionCount > 0 || (trip.origin_lat && trip.destination_lat)) && activeInProgressTrip?.id === trip.id && (
+                          <div className="mt-3 space-y-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs gap-2"
+                              onClick={() => setShowRouteMapTripId(
+                                showRouteMapTripId === trip.id ? null : trip.id
+                              )}
+                            >
+                              <Map className="w-3.5 h-3.5" />
+                              {showRouteMapTripId === trip.id ? 'Ocultar mapa' : 'Ver ruta recorrida'}
+                              {positionCount > 0 && (
+                                <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded text-[10px]">
+                                  {positionCount} puntos
+                                </span>
+                              )}
+                            </Button>
+                            
+                            {showRouteMapTripId === trip.id && (
+                              <TripRouteMap
+                                routeCoordinates={getRouteCoordinates()}
+                                originCoords={trip.origin_lat && trip.origin_lng ? { lat: trip.origin_lat, lng: trip.origin_lng } : null}
+                                destinationCoords={trip.destination_lat && trip.destination_lng ? { lat: trip.destination_lat, lng: trip.destination_lng } : null}
+                                currentPosition={position ? { lat: position.lat, lng: position.lng } : null}
+                                originName={trip.origin}
+                                destinationName={trip.destination}
+                                height="250px"
+                              />
+                            )}
                           </div>
                         )}
                         

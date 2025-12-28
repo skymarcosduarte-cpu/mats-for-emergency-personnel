@@ -887,6 +887,50 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_position_history: {
+        Row: {
+          accuracy: number | null
+          heading: number | null
+          id: string
+          lat: number
+          lng: number
+          recorded_at: string
+          speed: number | null
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          heading?: number | null
+          id?: string
+          lat: number
+          lng: number
+          recorded_at?: string
+          speed?: number | null
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          heading?: number | null
+          id?: string
+          lat?: number
+          lng?: number
+          recorded_at?: string
+          speed?: number | null
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_position_history_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "transit_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_locations: {
         Row: {
           accuracy: number | null
