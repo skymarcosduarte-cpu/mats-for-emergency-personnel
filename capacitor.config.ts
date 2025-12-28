@@ -19,6 +19,9 @@ const config: CapacitorConfig = {
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true,
+      // Use generated splash screens
+      layoutName: 'launch_screen',
+      useDialog: true,
     },
     LocalNotifications: {
       smallIcon: 'ic_stat_icon',
@@ -26,19 +29,27 @@ const config: CapacitorConfig = {
       sound: 'alert.wav',
     },
     Geolocation: {
-      // iOS specific config
+      // iOS: Required for background location
     },
     BackgroundGeolocation: {
       // Background location tracking configuration
+    },
+    StatusBar: {
+      style: 'dark',
+      backgroundColor: '#1a1a2e',
     },
   },
   ios: {
     contentInset: 'automatic',
     backgroundColor: '#1a1a2e',
+    // Icon source - Capacitor will auto-generate all sizes from 1024x1024
+    // Place app-icon-1024.png in ios/App/App/Assets.xcassets/AppIcon.appiconset
   },
   android: {
     backgroundColor: '#1a1a2e',
     allowMixedContent: true,
+    // Icon source - Use Android Studio Asset Studio to generate from app-icon-1024.png
+    // Splash: Place splash-portrait.png in android/app/src/main/res/drawable
   },
 };
 
