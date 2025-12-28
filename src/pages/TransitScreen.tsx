@@ -62,6 +62,10 @@ interface TransitTrip {
   arrived_at: string | null;
   vehicle_photo_url: string | null;
   boarding_pass_url: string | null;
+  origin_lat: number | null;
+  origin_lng: number | null;
+  destination_lat: number | null;
+  destination_lng: number | null;
 }
 
 export const TransitScreen: React.FC<TransitScreenProps> = ({
@@ -781,6 +785,45 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                         {trip.flight_number && (
                           <div className="text-xs text-muted-foreground mt-1">
                             ✈️ {trip.airline} {trip.flight_number}
+                          </div>
+                        )}
+                        
+                        {/* Distance and time estimate for trips with coordinates */}
+                        {trip.origin_lat && trip.origin_lng && trip.destination_lat && trip.destination_lng && (
+                          <div className="flex items-center gap-3 mt-2 text-xs bg-muted/30 rounded px-2 py-1.5">
+                            <div className="flex items-center gap-1">
+                              <Route className="w-3 h-3 text-primary" />
+                              <span className="text-muted-foreground">
+                                {formatDistance(calculateDistance(
+                                  trip.origin_lat,
+                                  trip.origin_lng,
+                                  trip.destination_lat,
+                                  trip.destination_lng
+                                ))}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                ~{(() => {
+                                  const distKm = calculateDistance(
+                                    trip.origin_lat!,
+                                    trip.origin_lng!,
+                                    trip.destination_lat!,
+                                    trip.destination_lng!
+                                  );
+                                  // For flights use ~800 km/h, for road ~60 km/h
+                                  const speed = trip.transit_type === 'FLIGHT' ? 800 : 60;
+                                  const hours = distKm / speed;
+                                  if (hours < 1) {
+                                    return `${Math.round(hours * 60)} min`;
+                                  }
+                                  const h = Math.floor(hours);
+                                  const m = Math.round((hours - h) * 60);
+                                  return m > 0 ? `${h}h ${m}min` : `${h}h`;
+                                })()}
+                              </span>
+                            </div>
                           </div>
                         )}
                         
