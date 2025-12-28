@@ -2,7 +2,7 @@
 // Road + Flight transit tracking with incident reports
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map } from 'lucide-react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,7 @@ import TripRouteMap from '@/components/TripRouteMap';
 import { useLocation, getGoogleMapsLink, calculateDistance, formatDistance } from '@/hooks/useLocation';
 import { useTripPositionHistory } from '@/hooks/useTripPositionHistory';
 import { useRoadReports } from '@/hooks/useRealtime';
+import { useActiveTrips } from '@/hooks/useActiveTrips';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { TransitType, ReportCategory, ReportSeverity, UserRole } from '@/types';
@@ -135,6 +136,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
   const { position, getCurrentPosition, startWatching, stopWatching, watching, loading: locationLoading, error: locationError } = useLocation({ autoWatch: false });
   const { reports, refetch: refetchReports } = useRoadReports();
+  const { trips: communityTrips, loading: communityTripsLoading } = useActiveTrips();
   
   // Get the first active IN_PROGRESS trip for position recording
   const activeInProgressTrip = useMemo(() => {
@@ -1193,6 +1195,103 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               );
             })
           )}
+          
+          {/* Community Active Trips Section */}
+          {(() => {
+            // Filter out current user's trips from community trips
+            const otherUsersTrips = communityTrips.filter(trip => trip.user_id !== currentUserId);
+            
+            if (otherUsersTrips.length === 0 && !communityTripsLoading) {
+              return null; // Don't show section if no community trips
+            }
+            
+            return (
+              <div className="mt-6 pt-4 border-t border-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-semibold text-foreground">Viajes de la Comunidad</h3>
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    {otherUsersTrips.length}
+                  </span>
+                </div>
+                
+                {communityTripsLoading ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin" />
+                    <p className="text-xs">Cargando viajes...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {otherUsersTrips.map((trip) => {
+                      const etaDate = new Date(trip.eta);
+                      const isOverdue = etaDate < new Date();
+                      const displayName = trip.nickname || 'Miembro';
+                      
+                      return (
+                        <Card key={trip.id} className={cn(
+                          "bg-card/50 border-border",
+                          isOverdue && "border-warning/50"
+                        )}>
+                          <CardContent className="p-3">
+                            <div className="flex items-start gap-2">
+                              <div className={cn(
+                                'w-8 h-8 rounded-lg flex items-center justify-center',
+                                isOverdue ? 'bg-warning' : 'bg-primary/80',
+                                'text-white text-sm'
+                              )}>
+                                {trip.transit_type === 'ROAD' ? (
+                                  <Car className="w-4 h-4" />
+                                ) : (
+                                  <Plane className="w-4 h-4" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">
+                                    {displayName}
+                                  </span>
+                                  {isOverdue && (
+                                    <span className="text-[10px] bg-warning/20 text-warning px-1.5 py-0.5 rounded">
+                                      ATRASADO
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm font-medium text-foreground mt-1 truncate">
+                                  {trip.origin} → {trip.destination}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    ETA: {etaDate.toLocaleString('es-MX', { 
+                                      day: 'numeric', 
+                                      month: 'short', 
+                                      hour: '2-digit', 
+                                      minute: '2-digit' 
+                                    })}
+                                  </span>
+                                  {trip.plates && (
+                                    <span>🚗 {trip.plates}</span>
+                                  )}
+                                  {trip.companions && (
+                                    <span>👥 {trip.companions}</span>
+                                  )}
+                                </div>
+                                {trip.transit_type === 'FLIGHT' && trip.airline && (
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    ✈️ {trip.airline} {trip.flight_number || ''}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </TabsContent>
 
         {/* History Tab */}
