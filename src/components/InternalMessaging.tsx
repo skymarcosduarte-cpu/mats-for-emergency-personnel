@@ -97,8 +97,16 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     getConversationMessages,
     loading,
     isMuted,
-    toggleMute
+    toggleMute,
+    refetch
   } = useInternalMessages();
+  
+  // Refetch messages when modal opens to ensure fresh data
+  useEffect(() => {
+    if (isOpen) {
+      refetch();
+    }
+  }, [isOpen, refetch]);
   
   // Clear conversation state
   const [showClearConfirm, setShowClearConfirm] = useState(false);
