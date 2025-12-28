@@ -60,8 +60,11 @@ export function useWebPushSubscription() {
         console.log('[Push] Received broadcast notification:', payload);
         const { senderName, messagePreview } = payload.payload as { senderName: string; messagePreview: string };
         
-        // Always play the strong notification sound
-        playMessageNotification();
+        // Play the notification sound if not muted
+        const muted = localStorage.getItem('chat_notifications_muted') === 'true';
+        if (!muted) {
+          playMessageNotification();
+        }
         
         // Show notification if tab is not focused
         if (document.hidden && Notification.permission === 'granted') {
