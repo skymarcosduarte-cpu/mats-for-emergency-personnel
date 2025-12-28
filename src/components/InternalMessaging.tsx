@@ -841,8 +841,6 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   const renderedMessages = useMemo(() => {
     if (conversationMessages.length === 0) {
       return (
@@ -926,6 +924,8 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
       );
     });
   }, [conversationMessages, user?.id, justSentId, deletingId, loadingAudioId, playingAudioId, formatMessageTime, handleViewImage, playAudio]);
+
+  if (!isOpen) return null;
 
   return (
 
