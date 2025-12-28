@@ -18,6 +18,7 @@ import { SettingsScreen } from '@/pages/SettingsScreen';
 import { CommunityScreen } from '@/pages/CommunityScreen';
 
 import InstallPage from '@/pages/InstallPage';
+import SharedTripPage from '@/pages/SharedTripPage';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt, UpdateIndicator } from '@/components/UpdatePrompt';
 import { SplashScreen } from '@/components/SplashScreen';
@@ -545,6 +546,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/install" element={<InstallPage />} />
+            <Route path="/trip/:shareToken" element={<SharedTripPage />} />
             <Route path="/" element={<AppContent />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

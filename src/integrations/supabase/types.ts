@@ -827,6 +827,7 @@ export type Database = {
           origin_lat: number | null
           origin_lng: number | null
           plates: string | null
+          share_token: string | null
           status: string
           transit_type: string
           user_id: string
@@ -853,6 +854,7 @@ export type Database = {
           origin_lat?: number | null
           origin_lng?: number | null
           plates?: string | null
+          share_token?: string | null
           status?: string
           transit_type: string
           user_id: string
@@ -879,6 +881,7 @@ export type Database = {
           origin_lat?: number | null
           origin_lng?: number | null
           plates?: string | null
+          share_token?: string | null
           status?: string
           transit_type?: string
           user_id?: string
