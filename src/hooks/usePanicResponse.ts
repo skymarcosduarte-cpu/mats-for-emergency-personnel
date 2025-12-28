@@ -98,16 +98,44 @@ export function usePanicResponse() {
 
       // Get current location first
       console.log('[usePanicResponse] Getting current position...');
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
+      let responderLat: number;
+      let responderLng: number;
+      
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+          });
         });
-      });
-
-      const responderLat = position.coords.latitude;
-      const responderLng = position.coords.longitude;
-      console.log('[usePanicResponse] Got position:', { responderLat, responderLng });
+        responderLat = position.coords.latitude;
+        responderLng = position.coords.longitude;
+        console.log('[usePanicResponse] Got position:', { responderLat, responderLng });
+      } catch (geoError: any) {
+        console.error('[usePanicResponse] Geolocation error:', geoError);
+        if (geoError?.code === 1) {
+          // PERMISSION_DENIED
+          toast.error('Permiso de ubicación denegado', {
+            description: 'Por favor habilita la ubicación en la configuración de tu navegador para poder responder.',
+            duration: 8000,
+          });
+        } else if (geoError?.code === 2) {
+          // POSITION_UNAVAILABLE
+          toast.error('Ubicación no disponible', {
+            description: 'No se pudo obtener tu ubicación. Verifica que el GPS esté activado.',
+            duration: 8000,
+          });
+        } else if (geoError?.code === 3) {
+          // TIMEOUT
+          toast.error('Tiempo de espera agotado', {
+            description: 'La obtención de ubicación tardó demasiado. Intenta de nuevo.',
+            duration: 5000,
+          });
+        } else {
+          toast.error('No se pudo obtener tu ubicación');
+        }
+        return false;
+      }
 
       // Check if user is within radius (skip for RESCATISTAS)
       if (!skipRadiusCheck) {
@@ -205,7 +233,12 @@ export function usePanicResponse() {
       return true;
     } catch (error) {
       console.error('[usePanicResponse] Error:', error);
-      toast.error('No se pudo obtener tu ubicación');
+      // Only show error if not already handled by geolocation error handler
+      if (error instanceof Error && !error.message.includes('ubicación')) {
+        toast.error('Error al iniciar respuesta', {
+          description: error.message,
+        });
+      }
       return false;
     }
   }, [user]);
