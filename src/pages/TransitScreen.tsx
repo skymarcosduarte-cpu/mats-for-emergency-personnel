@@ -288,43 +288,57 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
       // Upload vehicle photo if provided (for road trips)
       if (transitType === 'ROAD' && vehiclePhoto.length > 0) {
-        const photo = vehiclePhoto[0];
-        const fileName = `vehicle_${user.id}_${Date.now()}_${photo.name}`;
-        const filePath = `transit-photos/${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('reports_media')
-          .upload(filePath, photo, {
-            contentType: photo.type,
-            upsert: false,
-          });
-
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage
+        try {
+          const photo = vehiclePhoto[0];
+          const fileName = `vehicle_${user.id}_${Date.now()}_${photo.name || 'photo.jpg'}`;
+          const filePath = `transit-photos/${fileName}`;
+          
+          const { error: uploadError } = await supabase.storage
             .from('reports_media')
-            .getPublicUrl(filePath);
-          vehiclePhotoUrl = urlData?.publicUrl || null;
+            .upload(filePath, photo, {
+              contentType: photo.type || 'image/jpeg',
+              upsert: false,
+            });
+
+          if (uploadError) {
+            console.warn('[TransitScreen] Vehicle photo upload failed:', uploadError);
+          } else {
+            const { data: urlData } = supabase.storage
+              .from('reports_media')
+              .getPublicUrl(filePath);
+            vehiclePhotoUrl = urlData?.publicUrl || null;
+          }
+        } catch (photoError) {
+          console.warn('[TransitScreen] Error processing vehicle photo:', photoError);
+          // Continue without photo - it's optional
         }
       }
 
       // Upload boarding pass photo if provided (for flights)
       if (transitType === 'FLIGHT' && boardingPassPhoto.length > 0) {
-        const photo = boardingPassPhoto[0];
-        const fileName = `boarding_${user.id}_${Date.now()}_${photo.name}`;
-        const filePath = `transit-photos/${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('reports_media')
-          .upload(filePath, photo, {
-            contentType: photo.type,
-            upsert: false,
-          });
-
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage
+        try {
+          const photo = boardingPassPhoto[0];
+          const fileName = `boarding_${user.id}_${Date.now()}_${photo.name || 'boarding.jpg'}`;
+          const filePath = `transit-photos/${fileName}`;
+          
+          const { error: uploadError } = await supabase.storage
             .from('reports_media')
-            .getPublicUrl(filePath);
-          boardingPassUrl = urlData?.publicUrl || null;
+            .upload(filePath, photo, {
+              contentType: photo.type || 'image/jpeg',
+              upsert: false,
+            });
+
+          if (uploadError) {
+            console.warn('[TransitScreen] Boarding pass upload failed:', uploadError);
+          } else {
+            const { data: urlData } = supabase.storage
+              .from('reports_media')
+              .getPublicUrl(filePath);
+            boardingPassUrl = urlData?.publicUrl || null;
+          }
+        } catch (photoError) {
+          console.warn('[TransitScreen] Error processing boarding pass:', photoError);
+          // Continue without photo - it's optional
         }
       }
 
@@ -1126,7 +1140,15 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       </Tabs>
 
       {/* New Trip Dialog */}
-      <Dialog open={showTripDialog} onOpenChange={setShowTripDialog}>
+      <Dialog 
+        open={showTripDialog} 
+        onOpenChange={(open) => {
+          setShowTripDialog(open);
+          if (!open) {
+            resetTripForm();
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Registrar Viaje</DialogTitle>
