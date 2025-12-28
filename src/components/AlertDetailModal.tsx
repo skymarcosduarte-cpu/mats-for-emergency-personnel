@@ -410,6 +410,7 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
   const handleRespond = async () => {
     console.log('[AlertDetailModal] handleRespond called', { 
       alertId: alert?.id, 
+      alertType,
       hasOnRespond: !!onRespond,
       isRescatista,
       userPosition,
@@ -423,9 +424,19 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
       return;
     }
     
+    if (!alertType) {
+      console.error('[AlertDetailModal] Cannot respond: alertType is null/undefined');
+      toast({
+        title: "Error",
+        description: "No se pudo determinar el tipo de alerta. Intenta de nuevo.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsResponding(true);
     try {
-      const success = await onRespond(alert.id, alertType!, alert.lat, alert.lng, selectedTransport || undefined, estimatedEta || undefined);
+      const success = await onRespond(alert.id, alertType, alert.lat, alert.lng, selectedTransport || undefined, estimatedEta || undefined);
       console.log('[AlertDetailModal] Response result:', success);
       if (success) {
         toast({

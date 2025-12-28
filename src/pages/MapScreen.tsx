@@ -1100,18 +1100,29 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   ) => {
     console.log('[MapScreen] handleRespondToRequest called', { requestId, alertType, alertLat, alertLng, isRescatista, role, transportMode, estimatedEtaMinutes });
     
-    if (alertType === 'help') {
-      console.log('[MapScreen] Responding to help request...');
-      return await startResponding(requestId, alertLat, alertLng, isRescatista, transportMode, estimatedEtaMinutes);
+    // Validate alertType to prevent inserting into wrong table
+    if (!alertType || (alertType !== 'panic' && alertType !== 'help')) {
+      console.error('[MapScreen] Invalid or missing alert type:', alertType);
+      toast.error('Error: Tipo de alerta no válido');
+      return false;
     }
     
-    if (alertType === 'panic') {
-      console.log('[MapScreen] Responding to panic event...');
-      return await startPanicResponding(requestId, alertLat, alertLng, isRescatista, transportMode, estimatedEtaMinutes);
+    try {
+      if (alertType === 'help') {
+        console.log('[MapScreen] Responding to help request...');
+        return await startResponding(requestId, alertLat, alertLng, isRescatista, transportMode, estimatedEtaMinutes);
+      }
+      
+      if (alertType === 'panic') {
+        console.log('[MapScreen] Responding to panic event...');
+        return await startPanicResponding(requestId, alertLat, alertLng, isRescatista, transportMode, estimatedEtaMinutes);
+      }
+    } catch (error) {
+      console.error('[MapScreen] Error responding to alert:', error);
+      toast.error('Error al responder: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      return false;
     }
     
-    console.error('[MapScreen] Invalid alert type:', alertType);
-    toast.error('Tipo de alerta no válido');
     return false;
   }, [startResponding, startPanicResponding, isRescatista, role]);
 

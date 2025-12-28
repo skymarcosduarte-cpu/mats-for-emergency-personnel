@@ -69,6 +69,33 @@ export function usePanicResponse() {
     }
 
     try {
+      // First, verify that the panic event exists
+      console.log('[usePanicResponse] Verifying panic event exists...');
+      const { data: existingPanic, error: checkError } = await supabase
+        .from('panic_events')
+        .select('id, user_id, resolved')
+        .eq('id', panicId)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error('[usePanicResponse] Error checking panic event:', checkError);
+        toast.error('Error al verificar la alerta');
+        return false;
+      }
+      
+      if (!existingPanic) {
+        console.error('[usePanicResponse] Panic event not found:', panicId);
+        toast.error('La alerta no existe o ha sido eliminada');
+        return false;
+      }
+      
+      if (existingPanic.resolved) {
+        toast.info('Esta alerta ya fue resuelta');
+        return false;
+      }
+      
+      console.log('[usePanicResponse] Panic event verified:', existingPanic);
+
       // Get current location first
       console.log('[usePanicResponse] Getting current position...');
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
