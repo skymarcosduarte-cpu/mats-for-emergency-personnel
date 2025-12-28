@@ -9,6 +9,7 @@ import { GpsStatusBanner } from '@/components/GpsStatusBanner';
 import { MapControlsMenu } from '@/components/MapControlsMenu';
 import { ImOkButton } from '@/components/ImOkButton';
 import { useLocation } from '@/hooks/useLocation';
+import type { GeoPosition } from '@/types';
 import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders, usePanicEvents, useActiveResponders } from '@/hooks/useRealtime';
 import { useActiveTrips } from '@/hooks/useActiveTrips';
 import { useEmergencyResponse } from '@/hooks/useEmergencyResponse';
@@ -1233,32 +1234,86 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   // Default center (Mexico City)
   const defaultCenter: [number, number] = [19.4326, -99.1332];
 
-  // Center map on user's location - with iOS-friendly fallback
+  // Center map on user's location - with iOS-friendly fallback and multiple retries
   const centerOnMe = useCallback(async () => {
     if (!mapInstanceRef.current) return;
     
-    // If we already have position, center immediately
-    if (position) {
+    // If we have a recent position (< 60s old), use it immediately
+    const isRecent = position?.timestamp && (Date.now() - position.timestamp) < 60000;
+    if (position && isRecent) {
       mapInstanceRef.current.setView([position.lat, position.lng], 16, { animate: true });
+      toast.success('Centrado en tu ubicación');
       return;
     }
     
-    // Otherwise, request position first (important for iOS where GPS may not be active)
+    // For iOS: Try multiple approaches sequentially
+    toast.info('Obteniendo ubicación...', { id: 'center-gps', duration: 20000 });
+    
+    // Attempt 1: High accuracy with short timeout
+    const tryGetPosition = (enableHighAccuracy: boolean, timeout: number, maximumAge: number): Promise<GeoPosition> => {
+      return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            resolve({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracy: pos.coords.accuracy,
+              heading: pos.coords.heading,
+              speed: pos.coords.speed,
+              timestamp: pos.timestamp,
+            });
+          },
+          (err) => reject(err),
+          { enableHighAccuracy, timeout, maximumAge }
+        );
+      });
+    };
+
     try {
-      toast.info('Obteniendo ubicación...', { id: 'center-gps', duration: 10000 });
-      const pos = await getCurrentPosition();
+      // Try 1: Fast high-accuracy (10s timeout)
+      const pos = await tryGetPosition(true, 10000, 30000);
       toast.dismiss('center-gps');
-      if (mapInstanceRef.current && pos) {
-        mapInstanceRef.current.setView([pos.lat, pos.lng], 16, { animate: true });
-        toast.success('Ubicación encontrada');
-      }
-    } catch (error) {
+      mapInstanceRef.current?.setView([pos.lat, pos.lng], 16, { animate: true });
+      toast.success('Ubicación encontrada');
+      return;
+    } catch (e1) {
+      console.log('[centerOnMe] Attempt 1 failed, trying low accuracy...', e1);
+    }
+
+    let lastError: GeolocationPositionError | null = null;
+    
+    try {
+      // Try 2: Low accuracy with cached position allowed (15s timeout)
+      const pos = await tryGetPosition(false, 15000, 120000);
       toast.dismiss('center-gps');
+      mapInstanceRef.current?.setView([pos.lat, pos.lng], 16, { animate: true });
+      toast.success('Ubicación encontrada (aproximada)');
+      return;
+    } catch (e2) {
+      lastError = e2 as GeolocationPositionError;
+      console.log('[centerOnMe] Attempt 2 failed', e2);
+    }
+
+    // Both attempts failed
+    toast.dismiss('center-gps');
+    
+    // Provide specific guidance based on error
+    const code = lastError?.code;
+    
+    if (code === 1) {
+      toast.error('Permiso de ubicación denegado', {
+        description: 'Ve a Configuración > Safari > Sitios web > Ubicación y permite el acceso.'
+      });
+    } else if (code === 2) {
+      toast.error('GPS no disponible', {
+        description: 'Asegúrate de tener el GPS activado y buena señal.'
+      });
+    } else {
       toast.error('No se pudo obtener tu ubicación', {
-        description: 'Verifica que los permisos de ubicación estén habilitados'
+        description: 'Intenta de nuevo o verifica permisos en Ajustes > Privacidad > Ubicación > Safari'
       });
     }
-  }, [position, getCurrentPosition]);
+  }, [position]);
 
   // Initialize map
   useEffect(() => {
