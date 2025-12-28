@@ -1291,30 +1291,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       return;
     } catch (e2) {
       lastError = e2 as GeolocationPositionError;
-      console.log('[centerOnMe] Attempt 2 failed, trying IP geolocation...', e2);
+      console.log('[centerOnMe] Attempt 2 failed', e2);
     }
 
-    // Try 3: IP-based geolocation as last resort
-    try {
-      const ipResponse = await fetch('https://ipapi.co/json/', { 
-        signal: AbortSignal.timeout(8000) 
-      });
-      if (ipResponse.ok) {
-        const ipData = await ipResponse.json();
-        if (ipData.latitude && ipData.longitude) {
-          toast.dismiss('center-gps');
-          mapInstanceRef.current?.setView([ipData.latitude, ipData.longitude], 12, { animate: true });
-          toast.success('Ubicación aproximada (por IP)', {
-            description: `${ipData.city || 'Tu zona'} - precisión reducida`
-          });
-          return;
-        }
-      }
-    } catch (e3) {
-      console.log('[centerOnMe] IP geolocation failed', e3);
-    }
-
-    // All attempts failed
+    // Both attempts failed
     toast.dismiss('center-gps');
     
     // Provide specific guidance based on error
