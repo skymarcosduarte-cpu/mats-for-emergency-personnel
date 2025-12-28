@@ -50,6 +50,9 @@ import { useInternalMessages } from '@/hooks/useInternalMessages';
 import { InternalMessagesProvider } from '@/providers/InternalMessagesProvider';
 import { useNewUserNotification } from '@/hooks/useNewUserNotification';
 import { useWebPushSubscription } from '@/hooks/useWebPushSubscription';
+import { useBackgroundConnection } from '@/hooks/useBackgroundConnection';
+import { useAutoWakeLock } from '@/hooks/useWakeLock';
+import { useBackgroundLocation } from '@/hooks/useBackgroundLocation';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { UserRole, USGSEarthquake, PanicType } from '@/types';
@@ -146,6 +149,11 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   // Real-time panic alerts from other users
   const { recentAlerts, unreadCount, latestEmergencyAlert, dismissLatestAlert } = usePanicAlerts();
   
+  // Keep screen awake during active emergency situations
+  // Wake lock activates when there's a nearby quake, active emergency alert, or disaster mode
+  const shouldKeepScreenAwake = !!latestEmergencyAlert || disasterMode || panicOpen;
+  useAutoWakeLock(shouldKeepScreenAwake);
+  
   // Listen for responders to user's own alerts and track their location
   const { respondersToMyAlerts, newResponderAlert: newAlertResponder, dismissNewResponderAlert: dismissAlertResponder } = useMyAlertResponders();
   
@@ -239,6 +247,19 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   
   // Background sync - keeps data fresh every 2 minutes
   useBackgroundSync();
+  
+  // Background connection manager - keeps realtime connections alive
+  const { isConnected: isBackgroundConnected } = useBackgroundConnection();
+  
+  // Background location tracking
+  const { isTracking: isBackgroundTracking, startTracking: startBackgroundTracking } = useBackgroundLocation();
+  
+  // Start background location when user is authenticated
+  useEffect(() => {
+    if (user && !isBackgroundTracking) {
+      startBackgroundTracking();
+    }
+  }, [user, isBackgroundTracking, startBackgroundTracking]);
 
   // Push notifications (browser)
   const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
@@ -259,6 +280,11 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   useEffect(() => {
     if (permission === 'default') {
       requestPermission();
+    }
+    
+    // Register service worker for periodic background sync
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'REGISTER_PERIODIC_SYNC' });
     }
   }, [permission, requestPermission]);
   
