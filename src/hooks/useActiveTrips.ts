@@ -21,6 +21,7 @@ export interface ActiveTrip {
   companions: string | null;
   airline: string | null;
   flight_number: string | null;
+  share_token: string | null;
   // Joined from profiles_public
   nickname?: string | null;
   // Current user location (if sharing)
@@ -62,7 +63,8 @@ export function useActiveTrips() {
           plates,
           companions,
           airline,
-          flight_number
+          flight_number,
+          share_token
         `)
         .eq('status', 'ACTIVE')
         .order('created_at', { ascending: false });

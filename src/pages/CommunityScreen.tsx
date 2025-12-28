@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -827,6 +827,45 @@ export const CommunityScreen: React.FC = () => {
                   </div>
                 )}
               </div>
+              
+              {/* Share button */}
+              {selectedTrip.share_token && (
+                <div className="flex gap-2">
+                  <Button 
+                    variant="secondary"
+                    className="flex-1"
+                    onClick={() => {
+                      const shareUrl = `${window.location.origin}/trip/${selectedTrip.share_token}`;
+                      if (navigator.share) {
+                        navigator.share({
+                          title: `Viaje de ${selectedTrip.nickname || 'usuario'}`,
+                          text: `Sigue el viaje de ${selectedTrip.origin} a ${selectedTrip.destination}`,
+                          url: shareUrl,
+                        }).catch(() => {
+                          navigator.clipboard.writeText(shareUrl);
+                          toast.success('Link copiado al portapapeles');
+                        });
+                      } else {
+                        navigator.clipboard.writeText(shareUrl);
+                        toast.success('Link copiado al portapapeles');
+                      }
+                    }}
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Compartir Viaje
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      const shareUrl = `${window.location.origin}/trip/${selectedTrip.share_token}`;
+                      window.open(shareUrl, '_blank');
+                    }}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
               
               <Button 
                 variant="outline" 
