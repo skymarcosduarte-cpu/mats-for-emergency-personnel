@@ -429,99 +429,180 @@ export const CommunityScreen: React.FC = () => {
         </TabsContent>
 
         {/* Avisos/Notifications Tab */}
-        <TabsContent value="avisos" className="mt-4 space-y-3">
-          {notifications.length > 0 && (
-            <div className="flex justify-end mb-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={markAllAsRead}
-                className="text-xs"
-              >
-                <Check className="w-3 h-3 mr-1" />
-                Marcar todo como leído
-              </Button>
-            </div>
-          )}
-          
-          {notificationsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No tienes notificaciones</p>
-            </div>
-          ) : (
-            notifications.map((notification) => (
-              <Card 
-                key={notification.id} 
-                className={cn(
-                  "bg-card border-border transition-colors",
-                  !notification.read && "border-l-4 border-l-primary"
-                )}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className={cn(
-                        "p-2 rounded-full",
-                        notification.type === 'marketplace_contact' 
-                          ? "bg-primary/10 text-primary"
-                          : "bg-muted text-muted-foreground"
-                      )}>
-                        {notification.type === 'marketplace_contact' ? (
-                          <ShoppingBag className="w-4 h-4" />
-                        ) : (
-                          <Bell className="w-4 h-4" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn(
-                          "text-sm",
-                          !notification.read && "font-semibold"
-                        )}>
-                          {notification.title}
-                        </p>
-                        {notification.message && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {notification.message}
+        <TabsContent value="avisos" className="mt-4 space-y-4">
+          {/* Active Community Trips in Avisos */}
+          {communityTrips.length > 0 && (
+            <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Car className="w-5 h-5 text-amber-500" />
+                  Viajes Activos 🚗
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {communityTrips.length}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {communityTrips.map((trip) => {
+                  const etaInfo = formatEta(trip);
+                  const hasLocation = trip.current_lat && trip.current_lng;
+                  return (
+                    <div 
+                      key={trip.id}
+                      onClick={() => setSelectedTrip(trip)}
+                      className={cn(
+                        "flex items-center justify-between p-2 bg-background/50 rounded-lg transition-all",
+                        "hover:bg-background/80 cursor-pointer active:scale-[0.98]"
+                      )}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-xl flex-shrink-0 relative">
+                          {trip.transit_type === 'FLIGHT' ? '✈️' : '🚗'}
+                          {hasLocation && (
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-safe rounded-full border-2 border-background animate-pulse" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-foreground truncate">
+                            {trip.nickname || 'Usuario'}
                           </p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {formatDistanceToNow(new Date(notification.created_at), { 
-                            addSuffix: true,
-                            locale: es 
-                          })}
-                        </p>
+                          <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                            {trip.origin} → {trip.destination}
+                          </p>
+                          {trip.remaining_distance_km !== null && trip.remaining_distance_km !== undefined && (
+                            <p className="text-[10px] text-primary/80 mt-0.5">
+                              📍 {formatDistanceKm(trip.remaining_distance_km)} restantes
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        <div className="flex flex-col items-end">
+                          <Badge 
+                            variant={etaInfo.isLate ? "destructive" : "secondary"}
+                            className={cn(
+                              "text-xs",
+                              !etaInfo.isLate && "bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                            )}
+                          >
+                            <Clock className="w-3 h-3 mr-1" />
+                            {etaInfo.text}
+                            {etaInfo.isDynamic && (
+                              <span className="w-1.5 h-1.5 bg-safe rounded-full ml-1 animate-pulse" />
+                            )}
+                          </Badge>
+                          {trip.transit_type === 'FLIGHT' && trip.flight_number && (
+                            <span className="text-[10px] text-muted-foreground mt-0.5">
+                              {trip.airline} {trip.flight_number}
+                            </span>
+                          )}
+                        </div>
+                        <Map className="w-4 h-4 text-muted-foreground" />
                       </div>
                     </div>
-                    <div className="flex gap-1">
-                      {!notification.read && (
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Notifications section */}
+          <div className="space-y-3">
+            {notifications.length > 0 && (
+              <div className="flex justify-between items-center">
+                <h2 className="text-sm font-medium text-muted-foreground">Notificaciones</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={markAllAsRead}
+                  className="text-xs"
+                >
+                  <Check className="w-3 h-3 mr-1" />
+                  Marcar todo leído
+                </Button>
+              </div>
+            )}
+            
+            {notificationsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : notifications.length === 0 && communityTrips.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No tienes notificaciones</p>
+              </div>
+            ) : (
+              notifications.map((notification) => (
+                <Card 
+                  key={notification.id} 
+                  className={cn(
+                    "bg-card border-border transition-colors",
+                    !notification.read && "border-l-4 border-l-primary"
+                  )}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className={cn(
+                          "p-2 rounded-full",
+                          notification.type === 'marketplace_contact' 
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-muted-foreground"
+                        )}>
+                          {notification.type === 'marketplace_contact' ? (
+                            <ShoppingBag className="w-4 h-4" />
+                          ) : (
+                            <Bell className="w-4 h-4" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn(
+                            "text-sm",
+                            !notification.read && "font-semibold"
+                          )}>
+                            {notification.title}
+                          </p>
+                          {notification.message && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {notification.message}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {formatDistanceToNow(new Date(notification.created_at), { 
+                              addSuffix: true,
+                              locale: es 
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        {!notification.read && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => markAsRead(notification.id)}
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
-                          onClick={() => markAsRead(notification.id)}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => deleteNotification(notification.id)}
                         >
-                          <Check className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" />
                         </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => deleteNotification(notification.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -598,20 +679,20 @@ export const CommunityScreen: React.FC = () => {
       </Dialog>
 
       {/* Trip Map Dialog */}
-      <Dialog open={!!selectedTrip} onOpenChange={(open) => !open && setSelectedTrip(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {selectedTrip?.transit_type === 'FLIGHT' ? (
-                <Plane className="w-5 h-5 text-primary" />
-              ) : (
-                <Car className="w-5 h-5 text-primary" />
-              )}
-              Viaje de {selectedTrip?.nickname || 'Usuario'}
-            </DialogTitle>
-          </DialogHeader>
+      {selectedTrip && (
+        <Dialog open={true} onOpenChange={(open) => !open && setSelectedTrip(null)}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-auto bg-card">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {selectedTrip.transit_type === 'FLIGHT' ? (
+                  <Plane className="w-5 h-5 text-primary" />
+                ) : (
+                  <Car className="w-5 h-5 text-primary" />
+                )}
+                Viaje de {selectedTrip.nickname || 'Usuario'}
+              </DialogTitle>
+            </DialogHeader>
           
-          {selectedTrip && (
             <div className="space-y-4">
               {/* Map */}
               <div className="relative">
@@ -755,9 +836,9 @@ export const CommunityScreen: React.FC = () => {
                 Cerrar
               </Button>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
