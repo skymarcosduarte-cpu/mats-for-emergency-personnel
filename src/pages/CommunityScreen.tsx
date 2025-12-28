@@ -1,10 +1,10 @@
 // Community Events Screen for COMUNIDAD EX SOS
 // Message board for birthdays, health notices, hospital support, announcements + notifications
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +29,7 @@ import { useCommunityEvents, CommunityEventType } from '@/hooks/useCommunityEven
 import { useNotifications } from '@/hooks/useNotifications';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 import TripRouteMap from '@/components/TripRouteMap';
+import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow, differenceInMinutes, isPast, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -73,11 +74,44 @@ export const CommunityScreen: React.FC = () => {
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<ActiveTrip | null>(null);
+  const [routeHistory, setRouteHistory] = useState<[number, number][]>([]);
+  const [loadingRoute, setLoadingRoute] = useState(false);
   const [formData, setFormData] = useState({
     event_type: '' as CommunityEventType | '',
     title: '',
     message: '',
   });
+
+  // Fetch route history when a trip is selected
+  const fetchRouteHistory = useCallback(async (tripId: string) => {
+    setLoadingRoute(true);
+    try {
+      const { data, error } = await supabase
+        .from('trip_position_history')
+        .select('lat, lng, recorded_at')
+        .eq('trip_id', tripId)
+        .order('recorded_at', { ascending: true });
+      
+      if (error) throw error;
+      
+      const coords: [number, number][] = (data || []).map(p => [p.lat, p.lng]);
+      setRouteHistory(coords);
+    } catch (err) {
+      console.error('Error fetching route history:', err);
+      setRouteHistory([]);
+    } finally {
+      setLoadingRoute(false);
+    }
+  }, []);
+
+  // Fetch route when trip is selected
+  useEffect(() => {
+    if (selectedTrip?.id) {
+      fetchRouteHistory(selectedTrip.id);
+    } else {
+      setRouteHistory([]);
+    }
+  }, [selectedTrip?.id, fetchRouteHistory]);
 
   // Format ETA for display - uses dynamic ETA if available
   const formatEta = (trip: typeof communityTrips[0]) => {
@@ -580,24 +614,40 @@ export const CommunityScreen: React.FC = () => {
           {selectedTrip && (
             <div className="space-y-4">
               {/* Map */}
-              <TripRouteMap
-                routeCoordinates={[]}
-                originCoords={selectedTrip.origin_lat && selectedTrip.origin_lng ? {
-                  lat: selectedTrip.origin_lat,
-                  lng: selectedTrip.origin_lng,
-                } : null}
-                destinationCoords={selectedTrip.destination_lat && selectedTrip.destination_lng ? {
-                  lat: selectedTrip.destination_lat,
-                  lng: selectedTrip.destination_lng,
-                } : null}
-                currentPosition={selectedTrip.current_lat && selectedTrip.current_lng ? {
-                  lat: selectedTrip.current_lat,
-                  lng: selectedTrip.current_lng,
-                } : null}
-                originName={selectedTrip.origin}
-                destinationName={selectedTrip.destination}
-                height="280px"
-              />
+              <div className="relative">
+                {loadingRoute && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-muted/80 rounded-lg">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                )}
+                <TripRouteMap
+                  routeCoordinates={routeHistory}
+                  originCoords={selectedTrip.origin_lat && selectedTrip.origin_lng ? {
+                    lat: selectedTrip.origin_lat,
+                    lng: selectedTrip.origin_lng,
+                  } : null}
+                  destinationCoords={selectedTrip.destination_lat && selectedTrip.destination_lng ? {
+                    lat: selectedTrip.destination_lat,
+                    lng: selectedTrip.destination_lng,
+                  } : null}
+                  currentPosition={selectedTrip.current_lat && selectedTrip.current_lng ? {
+                    lat: selectedTrip.current_lat,
+                    lng: selectedTrip.current_lng,
+                  } : null}
+                  originName={selectedTrip.origin}
+                  destinationName={selectedTrip.destination}
+                  height="280px"
+                />
+                {/* Route info badge */}
+                {routeHistory.length > 0 && (
+                  <div className="absolute bottom-2 left-2 z-10">
+                    <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm text-xs">
+                      <Route className="w-3 h-3 mr-1" />
+                      {routeHistory.length} puntos
+                    </Badge>
+                  </div>
+                )}
+              </div>
               
               {/* Trip Details */}
               <div className="space-y-3">
