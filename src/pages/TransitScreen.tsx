@@ -120,7 +120,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const [newEta, setNewEta] = useState<string>('');
   const [updatingEta, setUpdatingEta] = useState(false);
 
-  const { position } = useLocation();
+  const { position, getCurrentPosition, loading: locationLoading, error: locationError } = useLocation();
   const { reports, refetch: refetchReports } = useRoadReports();
 
   // Get current user ID
@@ -286,12 +286,21 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const handleTripSubmit = async () => {
     if (submitting) return;
 
-    if (!position) {
-      toast.error('Se requiere ubicación GPS', {
-        description: 'Activa permisos de ubicación para poder iniciar el viaje.',
-      });
-      console.warn('[TransitScreen] Cannot submit trip: missing position');
-      return;
+    // Ensure we have a fresh GPS position (iOS sometimes delays it)
+    let pos = position;
+    if (!pos) {
+      try {
+        pos = await getCurrentPosition();
+      } catch (e) {
+        toast.error('Se requiere ubicación GPS', {
+          description: 'Activa permisos de ubicación para poder iniciar el viaje.',
+        });
+        console.warn('[TransitScreen] Cannot submit trip: missing position', {
+          locationLoading,
+          locationError,
+        });
+        return;
+      }
     }
 
     if (!tripForm.eta) {
@@ -383,7 +392,11 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         transit_type: transitType,
         origin: transitType === 'ROAD' ? tripForm.origin : tripForm.departureAirport,
         destination: transitType === 'ROAD' ? tripForm.destination : tripForm.arrivalAirport,
-        eta: new Date(tripForm.eta).toISOString(),
+        eta: (() => {
+          const d = new Date(tripForm.eta);
+          if (Number.isNaN(d.getTime())) throw new Error('ETA inválida');
+          return d.toISOString();
+        })(),
         status: 'ACTIVE',
         plates: transitType === 'ROAD' ? tripForm.plates : null,
         companions: tripForm.companions || null,
@@ -393,8 +406,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         departure_airport: transitType === 'FLIGHT' ? tripForm.departureAirport : null,
         arrival_airport: transitType === 'FLIGHT' ? tripForm.arrivalAirport : null,
         // Store current location as origin coordinates
-        origin_lat: position.lat,
-        origin_lng: position.lng,
+        origin_lat: pos.lat,
+        origin_lng: pos.lng,
         // Store destination coordinates if provided
         destination_lat: tripForm.destinationLat,
         destination_lng: tripForm.destinationLng,
