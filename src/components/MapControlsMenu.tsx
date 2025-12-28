@@ -1,5 +1,5 @@
 // MapControlsMenu - Collapsible map controls for mobile screens
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Locate, Share2, Copy, MessageCircle, Check, MapPin, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +19,7 @@ interface MapControlsMenuProps {
   isRefreshing?: boolean;
   activeUsersCount: number;
   className?: string;
+  forceCloseMenus?: number; // Incremented when map is clicked to force close menus
 }
 
 export function MapControlsMenu({ 
@@ -27,9 +28,20 @@ export function MapControlsMenu({
   onRefreshLocations,
   isRefreshing = false,
   activeUsersCount,
-  className 
+  className,
+  forceCloseMenus = 0,
 }: MapControlsMenuProps) {
   const [copied, setCopied] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+
+  // Close menus when forceCloseMenus changes (map was clicked)
+  useEffect(() => {
+    if (forceCloseMenus > 0) {
+      setMobileMenuOpen(false);
+      setShareMenuOpen(false);
+    }
+  }, [forceCloseMenus]);
 
   const handleRefresh = () => {
     if (onRefreshLocations) {
@@ -144,7 +156,7 @@ export function MapControlsMenu({
 
         {/* Share location dropdown */}
         {position && (
-          <DropdownMenu>
+          <DropdownMenu open={shareMenuOpen} onOpenChange={setShareMenuOpen}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
@@ -194,7 +206,7 @@ export function MapControlsMenu({
         </div>
 
         {/* Collapsed controls menu */}
-        <DropdownMenu>
+        <DropdownMenu open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <DropdownMenuTrigger asChild>
             <button
               className="bg-card/95 backdrop-blur-sm rounded-lg p-2.5 shadow-lg border border-border hover:bg-accent transition-colors"

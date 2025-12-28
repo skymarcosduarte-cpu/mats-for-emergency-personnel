@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag 
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,7 +27,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCommunityEvents, CommunityEventType } from '@/hooks/useCommunityEvents';
 import { useNotifications } from '@/hooks/useNotifications';
-import { formatDistanceToNow } from 'date-fns';
+import { useActiveTrips } from '@/hooks/useActiveTrips';
+import { formatDistanceToNow, differenceInMinutes, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -62,6 +63,11 @@ export const CommunityScreen: React.FC = () => {
     markAllAsRead, 
     deleteNotification 
   } = useNotifications();
+
+  const {
+    trips: communityTrips,
+    loading: tripsLoading,
+  } = useActiveTrips();
   
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -70,6 +76,31 @@ export const CommunityScreen: React.FC = () => {
     title: '',
     message: '',
   });
+
+  // Format ETA for display
+  const formatEta = (eta: string) => {
+    const etaDate = new Date(eta);
+    const now = new Date();
+    
+    if (isPast(etaDate)) {
+      return { text: 'Llegando...', isLate: true };
+    }
+    
+    const minutesRemaining = differenceInMinutes(etaDate, now);
+    
+    if (minutesRemaining < 60) {
+      return { text: `${minutesRemaining} min`, isLate: false };
+    } else if (minutesRemaining < 1440) {
+      const hours = Math.floor(minutesRemaining / 60);
+      const mins = minutesRemaining % 60;
+      return { text: `${hours}h ${mins > 0 ? `${mins}m` : ''}`, isLate: false };
+    } else {
+      return { 
+        text: formatDistanceToNow(etaDate, { addSuffix: true, locale: es }),
+        isLate: false 
+      };
+    }
+  };
 
   const handleSubmit = async () => {
     if (!formData.event_type || !formData.title.trim()) {
@@ -178,6 +209,69 @@ export const CommunityScreen: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Community Active Trips */}
+          {communityTrips.length > 0 && (
+            <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Car className="w-5 h-5 text-amber-500" />
+                  En Tránsito 🚗
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {communityTrips.length}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {communityTrips.slice(0, 5).map((trip) => {
+                  const etaInfo = formatEta(trip.eta);
+                  return (
+                    <div 
+                      key={trip.id}
+                      className="flex items-center justify-between p-2 bg-background/50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-xl flex-shrink-0">
+                          {trip.transit_type === 'FLIGHT' ? '✈️' : '🚗'}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-foreground truncate">
+                            {trip.nickname || 'Usuario'}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                            {trip.origin} → {trip.destination}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end flex-shrink-0 ml-2">
+                        <Badge 
+                          variant={etaInfo.isLate ? "destructive" : "secondary"}
+                          className={cn(
+                            "text-xs",
+                            !etaInfo.isLate && "bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                          )}
+                        >
+                          <Clock className="w-3 h-3 mr-1" />
+                          {etaInfo.text}
+                        </Badge>
+                        {trip.transit_type === 'FLIGHT' && trip.flight_number && (
+                          <span className="text-[10px] text-muted-foreground mt-0.5">
+                            {trip.airline} {trip.flight_number}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                {communityTrips.length > 5 && (
+                  <p className="text-xs text-muted-foreground text-center pt-1">
+                    +{communityTrips.length - 5} más en tránsito
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}

@@ -1066,6 +1066,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   const currentLocationMarkerRef = useRef<L.Marker | null>(null);
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  // Counter to force close map control menus when map is clicked
+  const [forceCloseMenus, setForceCloseMenus] = useState(0);
   // Messaging state
   const [messagingOpen, setMessagingOpen] = useState(false);
   
@@ -1335,6 +1337,12 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     mapInstanceRef.current = map;
     setMapReady(true);
 
+    // Close menus when map is clicked/tapped
+    const handleMapClick = () => {
+      setForceCloseMenus(prev => prev + 1);
+    };
+    map.on('click', handleMapClick);
+
     // Add pulse animation styles
     const style = document.createElement('style');
     style.textContent = `
@@ -1363,6 +1371,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     document.head.appendChild(style);
 
     return () => {
+      map.off('click', handleMapClick);
       map.remove();
       mapInstanceRef.current = null;
       style.remove();
@@ -2669,6 +2678,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
             onCenterOnMe={centerOnMe}
             onRefreshLocations={refetchLocations}
             activeUsersCount={locations.length}
+            forceCloseMenus={forceCloseMenus}
           />
         </div>
         
