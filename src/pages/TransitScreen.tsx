@@ -266,19 +266,55 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     }
   };
 
+  // Small helper to surface actionable errors (especially on mobile)
+  const getErrMsg = (err: unknown) => {
+    if (typeof err === 'string') return err;
+    if (err && typeof err === 'object') {
+      const anyErr = err as any;
+      return (
+        anyErr?.message ||
+        anyErr?.error_description ||
+        anyErr?.details ||
+        anyErr?.hint ||
+        'Error desconocido'
+      );
+    }
+    return 'Error desconocido';
+  };
+
   // Handle trip submission
   const handleTripSubmit = async () => {
+    if (submitting) return;
+
     if (!position) {
-      toast.error('Se requiere ubicación GPS');
+      toast.error('Se requiere ubicación GPS', {
+        description: 'Activa permisos de ubicación para poder iniciar el viaje.',
+      });
+      console.warn('[TransitScreen] Cannot submit trip: missing position');
       return;
     }
 
     if (!tripForm.eta) {
-      toast.error('Se requiere hora de llegada estimada');
+      toast.error('Se requiere hora de llegada estimada', {
+        description: 'Selecciona una fecha y hora en el campo “ETA”.',
+      });
+      console.warn('[TransitScreen] Cannot submit trip: missing ETA');
       return;
     }
 
     setSubmitting(true);
+    console.log('[TransitScreen] Submitting trip', {
+      transitType,
+      hasVehiclePhoto: vehiclePhoto.length > 0,
+      hasBoardingPass: boardingPassPhoto.length > 0,
+      origin: tripForm.origin,
+      destination: tripForm.destination,
+      departureAirport: tripForm.departureAirport,
+      arrivalAirport: tripForm.arrivalAirport,
+      eta: tripForm.eta,
+      ua: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+    });
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No autenticado');
@@ -292,7 +328,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           const photo = vehiclePhoto[0];
           const fileName = `vehicle_${user.id}_${Date.now()}_${photo.name || 'photo.jpg'}`;
           const filePath = `transit-photos/${fileName}`;
-          
+
           const { error: uploadError } = await supabase.storage
             .from('reports_media')
             .upload(filePath, photo, {
@@ -320,7 +356,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           const photo = boardingPassPhoto[0];
           const fileName = `boarding_${user.id}_${Date.now()}_${photo.name || 'boarding.jpg'}`;
           const filePath = `transit-photos/${fileName}`;
-          
+
           const { error: uploadError } = await supabase.storage
             .from('reports_media')
             .upload(filePath, photo, {
@@ -375,8 +411,11 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       resetTripForm();
       fetchMyTrips(); // Refresh trips list
     } catch (error) {
-      console.error('Error submitting trip:', error);
-      toast.error('Error al registrar viaje');
+      const msg = getErrMsg(error);
+      console.error('[TransitScreen] Error submitting trip:', error);
+      toast.error('Error al registrar viaje', {
+        description: msg,
+      });
     } finally {
       setSubmitting(false);
     }
