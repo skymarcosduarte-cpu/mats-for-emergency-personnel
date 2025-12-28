@@ -347,6 +347,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const handleTripSubmit = async () => {
     if (submitting) return;
 
+    console.log('[TransitScreen] Start trip button pressed');
+
     // Validate ETA first (before GPS wait)
     if (!tripForm.eta) {
       toast.error('Se requiere hora de llegada estimada', {
@@ -356,6 +358,9 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       return;
     }
 
+    // Disable button immediately (important for iOS perceived responsiveness)
+    setSubmitting(true);
+
     // Show immediate feedback to user (important for iOS)
     toast.info('Obteniendo ubicación GPS...', { id: 'gps-toast', duration: 15000 });
 
@@ -364,16 +369,18 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     if (!pos) {
       try {
         // Create a timeout promise for GPS acquisition
-        const gpsTimeout = new Promise<never>((_, reject) => 
+        const gpsTimeout = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('GPS timeout')), 15000)
         );
-        
+
         pos = await Promise.race([getCurrentPosition(), gpsTimeout]);
       } catch (e) {
         toast.dismiss('gps-toast');
-        const errorMsg = e instanceof Error && e.message === 'GPS timeout' 
-          ? 'No se pudo obtener ubicación a tiempo. Intenta de nuevo.'
-          : 'Activa permisos de ubicación para poder iniciar el viaje.';
+        setSubmitting(false);
+        const errorMsg =
+          e instanceof Error && e.message === 'GPS timeout'
+            ? 'No se pudo obtener ubicación a tiempo. Intenta de nuevo.'
+            : 'Activa permisos de ubicación para poder iniciar el viaje.';
         toast.error('Se requiere ubicación GPS', { description: errorMsg });
         console.warn('[TransitScreen] Cannot submit trip: missing position', {
           locationLoading,
@@ -385,7 +392,6 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     }
 
     toast.dismiss('gps-toast');
-    setSubmitting(true);
     console.log('[TransitScreen] Submitting trip', {
       transitType,
       hasVehiclePhoto: vehiclePhoto.length > 0,
@@ -1743,6 +1749,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
             <div className="flex gap-2">
               <Button
+                type="button"
                 variant="outline"
                 onClick={() => setShowTripDialog(false)}
                 className="flex-1"
@@ -1750,6 +1757,11 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                 Cancelar
               </Button>
               <Button
+                type="button"
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  handleTripSubmit();
+                }}
                 onClick={handleTripSubmit}
                 disabled={submitting}
                 className="flex-1"
