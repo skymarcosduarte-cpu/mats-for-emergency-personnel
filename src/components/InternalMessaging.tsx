@@ -588,12 +588,18 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     }
   };
 
-  // Audio playback function
+  // Ref to track current playing audio id (prevents callback identity changes)
+  const playingAudioIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    playingAudioIdRef.current = playingAudioId;
+  }, [playingAudioId]);
+
+  // Audio playback function - stable callback (no deps on playingAudioId)
   const playAudio = useCallback(async (msg: InternalMessage) => {
     if (!msg.audio_url) return;
 
     // If already playing this audio, stop it
-    if (playingAudioId === msg.id) {
+    if (playingAudioIdRef.current === msg.id) {
       if (audioElementRef.current) {
         audioElementRef.current.pause();
         audioElementRef.current = null;
@@ -638,7 +644,7 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     } finally {
       setLoadingAudioId(null);
     }
-  }, [playingAudioId]);
+  }, []);
 
 
   // Image handling functions - with compression to prevent freezing
@@ -923,7 +929,7 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
         </div>
       );
     });
-  }, [conversationMessages, user?.id, justSentId, deletingId, loadingAudioId, playingAudioId, formatMessageTime, handleViewImage, playAudio]);
+  }, [conversationMessages, user?.id, justSentId, deletingId, loadingAudioId, playingAudioId, formatMessageTime, handleViewImage]);
 
   if (!isOpen) return null;
 
