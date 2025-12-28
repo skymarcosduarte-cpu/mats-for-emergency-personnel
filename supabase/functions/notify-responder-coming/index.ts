@@ -211,6 +211,12 @@ serve(async (req) => {
           : parts.join(' ');
         notificationType = 'responder_coming';
         break;
+      
+      case 'proximity':
+        title = '📍 ¡Rescatista muy cerca!';
+        message = `${responderName}${credentialsText} está a menos de 500 metros de tu ubicación. ¡Ya casi llega!`;
+        notificationType = 'responder_proximity';
+        break;
         
       case 'arrived':
         title = '✅ ¡Rescatista llegó!';
