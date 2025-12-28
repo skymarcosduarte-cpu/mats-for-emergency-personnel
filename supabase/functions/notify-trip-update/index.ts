@@ -19,12 +19,16 @@ serve(async (req) => {
     const { 
       tripId,
       tripUserId,
-      eventType, // 'arrived', 'overdue', 'cancelled', 'eta_updated'
+      eventType, // 'started', 'arrived', 'overdue', 'cancelled', 'eta_updated'
       origin,
       destination,
       eta,
       oldEta, // for eta_updated events
       overdueMinutes, // for overdue events
+      originLat,
+      originLng,
+      destinationLat,
+      destinationLng,
     } = await req.json();
 
     console.log(`[notify-trip-update] Processing ${eventType} for trip ${tripId}`, {
@@ -42,36 +46,25 @@ serve(async (req) => {
       .maybeSingle();
 
     const userName = profile?.nickname || profile?.full_name || 'Un usuario';
-    const userPhone = profile?.phone || null;
 
-    // Get user's emergency contacts
-    const { data: contacts, error: contactsError } = await supabase
-      .from('emergency_contacts')
-      .select('id, name, phone, email, whatsapp')
-      .eq('user_id', tripUserId)
-      .order('is_primary', { ascending: false });
+    // Get all ACTIVE/ONLINE users to notify (except the trip owner)
+    const { data: onlineUsers, error: usersError } = await supabase
+      .from('user_locations')
+      .select('user_id')
+      .eq('is_online', true)
+      .neq('user_id', tripUserId);
 
-    if (contactsError) {
-      console.error('[notify-trip-update] Error fetching contacts:', contactsError);
-      return new Response(
-        JSON.stringify({ error: 'Error fetching contacts' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (usersError) {
+      console.error('[notify-trip-update] Error fetching online users:', usersError);
     }
 
-    if (!contacts || contacts.length === 0) {
-      console.log('[notify-trip-update] No emergency contacts found for user');
-      return new Response(
-        JSON.stringify({ success: true, notificationsSent: 0, reason: 'no_contacts' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const activeUserIds = onlineUsers?.map(u => u.user_id) || [];
+    console.log(`[notify-trip-update] Found ${activeUserIds.length} active users to notify`);
 
     // Build notification message based on event type
     let title: string;
     let message: string;
-    let smsMessage: string;
-    let urgency: 'low' | 'normal' | 'high' = 'normal';
+    let notificationType: string;
 
     const etaFormatted = eta ? new Date(eta).toLocaleString('es-MX', { 
       day: 'numeric', 
@@ -90,94 +83,99 @@ serve(async (req) => {
     }) : null;
 
     switch (eventType) {
+      case 'started':
+        title = '🚗 Nuevo viaje iniciado';
+        message = `${userName} ha iniciado un viaje: ${origin} → ${destination}. ETA: ${etaFormatted}`;
+        notificationType = 'trip_started';
+        break;
+
       case 'arrived':
-        title = '✅ Llegada confirmada';
-        message = `${userName} ha llegado a su destino: ${destination}. Salió de: ${origin}.`;
-        smsMessage = `M.A.T.S.: ${userName} llegó a ${destination} desde ${origin}. Todo bien.`;
-        urgency = 'low';
+        title = '✅ Viaje completado';
+        message = `${userName} ha llegado a su destino: ${destination}`;
+        notificationType = 'trip_arrived';
         break;
 
       case 'overdue':
         title = '⚠️ Viaje atrasado';
-        message = `${userName} debía llegar a ${destination} hace ${overdueMinutes} minutos (ETA: ${etaFormatted}). Origen: ${origin}. No ha confirmado su llegada.`;
-        smsMessage = `ALERTA M.A.T.S.: ${userName} atrasado ${overdueMinutes}min. Destino: ${destination}. ETA era: ${etaFormatted}. No confirmó llegada.`;
-        urgency = 'high';
+        message = `${userName} debía llegar a ${destination} hace ${overdueMinutes} minutos. No ha confirmado su llegada.`;
+        notificationType = 'trip_overdue';
         break;
 
       case 'cancelled':
         title = '🚫 Viaje cancelado';
-        message = `${userName} ha cancelado su viaje a ${destination}. Origen era: ${origin}.`;
-        smsMessage = `M.A.T.S.: ${userName} canceló viaje a ${destination}.`;
-        urgency = 'low';
+        message = `${userName} ha cancelado su viaje a ${destination}.`;
+        notificationType = 'trip_cancelled';
         break;
 
       case 'eta_updated':
         title = '🕐 Cambio de hora de llegada';
-        message = `${userName} actualizó su hora de llegada a ${destination}. Nueva ETA: ${etaFormatted}${oldEtaFormatted ? ` (antes: ${oldEtaFormatted})` : ''}.`;
-        smsMessage = `M.A.T.S.: ${userName} cambió ETA a ${destination}. Nueva hora: ${etaFormatted}.`;
-        urgency = 'normal';
+        message = `${userName} actualizó su ETA a ${destination}: ${etaFormatted}${oldEtaFormatted ? ` (antes: ${oldEtaFormatted})` : ''}.`;
+        notificationType = 'trip_eta_updated';
         break;
 
       default:
         title = '📍 Actualización de viaje';
         message = `Actualización sobre el viaje de ${userName}: ${origin} → ${destination}.`;
-        smsMessage = `M.A.T.S.: Actualización viaje ${userName}: ${origin} → ${destination}.`;
+        notificationType = 'trip_update';
     }
 
-    console.log(`[notify-trip-update] Will notify ${contacts.length} contacts`, {
-      title,
-      urgency
-    });
+    // Create in-app notifications for all active users
+    if (activeUserIds.length > 0) {
+      const notifications = activeUserIds.map(userId => ({
+        user_id: userId,
+        type: notificationType,
+        title,
+        message,
+        read: false,
+        metadata: {
+          trip_id: tripId,
+          trip_user_id: tripUserId,
+          origin,
+          destination,
+          origin_lat: originLat,
+          origin_lng: originLng,
+          destination_lat: destinationLat,
+          destination_lng: destinationLng,
+        }
+      }));
 
-    // Create in-app notifications for contacts who are also app users
-    // (This would require matching contact phone/email to user accounts)
-    // For now, we log what would be sent
+      const { error: insertError } = await supabase
+        .from('notifications')
+        .insert(notifications);
 
-    const notificationResults = contacts.map(contact => {
-      console.log(`[notify-trip-update] Would notify contact: ${contact.name}`, {
-        phone: contact.phone,
-        email: contact.email,
-        whatsapp: contact.whatsapp,
-        message: smsMessage
-      });
+      if (insertError) {
+        console.error('[notify-trip-update] Error inserting notifications:', insertError);
+      } else {
+        console.log(`[notify-trip-update] Created ${notifications.length} notifications for active users`);
+      }
+    }
 
-      return {
-        contactName: contact.name,
-        phone: contact.phone,
-        whatsapp: contact.whatsapp,
-        email: contact.email,
-        messagePreview: smsMessage.substring(0, 50) + '...'
-      };
-    });
+    // Create confirmation notification for the trip owner
+    const ownerNotification = {
+      user_id: tripUserId,
+      type: `${notificationType}_confirmation`,
+      title: eventType === 'started' 
+        ? '✅ Viaje registrado'
+        : eventType === 'arrived'
+          ? '✅ Llegada confirmada'
+          : eventType === 'eta_updated'
+            ? '🕐 ETA actualizado'
+            : eventType === 'cancelled'
+              ? '🚫 Viaje cancelado'
+              : '📍 Viaje actualizado',
+      message: `${activeUserIds.length} usuario(s) activo(s) fueron notificados sobre tu viaje.`,
+      read: false
+    };
 
-    // Create internal notification for the trip user as confirmation
-    const notificationTitle = eventType === 'arrived' 
-      ? '✅ Llegada notificada'
-      : eventType === 'overdue'
-        ? '⚠️ Alerta de retraso enviada'
-        : eventType === 'eta_updated'
-          ? '🕐 Cambio de ETA notificado'
-          : '🚫 Cancelación notificada';
+    await supabase.from('notifications').insert(ownerNotification);
 
-    await supabase
-      .from('notifications')
-      .insert({
-        user_id: tripUserId,
-        type: `trip_${eventType}`,
-        title: notificationTitle,
-        message: `Tus ${contacts.length} contacto(s) de emergencia han sido notificados sobre tu viaje.`,
-        read: false
-      });
-
-    console.log(`[notify-trip-update] Completed. Would send to ${contacts.length} contacts`);
+    console.log(`[notify-trip-update] Completed. Notified ${activeUserIds.length} active users`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        contactsNotified: contacts.length,
+        usersNotified: activeUserIds.length,
         eventType,
-        urgency,
-        notifications: notificationResults
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

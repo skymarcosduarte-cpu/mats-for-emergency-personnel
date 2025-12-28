@@ -974,6 +974,10 @@ export type Database = {
           transit_destination: string | null
           transit_destination_lat: number | null
           transit_destination_lng: number | null
+          transit_eta: string | null
+          transit_origin: string | null
+          transit_origin_lat: number | null
+          transit_origin_lng: number | null
           updated_at: string | null
           user_id: string | null
         }

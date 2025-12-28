@@ -1449,21 +1449,17 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     });
   }, [locations, mapReady]);
 
-  // Draw transit routes for users in transit with destination coordinates
+  // Draw transit routes for users in transit
   const transitRoutesRef = useRef<Map<string, L.Polyline>>(new Map());
   
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
     const map = mapInstanceRef.current;
 
-    // Get users in transit with valid destination coordinates
-    const transitUsers = locations.filter(
-      loc => loc.is_in_transit && 
-             loc.transit_destination_lat && 
-             loc.transit_destination_lng
-    );
+    // Get users in transit (with or without destination coordinates)
+    const transitUsers = locations.filter(loc => loc.is_in_transit);
 
-    // Remove old transit routes
+    // Remove old transit routes and markers
     transitRoutesRef.current.forEach((polyline, key) => {
       if (!transitUsers.find(u => `transit-route-${u.user_id}` === key)) {
         map.removeLayer(polyline);
@@ -1475,73 +1471,150 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     transitUsers.forEach((loc) => {
       const key = `transit-route-${loc.user_id}`;
       const existingRoute = transitRoutesRef.current.get(key);
+      const existingOriginMarker = markersRef.current.get(`${key}-origin`);
+      const existingDestMarker = markersRef.current.get(`${key}-dest`);
       
       const userPos: [number, number] = [loc.lat, loc.lng];
-      const destPos: [number, number] = [loc.transit_destination_lat!, loc.transit_destination_lng!];
+      const hasDestCoords = loc.transit_destination_lat && loc.transit_destination_lng;
+      const hasOriginCoords = (loc as any).transit_origin_lat && (loc as any).transit_origin_lng;
+      
+      // Determine route points
+      let routePoints: [number, number][] = [];
+      let originPos: [number, number] | null = null;
+      let destPos: [number, number] | null = null;
+      
+      if (hasOriginCoords) {
+        originPos = [(loc as any).transit_origin_lat, (loc as any).transit_origin_lng];
+      }
+      if (hasDestCoords) {
+        destPos = [loc.transit_destination_lat!, loc.transit_destination_lng!];
+      }
+      
+      // Build route: origin -> current position -> destination
+      if (originPos) routePoints.push(originPos);
+      routePoints.push(userPos);
+      if (destPos) routePoints.push(destPos);
 
-      if (existingRoute) {
-        existingRoute.setLatLngs([userPos, destPos]);
-      } else {
-        // Create dashed line from current position to destination
-        const polyline = L.polyline([userPos, destPos], {
-          color: '#f59e0b',
-          weight: 3,
-          opacity: 0.7,
-          dashArray: '10, 10',
-          lineCap: 'round',
-        }).addTo(map);
-
-        // Add destination marker
-        const destMarker = L.marker(destPos, {
-          icon: L.divIcon({
-            className: 'transit-destination-marker',
-            html: `
-              <div style="
-                width: 24px;
-                height: 24px;
-                background: #f59e0b;
-                border: 2px solid #0a0a0a;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-              ">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/>
-                  <circle cx="12" cy="10" r="3" fill="#fff"/>
-                </svg>
-              </div>
-            `,
-            iconSize: [24, 24],
-            iconAnchor: [12, 12],
-          }),
-          zIndexOffset: 100,
-        }).addTo(map);
-
-        const displayName = loc.display_name ? sanitize(loc.display_name) : 'Usuario';
-        const destName = loc.transit_destination ? sanitize(loc.transit_destination) : 'Destino';
+      // Only draw if we have at least 2 points
+      if (routePoints.length >= 2) {
+        if (existingRoute) {
+          existingRoute.setLatLngs(routePoints);
+        } else {
+          // Create dashed line for the route
+          const polyline = L.polyline(routePoints, {
+            color: '#f59e0b',
+            weight: 3,
+            opacity: 0.7,
+            dashArray: '10, 10',
+            lineCap: 'round',
+          }).addTo(map);
+          
+          transitRoutesRef.current.set(key, polyline);
+        }
         
-        destMarker.bindPopup(`
-          <div style="text-align: center; padding: 4px;">
-            <div style="font-size: 12px; font-weight: 600; color: #f59e0b;">📍 Destino</div>
-            <div style="font-size: 14px; font-weight: 500; margin-top: 4px;">${destName}</div>
-            <div style="font-size: 11px; color: #666; margin-top: 2px;">
-              Viaje de ${displayName}
-            </div>
-          </div>
-        `);
+        // Add origin marker if we have origin coords
+        if (originPos && !existingOriginMarker) {
+          const originMarker = L.marker(originPos, {
+            icon: L.divIcon({
+              className: 'transit-origin-marker',
+              html: `
+                <div style="
+                  width: 20px;
+                  height: 20px;
+                  background: #22c55e;
+                  border: 2px solid #0a0a0a;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                ">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
+                    <circle cx="12" cy="12" r="8"/>
+                  </svg>
+                </div>
+              `,
+              iconSize: [20, 20],
+              iconAnchor: [10, 10],
+            }),
+            zIndexOffset: 90,
+          }).addTo(map);
 
-        // Store polyline and marker together (use polyline as main reference)
-        transitRoutesRef.current.set(key, polyline);
-        markersRef.current.set(`${key}-dest`, destMarker);
+          const displayName = loc.display_name ? sanitize(loc.display_name) : 'Usuario';
+          const originName = (loc as any).transit_origin ? sanitize((loc as any).transit_origin) : 'Origen';
+          
+          originMarker.bindPopup(`
+            <div style="text-align: center; padding: 4px;">
+              <div style="font-size: 12px; font-weight: 600; color: #22c55e;">🚀 Origen</div>
+              <div style="font-size: 14px; font-weight: 500; margin-top: 4px;">${originName}</div>
+              <div style="font-size: 11px; color: #666; margin-top: 2px;">
+                Viaje de ${displayName}
+              </div>
+            </div>
+          `);
+          
+          markersRef.current.set(`${key}-origin`, originMarker);
+        }
+        
+        // Add destination marker if we have destination coords
+        if (destPos && !existingDestMarker) {
+          const destMarker = L.marker(destPos, {
+            icon: L.divIcon({
+              className: 'transit-destination-marker',
+              html: `
+                <div style="
+                  width: 24px;
+                  height: 24px;
+                  background: #f59e0b;
+                  border: 2px solid #0a0a0a;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                ">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3" fill="#fff"/>
+                  </svg>
+                </div>
+              `,
+              iconSize: [24, 24],
+              iconAnchor: [12, 12],
+            }),
+            zIndexOffset: 100,
+          }).addTo(map);
+
+          const displayName = loc.display_name ? sanitize(loc.display_name) : 'Usuario';
+          const destName = loc.transit_destination ? sanitize(loc.transit_destination) : 'Destino';
+          const etaText = (loc as any).transit_eta 
+            ? new Date((loc as any).transit_eta).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+            : null;
+          
+          destMarker.bindPopup(`
+            <div style="text-align: center; padding: 4px;">
+              <div style="font-size: 12px; font-weight: 600; color: #f59e0b;">📍 Destino</div>
+              <div style="font-size: 14px; font-weight: 500; margin-top: 4px;">${destName}</div>
+              ${etaText ? `<div style="font-size: 11px; color: #f59e0b; margin-top: 2px;">ETA: ${etaText}</div>` : ''}
+              <div style="font-size: 11px; color: #666; margin-top: 2px;">
+                Viaje de ${displayName}
+              </div>
+            </div>
+          `);
+          
+          markersRef.current.set(`${key}-dest`, destMarker);
+        }
+      } else if (existingRoute) {
+        // Remove route if we no longer have enough points
+        map.removeLayer(existingRoute);
+        transitRoutesRef.current.delete(key);
       }
     });
 
-    // Clean up destination markers for removed routes
+    // Clean up origin and destination markers for removed routes
     markersRef.current.forEach((marker, key) => {
-      if (key.includes('transit-route-') && key.endsWith('-dest')) {
-        const routeKey = key.replace('-dest', '');
+      if (key.includes('transit-route-') && (key.endsWith('-dest') || key.endsWith('-origin'))) {
+        const routeKey = key.replace('-dest', '').replace('-origin', '');
         if (!transitRoutesRef.current.has(routeKey)) {
           map.removeLayer(marker);
           markersRef.current.delete(key);
