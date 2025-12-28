@@ -1703,23 +1703,57 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const destPos: [number, number] = [trip.destination_lat!, trip.destination_lng!];
       const routePoints: [number, number][] = [originPos, destPos];
 
-      // Create or update route polyline
-      if (existingRoute) {
-        existingRoute.setLatLngs(routePoints);
-      } else {
-        const polyline = L.polyline(routePoints, {
-          color: '#f59e0b',
-          weight: 3,
-          opacity: 0.5,
-          dashArray: '8, 12',
-          lineCap: 'round',
-        }).addTo(map);
-        communityTripsRoutesRef.current.set(key, polyline);
-      }
-
       const displayName = trip.nickname || 'Usuario';
       const transitType = trip.transit_type === 'FLIGHT' ? '✈️' : '🚗';
       const etaText = new Date(trip.eta).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+      const etaDate = new Date(trip.eta).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+
+      // Build detailed popup content for route
+      const vehicleInfo = trip.vehicle_type ? `<div style="font-size: 11px; margin-top: 4px;">🚙 ${sanitize(trip.vehicle_type)}</div>` : '';
+      const platesInfo = trip.plates ? `<div style="font-size: 11px; color: #666;">Placas: <strong>${sanitize(trip.plates)}</strong></div>` : '';
+      const companionsInfo = trip.companions ? `<div style="font-size: 11px; color: #666; margin-top: 4px;">👥 ${sanitize(trip.companions)}</div>` : '';
+      const flightInfo = trip.transit_type === 'FLIGHT' && trip.airline 
+        ? `<div style="font-size: 11px; margin-top: 4px;">✈️ ${sanitize(trip.airline)} ${trip.flight_number ? sanitize(trip.flight_number) : ''}</div>` 
+        : '';
+
+      const routePopupContent = `
+        <div style="min-width: 180px; padding: 4px;">
+          <div style="font-size: 14px; font-weight: 600; color: #f59e0b; margin-bottom: 6px;">
+            ${transitType} Viaje Activo
+          </div>
+          <div style="font-size: 13px; font-weight: 500;">${sanitize(displayName)}</div>
+          <div style="font-size: 12px; color: #666; margin-top: 6px;">
+            <div>📍 <strong>De:</strong> ${sanitize(trip.origin)}</div>
+            <div style="margin-top: 2px;">🎯 <strong>A:</strong> ${sanitize(trip.destination)}</div>
+          </div>
+          <div style="font-size: 12px; color: #f59e0b; font-weight: 600; margin-top: 8px;">
+            ⏰ ETA: ${etaText} (${etaDate})
+          </div>
+          ${vehicleInfo}
+          ${platesInfo}
+          ${flightInfo}
+          ${companionsInfo}
+        </div>
+      `;
+
+      // Create or update route polyline
+      if (existingRoute) {
+        existingRoute.setLatLngs(routePoints);
+        existingRoute.setPopupContent(routePopupContent);
+      } else {
+        const polyline = L.polyline(routePoints, {
+          color: '#f59e0b',
+          weight: 5,
+          opacity: 0.6,
+          dashArray: '8, 12',
+          lineCap: 'round',
+        }).addTo(map);
+        
+        // Add popup to polyline
+        polyline.bindPopup(routePopupContent);
+        
+        communityTripsRoutesRef.current.set(key, polyline);
+      }
 
       // Add origin marker if not exists
       if (!existingOriginMarker) {
