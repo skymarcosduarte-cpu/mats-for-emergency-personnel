@@ -116,20 +116,62 @@ export function usePanicResponse() {
         if (geoError?.code === 1) {
           // PERMISSION_DENIED
           toast.error('Permiso de ubicación denegado', {
-            description: 'Por favor habilita la ubicación en la configuración de tu navegador para poder responder.',
-            duration: 8000,
+            description: 'Necesitas habilitar la ubicación para responder a alertas.',
+            duration: 10000,
+            action: {
+              label: 'Solicitar permiso',
+              onClick: () => {
+                // Re-request location permission
+                navigator.geolocation.getCurrentPosition(
+                  () => {
+                    toast.success('¡Ubicación habilitada!', {
+                      description: 'Ahora puedes intentar responder de nuevo.',
+                    });
+                  },
+                  (err) => {
+                    if (err.code === 1) {
+                      toast.error('Permiso denegado', {
+                        description: 'Ve a Configuración de tu navegador > Permisos > Ubicación para habilitarlo manualmente.',
+                        duration: 10000,
+                      });
+                    }
+                  },
+                  { enableHighAccuracy: true, timeout: 10000 }
+                );
+              },
+            },
           });
         } else if (geoError?.code === 2) {
           // POSITION_UNAVAILABLE
           toast.error('Ubicación no disponible', {
             description: 'No se pudo obtener tu ubicación. Verifica que el GPS esté activado.',
             duration: 8000,
+            action: {
+              label: 'Reintentar',
+              onClick: () => {
+                navigator.geolocation.getCurrentPosition(
+                  () => toast.success('¡Ubicación obtenida!'),
+                  () => toast.error('Aún no se puede obtener ubicación'),
+                  { enableHighAccuracy: true, timeout: 10000 }
+                );
+              },
+            },
           });
         } else if (geoError?.code === 3) {
           // TIMEOUT
           toast.error('Tiempo de espera agotado', {
-            description: 'La obtención de ubicación tardó demasiado. Intenta de nuevo.',
+            description: 'La obtención de ubicación tardó demasiado.',
             duration: 5000,
+            action: {
+              label: 'Reintentar',
+              onClick: () => {
+                navigator.geolocation.getCurrentPosition(
+                  () => toast.success('¡Ubicación obtenida!'),
+                  () => toast.error('Tiempo agotado nuevamente'),
+                  { enableHighAccuracy: true, timeout: 15000 }
+                );
+              },
+            },
           });
         } else {
           toast.error('No se pudo obtener tu ubicación');
