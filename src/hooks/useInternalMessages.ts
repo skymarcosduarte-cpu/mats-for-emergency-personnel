@@ -262,9 +262,48 @@ export const useInternalMessages = () => {
   const deleteMessage = async (messageId: string): Promise<boolean> => {
     if (!user?.id) return false;
 
-    // Optimistically remove message
     const originalMessages = messages;
-    setMessages(prev => prev.filter(m => m.id !== messageId));
+    const originalConversations = conversations;
+
+    const msgToDelete = originalMessages.find(m => m.id === messageId);
+    const otherUserId = msgToDelete
+      ? (msgToDelete.sender_id === user.id ? msgToDelete.receiver_id : msgToDelete.sender_id)
+      : null;
+
+    const nextMessages = originalMessages.filter(m => m.id !== messageId);
+
+    // Optimistically remove message
+    setMessages(nextMessages);
+
+    // Optimistically update conversation summary (avoid full refetch)
+    if (otherUserId) {
+      setConversations(prev => {
+        const convMsgs = nextMessages.filter(
+          m => (m.sender_id === user.id && m.receiver_id === otherUserId) ||
+               (m.sender_id === otherUserId && m.receiver_id === user.id)
+        );
+
+        if (convMsgs.length === 0) {
+          return prev.filter(c => c.user_id !== otherUserId);
+        }
+
+        const last = convMsgs.reduce((acc, m) =>
+          new Date(m.created_at).getTime() > new Date(acc.created_at).getTime() ? m : acc
+        , convMsgs[0]);
+
+        const unread = convMsgs.filter(
+          m => m.sender_id === otherUserId && m.receiver_id === user.id && !m.read
+        ).length;
+
+        return prev
+          .map(c =>
+            c.user_id === otherUserId
+              ? { ...c, last_message: last.message, last_message_at: last.created_at, unread_count: unread }
+              : c
+          )
+          .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+      });
+    }
 
     try {
       const { error } = await supabase
@@ -279,6 +318,7 @@ export const useInternalMessages = () => {
       console.error('Error deleting message:', err);
       // Restore on error
       setMessages(originalMessages);
+      setConversations(originalConversations);
       return false;
     }
   };
@@ -288,9 +328,42 @@ export const useInternalMessages = () => {
     if (!user?.id) return false;
 
     const originalMessages = messages;
-    setMessages(prev => prev.filter(m => 
-      !(m.sender_id === user.id && m.receiver_id === otherUserId)
-    ));
+    const originalConversations = conversations;
+
+    const nextMessages = originalMessages.filter(
+      m => !(m.sender_id === user.id && m.receiver_id === otherUserId)
+    );
+
+    // Optimistically remove own sent messages
+    setMessages(nextMessages);
+
+    // Optimistically update conversation summary (avoid full refetch)
+    setConversations(prev => {
+      const convMsgs = nextMessages.filter(
+        m => (m.sender_id === user.id && m.receiver_id === otherUserId) ||
+             (m.sender_id === otherUserId && m.receiver_id === user.id)
+      );
+
+      if (convMsgs.length === 0) {
+        return prev.filter(c => c.user_id !== otherUserId);
+      }
+
+      const last = convMsgs.reduce((acc, m) =>
+        new Date(m.created_at).getTime() > new Date(acc.created_at).getTime() ? m : acc
+      , convMsgs[0]);
+
+      const unread = convMsgs.filter(
+        m => m.sender_id === otherUserId && m.receiver_id === user.id && !m.read
+      ).length;
+
+      return prev
+        .map(c =>
+          c.user_id === otherUserId
+            ? { ...c, last_message: last.message, last_message_at: last.created_at, unread_count: unread }
+            : c
+        )
+        .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+    });
 
     try {
       const { error } = await supabase
@@ -300,13 +373,11 @@ export const useInternalMessages = () => {
         .eq('receiver_id', otherUserId);
 
       if (error) throw error;
-      
-      // Refresh to update conversations list
-      fetchData(true);
       return true;
     } catch (err) {
       console.error('Error clearing conversation:', err);
       setMessages(originalMessages);
+      setConversations(originalConversations);
       return false;
     }
   };
