@@ -1,7 +1,8 @@
-// Hook to fetch active trips from all community members
+// Hook to fetch active trips from all community members with real-time location
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { calculateDistance } from '@/hooks/useLocation';
 
 export interface ActiveTrip {
   id: string;
@@ -22,6 +23,14 @@ export interface ActiveTrip {
   flight_number: string | null;
   // Joined from profiles_public
   nickname?: string | null;
+  // Current user location (if sharing)
+  current_lat?: number | null;
+  current_lng?: number | null;
+  current_speed?: number | null;
+  location_updated_at?: string | null;
+  // Calculated fields
+  remaining_distance_km?: number | null;
+  dynamic_eta_minutes?: number | null;
 }
 
 export function useActiveTrips() {
@@ -65,27 +74,70 @@ export function useActiveTrips() {
         return;
       }
 
-      // Get unique user IDs to fetch nicknames
+      // Get unique user IDs to fetch nicknames and locations
       const userIds = [...new Set(tripsData.map(t => t.user_id))];
 
-      // Fetch nicknames from profiles_public
-      const { data: profilesData } = await supabase
-        .from('profiles_public')
-        .select('user_id, nickname')
-        .in('user_id', userIds);
+      // Fetch nicknames from profiles_public and current locations in parallel
+      const [profilesResult, locationsResult] = await Promise.all([
+        supabase
+          .from('profiles_public')
+          .select('user_id, nickname')
+          .in('user_id', userIds),
+        supabase
+          .from('user_locations')
+          .select('user_id, lat, lng, speed, updated_at')
+          .in('user_id', userIds)
+          .eq('is_online', true)
+      ]);
 
       const nicknameMap = new Map(
-        profilesData?.map(p => [p.user_id, p.nickname]) || []
+        profilesResult.data?.map(p => [p.user_id, p.nickname]) || []
       );
 
-      // Merge nicknames into trips
-      const tripsWithNicknames: ActiveTrip[] = tripsData.map(trip => ({
-        ...trip,
-        transit_type: trip.transit_type as 'ROAD' | 'FLIGHT',
-        nickname: nicknameMap.get(trip.user_id) || null,
-      }));
+      const locationMap = new Map(
+        locationsResult.data?.map(l => [l.user_id, { 
+          lat: l.lat, 
+          lng: l.lng, 
+          speed: l.speed,
+          updated_at: l.updated_at 
+        }]) || []
+      );
 
-      setTrips(tripsWithNicknames);
+      // Merge data and calculate dynamic ETA
+      const tripsWithDetails: ActiveTrip[] = tripsData.map(trip => {
+        const location = locationMap.get(trip.user_id);
+        let remainingDistanceKm: number | null = null;
+        let dynamicEtaMinutes: number | null = null;
+
+        // Calculate remaining distance if we have current location and destination
+        if (location && trip.destination_lat && trip.destination_lng) {
+          remainingDistanceKm = calculateDistance(
+            location.lat,
+            location.lng,
+            trip.destination_lat,
+            trip.destination_lng
+          );
+
+          // Calculate dynamic ETA based on speed or default 60 km/h
+          const speedKmh = location.speed ? location.speed * 3.6 : null;
+          const effectiveSpeed = speedKmh && speedKmh > 5 ? speedKmh : 60;
+          dynamicEtaMinutes = Math.round((remainingDistanceKm / effectiveSpeed) * 60);
+        }
+
+        return {
+          ...trip,
+          transit_type: trip.transit_type as 'ROAD' | 'FLIGHT',
+          nickname: nicknameMap.get(trip.user_id) || null,
+          current_lat: location?.lat || null,
+          current_lng: location?.lng || null,
+          current_speed: location?.speed || null,
+          location_updated_at: location?.updated_at || null,
+          remaining_distance_km: remainingDistanceKm,
+          dynamic_eta_minutes: dynamicEtaMinutes,
+        };
+      });
+
+      setTrips(tripsWithDetails);
     } catch (err) {
       console.error('[useActiveTrips] Error fetching trips:', err);
       setError('Error al cargar viajes activos');
@@ -99,9 +151,9 @@ export function useActiveTrips() {
     fetchActiveTrips();
   }, [fetchActiveTrips]);
 
-  // Subscribe to realtime updates
+  // Subscribe to realtime updates for trips and locations
   useEffect(() => {
-    const channel = supabase
+    const tripsChannel = supabase
       .channel('active_trips_changes')
       .on(
         'postgres_changes',
@@ -111,16 +163,39 @@ export function useActiveTrips() {
           table: 'transit_trips',
         },
         (payload) => {
-          console.log('[useActiveTrips] Realtime update:', payload.eventType);
+          console.log('[useActiveTrips] Trip update:', payload.eventType);
           fetchActiveTrips();
         }
       )
       .subscribe();
 
+    // Also listen to location updates for real-time ETA
+    const locationsChannel = supabase
+      .channel('active_trips_locations')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_locations',
+        },
+        (payload) => {
+          // Only refetch if this is a user with an active trip
+          const userId = (payload.new as { user_id?: string })?.user_id;
+          const hasActiveTrip = trips.some(t => t.user_id === userId);
+          if (hasActiveTrip) {
+            console.log('[useActiveTrips] Location update for active trip user:', userId);
+            fetchActiveTrips();
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(tripsChannel);
+      supabase.removeChannel(locationsChannel);
     };
-  }, [fetchActiveTrips]);
+  }, [fetchActiveTrips, trips]);
 
   return {
     trips,

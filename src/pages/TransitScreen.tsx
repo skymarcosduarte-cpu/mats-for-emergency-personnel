@@ -28,6 +28,7 @@ import { TripLocationPicker } from '@/components/TripLocationPicker';
 import TripRouteMap from '@/components/TripRouteMap';
 import { useLocation, getGoogleMapsLink, calculateDistance, formatDistance } from '@/hooks/useLocation';
 import { useTripPositionHistory } from '@/hooks/useTripPositionHistory';
+import { useDynamicEta, formatEtaInfo } from '@/hooks/useDynamicEta';
 import { useRoadReports } from '@/hooks/useRealtime';
 import { useActiveTrips } from '@/hooks/useActiveTrips';
 import { supabase } from '@/integrations/supabase/client';
@@ -159,9 +160,24 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     minIntervalMs: 15000, // Record every 15 seconds if moved 50m+
   });
   
-  // Record position when GPS updates during active trip
+  // Dynamic ETA calculation based on GPS position
+  const {
+    etaInfo,
+    updating: etaUpdating,
+    processPositionUpdate,
+    forceUpdateEta,
+  } = useDynamicEta({
+    tripId: activeInProgressTrip?.id || null,
+    destinationLat: activeInProgressTrip?.destination_lat || null,
+    destinationLng: activeInProgressTrip?.destination_lng || null,
+    enabled: !!activeInProgressTrip,
+    minUpdateIntervalMs: 60000, // Update ETA every 60 seconds max
+  });
+  
+  // Record position and update ETA when GPS updates during active trip
   useEffect(() => {
     if (position && activeInProgressTrip && currentUserId) {
+      // Record position history
       recordPosition(
         position.lat,
         position.lng,
@@ -169,8 +185,11 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         position.speed,
         position.heading
       );
+      
+      // Process for ETA calculation
+      processPositionUpdate(position);
     }
-  }, [position, activeInProgressTrip, currentUserId, recordPosition]);
+  }, [position, activeInProgressTrip, currentUserId, recordPosition, processPositionUpdate]);
 
   // Check if there are active trips
   const hasActiveTrips = useMemo(() => {
@@ -985,10 +1004,19 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             {/* Estimated time remaining and current speed */}
                             <div className="flex items-center justify-between text-xs bg-primary/10 rounded px-2 py-1.5 mt-1">
                               <div className="flex items-center gap-1.5">
-                                <Clock className="w-3 h-3 text-primary" />
+                                <Clock className={cn(
+                                  "w-3 h-3 text-primary",
+                                  etaUpdating && trip.id === activeInProgressTrip?.id && "animate-spin"
+                                )} />
                                 <span className="text-foreground font-medium">
                                   Llegada en: {tripProgress.estimatedTimeRemaining}
                                 </span>
+                                {trip.id === activeInProgressTrip?.id && (
+                                  <span className="text-[9px] bg-safe/20 text-safe px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                                    <span className="w-1.5 h-1.5 bg-safe rounded-full animate-pulse" />
+                                    Auto
+                                  </span>
+                                )}
                               </div>
                               {tripProgress.currentSpeedKmh && tripProgress.currentSpeedKmh > 1 && (
                                 <div className="flex items-center gap-1 text-muted-foreground">
