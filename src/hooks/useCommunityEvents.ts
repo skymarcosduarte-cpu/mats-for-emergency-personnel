@@ -31,16 +31,17 @@ export interface CommunityEvent {
   author_nickname?: string;
 }
 
-export interface TodaysBirthday {
+export interface NearbyBirthday {
   user_id: string;
   full_name: string;
   nickname: string;
   birthday: string;
+  day_label: 'yesterday' | 'today' | 'tomorrow';
 }
 
 export function useCommunityEvents() {
   const [events, setEvents] = useState<CommunityEvent[]>([]);
-  const [birthdays, setBirthdays] = useState<TodaysBirthday[]>([]);
+  const [birthdays, setBirthdays] = useState<NearbyBirthday[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,15 +67,15 @@ export function useCommunityEvents() {
     }
   }, []);
 
-  // Fetch today's birthdays
+  // Fetch nearby birthdays (yesterday, today, tomorrow)
   const fetchBirthdays = useCallback(async () => {
     try {
       const { data, error: fetchError } = await supabase
-        .rpc('get_todays_birthdays');
+        .rpc('get_nearby_birthdays');
 
       if (fetchError) throw fetchError;
       
-      setBirthdays((data || []) as TodaysBirthday[]);
+      setBirthdays((data || []) as NearbyBirthday[]);
     } catch (err) {
       console.error('Error fetching birthdays:', err);
     }

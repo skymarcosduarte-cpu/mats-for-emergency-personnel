@@ -1044,6 +1044,16 @@ export type Database = {
           road_reports_total: number
         }[]
       }
+      get_nearby_birthdays: {
+        Args: never
+        Returns: {
+          birthday: string
+          day_label: string
+          full_name: string
+          nickname: string
+          user_id: string
+        }[]
+      }
       get_recent_activity: {
         Args: { limit_count?: number }
         Returns: {

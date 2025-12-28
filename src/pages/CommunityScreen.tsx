@@ -296,30 +296,84 @@ export const CommunityScreen: React.FC = () => {
 
         {/* Tablero Tab */}
         <TabsContent value="tablero" className="mt-4 space-y-4">
-          {/* Today's Birthdays */}
+          {/* Nearby Birthdays (Yesterday, Today, Tomorrow) */}
           {birthdays.length > 0 && (
             <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/30">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Cake className="w-5 h-5 text-primary" />
-                  Cumpleaños Hoy 🎉
+                  Cumpleaños 🎉
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                {birthdays.map((birthday) => (
-                  <div 
-                    key={birthday.user_id}
-                    className="flex items-center gap-3 p-2 bg-background/50 rounded-lg"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-xl">
-                      🎂
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">{birthday.full_name}</p>
-                      <p className="text-sm text-muted-foreground">@{birthday.nickname}</p>
+              <CardContent className="space-y-3">
+                {/* Yesterday */}
+                {birthdays.filter(b => b.day_label === 'yesterday').length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Ayer</p>
+                    <div className="space-y-2">
+                      {birthdays.filter(b => b.day_label === 'yesterday').map((birthday) => (
+                        <div 
+                          key={birthday.user_id}
+                          className="flex items-center gap-3 p-2 bg-background/50 rounded-lg opacity-75"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center text-xl">
+                            🎂
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{birthday.full_name}</p>
+                            <p className="text-sm text-muted-foreground">@{birthday.nickname}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
+
+                {/* Today */}
+                {birthdays.filter(b => b.day_label === 'today').length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-primary mb-2">¡Hoy! 🎊</p>
+                    <div className="space-y-2">
+                      {birthdays.filter(b => b.day_label === 'today').map((birthday) => (
+                        <div 
+                          key={birthday.user_id}
+                          className="flex items-center gap-3 p-2 bg-primary/10 rounded-lg border border-primary/20"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-xl">
+                            🎂
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{birthday.full_name}</p>
+                            <p className="text-sm text-muted-foreground">@{birthday.nickname}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tomorrow */}
+                {birthdays.filter(b => b.day_label === 'tomorrow').length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Mañana</p>
+                    <div className="space-y-2">
+                      {birthdays.filter(b => b.day_label === 'tomorrow').map((birthday) => (
+                        <div 
+                          key={birthday.user_id}
+                          className="flex items-center gap-3 p-2 bg-background/50 rounded-lg"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-xl">
+                            🎂
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{birthday.full_name}</p>
+                            <p className="text-sm text-muted-foreground">@{birthday.nickname}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
