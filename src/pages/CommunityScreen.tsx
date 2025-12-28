@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,8 +27,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCommunityEvents, CommunityEventType } from '@/hooks/useCommunityEvents';
 import { useNotifications } from '@/hooks/useNotifications';
-import { useActiveTrips } from '@/hooks/useActiveTrips';
-import { formatDistanceToNow, differenceInMinutes, isPast } from 'date-fns';
+import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
+import TripRouteMap from '@/components/TripRouteMap';
+import { formatDistanceToNow, differenceInMinutes, isPast, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -71,6 +72,7 @@ export const CommunityScreen: React.FC = () => {
   
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState<ActiveTrip | null>(null);
   const [formData, setFormData] = useState({
     event_type: '' as CommunityEventType | '',
     title: '',
@@ -255,14 +257,22 @@ export const CommunityScreen: React.FC = () => {
               <CardContent className="space-y-2">
                 {communityTrips.slice(0, 5).map((trip) => {
                   const etaInfo = formatEta(trip);
+                  const hasLocation = trip.current_lat && trip.current_lng;
                   return (
                     <div 
                       key={trip.id}
-                      className="flex items-center justify-between p-2 bg-background/50 rounded-lg"
+                      onClick={() => setSelectedTrip(trip)}
+                      className={cn(
+                        "flex items-center justify-between p-2 bg-background/50 rounded-lg transition-all",
+                        "hover:bg-background/80 cursor-pointer active:scale-[0.98]"
+                      )}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-xl flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-xl flex-shrink-0 relative">
                           {trip.transit_type === 'FLIGHT' ? '✈️' : '🚗'}
+                          {hasLocation && (
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-safe rounded-full border-2 border-background animate-pulse" />
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-foreground truncate">
@@ -280,25 +290,28 @@ export const CommunityScreen: React.FC = () => {
                           )}
                         </div>
                       </div>
-                      <div className="flex flex-col items-end flex-shrink-0 ml-2">
-                        <Badge 
-                          variant={etaInfo.isLate ? "destructive" : "secondary"}
-                          className={cn(
-                            "text-xs",
-                            !etaInfo.isLate && "bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        <div className="flex flex-col items-end">
+                          <Badge 
+                            variant={etaInfo.isLate ? "destructive" : "secondary"}
+                            className={cn(
+                              "text-xs",
+                              !etaInfo.isLate && "bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                            )}
+                          >
+                            <Clock className="w-3 h-3 mr-1" />
+                            {etaInfo.text}
+                            {etaInfo.isDynamic && (
+                              <span className="w-1.5 h-1.5 bg-safe rounded-full ml-1 animate-pulse" />
+                            )}
+                          </Badge>
+                          {trip.transit_type === 'FLIGHT' && trip.flight_number && (
+                            <span className="text-[10px] text-muted-foreground mt-0.5">
+                              {trip.airline} {trip.flight_number}
+                            </span>
                           )}
-                        >
-                          <Clock className="w-3 h-3 mr-1" />
-                          {etaInfo.text}
-                          {etaInfo.isDynamic && (
-                            <span className="w-1.5 h-1.5 bg-safe rounded-full ml-1 animate-pulse" />
-                          )}
-                        </Badge>
-                        {trip.transit_type === 'FLIGHT' && trip.flight_number && (
-                          <span className="text-[10px] text-muted-foreground mt-0.5">
-                            {trip.airline} {trip.flight_number}
-                          </span>
-                        )}
+                        </div>
+                        <Map className="w-4 h-4 text-muted-foreground" />
                       </div>
                     </div>
                   );
@@ -547,6 +560,152 @@ export const CommunityScreen: React.FC = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Trip Map Dialog */}
+      <Dialog open={!!selectedTrip} onOpenChange={(open) => !open && setSelectedTrip(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedTrip?.transit_type === 'FLIGHT' ? (
+                <Plane className="w-5 h-5 text-primary" />
+              ) : (
+                <Car className="w-5 h-5 text-primary" />
+              )}
+              Viaje de {selectedTrip?.nickname || 'Usuario'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedTrip && (
+            <div className="space-y-4">
+              {/* Map */}
+              <TripRouteMap
+                routeCoordinates={[]}
+                originCoords={selectedTrip.origin_lat && selectedTrip.origin_lng ? {
+                  lat: selectedTrip.origin_lat,
+                  lng: selectedTrip.origin_lng,
+                } : null}
+                destinationCoords={selectedTrip.destination_lat && selectedTrip.destination_lng ? {
+                  lat: selectedTrip.destination_lat,
+                  lng: selectedTrip.destination_lng,
+                } : null}
+                currentPosition={selectedTrip.current_lat && selectedTrip.current_lng ? {
+                  lat: selectedTrip.current_lat,
+                  lng: selectedTrip.current_lng,
+                } : null}
+                originName={selectedTrip.origin}
+                destinationName={selectedTrip.destination}
+                height="280px"
+              />
+              
+              {/* Trip Details */}
+              <div className="space-y-3">
+                {/* Route Info */}
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <Navigation className="w-5 h-5 text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{selectedTrip.origin}</p>
+                    <p className="text-xs text-muted-foreground">→ {selectedTrip.destination}</p>
+                  </div>
+                </div>
+                
+                {/* ETA */}
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-amber-500" />
+                    <span className="text-sm">ETA</span>
+                  </div>
+                  <div className="text-right">
+                    {(() => {
+                      const etaInfo = formatEta(selectedTrip);
+                      return (
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant={etaInfo.isLate ? "destructive" : "secondary"}
+                            className={cn(
+                              !etaInfo.isLate && "bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                            )}
+                          >
+                            {etaInfo.text}
+                            {etaInfo.isDynamic && (
+                              <span className="w-1.5 h-1.5 bg-safe rounded-full ml-1 animate-pulse" />
+                            )}
+                          </Badge>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+                
+                {/* Remaining Distance */}
+                {selectedTrip.remaining_distance_km !== null && selectedTrip.remaining_distance_km !== undefined && (
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-primary" />
+                      <span className="text-sm">Distancia restante</span>
+                    </div>
+                    <span className="font-medium">{formatDistanceKm(selectedTrip.remaining_distance_km)}</span>
+                  </div>
+                )}
+                
+                {/* Last Location Update */}
+                {selectedTrip.location_updated_at && (
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Navigation className="w-5 h-5 text-safe" />
+                      <span className="text-sm">Última ubicación</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(selectedTrip.location_updated_at), { 
+                        addSuffix: true, 
+                        locale: es 
+                      })}
+                    </span>
+                  </div>
+                )}
+                
+                {/* No location data message */}
+                {!selectedTrip.current_lat && !selectedTrip.current_lng && (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Navigation className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Ubicación no disponible</p>
+                    <p className="text-xs">El usuario no está compartiendo ubicación</p>
+                  </div>
+                )}
+                
+                {/* Flight Info */}
+                {selectedTrip.transit_type === 'FLIGHT' && selectedTrip.flight_number && (
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Plane className="w-5 h-5 text-blue-500" />
+                      <span className="text-sm">Vuelo</span>
+                    </div>
+                    <span className="font-medium">{selectedTrip.airline} {selectedTrip.flight_number}</span>
+                  </div>
+                )}
+                
+                {/* Vehicle Info */}
+                {selectedTrip.transit_type === 'ROAD' && selectedTrip.plates && (
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Car className="w-5 h-5 text-amber-500" />
+                      <span className="text-sm">Placas</span>
+                    </div>
+                    <span className="font-medium">{selectedTrip.plates}</span>
+                  </div>
+                )}
+              </div>
+              
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setSelectedTrip(null)}
+              >
+                Cerrar
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

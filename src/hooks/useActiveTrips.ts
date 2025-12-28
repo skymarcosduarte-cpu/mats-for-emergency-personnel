@@ -1,6 +1,6 @@
 // Hook to fetch active trips from all community members with real-time location
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateDistance } from '@/hooks/useLocation';
 
@@ -151,7 +151,12 @@ export function useActiveTrips() {
     fetchActiveTrips();
   }, [fetchActiveTrips]);
 
-  // Subscribe to realtime updates for trips and locations
+  // Track user IDs with active trips for location updates
+  const activeUserIds = useMemo(() => {
+    return new Set(trips.map(t => t.user_id));
+  }, [trips]);
+
+  // Subscribe to realtime updates for trips
   useEffect(() => {
     const tripsChannel = supabase
       .channel('active_trips_changes')
@@ -162,14 +167,24 @@ export function useActiveTrips() {
           schema: 'public',
           table: 'transit_trips',
         },
-        (payload) => {
-          console.log('[useActiveTrips] Trip update:', payload.eventType);
+        () => {
           fetchActiveTrips();
         }
       )
       .subscribe();
 
-    // Also listen to location updates for real-time ETA
+    return () => {
+      supabase.removeChannel(tripsChannel);
+    };
+  }, [fetchActiveTrips]);
+
+  // Separate subscription for location updates with throttling
+  useEffect(() => {
+    if (activeUserIds.size === 0) return;
+
+    let lastFetchTime = 0;
+    const minInterval = 30000; // Throttle to max once per 30 seconds
+
     const locationsChannel = supabase
       .channel('active_trips_locations')
       .on(
@@ -180,22 +195,22 @@ export function useActiveTrips() {
           table: 'user_locations',
         },
         (payload) => {
-          // Only refetch if this is a user with an active trip
           const userId = (payload.new as { user_id?: string })?.user_id;
-          const hasActiveTrip = trips.some(t => t.user_id === userId);
-          if (hasActiveTrip) {
-            console.log('[useActiveTrips] Location update for active trip user:', userId);
-            fetchActiveTrips();
+          if (userId && activeUserIds.has(userId)) {
+            const now = Date.now();
+            if (now - lastFetchTime >= minInterval) {
+              lastFetchTime = now;
+              fetchActiveTrips();
+            }
           }
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(tripsChannel);
       supabase.removeChannel(locationsChannel);
     };
-  }, [fetchActiveTrips, trips]);
+  }, [fetchActiveTrips, activeUserIds]);
 
   return {
     trips,
