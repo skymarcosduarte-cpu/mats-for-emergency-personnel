@@ -127,7 +127,7 @@ export function useOverdueTrips() {
       const { error } = await supabase
         .from('transit_trips')
         .update({ 
-          status: 'COMPLETED', 
+          status: 'ARRIVED', 
           arrived_at: new Date().toISOString() 
         })
         .eq('id', tripId);
