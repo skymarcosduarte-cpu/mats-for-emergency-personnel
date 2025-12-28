@@ -20,6 +20,7 @@ export interface CommunityEvent {
   event_type: CommunityEventType;
   title: string;
   message: string | null;
+  image_url: string | null;
   target_user_id: string | null;
   is_active: boolean;
   expires_at: string | null;
@@ -79,11 +80,33 @@ export function useCommunityEvents() {
     }
   }, []);
 
+  // Upload image to storage
+  const uploadImage = useCallback(async (file: File): Promise<string> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('community_images')
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('community_images')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  }, []);
+
   // Create a new event
   const createEvent = useCallback(async (event: {
     event_type: CommunityEventType;
     title: string;
     message?: string;
+    image_url?: string;
     target_user_id?: string;
     expires_at?: string;
   }) => {
@@ -97,6 +120,7 @@ export function useCommunityEvents() {
         event_type: event.event_type,
         title: event.title,
         message: event.message || null,
+        image_url: event.image_url || null,
         target_user_id: event.target_user_id || null,
         expires_at: event.expires_at || null,
       })
@@ -197,6 +221,7 @@ export function useCommunityEvents() {
     createEvent,
     updateEvent,
     deleteEvent,
+    uploadImage,
     refresh: fetchEvents,
     getEventTypeLabel,
     getEventTypeColor,

@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,6 +55,7 @@ export const CommunityScreen: React.FC = () => {
     loading, 
     createEvent, 
     deleteEvent,
+    uploadImage,
     refresh,
     getEventTypeLabel,
     getEventTypeColor,
@@ -84,6 +85,8 @@ export const CommunityScreen: React.FC = () => {
     title: '',
     message: '',
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Fetch route history when a trip is selected
   const fetchRouteHistory = useCallback(async (tripId: string) => {
@@ -176,6 +179,31 @@ export const CommunityScreen: React.FC = () => {
     return `${km.toFixed(1)} km`;
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type and size
+      if (!file.type.startsWith('image/')) {
+        toast.error('Solo se permiten imágenes');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('La imagen debe ser menor a 5MB');
+        return;
+      }
+      setSelectedImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+      setImagePreview(null);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!formData.event_type || !formData.title.trim()) {
       toast.error('Completa los campos obligatorios');
@@ -184,15 +212,24 @@ export const CommunityScreen: React.FC = () => {
 
     setSubmitting(true);
     try {
+      let imageUrl: string | undefined;
+      
+      // Upload image if selected
+      if (selectedImage) {
+        imageUrl = await uploadImage(selectedImage);
+      }
+
       await createEvent({
         event_type: formData.event_type,
         title: formData.title,
         message: formData.message || undefined,
+        image_url: imageUrl,
       });
       
       toast.success('Evento publicado');
       setShowNewDialog(false);
       setFormData({ event_type: '', title: '', message: '' });
+      handleRemoveImage();
     } catch (err) {
       console.error('Error creating event:', err);
       toast.error('Error al publicar');
@@ -327,6 +364,13 @@ export const CommunityScreen: React.FC = () => {
                         <h3 className="font-medium text-foreground">{event.title}</h3>
                         {event.message && (
                           <p className="text-sm text-muted-foreground mt-1">{event.message}</p>
+                        )}
+                        {event.image_url && (
+                          <img 
+                            src={event.image_url} 
+                            alt="Imagen del evento" 
+                            className="mt-3 rounded-lg border border-border max-h-48 w-auto object-cover"
+                          />
                         )}
                         <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
@@ -583,6 +627,40 @@ export const CommunityScreen: React.FC = () => {
                 className="w-full h-24 px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground resize-none"
                 maxLength={500}
               />
+            </div>
+
+            {/* Image Upload */}
+            <div>
+              <Label>Imagen (opcional)</Label>
+              {imagePreview ? (
+                <div className="relative mt-2">
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="w-full h-32 object-cover rounded-lg border border-border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-7 w-7"
+                    onClick={handleRemoveImage}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <label className="flex items-center justify-center gap-2 w-full h-20 mt-2 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageSelect}
+                  />
+                  <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Agregar imagen</span>
+                </label>
+              )}
             </div>
 
             <div className="flex gap-2">
