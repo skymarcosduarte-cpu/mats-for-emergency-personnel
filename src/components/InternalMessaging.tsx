@@ -1164,8 +1164,17 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-3">
                 {renderedMessages}
+                {/* Sending indicator */}
+                {sending && (
+                  <div className="flex justify-end">
+                    <div className="bg-primary/60 text-primary-foreground rounded-2xl rounded-br-md px-4 py-2 flex items-center gap-2">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span className="text-sm">Enviando...</span>
+                    </div>
+                  </div>
+                )}
                 {/* Typing indicator */}
-                {isUserTyping && (
+                {isUserTyping && !sending && (
                   <div className="flex justify-start">
                     <div className="bg-muted text-foreground rounded-2xl rounded-bl-md px-4 py-2">
                       <div className="flex items-center gap-1">
@@ -1333,7 +1342,11 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                     size="icon"
                     className="flex-shrink-0"
                   >
-                    <Send className="w-4 h-4" />
+                    {sending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
                   </Button>
                 </div>
               )}
