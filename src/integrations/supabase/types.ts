@@ -95,6 +95,7 @@ export type Database = {
           event_type: string
           expires_at: string | null
           id: string
+          image_url: string | null
           is_active: boolean
           message: string | null
           target_user_id: string | null
@@ -107,6 +108,7 @@ export type Database = {
           event_type: string
           expires_at?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           message?: string | null
           target_user_id?: string | null
@@ -119,6 +121,7 @@ export type Database = {
           event_type?: string
           expires_at?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           message?: string | null
           target_user_id?: string | null
