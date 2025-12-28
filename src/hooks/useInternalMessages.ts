@@ -71,6 +71,12 @@ export const useInternalMessages = () => {
   const lastFetchRef = useRef(0);
   const userNamesMapRef = useRef<Map<string, string | null>>(new Map());
 
+  // Keep latest messages without changing callback identities (prevents effect loops)
+  const messagesRef = useRef<InternalMessage[]>([]);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
   // Debounced fetch - prevents multiple rapid calls
   const fetchData = useCallback(async (force = false) => {
     if (!user?.id) return;
@@ -386,23 +392,26 @@ export const useInternalMessages = () => {
   const markAsRead = useCallback(async (senderId: string) => {
     if (!user?.id) return;
 
+    // Compute from ref to avoid callback identity changing on every messages update
+    const unreadFromSender = messagesRef.current.filter(
+      m => m.sender_id === senderId && m.receiver_id === user.id && !m.read
+    ).length;
+
+    // Avoid no-op state updates (can cause render churn / freezes)
+    if (unreadFromSender === 0) return;
+
     // Optimistically mark as read
-    setMessages(prev => prev.map(m => 
+    setMessages(prev => prev.map(m =>
       m.sender_id === senderId && m.receiver_id === user.id && !m.read
         ? { ...m, read: true }
         : m
     ));
 
     // Update unread count
-    setUnreadCount(prev => {
-      const unreadFromSender = messages.filter(
-        m => m.sender_id === senderId && m.receiver_id === user.id && !m.read
-      ).length;
-      return Math.max(0, prev - unreadFromSender);
-    });
+    setUnreadCount(prev => Math.max(0, prev - unreadFromSender));
 
     // Update conversations
-    setConversations(prev => prev.map(c => 
+    setConversations(prev => prev.map(c =>
       c.user_id === senderId ? { ...c, unread_count: 0 } : c
     ));
 
@@ -416,7 +425,7 @@ export const useInternalMessages = () => {
     } catch (err) {
       console.error('Error marking messages as read:', err);
     }
-  }, [user?.id, messages]);
+  }, [user?.id]);
 
   // Get messages for a specific conversation
   const getConversationMessages = useCallback((otherUserId: string): InternalMessage[] => {
