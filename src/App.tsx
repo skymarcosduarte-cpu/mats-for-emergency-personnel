@@ -52,6 +52,7 @@ import { useNewUserNotification } from '@/hooks/useNewUserNotification';
 import { useWebPushSubscription } from '@/hooks/useWebPushSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { UserRole, USGSEarthquake, PanicType } from '@/types';
 
 const queryClient = new QueryClient();
 
@@ -392,6 +393,8 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
           setMessagingOpen(true);
         }}
       />
+      <QuakeDamageBanner />
+      <ActiveAlertBanner 
         testAlert={testAlert} 
         onClearTestAlert={clearTestAlert} 
         refreshTrigger={alertRefreshTrigger}
