@@ -85,7 +85,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const [loadingTrips, setLoadingTrips] = useState(true);
   
   // History filters
-  const [historyStatusFilter, setHistoryStatusFilter] = useState<'ALL' | 'COMPLETED' | 'CANCELLED'>('ALL');
+  const [historyStatusFilter, setHistoryStatusFilter] = useState<'ALL' | 'ARRIVED' | 'CANCELLED'>('ALL');
   const [historyDateFilter, setHistoryDateFilter] = useState<'ALL' | 'WEEK' | 'MONTH' | 'YEAR'>('ALL');
   
   // Trip form state
@@ -1114,11 +1114,11 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                               className="text-xs"
                               onClick={async () => {
                                 try {
-                                  // Update trip status
+                                  // Update trip status - use 'ARRIVED' to match DB constraint
                                   const { error: updateError } = await supabase
                                     .from('transit_trips')
                                     .update({ 
-                                      status: 'COMPLETED', 
+                                      status: 'ARRIVED', 
                                       arrived_at: new Date().toISOString() 
                                     })
                                     .eq('id', trip.id);
@@ -1323,14 +1323,14 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         <TabsContent value="history" className="space-y-3 mt-4">
           {/* Filters */}
           <div className="flex flex-wrap gap-2 pb-2 border-b border-border">
-            <Select value={historyStatusFilter} onValueChange={(v) => setHistoryStatusFilter(v as 'ALL' | 'COMPLETED' | 'CANCELLED')}>
+            <Select value={historyStatusFilter} onValueChange={(v) => setHistoryStatusFilter(v as 'ALL' | 'ARRIVED' | 'CANCELLED')}>
               <SelectTrigger className="w-[140px] h-8 text-xs">
                 <Filter className="w-3 h-3 mr-1" />
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Todos</SelectItem>
-                <SelectItem value="COMPLETED">Completados</SelectItem>
+                <SelectItem value="ARRIVED">Completados</SelectItem>
                 <SelectItem value="CANCELLED">Cancelados</SelectItem>
               </SelectContent>
             </Select>
@@ -1387,7 +1387,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
             }
 
             return filteredHistory.map((trip) => {
-              const isCompleted = trip.status === 'COMPLETED';
+              const isCompleted = trip.status === 'ARRIVED';
               const tripDate = new Date(trip.arrived_at || trip.created_at);
               
               return (
