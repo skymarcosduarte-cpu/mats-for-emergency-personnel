@@ -286,31 +286,44 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const handleTripSubmit = async () => {
     if (submitting) return;
 
-    // Ensure we have a fresh GPS position (iOS sometimes delays it)
-    let pos = position;
-    if (!pos) {
-      try {
-        pos = await getCurrentPosition();
-      } catch (e) {
-        toast.error('Se requiere ubicación GPS', {
-          description: 'Activa permisos de ubicación para poder iniciar el viaje.',
-        });
-        console.warn('[TransitScreen] Cannot submit trip: missing position', {
-          locationLoading,
-          locationError,
-        });
-        return;
-      }
-    }
-
+    // Validate ETA first (before GPS wait)
     if (!tripForm.eta) {
       toast.error('Se requiere hora de llegada estimada', {
-        description: 'Selecciona una fecha y hora en el campo “ETA”.',
+        description: 'Selecciona una fecha y hora en el campo "ETA".',
       });
       console.warn('[TransitScreen] Cannot submit trip: missing ETA');
       return;
     }
 
+    // Show immediate feedback to user (important for iOS)
+    toast.info('Obteniendo ubicación GPS...', { id: 'gps-toast', duration: 15000 });
+
+    // Ensure we have a fresh GPS position (iOS sometimes delays it)
+    let pos = position;
+    if (!pos) {
+      try {
+        // Create a timeout promise for GPS acquisition
+        const gpsTimeout = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('GPS timeout')), 15000)
+        );
+        
+        pos = await Promise.race([getCurrentPosition(), gpsTimeout]);
+      } catch (e) {
+        toast.dismiss('gps-toast');
+        const errorMsg = e instanceof Error && e.message === 'GPS timeout' 
+          ? 'No se pudo obtener ubicación a tiempo. Intenta de nuevo.'
+          : 'Activa permisos de ubicación para poder iniciar el viaje.';
+        toast.error('Se requiere ubicación GPS', { description: errorMsg });
+        console.warn('[TransitScreen] Cannot submit trip: missing position', {
+          locationLoading,
+          locationError,
+          error: e,
+        });
+        return;
+      }
+    }
+
+    toast.dismiss('gps-toast');
     setSubmitting(true);
     console.log('[TransitScreen] Submitting trip', {
       transitType,
@@ -416,8 +429,30 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         boarding_pass_url: boardingPassUrl,
       };
 
-      const { error } = await supabase.from('transit_trips').insert(tripData);
+      const { data: insertedTrip, error } = await supabase.from('transit_trips').insert(tripData).select().single();
       if (error) throw error;
+
+      // Notify all active users about the new trip
+      try {
+        await supabase.functions.invoke('notify-trip-update', {
+          body: {
+            tripId: insertedTrip.id,
+            tripUserId: user.id,
+            eventType: 'started',
+            origin: tripData.origin,
+            destination: tripData.destination,
+            eta: tripData.eta,
+            originLat: tripData.origin_lat,
+            originLng: tripData.origin_lng,
+            destinationLat: tripData.destination_lat,
+            destinationLng: tripData.destination_lng,
+          }
+        });
+        console.log('[TransitScreen] Active users notified about new trip');
+      } catch (notifyError) {
+        console.error('[TransitScreen] Error notifying active users:', notifyError);
+        // Don't fail trip creation if notification fails
+      }
 
       toast.success('¡Viaje registrado! Tu ubicación será visible en el mapa.');
       setShowTripDialog(false);
@@ -785,7 +820,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                               onClick={async () => {
                                 try {
                                   // Update trip status
-                                  await supabase
+                                  const { error: updateError } = await supabase
                                     .from('transit_trips')
                                     .update({ 
                                       status: 'COMPLETED', 
@@ -793,7 +828,12 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                     })
                                     .eq('id', trip.id);
                                   
-                                  // Notify emergency contacts
+                                  if (updateError) {
+                                    console.error('Error updating trip status:', updateError);
+                                    throw updateError;
+                                  }
+                                  
+                                  // Notify all active users about arrival
                                   try {
                                     await supabase.functions.invoke('notify-trip-update', {
                                       body: {
@@ -805,12 +845,13 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                       }
                                     });
                                   } catch (notifyError) {
-                                    console.error('Error notifying contacts:', notifyError);
+                                    console.error('Error notifying users:', notifyError);
                                   }
                                   
-                                  toast.success('¡Viaje completado! Tus contactos fueron notificados.');
+                                  toast.success('¡Viaje completado! Todos los usuarios activos fueron notificados.');
                                   fetchMyTrips();
                                 } catch (e) {
+                                  console.error('Error completing trip:', e);
                                   toast.error('Error al completar viaje');
                                 }
                               }}
