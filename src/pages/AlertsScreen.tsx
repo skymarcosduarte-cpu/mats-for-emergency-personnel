@@ -2,7 +2,7 @@
 // USGS + SSN Mexico earthquakes + "Todo bien" quick report + "14" help + notifications + my alerts history
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind, Route, X, CheckCircle2, Map, MessageCircle } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind, Route, X, CheckCircle2, Map, MessageCircle, Car, Plane } from 'lucide-react';
 import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
 import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
 import { useMexicoAlerts, TropicalCycloneAlert, FireHotspot } from '@/hooks/useMexicoAlerts';
@@ -49,6 +49,7 @@ import { playUrgentAlert } from '@/lib/alertSound';
 import { toast } from 'sonner';
 import { MyAlertsHistory } from '@/components/MyAlertsHistory';
 import { QuakeCheckinMap } from '@/components/QuakeCheckinMap';
+import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 
 // Removed - now using useEarthquakeHistory hook
 
@@ -91,6 +92,9 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     dismissThankYou 
   } = useEmergencyResponse();
   const { responders } = useActiveResponders();
+
+  // Active trips from community members
+  const { trips: activeTrips, loading: tripsLoading, refresh: refreshTrips } = useActiveTrips();
 
   // Use earthquake history hook with offline caching
   const { 
@@ -892,16 +896,114 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         </TabsContent>
 
         {/* Active Help Tab */}
-        <TabsContent value="help" className="space-y-3 mt-4">
-          {helpRequests.filter(r => !r.resolved).length === 0 ? (
+        <TabsContent value="help" className="space-y-4 mt-4">
+          {/* Active Trips Section */}
+          {activeTrips.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Car className="w-4 h-4 text-warning" />
+                  Viajes activos de la comunidad
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={refreshTrips}
+                  disabled={tripsLoading}
+                >
+                  <RefreshCw className={cn('w-3.5 h-3.5', tripsLoading && 'animate-spin')} />
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {activeTrips.map((trip) => (
+                  <Card key={trip.id} className="bg-warning/5 border-warning/30">
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-3">
+                        <div className={cn(
+                          "p-2 rounded-full shrink-0",
+                          trip.transit_type === 'FLIGHT' ? "bg-accent/10 text-accent" : "bg-warning/10 text-warning"
+                        )}>
+                          {trip.transit_type === 'FLIGHT' ? (
+                            <Plane className="w-4 h-4" />
+                          ) : (
+                            <Car className="w-4 h-4" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            {trip.nickname && (
+                              <span className="text-xs font-semibold text-foreground">
+                                {trip.nickname}
+                              </span>
+                            )}
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-warning/50 text-warning">
+                              {trip.transit_type === 'FLIGHT' ? 'Vuelo' : 'Carretera'}
+                            </Badge>
+                            {trip.flight_number && (
+                              <span className="text-[10px] text-muted-foreground">
+                                ✈️ {trip.airline} {trip.flight_number}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-foreground">
+                            <span className="text-muted-foreground">De:</span> {trip.origin}
+                          </div>
+                          <div className="text-sm text-foreground">
+                            <span className="text-muted-foreground">A:</span> {trip.destination}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              ETA: {new Date(trip.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {trip.plates && (
+                              <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-[10px]">
+                                🚗 {trip.plates}
+                              </span>
+                            )}
+                            {trip.companions && (
+                              <span className="text-[10px]">
+                                👥 {trip.companions}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {trip.user_id !== user?.id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => handleMessageUser(trip.user_id, trip.nickname || null)}
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Help Requests Section */}
+          {helpRequests.filter(r => !r.resolved).length === 0 && activeTrips.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No hay solicitudes de ayuda activas</p>
+              <p>No hay actividad de la comunidad</p>
             </div>
-          ) : (
-            helpRequests
-              .filter(r => !r.resolved)
-              .map((req) => (
+          ) : helpRequests.filter(r => !r.resolved).length > 0 && (
+            <div className="space-y-2">
+              {activeTrips.length > 0 && (
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mt-4">
+                  <AlertTriangle className="w-4 h-4 text-destructive" />
+                  Solicitudes de ayuda
+                </h3>
+              )}
+              {helpRequests
+                .filter(r => !r.resolved)
+                .map((req) => (
                 <Card key={req.id} className={cn(
                   "bg-card border-border",
                   activeResponse?.requestId === req.id && "border-primary border-2"
@@ -1083,7 +1185,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                     </div>
                   </CardContent>
                 </Card>
-              ))
+              ))}
+            </div>
           )}
 
           {/* Recently Resolved Requests */}

@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { MapPin, Navigation, Flag } from 'lucide-react';
+import { MapPin, Navigation, Flag, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import 'leaflet/dist/leaflet.css';
 
@@ -58,6 +58,30 @@ function FitBounds({ bounds }: { bounds: L.LatLngBounds | null }) {
   return null;
 }
 
+// Component to track when map is ready
+function MapReadyHandler({ onReady }: { onReady: () => void }) {
+  const map = useMap();
+
+  useEffect(() => {
+    // Wait for tiles to start loading, then mark as ready
+    const handleLoad = () => {
+      onReady();
+    };
+    
+    // Mark ready after a short delay to ensure map container is visible
+    const timeout = setTimeout(handleLoad, 300);
+    
+    map.on('load', handleLoad);
+    
+    return () => {
+      clearTimeout(timeout);
+      map.off('load', handleLoad);
+    };
+  }, [map, onReady]);
+
+  return null;
+}
+
 export default function TripRouteMap({
   routeCoordinates,
   originCoords,
@@ -68,6 +92,8 @@ export default function TripRouteMap({
   className,
   height = '300px',
 }: TripRouteMapProps) {
+  const [isMapReady, setIsMapReady] = useState(false);
+
   // Calculate bounds
   const bounds = useMemo(() => {
     const allPoints: [number, number][] = [...routeCoordinates];
@@ -110,7 +136,16 @@ export default function TripRouteMap({
   }
 
   return (
-    <div className={cn("rounded-lg overflow-hidden border", className)} style={{ height }}>
+    <div className={cn("rounded-lg overflow-hidden border relative", className)} style={{ height, background: 'hsl(var(--muted))' }}>
+      {/* Loading overlay */}
+      {!isMapReady && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-muted">
+          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span className="text-xs">Cargando mapa...</span>
+          </div>
+        </div>
+      )}
       <MapContainer
         center={defaultCenter}
         zoom={13}
@@ -184,6 +219,7 @@ export default function TripRouteMap({
         )}
 
         <FitBounds bounds={bounds} />
+        <MapReadyHandler onReady={() => setIsMapReady(true)} />
       </MapContainer>
     </div>
   );
