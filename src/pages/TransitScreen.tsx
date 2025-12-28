@@ -23,6 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MediaCapture } from '@/components/MediaCapture';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { TripLocationPicker } from '@/components/TripLocationPicker';
 import { useLocation, getGoogleMapsLink } from '@/hooks/useLocation';
 import { useRoadReports } from '@/hooks/useRealtime';
 import { supabase } from '@/integrations/supabase/client';
@@ -92,7 +93,10 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     departureTime: '',
     arrivalTime: '',
     eta: '',
-    // Destination coordinates (optional, for route display)
+    // Origin coordinates (captured from location picker or GPS)
+    originLat: null as number | null,
+    originLng: null as number | null,
+    // Destination coordinates (for route display)
     destinationLat: null as number | null,
     destinationLng: null as number | null,
   });
@@ -418,9 +422,9 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         flight_number: transitType === 'FLIGHT' ? tripForm.flightNumber : null,
         departure_airport: transitType === 'FLIGHT' ? tripForm.departureAirport : null,
         arrival_airport: transitType === 'FLIGHT' ? tripForm.arrivalAirport : null,
-        // Store current location as origin coordinates
-        origin_lat: pos.lat,
-        origin_lng: pos.lng,
+        // Use form origin coords if provided, otherwise fall back to GPS position
+        origin_lat: tripForm.originLat ?? pos.lat,
+        origin_lng: tripForm.originLng ?? pos.lng,
         // Store destination coordinates if provided
         destination_lat: tripForm.destinationLat,
         destination_lng: tripForm.destinationLng,
@@ -604,6 +608,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       departureTime: '',
       arrivalTime: '',
       eta: '',
+      originLat: null,
+      originLng: null,
       destinationLat: null,
       destinationLng: null,
     });
@@ -1286,68 +1292,69 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                     placeholder="Juan, María..."
                   />
                 </div>
-                <div>
-                  <Label>Origen</Label>
-                  <Input
-                    value={tripForm.origin}
-                    onChange={(e) => setTripForm({ ...tripForm, origin: e.target.value })}
-                    placeholder="Ciudad de México"
-                  />
-                </div>
-                <div>
-                  <Label>Destino</Label>
-                  <Input
-                    value={tripForm.destination}
-                    onChange={(e) => setTripForm({ ...tripForm, destination: e.target.value })}
-                    placeholder="Guadalajara"
-                  />
-                </div>
+                {/* Origin location picker */}
+                <TripLocationPicker
+                  label="Origen"
+                  placeholder="Buscar origen en mapa..."
+                  currentPosition={position}
+                  markerColor="green"
+                  value={tripForm.origin && tripForm.originLat && tripForm.originLng ? {
+                    name: tripForm.origin,
+                    lat: tripForm.originLat,
+                    lng: tripForm.originLng,
+                  } : null}
+                  onChange={(loc) => {
+                    if (loc) {
+                      setTripForm({
+                        ...tripForm,
+                        origin: loc.name,
+                        originLat: loc.lat,
+                        originLng: loc.lng,
+                      });
+                    } else {
+                      setTripForm({
+                        ...tripForm,
+                        origin: '',
+                        originLat: null,
+                        originLng: null,
+                      });
+                    }
+                  }}
+                />
                 
-                {/* Destination coordinates for route display */}
-                <div className="p-3 rounded-lg bg-muted/30 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Navigation className="w-3 h-3" />
-                      Coordenadas destino (opcional)
-                    </div>
-                    {tripForm.destinationLat && tripForm.destinationLng && (
-                      <span className="text-xs text-primary">✓ Configurado</span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-xs">Latitud</Label>
-                      <Input
-                        type="number"
-                        step="any"
-                        value={tripForm.destinationLat ?? ''}
-                        onChange={(e) => setTripForm({ 
-                          ...tripForm, 
-                          destinationLat: e.target.value ? parseFloat(e.target.value) : null 
-                        })}
-                        placeholder="20.6597"
-                        className="h-8 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Longitud</Label>
-                      <Input
-                        type="number"
-                        step="any"
-                        value={tripForm.destinationLng ?? ''}
-                        onChange={(e) => setTripForm({ 
-                          ...tripForm, 
-                          destinationLng: e.target.value ? parseFloat(e.target.value) : null 
-                        })}
-                        placeholder="-103.3496"
-                        className="h-8 text-xs"
-                      />
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    Si agregas coordenadas, tu ruta será visible en el mapa para la comunidad.
-                  </p>
-                </div>
+                {/* Destination location picker */}
+                <TripLocationPicker
+                  label="Destino"
+                  placeholder="Buscar destino en mapa..."
+                  currentPosition={position}
+                  markerColor="orange"
+                  value={tripForm.destination && tripForm.destinationLat && tripForm.destinationLng ? {
+                    name: tripForm.destination,
+                    lat: tripForm.destinationLat,
+                    lng: tripForm.destinationLng,
+                  } : null}
+                  onChange={(loc) => {
+                    if (loc) {
+                      setTripForm({
+                        ...tripForm,
+                        destination: loc.name,
+                        destinationLat: loc.lat,
+                        destinationLng: loc.lng,
+                      });
+                    } else {
+                      setTripForm({
+                        ...tripForm,
+                        destination: '',
+                        destinationLat: null,
+                        destinationLng: null,
+                      });
+                    }
+                  }}
+                />
+                
+                <p className="text-[10px] text-muted-foreground bg-muted/30 p-2 rounded">
+                  💡 Selecciona ubicaciones en el mapa para que tu ruta sea visible para la comunidad.
+                </p>
                 <div>
                   <Label>Tipo de vehículo</Label>
                   <Input
