@@ -29,11 +29,15 @@ interface PanicResponderLocation {
 // Maximum distance in meters to allow joining a response (10km)
 const MAX_RESPONSE_RADIUS = 10000;
 
+// Proximity threshold for "almost arrived" notification (in meters)
+const PROXIMITY_THRESHOLD_METERS = 500;
+
 export function usePanicResponse() {
   const { user } = useAuth();
   const [activeResponse, setActiveResponse] = useState<ActivePanicResponse | null>(null);
   const [responderLocations, setResponderLocations] = useState<Map<string, PanicResponderLocation[]>>(new Map());
   const watchIdRef = useRef<number | null>(null);
+  const proximityNotifiedRef = useRef<Set<string>>(new Set()); // Track which alerts we've sent proximity notifications for
   const { showGenericNotification } = usePushNotifications();
 
   // Calculate distance between two points in meters
@@ -470,7 +474,8 @@ export function usePanicResponse() {
         }
 
         // Update responder position - this is more important
-        if (panicId || activeResponse?.panicId) {
+        const currentPanicId = panicId || activeResponse?.panicId;
+        if (currentPanicId) {
           try {
             await supabase
               .from('panic_event_responders')
@@ -479,8 +484,40 @@ export function usePanicResponse() {
                 lng,
                 updated_at: new Date().toISOString(),
               })
-              .eq('panic_id', panicId || activeResponse?.panicId)
+              .eq('panic_id', currentPanicId)
               .eq('user_id', user.id);
+            
+            // Check proximity and send notification if within 500m
+            if (activeResponse && !proximityNotifiedRef.current.has(currentPanicId)) {
+              const distanceMeters = calculateDistance(lat, lng, activeResponse.panicLat, activeResponse.panicLng);
+              
+              if (distanceMeters <= PROXIMITY_THRESHOLD_METERS) {
+                console.log(`[usePanicResponse] Within ${PROXIMITY_THRESHOLD_METERS}m - sending proximity notification`);
+                proximityNotifiedRef.current.add(currentPanicId);
+                
+                // Get panic event to find creator
+                const { data: panicEvent } = await supabase
+                  .from('panic_events')
+                  .select('user_id')
+                  .eq('id', currentPanicId)
+                  .maybeSingle();
+                
+                if (panicEvent && panicEvent.user_id !== user.id) {
+                  // Notify the creator via edge function
+                  supabase.functions.invoke('notify-responder-coming', {
+                    body: {
+                      alertId: currentPanicId,
+                      alertType: 'panic',
+                      creatorUserId: panicEvent.user_id,
+                      responderUserId: user.id,
+                      eventType: 'proximity',
+                      responderLat: lat,
+                      responderLng: lng,
+                    }
+                  }).catch(err => console.warn('Failed to send proximity notification:', err));
+                }
+              }
+            }
           } catch (err) {
             console.warn('[usePanicResponse] Error updating responder position:', err);
           }

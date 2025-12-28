@@ -30,12 +30,16 @@ interface ResponderLocation {
 // Maximum distance in meters to allow joining a response (10km)
 const MAX_RESPONSE_RADIUS = 10000;
 
+// Proximity threshold for "almost arrived" notification (in meters)
+const PROXIMITY_THRESHOLD_METERS = 500;
+
 export function useEmergencyResponse() {
   const { user } = useAuth();
   const [activeResponse, setActiveResponse] = useState<ActiveResponse | null>(null);
   const [responderLocations, setResponderLocations] = useState<Map<string, ResponderLocation[]>>(new Map());
   const [showThankYou, setShowThankYou] = useState(false);
   const watchIdRef = useRef<number | null>(null);
+  const proximityNotifiedRef = useRef<Set<string>>(new Set()); // Track which alerts we've sent proximity notifications for
   const { showGenericNotification } = usePushNotifications();
 
   // Calculate distance between two points in meters
@@ -420,7 +424,8 @@ export function useEmergencyResponse() {
         }
 
         // Also update the responder record with current location - this is more important
-        if (requestId || activeResponse?.requestId) {
+        const currentRequestId = requestId || activeResponse?.requestId;
+        if (currentRequestId) {
           try {
             await supabase
               .from('help_request_responders')
@@ -429,8 +434,40 @@ export function useEmergencyResponse() {
                 lng,
                 updated_at: new Date().toISOString(),
               })
-              .eq('request_id', requestId || activeResponse?.requestId)
+              .eq('request_id', currentRequestId)
               .eq('user_id', user.id);
+            
+            // Check proximity and send notification if within 500m
+            if (activeResponse && !proximityNotifiedRef.current.has(currentRequestId)) {
+              const distanceMeters = calculateDistance(lat, lng, activeResponse.requestLat, activeResponse.requestLng);
+              
+              if (distanceMeters <= PROXIMITY_THRESHOLD_METERS) {
+                console.log(`[useEmergencyResponse] Within ${PROXIMITY_THRESHOLD_METERS}m - sending proximity notification`);
+                proximityNotifiedRef.current.add(currentRequestId);
+                
+                // Get help request to find creator
+                const { data: helpRequest } = await supabase
+                  .from('help_requests')
+                  .select('user_id')
+                  .eq('id', currentRequestId)
+                  .maybeSingle();
+                
+                if (helpRequest && helpRequest.user_id !== user.id) {
+                  // Notify the creator via edge function
+                  supabase.functions.invoke('notify-responder-coming', {
+                    body: {
+                      alertId: currentRequestId,
+                      alertType: 'help_request',
+                      creatorUserId: helpRequest.user_id,
+                      responderUserId: user.id,
+                      eventType: 'proximity',
+                      responderLat: lat,
+                      responderLng: lng,
+                    }
+                  }).catch(err => console.warn('Failed to send proximity notification:', err));
+                }
+              }
+            }
           } catch (err) {
             console.warn('[useEmergencyResponse] Error updating responder position:', err);
           }
