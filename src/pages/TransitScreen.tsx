@@ -59,6 +59,8 @@ interface TransitTrip {
   arrival_airport: string | null;
   created_at: string;
   arrived_at: string | null;
+  vehicle_photo_url: string | null;
+  boarding_pass_url: string | null;
 }
 
 export const TransitScreen: React.FC<TransitScreenProps> = ({
@@ -674,6 +676,40 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             ✈️ {trip.airline} {trip.flight_number}
                           </div>
                         )}
+                        
+                        {/* Show trip photos */}
+                        {(trip.vehicle_photo_url || trip.boarding_pass_url) && (
+                          <div className="mt-2 flex gap-2">
+                            {trip.vehicle_photo_url && (
+                              <a 
+                                href={trip.vehicle_photo_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="block"
+                              >
+                                <img 
+                                  src={trip.vehicle_photo_url} 
+                                  alt="Foto del vehículo" 
+                                  className="w-16 h-16 object-cover rounded-lg border border-border hover:opacity-80 transition-opacity"
+                                />
+                              </a>
+                            )}
+                            {trip.boarding_pass_url && (
+                              <a 
+                                href={trip.boarding_pass_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="block"
+                              >
+                                <img 
+                                  src={trip.boarding_pass_url} 
+                                  alt="Pase de abordar" 
+                                  className="w-16 h-16 object-cover rounded-lg border border-border hover:opacity-80 transition-opacity"
+                                />
+                              </a>
+                            )}
+                          </div>
+                        )}
                         <div className="flex gap-2 mt-3">
                           {isActive && (
                             <Button
@@ -906,6 +942,40 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             </>
                           )}
                         </div>
+                        
+                        {/* Show trip photos in history */}
+                        {(trip.vehicle_photo_url || trip.boarding_pass_url) && (
+                          <div className="mt-2 flex gap-2">
+                            {trip.vehicle_photo_url && (
+                              <a 
+                                href={trip.vehicle_photo_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="block"
+                              >
+                                <img 
+                                  src={trip.vehicle_photo_url} 
+                                  alt="Foto del vehículo" 
+                                  className="w-14 h-14 object-cover rounded-lg border border-border hover:opacity-80 transition-opacity"
+                                />
+                              </a>
+                            )}
+                            {trip.boarding_pass_url && (
+                              <a 
+                                href={trip.boarding_pass_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="block"
+                              >
+                                <img 
+                                  src={trip.boarding_pass_url} 
+                                  alt="Pase de abordar" 
+                                  className="w-14 h-14 object-cover rounded-lg border border-border hover:opacity-80 transition-opacity"
+                                />
+                              </a>
+                            )}
+                          </div>
+                        )}
                         <div className="flex justify-end mt-2">
                           <Button
                             size="sm"
