@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +35,8 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { useInternalMessages } from '@/hooks/useInternalMessages';
+import { NearbyBirthday } from '@/hooks/useCommunityEvents';
 
 const EVENT_TYPES: { value: CommunityEventType; label: string }[] = [
   { value: 'BIRTHDAY', label: '🎂 Cumpleaños' },
@@ -74,6 +76,8 @@ export const CommunityScreen: React.FC = () => {
     trips: communityTrips,
     loading: tripsLoading,
   } = useActiveTrips();
+
+  const { sendMessage } = useInternalMessages();
   
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -87,6 +91,11 @@ export const CommunityScreen: React.FC = () => {
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // Birthday greeting state
+  const [greetingTarget, setGreetingTarget] = useState<NearbyBirthday | null>(null);
+  const [greetingMessage, setGreetingMessage] = useState('');
+  const [sendingGreeting, setSendingGreeting] = useState(false);
 
   // Fetch route history when a trip is selected
   const fetchRouteHistory = useCallback(async (tripId: string) => {
@@ -250,6 +259,38 @@ export const CommunityScreen: React.FC = () => {
     }
   };
 
+  const handleOpenGreeting = (birthday: NearbyBirthday) => {
+    setGreetingTarget(birthday);
+    setGreetingMessage(`¡Feliz cumpleaños ${birthday.full_name}! 🎂🎉`);
+  };
+
+  const handleSendGreeting = async () => {
+    if (!greetingTarget || !greetingMessage.trim()) return;
+    
+    // Don't send to yourself
+    if (greetingTarget.user_id === user?.id) {
+      toast.error('No puedes enviarte un mensaje a ti mismo');
+      return;
+    }
+
+    setSendingGreeting(true);
+    try {
+      const success = await sendMessage(greetingTarget.user_id, greetingMessage.trim());
+      if (success) {
+        toast.success(`Felicitación enviada a ${greetingTarget.nickname}`);
+        setGreetingTarget(null);
+        setGreetingMessage('');
+      } else {
+        toast.error('Error al enviar la felicitación');
+      }
+    } catch (err) {
+      console.error('Error sending greeting:', err);
+      toast.error('Error al enviar la felicitación');
+    } finally {
+      setSendingGreeting(false);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-auto pb-20 scrollbar-thin">
       {/* Header */}
@@ -319,10 +360,21 @@ export const CommunityScreen: React.FC = () => {
                           <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center text-xl">
                             🎂
                           </div>
-                          <div>
-                            <p className="font-medium text-foreground">{birthday.full_name}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground truncate">{birthday.full_name}</p>
                             <p className="text-sm text-muted-foreground">@{birthday.nickname}</p>
                           </div>
+                          {birthday.user_id !== user?.id && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="shrink-0 text-primary hover:text-primary hover:bg-primary/10"
+                              onClick={() => handleOpenGreeting(birthday)}
+                            >
+                              <Gift className="w-4 h-4 mr-1" />
+                              Felicitar
+                            </Button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -342,10 +394,21 @@ export const CommunityScreen: React.FC = () => {
                           <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-xl">
                             🎂
                           </div>
-                          <div>
-                            <p className="font-medium text-foreground">{birthday.full_name}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground truncate">{birthday.full_name}</p>
                             <p className="text-sm text-muted-foreground">@{birthday.nickname}</p>
                           </div>
+                          {birthday.user_id !== user?.id && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="shrink-0"
+                              onClick={() => handleOpenGreeting(birthday)}
+                            >
+                              <Gift className="w-4 h-4 mr-1" />
+                              Felicitar
+                            </Button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -365,8 +428,8 @@ export const CommunityScreen: React.FC = () => {
                           <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-xl">
                             🎂
                           </div>
-                          <div>
-                            <p className="font-medium text-foreground">{birthday.full_name}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground truncate">{birthday.full_name}</p>
                             <p className="text-sm text-muted-foreground">@{birthday.nickname}</p>
                           </div>
                         </div>
@@ -938,6 +1001,66 @@ export const CommunityScreen: React.FC = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Birthday Greeting Dialog */}
+      <Dialog open={!!greetingTarget} onOpenChange={(open) => !open && setGreetingTarget(null)}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="w-5 h-5 text-primary" />
+              Felicitar a {greetingTarget?.full_name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg border border-primary/20">
+              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-2xl">
+                🎂
+              </div>
+              <div>
+                <p className="font-medium text-foreground">{greetingTarget?.full_name}</p>
+                <p className="text-sm text-muted-foreground">@{greetingTarget?.nickname}</p>
+              </div>
+            </div>
+
+            <div>
+              <Label>Tu mensaje de felicitación</Label>
+              <textarea
+                value={greetingMessage}
+                onChange={(e) => setGreetingMessage(e.target.value)}
+                placeholder="Escribe tu mensaje..."
+                className="w-full h-24 px-3 py-2 mt-2 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground resize-none"
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground mt-1 text-right">
+                {greetingMessage.length}/500
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setGreetingTarget(null)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSendGreeting}
+                disabled={sendingGreeting || !greetingMessage.trim()}
+                className="flex-1"
+              >
+                {sendingGreeting ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Send className="w-4 h-4 mr-2" />
+                )}
+                Enviar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
