@@ -27,16 +27,20 @@ export const MediaCapture: React.FC<MediaCaptureProps> = ({
   const [images, setImages] = useState<CompressResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const input = e.currentTarget;
+    const files = Array.from(input.files || []);
     if (files.length === 0) return;
 
     // Validate file types
-    const invalidFiles = files.filter(f => !isValidImageType(f));
+    const invalidFiles = files.filter((f) => !isValidImageType(f));
     if (invalidFiles.length > 0) {
       setError('Solo se permiten imágenes (JPG, PNG, WebP)');
+      // Reset input so same file can be selected again
+      input.value = '';
       return;
     }
 
@@ -44,6 +48,7 @@ export const MediaCapture: React.FC<MediaCaptureProps> = ({
     const totalCount = images.length + files.length;
     if (totalCount > maxImages) {
       setError(`Máximo ${maxImages} fotos permitidas`);
+      input.value = '';
       return;
     }
 
@@ -52,24 +57,22 @@ export const MediaCapture: React.FC<MediaCaptureProps> = ({
 
     try {
       const { results, errors } = await compressImages(files);
-      
+
       if (errors.length > 0) {
-        setError(errors.map(e => e.error).join('. '));
+        setError(errors.map((e) => e.error).join('. '));
       }
 
       if (results.length > 0) {
         const newImages = [...images, ...results];
         setImages(newImages);
-        onImagesSelected(newImages.map(r => r.file));
+        onImagesSelected(newImages.map((r) => r.file));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al procesar imágenes');
     } finally {
       setLoading(false);
-      // Reset input
-      if (inputRef.current) {
-        inputRef.current.value = '';
-      }
+      // Reset input so the same file can be selected again (iOS behavior)
+      input.value = '';
     }
   }, [images, maxImages, onImagesSelected]);
 
@@ -79,21 +82,30 @@ export const MediaCapture: React.FC<MediaCaptureProps> = ({
     onImagesSelected(newImages.map(r => r.file));
   }, [images, onImagesSelected]);
 
-  const openFilePicker = useCallback(() => {
-    inputRef.current?.click();
+  const openFilePicker = useCallback((source: 'camera' | 'gallery') => {
+    if (source === 'camera') cameraInputRef.current?.click();
+    else galleryInputRef.current?.click();
   }, []);
 
   const canAddMore = images.length < maxImages;
 
   return (
     <div className={cn('space-y-3', className)}>
-      {/* Hidden file input */}
+      {/* Hidden file inputs (iOS: `capture` forces camera, so we separate camera vs gallery) */}
       <input
-        ref={inputRef}
+        ref={cameraInputRef}
         type="file"
         accept="image/*"
         multiple
         capture="environment"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        multiple
         className="hidden"
         onChange={handleFileSelect}
       />
@@ -129,7 +141,7 @@ export const MediaCapture: React.FC<MediaCaptureProps> = ({
         {/* Add button */}
         {canAddMore && (
           <button
-            onClick={openFilePicker}
+            onClick={() => openFilePicker('gallery')}
             disabled={loading}
             className={cn(
               'aspect-square border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-1 transition-colors touch-target',
@@ -158,7 +170,7 @@ export const MediaCapture: React.FC<MediaCaptureProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={openFilePicker}
+            onClick={() => openFilePicker('camera')}
             disabled={loading}
             className="flex-1"
           >
@@ -168,7 +180,7 @@ export const MediaCapture: React.FC<MediaCaptureProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={openFilePicker}
+            onClick={() => openFilePicker('gallery')}
             disabled={loading}
             className="flex-1"
           >
