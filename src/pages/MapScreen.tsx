@@ -2324,16 +2324,19 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       />
 
       {/* Internal Messaging Modal */}
-      <InternalMessaging
-        isOpen={messagingOpen}
-        onClose={() => {
-          setMessagingOpen(false);
-          setMessagingUserId(null);
-          setMessagingUserName(null);
-        }}
-        initialUserId={messagingUserId}
-        initialUserName={messagingUserName}
-      />
+      {messagingOpen && (
+        <InternalMessaging
+          isOpen={messagingOpen}
+          onClose={() => {
+            setMessagingOpen(false);
+            setMessagingUserId(null);
+            setMessagingUserName(null);
+          }}
+          initialUserId={messagingUserId}
+          initialUserName={messagingUserName}
+        />
+      )}
+
 
       {/* Alert Detail Modal - opened from map markers */}
       <AlertDetailModal

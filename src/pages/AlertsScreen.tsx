@@ -1374,16 +1374,19 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       />
 
       {/* Internal Messaging Modal */}
-      <InternalMessaging
-        isOpen={messagingOpen}
-        onClose={() => {
-          setMessagingOpen(false);
-          setMessagingUserId(null);
-          setMessagingUserName(null);
-        }}
-        initialUserId={messagingUserId}
-        initialUserName={messagingUserName}
-      />
+      {messagingOpen && (
+        <InternalMessaging
+          isOpen={messagingOpen}
+          onClose={() => {
+            setMessagingOpen(false);
+            setMessagingUserId(null);
+            setMessagingUserName(null);
+          }}
+          initialUserId={messagingUserId}
+          initialUserName={messagingUserName}
+        />
+      )}
+
     </div>
   );
 };

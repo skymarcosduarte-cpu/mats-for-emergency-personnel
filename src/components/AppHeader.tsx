@@ -215,10 +215,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
       </AlertDialog>
 
       {/* Internal Messages Modal */}
-      <InternalMessaging 
-        isOpen={showMessages} 
-        onClose={() => setShowMessages(false)} 
-      />
+      {showMessages && (
+        <InternalMessaging 
+          isOpen={showMessages} 
+          onClose={() => setShowMessages(false)} 
+        />
+      )}
+
     </>
   );
 };
