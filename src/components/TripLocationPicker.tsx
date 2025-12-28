@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
-import { MapPin, Search, X, Loader2, Navigation } from 'lucide-react';
+import { MapPin, Search, X, Loader2, Navigation, Route, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { calculateDistance, formatDistance } from '@/hooks/useLocation';
 import 'leaflet/dist/leaflet.css';
 
 // Fix Leaflet default marker icon issue

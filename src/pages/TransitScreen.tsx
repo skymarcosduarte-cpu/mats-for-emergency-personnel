@@ -2,7 +2,7 @@
 // Road + Flight transit tracking with incident reports
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MediaCapture } from '@/components/MediaCapture';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { TripLocationPicker } from '@/components/TripLocationPicker';
-import { useLocation, getGoogleMapsLink } from '@/hooks/useLocation';
+import { useLocation, getGoogleMapsLink, calculateDistance, formatDistance } from '@/hooks/useLocation';
 import { useRoadReports } from '@/hooks/useRealtime';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -1351,6 +1351,51 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                     }
                   }}
                 />
+                
+                {/* Distance and time estimate */}
+                {tripForm.originLat && tripForm.originLng && tripForm.destinationLat && tripForm.destinationLng && (
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-2">
+                        <Route className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-medium">Distancia:</span>
+                        <span className="text-sm text-primary">
+                          {formatDistance(calculateDistance(
+                            tripForm.originLat,
+                            tripForm.originLng,
+                            tripForm.destinationLat,
+                            tripForm.destinationLng
+                          ))}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">~</span>
+                        <span className="text-sm text-muted-foreground">
+                          {(() => {
+                            const distKm = calculateDistance(
+                              tripForm.originLat!,
+                              tripForm.originLng!,
+                              tripForm.destinationLat!,
+                              tripForm.destinationLng!
+                            );
+                            // Estimate: ~60km/h average road speed
+                            const hours = distKm / 60;
+                            if (hours < 1) {
+                              return `${Math.round(hours * 60)} min`;
+                            }
+                            const h = Math.floor(hours);
+                            const m = Math.round((hours - h) * 60);
+                            return m > 0 ? `${h}h ${m}min` : `${h}h`;
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Tiempo estimado en carretera (velocidad promedio 60 km/h)
+                    </p>
+                  </div>
+                )}
                 
                 <p className="text-[10px] text-muted-foreground bg-muted/30 p-2 rounded">
                   💡 Selecciona ubicaciones en el mapa para que tu ruta sea visible para la comunidad.
