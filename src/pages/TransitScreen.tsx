@@ -128,8 +128,24 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const [newEta, setNewEta] = useState<string>('');
   const [updatingEta, setUpdatingEta] = useState(false);
 
-  const { position, getCurrentPosition, loading: locationLoading, error: locationError } = useLocation();
+  const { position, getCurrentPosition, startWatching, stopWatching, watching, loading: locationLoading, error: locationError } = useLocation({ autoWatch: false });
   const { reports, refetch: refetchReports } = useRoadReports();
+
+  // Check if there are active trips
+  const hasActiveTrips = useMemo(() => {
+    return myTrips.some(trip => trip.status === 'IN_PROGRESS');
+  }, [myTrips]);
+
+  // Auto-enable GPS tracking when there are active trips
+  useEffect(() => {
+    if (hasActiveTrips && !watching) {
+      console.log('[TransitScreen] Active trips detected, starting GPS tracking');
+      startWatching();
+    } else if (!hasActiveTrips && watching) {
+      console.log('[TransitScreen] No active trips, stopping GPS tracking');
+      stopWatching();
+    }
+  }, [hasActiveTrips, watching, startWatching, stopWatching]);
 
   // Get current user ID
   useEffect(() => {
@@ -691,6 +707,24 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
         {/* Active Trips Tab */}
         <TabsContent value="trips" className="space-y-3 mt-4">
+          {/* GPS tracking indicator */}
+          {hasActiveTrips && (
+            <div className={cn(
+              "flex items-center gap-2 text-xs px-3 py-2 rounded-lg",
+              watching ? "bg-safe/10 text-safe" : "bg-muted text-muted-foreground"
+            )}>
+              <div className={cn(
+                "w-2 h-2 rounded-full",
+                watching ? "bg-safe animate-pulse" : "bg-muted-foreground"
+              )} />
+              <Navigation className="w-3.5 h-3.5" />
+              <span>
+                {watching 
+                  ? "GPS activo - actualizando progreso en tiempo real" 
+                  : "Activando seguimiento GPS..."}
+              </span>
+            </div>
+          )}
           {loadingTrips ? (
             <div className="text-center py-12 text-muted-foreground">
               <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin" />
