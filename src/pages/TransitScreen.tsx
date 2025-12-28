@@ -1634,243 +1634,249 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-md bg-card border-border flex flex-col p-0 max-h-[100dvh] h-[100dvh] sm:h-auto sm:max-h-[90vh]">
+          <DialogHeader className="px-6 pt-6 pb-2 flex-shrink-0">
             <DialogTitle>Registrar Viaje</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            {/* Transit Type Selector */}
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={transitType === 'ROAD' ? 'default' : 'outline'}
-                onClick={() => setTransitType('ROAD')}
-                className="h-16"
-              >
-                <Car className="w-6 h-6 mr-2" />
-                Carretera
-              </Button>
-              <Button
-                variant={transitType === 'FLIGHT' ? 'default' : 'outline'}
-                onClick={() => setTransitType('FLIGHT')}
-                className="h-16"
-              >
-                <Plane className="w-6 h-6 mr-2" />
-                Vuelo
-              </Button>
-            </div>
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto px-6 pb-2 [-webkit-overflow-scrolling:touch]">
+            <div className="space-y-4 py-2">
+              {/* Transit Type Selector */}
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={transitType === 'ROAD' ? 'default' : 'outline'}
+                  onClick={() => setTransitType('ROAD')}
+                  className="h-16"
+                >
+                  <Car className="w-6 h-6 mr-2" />
+                  Carretera
+                </Button>
+                <Button
+                  variant={transitType === 'FLIGHT' ? 'default' : 'outline'}
+                  onClick={() => setTransitType('FLIGHT')}
+                  className="h-16"
+                >
+                  <Plane className="w-6 h-6 mr-2" />
+                  Vuelo
+                </Button>
+              </div>
 
-            {transitType === 'ROAD' ? (
-              <>
-                <div>
-                  <Label>Placas del vehículo</Label>
-                  <Input
-                    value={tripForm.plates}
-                    onChange={(e) => setTripForm({ ...tripForm, plates: e.target.value })}
-                    placeholder="ABC-123"
+              {transitType === 'ROAD' ? (
+                <>
+                  <div>
+                    <Label>Placas del vehículo</Label>
+                    <Input
+                      value={tripForm.plates}
+                      onChange={(e) => setTripForm({ ...tripForm, plates: e.target.value })}
+                      placeholder="ABC-123"
+                    />
+                  </div>
+                  <div>
+                    <Label>Acompañantes</Label>
+                    <Input
+                      value={tripForm.companions}
+                      onChange={(e) => setTripForm({ ...tripForm, companions: e.target.value })}
+                      placeholder="Juan, María..."
+                    />
+                  </div>
+                  {/* Origin location picker */}
+                  <TripLocationPicker
+                    label="Origen"
+                    placeholder="Buscar origen en mapa..."
+                    currentPosition={position}
+                    markerColor="green"
+                    value={tripForm.origin && tripForm.originLat && tripForm.originLng ? {
+                      name: tripForm.origin,
+                      lat: tripForm.originLat,
+                      lng: tripForm.originLng,
+                    } : null}
+                    onChange={(loc) => {
+                      if (loc) {
+                        setTripForm({
+                          ...tripForm,
+                          origin: loc.name,
+                          originLat: loc.lat,
+                          originLng: loc.lng,
+                        });
+                      } else {
+                        setTripForm({
+                          ...tripForm,
+                          origin: '',
+                          originLat: null,
+                          originLng: null,
+                        });
+                      }
+                    }}
                   />
-                </div>
-                <div>
-                  <Label>Acompañantes</Label>
-                  <Input
-                    value={tripForm.companions}
-                    onChange={(e) => setTripForm({ ...tripForm, companions: e.target.value })}
-                    placeholder="Juan, María..."
+                  
+                  {/* Destination location picker */}
+                  <TripLocationPicker
+                    label="Destino"
+                    placeholder="Buscar destino en mapa..."
+                    currentPosition={position}
+                    markerColor="orange"
+                    value={tripForm.destination && tripForm.destinationLat && tripForm.destinationLng ? {
+                      name: tripForm.destination,
+                      lat: tripForm.destinationLat,
+                      lng: tripForm.destinationLng,
+                    } : null}
+                    onChange={(loc) => {
+                      if (loc) {
+                        setTripForm({
+                          ...tripForm,
+                          destination: loc.name,
+                          destinationLat: loc.lat,
+                          destinationLng: loc.lng,
+                        });
+                      } else {
+                        setTripForm({
+                          ...tripForm,
+                          destination: '',
+                          destinationLat: null,
+                          destinationLng: null,
+                        });
+                      }
+                    }}
                   />
-                </div>
-                {/* Origin location picker */}
-                <TripLocationPicker
-                  label="Origen"
-                  placeholder="Buscar origen en mapa..."
-                  currentPosition={position}
-                  markerColor="green"
-                  value={tripForm.origin && tripForm.originLat && tripForm.originLng ? {
-                    name: tripForm.origin,
-                    lat: tripForm.originLat,
-                    lng: tripForm.originLng,
-                  } : null}
-                  onChange={(loc) => {
-                    if (loc) {
-                      setTripForm({
-                        ...tripForm,
-                        origin: loc.name,
-                        originLat: loc.lat,
-                        originLng: loc.lng,
-                      });
-                    } else {
-                      setTripForm({
-                        ...tripForm,
-                        origin: '',
-                        originLat: null,
-                        originLng: null,
-                      });
-                    }
-                  }}
-                />
-                
-                {/* Destination location picker */}
-                <TripLocationPicker
-                  label="Destino"
-                  placeholder="Buscar destino en mapa..."
-                  currentPosition={position}
-                  markerColor="orange"
-                  value={tripForm.destination && tripForm.destinationLat && tripForm.destinationLng ? {
-                    name: tripForm.destination,
-                    lat: tripForm.destinationLat,
-                    lng: tripForm.destinationLng,
-                  } : null}
-                  onChange={(loc) => {
-                    if (loc) {
-                      setTripForm({
-                        ...tripForm,
-                        destination: loc.name,
-                        destinationLat: loc.lat,
-                        destinationLng: loc.lng,
-                      });
-                    } else {
-                      setTripForm({
-                        ...tripForm,
-                        destination: '',
-                        destinationLat: null,
-                        destinationLng: null,
-                      });
-                    }
-                  }}
-                />
-                
-                {/* Distance and time estimate */}
-                {tripForm.originLat && tripForm.originLng && tripForm.destinationLat && tripForm.destinationLng && (
-                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <Route className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-medium">Distancia:</span>
-                        <span className="text-sm text-primary">
-                          {formatDistance(calculateDistance(
-                            tripForm.originLat,
-                            tripForm.originLng,
-                            tripForm.destinationLat,
-                            tripForm.destinationLng
-                          ))}
-                        </span>
+                  
+                  {/* Distance and time estimate */}
+                  {tripForm.originLat && tripForm.originLng && tripForm.destinationLat && tripForm.destinationLng && (
+                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                          <Route className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium">Distancia:</span>
+                          <span className="text-sm text-primary">
+                            {formatDistance(calculateDistance(
+                              tripForm.originLat,
+                              tripForm.originLng,
+                              tripForm.destinationLat,
+                              tripForm.destinationLng
+                            ))}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">~</span>
+                          <span className="text-sm text-muted-foreground">
+                            {(() => {
+                              const distKm = calculateDistance(
+                                tripForm.originLat!,
+                                tripForm.originLng!,
+                                tripForm.destinationLat!,
+                                tripForm.destinationLng!
+                              );
+                              // Estimate: ~60km/h average road speed
+                              const hours = distKm / 60;
+                              if (hours < 1) {
+                                return `${Math.round(hours * 60)} min`;
+                              }
+                              const h = Math.floor(hours);
+                              const m = Math.round((hours - h) * 60);
+                              return m > 0 ? `${h}h ${m}min` : `${h}h`;
+                            })()}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">~</span>
-                        <span className="text-sm text-muted-foreground">
-                          {(() => {
-                            const distKm = calculateDistance(
-                              tripForm.originLat!,
-                              tripForm.originLng!,
-                              tripForm.destinationLat!,
-                              tripForm.destinationLng!
-                            );
-                            // Estimate: ~60km/h average road speed
-                            const hours = distKm / 60;
-                            if (hours < 1) {
-                              return `${Math.round(hours * 60)} min`;
-                            }
-                            const h = Math.floor(hours);
-                            const m = Math.round((hours - h) * 60);
-                            return m > 0 ? `${h}h ${m}min` : `${h}h`;
-                          })()}
-                        </span>
-                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Tiempo estimado en carretera (velocidad promedio 60 km/h)
+                      </p>
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      Tiempo estimado en carretera (velocidad promedio 60 km/h)
+                  )}
+                  
+                  <p className="text-[10px] text-muted-foreground bg-muted/30 p-2 rounded">
+                    💡 Selecciona ubicaciones en el mapa para que tu ruta sea visible para la comunidad.
+                  </p>
+                  <div>
+                    <Label>Tipo de vehículo</Label>
+                    <Input
+                      value={tripForm.vehicleType}
+                      onChange={(e) => setTripForm({ ...tripForm, vehicleType: e.target.value })}
+                      placeholder="Sedan, SUV, Pickup..."
+                    />
+                  </div>
+                  
+                  {/* Optional vehicle photo */}
+                  <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+                    <Label className="text-sm flex items-center gap-2">
+                      📷 Foto del vehículo (opcional)
+                    </Label>
+                    <MediaCapture
+                      onImagesSelected={setVehiclePhoto}
+                      maxImages={1}
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Ayuda a identificar tu vehículo en caso de emergencia.
                     </p>
                   </div>
-                )}
-                
-                <p className="text-[10px] text-muted-foreground bg-muted/30 p-2 rounded">
-                  💡 Selecciona ubicaciones en el mapa para que tu ruta sea visible para la comunidad.
-                </p>
-                <div>
-                  <Label>Tipo de vehículo</Label>
-                  <Input
-                    value={tripForm.vehicleType}
-                    onChange={(e) => setTripForm({ ...tripForm, vehicleType: e.target.value })}
-                    placeholder="Sedan, SUV, Pickup..."
-                  />
-                </div>
-                
-                {/* Optional vehicle photo */}
-                <div className="p-3 rounded-lg bg-muted/30 space-y-2">
-                  <Label className="text-sm flex items-center gap-2">
-                    📷 Foto del vehículo (opcional)
-                  </Label>
-                  <MediaCapture
-                    onImagesSelected={setVehiclePhoto}
-                    maxImages={1}
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    Ayuda a identificar tu vehículo en caso de emergencia.
-                  </p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <Label>Aerolínea</Label>
-                  <Input
-                    value={tripForm.airline}
-                    onChange={(e) => setTripForm({ ...tripForm, airline: e.target.value })}
-                    placeholder="Volaris"
-                  />
-                </div>
-                <div>
-                  <Label>Número de vuelo</Label>
-                  <Input
-                    value={tripForm.flightNumber}
-                    onChange={(e) => setTripForm({ ...tripForm, flightNumber: e.target.value })}
-                    placeholder="Y4-123"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+                </>
+              ) : (
+                <>
                   <div>
-                    <Label>Aeropuerto salida</Label>
+                    <Label>Aerolínea</Label>
                     <Input
-                      value={tripForm.departureAirport}
-                      onChange={(e) => setTripForm({ ...tripForm, departureAirport: e.target.value })}
-                      placeholder="MEX"
+                      value={tripForm.airline}
+                      onChange={(e) => setTripForm({ ...tripForm, airline: e.target.value })}
+                      placeholder="Volaris"
                     />
                   </div>
                   <div>
-                    <Label>Aeropuerto llegada</Label>
+                    <Label>Número de vuelo</Label>
                     <Input
-                      value={tripForm.arrivalAirport}
-                      onChange={(e) => setTripForm({ ...tripForm, arrivalAirport: e.target.value })}
-                      placeholder="GDL"
+                      value={tripForm.flightNumber}
+                      onChange={(e) => setTripForm({ ...tripForm, flightNumber: e.target.value })}
+                      placeholder="Y4-123"
                     />
                   </div>
-                </div>
-                
-                {/* Optional boarding pass photo */}
-                <div className="p-3 rounded-lg bg-muted/30 space-y-2">
-                  <Label className="text-sm flex items-center gap-2">
-                    🎫 Foto del pase de abordar (opcional)
-                  </Label>
-                  <MediaCapture
-                    onImagesSelected={setBoardingPassPhoto}
-                    maxImages={1}
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    Útil para verificar información de vuelo en emergencias.
-                  </p>
-                </div>
-              </>
-            )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label>Aeropuerto salida</Label>
+                      <Input
+                        value={tripForm.departureAirport}
+                        onChange={(e) => setTripForm({ ...tripForm, departureAirport: e.target.value })}
+                        placeholder="MEX"
+                      />
+                    </div>
+                    <div>
+                      <Label>Aeropuerto llegada</Label>
+                      <Input
+                        value={tripForm.arrivalAirport}
+                        onChange={(e) => setTripForm({ ...tripForm, arrivalAirport: e.target.value })}
+                        placeholder="GDL"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Optional boarding pass photo */}
+                  <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+                    <Label className="text-sm flex items-center gap-2">
+                      🎫 Foto del pase de abordar (opcional)
+                    </Label>
+                    <MediaCapture
+                      onImagesSelected={setBoardingPassPhoto}
+                      maxImages={1}
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Útil para verificar información de vuelo en emergencias.
+                    </p>
+                  </div>
+                </>
+              )}
 
-            <div>
-              <Label>ETA (Hora estimada de llegada)</Label>
-              <Input
-                type="datetime-local"
-                value={tripForm.eta}
-                onChange={(e) => setTripForm({ ...tripForm, eta: e.target.value })}
-              />
+              <div>
+                <Label>ETA (Hora estimada de llegada)</Label>
+                <Input
+                  type="datetime-local"
+                  value={tripForm.eta}
+                  onChange={(e) => setTripForm({ ...tripForm, eta: e.target.value })}
+                />
+              </div>
             </div>
+          </div>
 
+          {/* Fixed footer buttons */}
+          <div className="flex-shrink-0 px-6 py-4 border-t border-border bg-card" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
             <div className="flex gap-2">
               <Button
                 type="button"
