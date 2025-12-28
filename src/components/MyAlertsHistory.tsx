@@ -2,7 +2,7 @@
 // Shows user's created help requests with status and details
 
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Clock, MapPin, CheckCircle2, Loader2, Users, ChevronRight, ExternalLink, Navigation } from 'lucide-react';
+import { AlertTriangle, Clock, MapPin, CheckCircle2, Loader2, Users, ChevronRight, ExternalLink, Navigation, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { getGoogleMapsLink } from '@/hooks/useLocation';
 import { AlertDetailModal } from '@/components/AlertDetailModal';
+import { toast } from 'sonner';
 
 interface MyHelpRequest {
   id: string;
@@ -65,6 +66,7 @@ export const MyAlertsHistory: React.FC<MyAlertsHistoryProps> = ({ onOpenMessagin
   const [loading, setLoading] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState<MyHelpRequest | null>(null);
   const [responderCounts, setResponderCounts] = useState<Map<string, number>>(new Map());
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [activeResponders, setActiveResponders] = useState<Array<{
     request_id: string;
     responder_id: string;
@@ -79,6 +81,43 @@ export const MyAlertsHistory: React.FC<MyAlertsHistoryProps> = ({ onOpenMessagin
     arrived_at: string | null;
     transport_mode: string | null;
   }>>([]);
+
+  // Delete resolved alert
+  const handleDeleteAlert = async (alertId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!confirm('¿Eliminar esta alerta del historial?')) return;
+    
+    setDeletingId(alertId);
+    try {
+      // First delete any responders associated with this alert
+      await supabase
+        .from('help_request_responders')
+        .delete()
+        .eq('request_id', alertId);
+      
+      // Then delete the alert itself
+      const { error } = await supabase
+        .from('help_requests')
+        .delete()
+        .eq('id', alertId)
+        .eq('user_id', user?.id);
+
+      if (error) {
+        console.error('Error deleting alert:', error);
+        toast.error('No se pudo eliminar la alerta');
+        return;
+      }
+
+      setAlerts(prev => prev.filter(a => a.id !== alertId));
+      toast.success('Alerta eliminada');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al eliminar');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   // Fetch user's alerts
   useEffect(() => {
@@ -248,6 +287,8 @@ export const MyAlertsHistory: React.FC<MyAlertsHistoryProps> = ({ onOpenMessagin
               alert={alert}
               responderCount={0}
               onClick={() => setSelectedAlert(alert)}
+              onDelete={handleDeleteAlert}
+              isDeleting={deletingId === alert.id}
             />
           ))}
         </div>
@@ -309,9 +350,11 @@ interface AlertCardProps {
   alert: MyHelpRequest;
   responderCount: number;
   onClick: () => void;
+  onDelete?: (alertId: string, e: React.MouseEvent) => void;
+  isDeleting?: boolean;
 }
 
-const AlertCard: React.FC<AlertCardProps> = ({ alert, responderCount, onClick }) => {
+const AlertCard: React.FC<AlertCardProps> = ({ alert, responderCount, onClick, onDelete, isDeleting }) => {
   const isActive = !alert.resolved;
   const timeAgo = formatDistanceToNow(new Date(alert.created_at), {
     addSuffix: true,
@@ -376,7 +419,23 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, responderCount, onClick })
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {/* Delete button for resolved alerts */}
+            {!isActive && onDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                onClick={(e) => onDelete(alert.id, e)}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
