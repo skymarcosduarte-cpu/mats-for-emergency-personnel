@@ -1,8 +1,8 @@
 // Active Users Panel Component
 // Shows a list of active users without PII, with buttons to center on each and message
 
-import React, { useEffect, useState } from 'react';
-import { Users, MapPin, ChevronLeft, ChevronRight, Clock, MessageCircle } from 'lucide-react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { Users, MapPin, ChevronRight, Clock, MessageCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -42,18 +42,55 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const { user: currentUser } = useAuth();
 
+  // Swipe gesture state
+  const panelRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchCurrentX = useRef<number | null>(null);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+    onOpenChange?.(false);
+  }, [onOpenChange]);
+
   // Force close when the map is tapped
   useEffect(() => {
     if (forceCloseSignal > 0) {
-      setIsOpen(false);
-      onOpenChange?.(false);
+      handleClose();
     }
-  }, [forceCloseSignal, onOpenChange]);
+  }, [forceCloseSignal, handleClose]);
 
   const handleToggle = () => {
     const newState = !isOpen;
     setIsOpen(newState);
     onOpenChange?.(newState);
+  };
+
+  // Swipe handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchCurrentX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    touchCurrentX.current = e.touches[0].clientX;
+    const diff = touchCurrentX.current - touchStartX.current;
+    // Only allow swiping to the right (positive diff)
+    if (diff > 0) {
+      setSwipeOffset(diff);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    const SWIPE_THRESHOLD = 80; // pixels needed to trigger close
+    if (swipeOffset > SWIPE_THRESHOLD) {
+      handleClose();
+    }
+    // Reset swipe state
+    touchStartX.current = null;
+    touchCurrentX.current = null;
+    setSwipeOffset(0);
   };
 
   const getTimeAgo = (updatedAt: string | null): string => {
@@ -153,21 +190,42 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
 
       {/* Panel */}
       <div
+        ref={panelRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          transform: isOpen ? `translateX(${swipeOffset}px)` : undefined,
+          opacity: isOpen ? Math.max(0.3, 1 - swipeOffset / 200) : 0,
+        }}
         className={cn(
-          'bg-card/95 backdrop-blur-sm border border-l-0 border-border rounded-r-lg shadow-lg transition-all duration-300 overflow-hidden',
-          isOpen ? 'w-64 opacity-100' : 'w-0 opacity-0'
+          'bg-card/95 backdrop-blur-sm border border-l-0 border-border rounded-r-lg shadow-lg transition-all overflow-hidden',
+          isOpen ? 'w-64' : 'w-0',
+          swipeOffset === 0 && 'duration-300'
         )}
       >
         {isOpen && (
           <div className="flex flex-col h-full max-h-[60vh]">
-            {/* Header */}
+            {/* Header with Close Button */}
             <div className="p-3 border-b border-border">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="relative">
-                  <div className="w-2.5 h-2.5 rounded-full bg-safe" />
-                  <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-safe animate-ping opacity-75" />
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <div className="w-2.5 h-2.5 rounded-full bg-safe" />
+                    <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-safe animate-ping opacity-75" />
+                  </div>
+                  <span className="font-semibold text-sm">{users.length} usuarios activos</span>
                 </div>
-                <span className="font-semibold text-sm">{users.length} usuarios activos</span>
+                {/* Close Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 -mr-1 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={handleClose}
+                  aria-label="Cerrar panel"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
               <div className="flex gap-2 text-[10px] text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1">
@@ -187,6 +245,10 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                   {familiarCount} Familiar
                 </span>
               </div>
+              {/* Swipe hint for mobile */}
+              <p className="text-[10px] text-muted-foreground mt-2 md:hidden text-center">
+                ← Desliza para cerrar
+              </p>
             </div>
 
             {/* User List */}
