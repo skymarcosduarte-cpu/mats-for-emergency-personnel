@@ -9,6 +9,7 @@ import { MapControlsMenu } from '@/components/MapControlsMenu';
 import { ImOkButton } from '@/components/ImOkButton';
 import { useLocation } from '@/hooks/useLocation';
 import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders, usePanicEvents, useActiveResponders } from '@/hooks/useRealtime';
+import { useActiveTrips } from '@/hooks/useActiveTrips';
 import { useEmergencyResponse } from '@/hooks/useEmergencyResponse';
 import { usePanicResponse } from '@/hooks/usePanicResponse';
 import { usePOIs, type POI } from '@/hooks/usePOIs';
@@ -1066,6 +1067,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   const { providers: medicalProviders } = useMedicalProviders();
   const { events: panicEvents, resolveEvent } = usePanicEvents();
   const { responders: activeResponders } = useActiveResponders();
+  const { trips: activeTrips } = useActiveTrips();
   const { startResponding, stopResponding, markAsArrived, markAsResolved, updateTransportMode } = useEmergencyResponse();
   const { 
     startResponding: startPanicResponding, 
@@ -1622,6 +1624,162 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       }
     });
   }, [locations, mapReady]);
+
+  // Draw community active trips routes (for trips without realtime location)
+  const communityTripsRoutesRef = useRef<Map<string, L.Polyline>>(new Map());
+  
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady) return;
+    const map = mapInstanceRef.current;
+
+    // Get user IDs that already have realtime transit routes displayed
+    const usersWithRealtimeTransit = new Set(
+      locations.filter(loc => loc.is_in_transit).map(loc => loc.user_id)
+    );
+
+    // Filter active trips that don't have realtime location and have both origin/destination coords
+    const tripsToShow = activeTrips.filter(trip => 
+      !usersWithRealtimeTransit.has(trip.user_id) &&
+      trip.origin_lat && trip.origin_lng &&
+      trip.destination_lat && trip.destination_lng
+    );
+
+    // Remove old community trip routes
+    communityTripsRoutesRef.current.forEach((polyline, key) => {
+      if (!tripsToShow.find(t => `community-trip-${t.id}` === key)) {
+        map.removeLayer(polyline);
+        communityTripsRoutesRef.current.delete(key);
+        // Remove associated markers
+        const originKey = `${key}-origin`;
+        const destKey = `${key}-dest`;
+        if (markersRef.current.has(originKey)) {
+          map.removeLayer(markersRef.current.get(originKey)!);
+          markersRef.current.delete(originKey);
+        }
+        if (markersRef.current.has(destKey)) {
+          map.removeLayer(markersRef.current.get(destKey)!);
+          markersRef.current.delete(destKey);
+        }
+      }
+    });
+
+    // Add/update community trip routes
+    tripsToShow.forEach((trip) => {
+      const key = `community-trip-${trip.id}`;
+      const existingRoute = communityTripsRoutesRef.current.get(key);
+      const existingOriginMarker = markersRef.current.get(`${key}-origin`);
+      const existingDestMarker = markersRef.current.get(`${key}-dest`);
+
+      const originPos: [number, number] = [trip.origin_lat!, trip.origin_lng!];
+      const destPos: [number, number] = [trip.destination_lat!, trip.destination_lng!];
+      const routePoints: [number, number][] = [originPos, destPos];
+
+      // Create or update route polyline
+      if (existingRoute) {
+        existingRoute.setLatLngs(routePoints);
+      } else {
+        const polyline = L.polyline(routePoints, {
+          color: '#f59e0b',
+          weight: 3,
+          opacity: 0.5,
+          dashArray: '8, 12',
+          lineCap: 'round',
+        }).addTo(map);
+        communityTripsRoutesRef.current.set(key, polyline);
+      }
+
+      const displayName = trip.nickname || 'Usuario';
+      const transitType = trip.transit_type === 'FLIGHT' ? '✈️' : '🚗';
+      const etaText = new Date(trip.eta).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+      // Add origin marker if not exists
+      if (!existingOriginMarker) {
+        const originMarker = L.marker(originPos, {
+          icon: L.divIcon({
+            className: 'community-trip-origin-marker',
+            html: `
+              <div style="
+                width: 18px;
+                height: 18px;
+                background: #22c55e;
+                border: 2px solid #fff;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                opacity: 0.8;
+              ">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
+                  <circle cx="12" cy="12" r="6"/>
+                </svg>
+              </div>
+            `,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9],
+          }),
+          zIndexOffset: 80,
+        }).addTo(map);
+
+        originMarker.bindPopup(`
+          <div style="text-align: center; padding: 4px;">
+            <div style="font-size: 11px; font-weight: 600; color: #22c55e;">🚀 Origen</div>
+            <div style="font-size: 13px; font-weight: 500; margin-top: 2px;">${sanitize(trip.origin)}</div>
+            <div style="font-size: 10px; color: #666; margin-top: 2px;">
+              ${transitType} Viaje de ${sanitize(displayName)}
+            </div>
+          </div>
+        `);
+
+        markersRef.current.set(`${key}-origin`, originMarker);
+      }
+
+      // Add destination marker if not exists
+      if (!existingDestMarker) {
+        const destMarker = L.marker(destPos, {
+          icon: L.divIcon({
+            className: 'community-trip-dest-marker',
+            html: `
+              <div style="
+                width: 22px;
+                height: 22px;
+                background: #f59e0b;
+                border: 2px solid #fff;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                opacity: 0.9;
+              ">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/>
+                  <circle cx="12" cy="10" r="2" fill="#fff"/>
+                </svg>
+              </div>
+            `,
+            iconSize: [22, 22],
+            iconAnchor: [11, 11],
+          }),
+          zIndexOffset: 85,
+        }).addTo(map);
+
+        destMarker.bindPopup(`
+          <div style="text-align: center; padding: 4px;">
+            <div style="font-size: 11px; font-weight: 600; color: #f59e0b;">📍 Destino</div>
+            <div style="font-size: 13px; font-weight: 500; margin-top: 2px;">${sanitize(trip.destination)}</div>
+            <div style="font-size: 10px; color: #f59e0b; margin-top: 2px;">ETA: ${etaText}</div>
+            <div style="font-size: 10px; color: #666; margin-top: 2px;">
+              ${transitType} Viaje de ${sanitize(displayName)}
+            </div>
+            ${trip.plates ? `<div style="font-size: 9px; color: #888; margin-top: 2px;">Placas: ${sanitize(trip.plates)}</div>` : ''}
+          </div>
+        `);
+
+        markersRef.current.set(`${key}-dest`, destMarker);
+      }
+    });
+  }, [activeTrips, locations, mapReady]);
 
   // Update help 14 markers - clicking opens detail modal
   useEffect(() => {
