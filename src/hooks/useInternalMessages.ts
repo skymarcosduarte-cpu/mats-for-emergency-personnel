@@ -70,6 +70,25 @@ export const useInternalMessages = () => {
   const fetchInProgressRef = useRef(false);
   const lastFetchRef = useRef(0);
   const userNamesMapRef = useRef<Map<string, string | null>>(new Map());
+  
+  // Muted state - persisted in localStorage
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('chat_notifications_muted') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  
+  const toggleMute = useCallback(() => {
+    setIsMuted(prev => {
+      const newValue = !prev;
+      try {
+        localStorage.setItem('chat_notifications_muted', String(newValue));
+      } catch {}
+      return newValue;
+    });
+  }, []);
 
   // Keep latest messages without changing callback identities (prevents effect loops)
   const messagesRef = useRef<InternalMessage[]>([]);
@@ -484,9 +503,12 @@ export const useInternalMessages = () => {
               }
             });
 
-            // Play notification sound and vibration
-            playMessageNotification();
-            triggerMessageVibration();
+            // Play notification sound and vibration (if not muted)
+            const muted = localStorage.getItem('chat_notifications_muted') === 'true';
+            if (!muted) {
+              playMessageNotification();
+              triggerMessageVibration();
+            }
             
             // Get sender name for notification
             let senderName = senderNamesCache.current.get(newMessage.sender_id);
@@ -579,6 +601,8 @@ export const useInternalMessages = () => {
     lastUnreadSender,
     bannerDismissed,
     dismissBanner,
+    isMuted,
+    toggleMute,
     sendMessage,
     deleteMessage,
     clearConversation,
