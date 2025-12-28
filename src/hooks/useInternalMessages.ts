@@ -258,21 +258,27 @@ export const useInternalMessagesStore = () => {
         return prev;
       });
 
-      // Send broadcast notification (fire and forget)
-      supabase
-        .from('profiles')
-        .select('nickname, full_name')
-        .eq('id', user.id)
-        .single()
-        .then(({ data: profileData }) => {
+      // Send broadcast notification (fire and forget) - wrapped in setTimeout to prevent blocking
+      setTimeout(async () => {
+        try {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('nickname, full_name')
+            .eq('id', user.id)
+            .single();
+          
           const senderName = profileData?.nickname || profileData?.full_name || 'Usuario';
           const notificationChannel = supabase.channel(`user-notifications:${receiverId}`);
-          notificationChannel.send({
+          await notificationChannel.send({
             type: 'broadcast',
             event: 'new_message',
             payload: { senderName, messagePreview: displayMessage.substring(0, 100), senderId: user.id }
-          }).finally(() => supabase.removeChannel(notificationChannel));
-        });
+          });
+          supabase.removeChannel(notificationChannel);
+        } catch {
+          // Ignore errors for background notification
+        }
+      }, 0);
 
       return true;
     } catch (err) {
@@ -446,14 +452,14 @@ export const useInternalMessagesStore = () => {
     }
   }, [user?.id]);
 
-  // Get messages for a specific conversation
+  // Get messages for a specific conversation - uses ref to prevent callback identity changes
   const getConversationMessages = useCallback((otherUserId: string): InternalMessage[] => {
     if (!user?.id) return [];
-    return messages.filter(
+    return messagesRef.current.filter(
       m => (m.sender_id === user.id && m.receiver_id === otherUserId) ||
            (m.sender_id === otherUserId && m.receiver_id === user.id)
     );
-  }, [user?.id, messages]);
+  }, [user?.id]);
 
   // Subscribe to realtime updates
   useEffect(() => {
