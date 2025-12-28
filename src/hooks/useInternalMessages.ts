@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { playMessageNotification, triggerMessageVibration } from '@/lib/alertSound';
@@ -58,7 +58,7 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
   return false;
 };
 
-export const useInternalMessages = () => {
+export const useInternalMessagesStore = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<InternalMessage[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -611,3 +611,16 @@ export const useInternalMessages = () => {
     refetch: () => fetchData(true)
   };
 };
+
+export type InternalMessagesStore = ReturnType<typeof useInternalMessagesStore>;
+
+export const InternalMessagesContext = createContext<InternalMessagesStore | null>(null);
+
+export const useInternalMessages = (): InternalMessagesStore => {
+  const ctx = useContext(InternalMessagesContext);
+  if (!ctx) {
+    throw new Error('useInternalMessages must be used within InternalMessagesProvider');
+  }
+  return ctx;
+};
+

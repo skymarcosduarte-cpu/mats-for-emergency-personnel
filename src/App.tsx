@@ -47,11 +47,11 @@ import { useBackgroundSync } from '@/hooks/useBackgroundSync';
 import { useOverdueTrips } from '@/hooks/useOverdueTrips';
 import { useEmergencyNotification } from '@/hooks/useEmergencyNotification';
 import { useInternalMessages } from '@/hooks/useInternalMessages';
+import { InternalMessagesProvider } from '@/providers/InternalMessagesProvider';
 import { useNewUserNotification } from '@/hooks/useNewUserNotification';
 import { useWebPushSubscription } from '@/hooks/useWebPushSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { UserRole, USGSEarthquake, PanicType } from '@/types';
 
 const queryClient = new QueryClient();
 
@@ -383,9 +383,15 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 
   return (
     <div className="min-h-screen min-h-dvh bg-background flex flex-col overflow-x-hidden">
-      <AppHeader onPanicClick={() => setPanicOpen(true)} />
-      <QuakeDamageBanner />
-      <ActiveAlertBanner 
+      <AppHeader
+        onPanicClick={() => setPanicOpen(true)}
+        unreadMessageCount={unreadMessageCount}
+        onOpenMessages={() => {
+          setMessagingUserId(null);
+          setMessagingUserName(null);
+          setMessagingOpen(true);
+        }}
+      />
         testAlert={testAlert} 
         onClearTestAlert={clearTestAlert} 
         refreshTrigger={alertRefreshTrigger}
@@ -506,13 +512,15 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/install" element={<InstallPage />} />
-          <Route path="/" element={<AppContent />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <InternalMessagesProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/install" element={<InstallPage />} />
+            <Route path="/" element={<AppContent />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </InternalMessagesProvider>
       <Toaster />
       <Sonner />
     </TooltipProvider>

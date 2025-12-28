@@ -1,11 +1,9 @@
 import React, { useRef, useCallback, useState } from 'react';
 import { MatsLogo } from './MatsLogo';
 import { ActiveUsersIndicator } from './ActiveUsersIndicator';
-import { InternalMessaging } from './InternalMessaging';
 import { AlertTriangle, Phone, MessageCircle } from 'lucide-react';
 import { playUrgentSound } from '@/lib/alertSound';
 import { toast } from 'sonner';
-import { useInternalMessages } from '@/hooks/useInternalMessages';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,17 +17,20 @@ import {
 
 interface AppHeaderProps {
   onPanicClick: () => void;
+  unreadMessageCount: number;
+  onOpenMessages: () => void;
 }
 
-export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
+export const AppHeader: React.FC<AppHeaderProps> = ({
+  onPanicClick,
+  unreadMessageCount,
+  onOpenMessages,
+}) => {
   const lastActivatedAtRef = useRef(0);
   const suppressClickRef = useRef(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [showMessages, setShowMessages] = useState(false);
-  
-  // Get unread message count
-  const { unreadCount } = useInternalMessages();
+
 
   const triggerPanic = useCallback(() => {
     // Prevent double-triggers within 500ms
@@ -143,14 +144,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
         <div className="flex items-center gap-2">
           {/* Messages button with badge */}
           <button
-            onClick={() => setShowMessages(true)}
+            onClick={onOpenMessages}
             className="relative p-2 rounded-full hover:bg-muted/50 transition-colors"
             aria-label="Mensajes internos"
           >
             <MessageCircle className="w-5 h-5 text-foreground" />
-            {unreadCount > 0 && (
+            {unreadMessageCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                {unreadCount > 9 ? '9+' : unreadCount}
+                {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
               </span>
             )}
           </button>
@@ -214,13 +215,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onPanicClick }) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Internal Messages Modal */}
-      {showMessages && (
-        <InternalMessaging 
-          isOpen={showMessages} 
-          onClose={() => setShowMessages(false)} 
-        />
-      )}
 
     </>
   );
