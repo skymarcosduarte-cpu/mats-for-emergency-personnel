@@ -30,7 +30,7 @@ import { useLocation, getGoogleMapsLink, calculateDistance, formatDistance } fro
 import { useTripPositionHistory } from '@/hooks/useTripPositionHistory';
 import { useDynamicEta, formatEtaInfo } from '@/hooks/useDynamicEta';
 import { useRoadReports } from '@/hooks/useRealtime';
-import { useActiveTrips } from '@/hooks/useActiveTrips';
+import { useActiveTrips, type ActiveTrip } from '@/hooks/useActiveTrips';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { TransitType, ReportCategory, ReportSeverity, UserRole } from '@/types';
@@ -137,6 +137,9 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   // Map display state
   const [showRouteMapTripId, setShowRouteMapTripId] = useState<string | null>(null);
 
+  // Community trip map dialog state
+  const [selectedCommunityTrip, setSelectedCommunityTrip] = useState<ActiveTrip | null>(null);
+
   const { position, getCurrentPosition, startWatching, stopWatching, watching, loading: locationLoading, error: locationError } = useLocation({ autoWatch: false });
   const { reports, refetch: refetchReports } = useRoadReports();
   const { trips: communityTrips, loading: communityTripsLoading } = useActiveTrips();
@@ -147,9 +150,9 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   }, [myTrips]);
   
   // Position history hook for the active trip
-  const { 
-    history: positionHistory, 
-    recordPosition, 
+  const {
+    history: positionHistory,
+    recordPosition,
     getRouteCoordinates,
     positionCount,
     fetchHistory: fetchPositionHistory,
@@ -158,6 +161,17 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     userId: currentUserId,
     minDistanceMeters: 50,
     minIntervalMs: 15000, // Record every 15 seconds if moved 50m+
+  });
+
+  // Position history for selected community trip (read-only fetch)
+  const {
+    loading: communityRouteLoading,
+    getRouteCoordinates: getCommunityRouteCoordinates,
+  } = useTripPositionHistory({
+    tripId: selectedCommunityTrip?.id || null,
+    userId: currentUserId,
+    minDistanceMeters: 0,
+    minIntervalMs: 0,
   });
   
   // Dynamic ETA calculation based on GPS position
@@ -1315,11 +1329,11 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                 <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
                                   <span className="flex items-center gap-1">
                                     <Clock className="w-3 h-3" />
-                                    ETA: {etaDate.toLocaleString('es-MX', { 
-                                      day: 'numeric', 
-                                      month: 'short', 
-                                      hour: '2-digit', 
-                                      minute: '2-digit' 
+                                    ETA: {etaDate.toLocaleString('es-MX', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
                                     })}
                                   </span>
                                   {trip.plates && (
@@ -1335,6 +1349,18 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                   </div>
                                 )}
                               </div>
+                            </div>
+
+                            <div className="mt-3">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full text-xs gap-2"
+                                onClick={() => setSelectedCommunityTrip(trip)}
+                              >
+                                <Map className="w-3.5 h-3.5" />
+                                Ver en mapa
+                              </Button>
                             </div>
                           </CardContent>
                         </Card>
@@ -2069,6 +2095,47 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Community Trip Map Dialog */}
+      {selectedCommunityTrip && (
+        <Dialog open={true} onOpenChange={(open) => !open && setSelectedCommunityTrip(null)}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-auto bg-card">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Map className="w-5 h-5 text-primary" />
+                Viaje de {selectedCommunityTrip.nickname || 'Miembro'}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="relative">
+                {communityRouteLoading && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-muted/80 rounded-lg">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                )}
+                <TripRouteMap
+                  routeCoordinates={getCommunityRouteCoordinates()}
+                  originCoords={selectedCommunityTrip.origin_lat && selectedCommunityTrip.origin_lng ? { lat: selectedCommunityTrip.origin_lat, lng: selectedCommunityTrip.origin_lng } : null}
+                  destinationCoords={selectedCommunityTrip.destination_lat && selectedCommunityTrip.destination_lng ? { lat: selectedCommunityTrip.destination_lat, lng: selectedCommunityTrip.destination_lng } : null}
+                  currentPosition={selectedCommunityTrip.current_lat && selectedCommunityTrip.current_lng ? { lat: selectedCommunityTrip.current_lat, lng: selectedCommunityTrip.current_lng } : null}
+                  originName={selectedCommunityTrip.origin}
+                  destinationName={selectedCommunityTrip.destination}
+                  height="280px"
+                />
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setSelectedCommunityTrip(null)}
+              >
+                Cerrar
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* ETA Update Dialog */}
       <Dialog open={!!editingEtaTripId} onOpenChange={(open) => !open && setEditingEtaTripId(null)}>
