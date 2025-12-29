@@ -599,7 +599,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         <TabsContent value="weather" className="space-y-3 mt-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-muted-foreground">
-              Alertas de clima severo en un radio de 100 millas
+              Alertas Climatológicas NOAA
             </p>
             <Button
               variant="ghost"
@@ -649,7 +649,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                       <CloudRain className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-xs font-bold",
                           alert.severity === 'Extreme' && "bg-destructive text-destructive-foreground",
@@ -660,6 +660,9 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                            alert.severity === 'Severe' ? 'SEVERO' : 
                            alert.severity === 'Moderate' ? 'MODERADO' : alert.severity}
                         </span>
+                        <Badge variant="outline" className="text-xs">
+                          {alert.source || 'NOAA'}
+                        </Badge>
                         {alert.distanceMiles !== null && (
                           <span className="text-xs text-primary font-medium flex items-center gap-1">
                             <Navigation className="w-3 h-3" />
