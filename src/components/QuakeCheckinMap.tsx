@@ -20,23 +20,12 @@ interface QuakeCheckinMapProps {
   className?: string;
 }
 
-// Get color based on intensity (1-10)
-const getIntensityColor = (intensity: number): string => {
-  if (intensity <= 2) return '#22c55e'; // green - barely felt
-  if (intensity <= 4) return '#84cc16'; // lime - light
-  if (intensity <= 5) return '#eab308'; // yellow - moderate
-  if (intensity <= 6) return '#f97316'; // orange - strong
-  if (intensity <= 7) return '#ef4444'; // red - very strong
-  if (intensity <= 8) return '#dc2626'; // darker red - severe
-  return '#7c2d12'; // dark red/brown - violent/extreme
-};
-
-// Get status icon color
+// Get color based on damage status only
 const getStatusColor = (status: string): string => {
   switch (status) {
-    case 'OK': return '#22c55e';
-    case 'UNSURE': return '#eab308';
-    case 'DAMAGE': return '#ef4444';
+    case 'OK': return '#22c55e'; // green - all good
+    case 'UNSURE': return '#eab308'; // yellow - uncertain
+    case 'DAMAGE': return '#ef4444'; // red - damage reported
     default: return '#6b7280';
   }
 };
@@ -112,18 +101,19 @@ export const QuakeCheckinMap: React.FC<QuakeCheckinMapProps> = ({
 
     // Add checkin markers
     checkins.forEach((checkin) => {
-      const color = getIntensityColor(checkin.intensity);
       const statusColor = getStatusColor(checkin.damage_report);
+      const statusIcon = checkin.damage_report === 'OK' ? '✓' : 
+                         checkin.damage_report === 'UNSURE' ? '?' : '⚠';
       
       const icon = L.divIcon({
         className: 'checkin-marker',
         html: `
           <div class="relative group cursor-pointer">
             <div 
-              class="w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 transition-transform hover:scale-110"
-              style="background-color: ${color}; border-color: ${statusColor};"
+              class="w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white transition-transform hover:scale-110"
+              style="background-color: ${statusColor};"
             >
-              <span class="text-white font-bold text-xs">${checkin.intensity}</span>
+              <span class="text-white font-bold text-sm">${statusIcon}</span>
             </div>
             ${checkin.damage_report === 'DAMAGE' ? `
               <div class="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full border border-white animate-pulse"></div>
@@ -147,8 +137,7 @@ export const QuakeCheckinMap: React.FC<QuakeCheckinMapProps> = ({
         locale: es 
       });
       marker.bindTooltip(`
-        Intensidad: ${checkin.intensity}/10<br/>
-        Estado: ${checkin.damage_report === 'OK' ? 'Bien' : checkin.damage_report === 'UNSURE' ? 'No seguro' : 'Daños'}<br/>
+        Estado: ${checkin.damage_report === 'OK' ? 'Todo bien' : checkin.damage_report === 'UNSURE' ? 'No seguro' : 'Reporta daños'}<br/>
         ${timeAgo}
       `, { direction: 'top' });
     });
@@ -173,11 +162,6 @@ export const QuakeCheckinMap: React.FC<QuakeCheckinMapProps> = ({
           <span className="text-sm font-medium">
             {stats ? `${stats.total} reportes` : 'Sin reportes'}
           </span>
-          {stats && (
-            <Badge variant="outline" className="text-xs">
-              Prom: {stats.avgIntensity.toFixed(1)}/10
-            </Badge>
-          )}
         </div>
         <Button
           variant="ghost"
@@ -223,34 +207,42 @@ export const QuakeCheckinMap: React.FC<QuakeCheckinMapProps> = ({
         <div ref={mapContainerRef} className="absolute inset-0" />
       </div>
 
-      {/* Intensity legend */}
-      <div className="flex items-center gap-2 overflow-x-auto py-1">
-        <span className="text-xs text-muted-foreground shrink-0">Intensidad:</span>
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
-          <div
-            key={i}
-            className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-            style={{ backgroundColor: getIntensityColor(i) }}
-            title={`Intensidad ${i}`}
-          >
-            {i}
+      {/* Status legend */}
+      <div className="flex items-center gap-3 py-1">
+        <span className="text-xs text-muted-foreground shrink-0">Estado:</span>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded-full bg-safe flex items-center justify-center">
+            <span className="text-white text-[10px] font-bold">✓</span>
           </div>
-        ))}
+          <span className="text-xs">Bien</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded-full bg-warning flex items-center justify-center">
+            <span className="text-white text-[10px] font-bold">?</span>
+          </div>
+          <span className="text-xs">No seguro</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded-full bg-destructive flex items-center justify-center">
+            <span className="text-white text-[10px] font-bold">⚠</span>
+          </div>
+          <span className="text-xs">Daños</span>
+        </div>
       </div>
 
       {/* Selected checkin details */}
       {selectedCheckin && (
         <div className="bg-muted/50 rounded-lg p-3 text-sm">
           <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                style={{ backgroundColor: getIntensityColor(selectedCheckin.intensity) }}
-              >
-                {selectedCheckin.intensity}
-              </div>
-              <span className="font-medium">Intensidad {selectedCheckin.intensity}/10</span>
-            </div>
+            <Badge
+              variant={
+                selectedCheckin.damage_report === 'OK' ? 'default' :
+                selectedCheckin.damage_report === 'UNSURE' ? 'secondary' : 'destructive'
+              }
+            >
+              {selectedCheckin.damage_report === 'OK' ? 'Todo bien' :
+               selectedCheckin.damage_report === 'UNSURE' ? 'No estoy seguro' : 'Reporta daños'}
+            </Badge>
             <Button
               variant="ghost"
               size="sm"
@@ -261,16 +253,6 @@ export const QuakeCheckinMap: React.FC<QuakeCheckinMapProps> = ({
             </Button>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Badge
-              variant={
-                selectedCheckin.damage_report === 'OK' ? 'default' :
-                selectedCheckin.damage_report === 'UNSURE' ? 'secondary' : 'destructive'
-              }
-              className="text-xs"
-            >
-              {selectedCheckin.damage_report === 'OK' ? 'Estoy bien' :
-               selectedCheckin.damage_report === 'UNSURE' ? 'No estoy seguro' : 'Reporto daños'}
-            </Badge>
             <span className="text-xs">
               {formatDistanceToNow(new Date(selectedCheckin.created_at), { 
                 addSuffix: true, 
