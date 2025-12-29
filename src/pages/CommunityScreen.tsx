@@ -964,8 +964,8 @@ export const CommunityScreen: React.FC = () => {
                 )}
               </div>
               
-              {/* Share button */}
-              {selectedTrip.share_token && (
+              {/* Share button - only visible to trip creator */}
+              {selectedTrip.share_token && selectedTrip.user_id === user?.id && (
                 <div className="flex gap-2">
                   <Button 
                     variant="secondary"
