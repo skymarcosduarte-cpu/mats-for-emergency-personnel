@@ -48,6 +48,7 @@ import { useTestMode } from '@/hooks/useTestMode';
 import { useBackgroundSync } from '@/hooks/useBackgroundSync';
 import { useOverdueTrips } from '@/hooks/useOverdueTrips';
 import { useDelayedTripChecker } from '@/hooks/useDelayedTripChecker';
+import { useInactiveDelayedTripsAlert } from '@/hooks/useInactiveDelayedTripsAlert';
 import { useEmergencyNotification } from '@/hooks/useEmergencyNotification';
 import { useInternalMessages } from '@/hooks/useInternalMessages';
 import { InternalMessagesProvider } from '@/providers/InternalMessagesProvider';
@@ -243,6 +244,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   
   // Check for delayed trips and send push notifications - calls edge function
   useDelayedTripChecker();
+  
+  // Alert when delayed travelers haven't updated location in 30+ minutes (excludes flights)
+  useInactiveDelayedTripsAlert();
   
   // Emergency contact notification
   const { notifyEmergencyContacts } = useEmergencyNotification();
