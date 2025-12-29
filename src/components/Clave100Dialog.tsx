@@ -453,7 +453,7 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
                 htmlFor="confirm-emergency" 
                 className="text-sm cursor-pointer select-none"
               >
-                Confirmo que esta es una <strong>EMERGENCIA REAL</strong> y entiendo que mi mensaje será enviado a todos los usuarios activos de la comunidad.
+                Confirmo que esta es una <strong>EMERGENCIA MAYOR</strong> (desastre o siniestro). Entiendo que para emergencias personales debo usar <strong>Alertas</strong>, y que este mensaje será enviado a <strong>TODOS</strong> los usuarios activos de la comunidad.
               </label>
             </div>
 
