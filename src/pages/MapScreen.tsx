@@ -76,17 +76,41 @@ const getPrimarySpecialtyIcon = (specialties: string[] | null): { emoji: string;
   return SPECIALTY_ICONS[specialties[0]] || null;
 };
 
-// Specialist icon with specialty emoji badge
+// Specialist icon with specialty emoji badge - with optional highlight effect
 const createSpecialistIcon = (
   primarySpecialty: { emoji: string; color: string },
   isCurrentUser: boolean = false,
   hasFirstAidKit: boolean = false,
-  updatedAgo?: string
+  updatedAgo?: string,
+  isHighlighted: boolean = false
 ) => L.divIcon({
-  className: `mats-marker specialist-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
+  className: `mats-marker specialist-marker ${isCurrentUser ? 'current-user-marker' : ''} ${isHighlighted ? 'highlighted-marker' : ''}`,
   html: `
-    <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : (updatedAgo ? '48px' : '32px')};">
-      ${isCurrentUser ? `
+    <div style="position: relative; width: ${isHighlighted ? '40px' : '32px'}; height: ${isCurrentUser ? '48px' : (updatedAgo ? '56px' : (isHighlighted ? '40px' : '32px'))};">
+      ${isHighlighted ? `
+        <div style="
+          position: absolute;
+          top: ${isHighlighted ? '4px' : '0'};
+          left: ${isHighlighted ? '4px' : '0'};
+          width: 32px;
+          height: 32px;
+          background: ${primarySpecialty.color}50;
+          border-radius: 50%;
+          animation: pulse-highlight 1.2s ease-out infinite;
+        "></div>
+        <div style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 40px;
+          height: 40px;
+          border: 2px solid ${primarySpecialty.color};
+          border-radius: 50%;
+          animation: pulse-glow 1.5s ease-in-out infinite;
+          box-shadow: 0 0 15px ${primarySpecialty.color}80;
+        "></div>
+      ` : ''}
+      ${isCurrentUser && !isHighlighted ? `
         <div style="
           position: absolute;
           top: 0;
@@ -100,24 +124,25 @@ const createSpecialistIcon = (
       ` : ''}
       <div style="
         position: absolute;
-        top: 0;
-        left: 0;
+        top: ${isHighlighted ? '4px' : '0'};
+        left: ${isHighlighted ? '4px' : '0'};
         width: 32px;
         height: 32px;
         background: ${primarySpecialty.color};
-        border: 2px solid ${isCurrentUser ? '#fbbf24' : '#fff'};
+        border: 2px solid ${isCurrentUser ? '#fbbf24' : (isHighlighted ? primarySpecialty.color : '#fff')};
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : `0 2px 8px ${primarySpecialty.color}60`};
+        box-shadow: ${isHighlighted ? `0 0 20px ${primarySpecialty.color}90, 0 0 40px ${primarySpecialty.color}40` : (isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : `0 2px 8px ${primarySpecialty.color}60`)};
         font-size: 16px;
+        ${isHighlighted ? 'transform: scale(1);' : ''}
       ">${primarySpecialty.emoji}</div>
       ${hasFirstAidKit ? `
         <div style="
           position: absolute;
-          top: -4px;
-          right: -4px;
+          top: ${isHighlighted ? '0' : '-4px'};
+          right: ${isHighlighted ? '0' : '-4px'};
           width: 16px;
           height: 16px;
           background: #22c55e;
@@ -167,9 +192,9 @@ const createSpecialistIcon = (
       ` : ''}
     </div>
   `,
-  iconSize: [32, isCurrentUser ? 40 : (updatedAgo && !isCurrentUser ? 48 : 32)],
-  iconAnchor: [16, isCurrentUser ? 20 : (updatedAgo && !isCurrentUser ? 24 : 16)],
-  popupAnchor: [0, isCurrentUser ? -20 : (updatedAgo && !isCurrentUser ? -24 : -16)],
+  iconSize: [isHighlighted ? 40 : 32, isCurrentUser ? 48 : (updatedAgo && !isCurrentUser ? 56 : (isHighlighted ? 40 : 32))],
+  iconAnchor: [isHighlighted ? 20 : 16, isCurrentUser ? 24 : (updatedAgo && !isCurrentUser ? 28 : (isHighlighted ? 20 : 16))],
+  popupAnchor: [0, isCurrentUser ? -24 : (updatedAgo && !isCurrentUser ? -28 : (isHighlighted ? -20 : -16))],
 });
 
 // Star icon for FAMILIAR users (5-pointed star)
@@ -1535,6 +1560,15 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         50% { transform: scale(1.8); opacity: 0; }
         100% { transform: scale(1); opacity: 0; }
       }
+      @keyframes pulse-highlight {
+        0% { transform: scale(1); opacity: 0.6; }
+        50% { transform: scale(1.6); opacity: 0; }
+        100% { transform: scale(1); opacity: 0; }
+      }
+      @keyframes pulse-glow {
+        0%, 100% { opacity: 1; box-shadow: 0 0 15px currentColor; }
+        50% { opacity: 0.5; box-shadow: 0 0 25px currentColor; }
+      }
     `;
     document.head.appendChild(style);
 
@@ -1635,6 +1669,12 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const userSpecialties = (loc as any).specialties as string[] | null;
       const primarySpecialty = getPrimarySpecialtyIcon(userSpecialties);
       
+      // Check if user matches selected specialty filters (for highlight effect)
+      const isHighlighted = selectedSpecialtyFilters.length > 0 && 
+        userSpecialties && 
+        userSpecialties.length > 0 &&
+        selectedSpecialtyFilters.some(filter => userSpecialties.includes(filter));
+      
       // Calculate time since last update FIRST (needed for icon badge)
       let updatedAgo = '';
       if (loc.updated_at) {
@@ -1666,8 +1706,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         bgColor = '#f59e0b';
         badgeColor = '#f59e0b';
       } else if (primarySpecialty) {
-        // Use specialty-based icon if user has a specialty
-        icon = createSpecialistIcon(primarySpecialty, isMe, hasFirstAidKit, isMe ? undefined : updatedAgo);
+        // Use specialty-based icon if user has a specialty - with highlight if filtered
+        icon = createSpecialistIcon(primarySpecialty, isMe, hasFirstAidKit, isMe ? undefined : updatedAgo, isHighlighted);
         roleLabel = userSpecialties![0]; // First specialty as label
         bgColor = primarySpecialty.color;
         badgeColor = primarySpecialty.color;
