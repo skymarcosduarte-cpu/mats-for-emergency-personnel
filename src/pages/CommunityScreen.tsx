@@ -70,7 +70,8 @@ export const CommunityScreen: React.FC = () => {
     loading: notificationsLoading, 
     markAsRead, 
     markAllAsRead, 
-    deleteNotification 
+    deleteNotification,
+    deleteAllRead,
   } = useNotifications();
 
   const {
@@ -602,15 +603,28 @@ export const CommunityScreen: React.FC = () => {
             {notifications.length > 0 && (
               <div className="flex justify-between items-center">
                 <h2 className="text-sm font-medium text-muted-foreground">Notificaciones</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={markAllAsRead}
-                  className="text-xs"
-                >
-                  <Check className="w-3 h-3 mr-1" />
-                  Marcar todo leído
-                </Button>
+                <div className="flex gap-1">
+                  {notifications.some(n => n.read) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={deleteAllRead}
+                      className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      Borrar leídas
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={markAllAsRead}
+                    className="text-xs"
+                  >
+                    <Check className="w-3 h-3 mr-1" />
+                    Marcar todo leído
+                  </Button>
+                </div>
               </div>
             )}
             

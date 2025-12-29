@@ -95,6 +95,12 @@ serve(async (req) => {
         notificationType = 'trip_arrived';
         break;
 
+      case 'arrived_delayed':
+        title = '✅ Llegó con retraso - Está bien';
+        message = `${userName} llegó a ${destination} con ${overdueMinutes} minutos de retraso pero está bien.`;
+        notificationType = 'trip_arrived_delayed';
+        break;
+
       case 'overdue':
         title = '⚠️ Viaje atrasado';
         message = `${userName} debía llegar a ${destination} hace ${overdueMinutes} minutos. No ha confirmado su llegada.`;
