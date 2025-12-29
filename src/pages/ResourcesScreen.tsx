@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,9 @@ import {
   AlertTriangle,
   BookOpen,
   X,
-  ChevronDown
+  ChevronDown,
+  Mic,
+  MicOff
 } from 'lucide-react';
 import {
   Select,
@@ -29,10 +31,12 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { useResources, AudienceFilter, LevelFilter } from '@/hooks/useResources';
+import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 import { ResourceCard } from '@/components/ResourceCard';
 import { ResourceDetailModal } from '@/components/ResourceDetailModal';
 import { getCategoryLabel } from '@/lib/resourcesCache';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function ResourcesScreen() {
   const {
@@ -62,6 +66,20 @@ export default function ResourcesScreen() {
 
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Voice search
+  const handleVoiceResult = useCallback((transcript: string) => {
+    setSearchQuery(transcript);
+    toast.success(`Buscando: "${transcript}"`);
+  }, [setSearchQuery]);
+
+  const { 
+    isListening, 
+    isSupported: isVoiceSupported, 
+    startListening, 
+    stopListening,
+    transcript: voiceTranscript 
+  } = useVoiceSearch({ onResult: handleVoiceResult });
 
   const selectedCard = selectedCardId ? getCard(selectedCardId) : null;
 
@@ -141,23 +159,55 @@ export default function ResourcesScreen() {
           </Badge>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar recursos..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-9"
-          />
-          {searchQuery && (
+        {/* Search with Voice */}
+        <div className="relative flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={isListening ? "Escuchando..." : "Buscar recursos..."}
+              value={isListening ? voiceTranscript : searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={cn(
+                "pl-9 pr-9",
+                isListening && "border-primary animate-pulse"
+              )}
+              readOnly={isListening}
+            />
+            {searchQuery && !isListening && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                onClick={() => setSearchQuery('')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
+          {/* Voice Search Button */}
+          {isVoiceSupported && (
             <Button
-              variant="ghost"
+              variant={isListening ? "destructive" : "outline"}
               size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-              onClick={() => setSearchQuery('')}
+              className={cn(
+                "flex-shrink-0 relative",
+                isListening && "animate-pulse"
+              )}
+              onClick={isListening ? stopListening : startListening}
+              aria-label={isListening ? "Detener búsqueda por voz" : "Buscar por voz"}
             >
-              <X className="h-4 w-4" />
+              {isListening ? (
+                <>
+                  <MicOff className="h-4 w-4" />
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive"></span>
+                  </span>
+                </>
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
             </Button>
           )}
         </div>
