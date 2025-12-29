@@ -71,6 +71,18 @@ export const useInternalMessagesStore = () => {
   const lastFetchRef = useRef(0);
   const userNamesMapRef = useRef<Map<string, string | null>>(new Map());
   
+  // Clave 100 overlay state
+  const [clave100Alert, setClave100Alert] = useState<{
+    isVisible: boolean;
+    senderName: string;
+    senderId: string;
+    message: string;
+  } | null>(null);
+  
+  const dismissClave100 = useCallback(() => {
+    setClave100Alert(null);
+  }, []);
+  
   // Muted state - persisted in localStorage
   const [isMuted, setIsMuted] = useState<boolean>(() => {
     try {
@@ -548,6 +560,14 @@ export const useInternalMessagesStore = () => {
             );
             
             if (isClave100) {
+              // Show fullscreen overlay for Clave 100
+              setClave100Alert({
+                isVisible: true,
+                senderName,
+                senderId: newMessage.sender_id,
+                message: newMessage.message
+              });
+              
               toast.error(`🚨 CLAVE 100 de ${senderName}`, {
                 description: newMessage.message.substring(0, 100) + (newMessage.message.length > 100 ? '...' : ''),
                 duration: 15000,
@@ -636,7 +656,9 @@ export const useInternalMessagesStore = () => {
     clearConversation,
     markAsRead,
     getConversationMessages,
-    refetch: () => fetchData(true)
+    refetch: () => fetchData(true),
+    clave100Alert,
+    dismissClave100
   };
 };
 
