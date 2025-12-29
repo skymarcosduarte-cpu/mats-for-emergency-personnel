@@ -1031,6 +1031,8 @@ export type Database = {
           display_name: string | null
           has_ambulance: boolean | null
           has_first_aid_kit: boolean | null
+          has_k9_unit: boolean | null
+          has_rescue_unit: boolean | null
           heading: number | null
           is_in_transit: boolean | null
           is_online: boolean | null

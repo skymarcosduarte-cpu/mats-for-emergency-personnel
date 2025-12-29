@@ -23,6 +23,7 @@ interface UserLocation {
   has_first_aid_kit: boolean | null;
   has_ambulance: boolean | null;
   has_rescue_unit: boolean | null;
+  has_k9_unit: boolean | null;
   specialties: string[] | null;
   is_in_transit: boolean;
   transit_destination: string | null;
