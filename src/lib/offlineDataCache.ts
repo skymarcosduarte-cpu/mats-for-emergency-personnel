@@ -11,8 +11,8 @@ const EARTHQUAKE_CACHE_KEY = 'earthquakes';
 const ROAD_REPORTS_CACHE_KEY = 'road_reports';
 const LAST_SYNC_KEY = 'last_sync';
 
-// Cache expiry (30 minutes for earthquakes, 1 hour for reports)
-const EARTHQUAKE_CACHE_EXPIRY_MS = 30 * 60 * 1000;
+// Cache expiry (10 minutes for earthquakes for more frequent updates, 1 hour for reports)
+const EARTHQUAKE_CACHE_EXPIRY_MS = 10 * 60 * 1000;
 const REPORTS_CACHE_EXPIRY_MS = 60 * 60 * 1000;
 
 interface CacheEntry<T> {

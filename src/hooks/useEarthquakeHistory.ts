@@ -8,26 +8,75 @@ import { cacheEarthquakes, getCachedEarthquakes, isEarthquakeCacheFresh, updateL
 
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
 const SSN_FEED_URL = 'http://www.ssn.unam.mx/rss/ultimos-sismos.xml';
-// Use CORS proxy for SSN (HTTP only site)
-const SSN_PROXY_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(SSN_FEED_URL);
+
+// Multiple CORS proxies for fallback (some may be blocked on Android)
+const CORS_PROXIES = [
+  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
 
 export interface EarthquakeWithDistance extends USGSEarthquake {
   distanceKm: number | null;
   distanceMiles: number | null;
 }
 
+// Try fetching with multiple CORS proxies (fallback mechanism for Android)
+async function fetchWithCorsProxy(url: string): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let i = 0; i < CORS_PROXIES.length; i++) {
+    const proxyUrl = CORS_PROXIES[i](url);
+    try {
+      console.log(`[CORS] Trying proxy ${i + 1}/${CORS_PROXIES.length}...`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      
+      const response = await fetch(proxyUrl, { 
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/xml, text/xml, */*',
+        }
+      });
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        console.log(`[CORS] Proxy ${i + 1} succeeded`);
+        return response;
+      }
+      lastError = new Error(`Proxy ${i + 1} returned ${response.status}`);
+    } catch (err) {
+      console.warn(`[CORS] Proxy ${i + 1} failed:`, err);
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
+  }
+  
+  throw lastError || new Error('All CORS proxies failed');
+}
+
 // Parse SSN RSS feed and convert to USGSEarthquake format
 async function parseSSNFeed(): Promise<USGSEarthquake[]> {
   try {
-    console.log('[SSN] Fetching SSN feed via proxy...');
-    const response = await fetch(SSN_PROXY_URL);
-    if (!response.ok) {
-      throw new Error(`SSN fetch failed: ${response.status}`);
-    }
+    console.log('[SSN] Fetching SSN feed via CORS proxy...');
+    const response = await fetchWithCorsProxy(SSN_FEED_URL);
     const text = await response.text();
     console.log('[SSN] Received response, length:', text.length);
+    
+    // Validate that we got XML
+    if (!text.includes('<rss') && !text.includes('<item')) {
+      console.warn('[SSN] Response does not appear to be valid RSS XML');
+      return [];
+    }
+    
     const parser = new DOMParser();
     const xml = parser.parseFromString(text, 'text/xml');
+    
+    // Check for parse errors
+    const parseError = xml.querySelector('parsererror');
+    if (parseError) {
+      console.warn('[SSN] XML parse error:', parseError.textContent);
+      return [];
+    }
     
     const items = xml.querySelectorAll('item');
     const earthquakes: USGSEarthquake[] = [];
@@ -44,7 +93,6 @@ async function parseSSNFeed(): Promise<USGSEarthquake[]> {
         const mag = magMatch ? parseFloat(magMatch[1]) : 0;
         
         // Parse date and depth from description
-        // Format: "Fecha:2025-12-26 15:47:43 (Hora de México)<br>Lat/Lon: 17.527/-101.59<br>Profundidad: 19.9 km"
         const dateMatch = description.match(/Fecha:(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/);
         const depthMatch = description.match(/Profundidad:\s*([\d.]+)\s*km/);
         
@@ -213,32 +261,46 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
 
   // Initial fetch and set up refresh interval (only runs once)
   useEffect(() => {
+    console.log('[Earthquakes] Initial fetch...');
     fetchEarthquakes();
 
-    // Refresh every 5 minutes when online
+    // Refresh every 3 minutes when online (more frequent for better updates)
     const interval = setInterval(() => {
-      if (navigator.onLine) {
+      if (navigator.onLine && document.visibilityState === 'visible') {
+        console.log('[Earthquakes] Periodic refresh...');
         fetchEarthquakes();
       }
-    }, 5 * 60 * 1000);
+    }, 3 * 60 * 1000);
 
     // Listen for online/offline events
     const handleOnline = () => {
+      console.log('[Earthquakes] Back online, refreshing...');
       setIsOffline(false);
-      fetchEarthquakes();
+      fetchEarthquakes(true); // Force refresh when coming back online
     };
     
     const handleOffline = () => {
+      console.log('[Earthquakes] Went offline');
       setIsOffline(true);
+    };
+
+    // Refresh when app comes back to foreground (important for mobile)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        console.log('[Earthquakes] App visible again, checking for updates...');
+        fetchEarthquakes(); // Will check cache freshness automatically
+      }
     };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [fetchEarthquakes]);
 
