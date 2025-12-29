@@ -500,7 +500,9 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             <div className="flex items-center gap-1.5">
               <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-primary text-primary">USGS</Badge>
               <span className="text-muted-foreground">+</span>
-              <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-success text-success">SSN México</Badge>
+              <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-success text-success">SSN</Badge>
+              <span className="text-muted-foreground">+</span>
+              <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-amber-500 text-amber-500">EMSC</Badge>
             </div>
           </div>
 
