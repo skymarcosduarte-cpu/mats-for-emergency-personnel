@@ -1,7 +1,8 @@
 // Comprehensive Tutorial Component for COMUNIDAD EX SOS / M.A.T.S.
 // Full walkthrough of all app features with emphasis on emergency alerts
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import confetti from 'canvas-confetti';
 import { 
   AlertTriangle, 
   MapPin, 
@@ -670,6 +671,38 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
   }
   globalStep += currentStep + 1;
 
+  // Celebration confetti animation
+  const triggerCelebration = useCallback(() => {
+    // First burst
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#ff6b35', '#f7c94b', '#4ade80', '#3b82f6', '#a855f7'],
+    });
+
+    // Second burst after small delay
+    setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors: ['#ff6b35', '#f7c94b', '#4ade80'],
+      });
+    }, 150);
+
+    setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors: ['#3b82f6', '#a855f7', '#f7c94b'],
+      });
+    }, 300);
+  }, []);
+
   const handleNext = () => {
     if (currentStep < section.steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -677,8 +710,13 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
       setCurrentSection(prev => prev + 1);
       setCurrentStep(0);
     } else {
+      // Tutorial completed - trigger celebration!
+      triggerCelebration();
       localStorage.setItem('comprehensive-tutorial-complete', 'true');
-      onComplete();
+      // Small delay to let confetti show before closing
+      setTimeout(() => {
+        onComplete();
+      }, 800);
     }
   };
 
