@@ -671,6 +671,7 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [showTableOfContents, setShowTableOfContents] = useState(false);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  const [showDisclaimerError, setShowDisclaimerError] = useState(false);
 
   const section = TUTORIAL_SECTIONS[currentSection];
   const step = section.steps[currentStep];
@@ -895,17 +896,54 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
             {/* Disclaimer acceptance checkbox and button for final step */}
             {isLastStep && (
               <div className="space-y-4 mb-6">
-                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+                <motion.label 
+                  data-disclaimer-checkbox
+                  animate={showDisclaimerError ? { 
+                    x: [0, -10, 10, -10, 10, 0],
+                    transition: { duration: 0.5 }
+                  } : {}}
+                  className={cn(
+                    "flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 transition-all duration-300",
+                    showDisclaimerError 
+                      ? "border-destructive bg-destructive/10 shadow-[0_0_15px_rgba(239,68,68,0.3)]" 
+                      : disclaimerAccepted 
+                        ? "border-safe bg-safe/10"
+                        : "border-border hover:bg-muted/50"
+                  )}
+                  onClick={() => showDisclaimerError && setShowDisclaimerError(false)}
+                >
                   <input
                     type="checkbox"
                     checked={disclaimerAccepted}
-                    onChange={(e) => setDisclaimerAccepted(e.target.checked)}
-                    className="mt-0.5 w-5 h-5 rounded border-border text-primary focus:ring-primary"
+                    onChange={(e) => {
+                      setDisclaimerAccepted(e.target.checked);
+                      if (e.target.checked) setShowDisclaimerError(false);
+                    }}
+                    className={cn(
+                      "mt-0.5 w-5 h-5 rounded focus:ring-2",
+                      showDisclaimerError 
+                        ? "border-destructive text-destructive focus:ring-destructive" 
+                        : "border-border text-primary focus:ring-primary"
+                    )}
                   />
-                  <span className="text-sm text-foreground">
+                  <span className={cn(
+                    "text-sm",
+                    showDisclaimerError ? "text-destructive font-medium" : "text-foreground"
+                  )}>
                     He leído y acepto los términos de uso y la liberación de responsabilidad descritos anteriormente.
                   </span>
-                </label>
+                </motion.label>
+                
+                {showDisclaimerError && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-sm text-destructive font-medium flex items-center gap-2"
+                  >
+                    <AlertTriangle className="w-4 h-4" />
+                    Debes aceptar los términos para continuar
+                  </motion.p>
+                )}
                 
                 <Button 
                   size="lg" 
@@ -975,8 +1013,15 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
 
           {isLastStep ? (
             <Button 
-              onClick={handleNext}
-              disabled={!disclaimerAccepted}
+              onClick={() => {
+                if (!disclaimerAccepted) {
+                  setShowDisclaimerError(true);
+                  // Scroll to checkbox
+                  document.querySelector('[data-disclaimer-checkbox]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                  handleNext();
+                }
+              }}
               className={!disclaimerAccepted ? 'opacity-50' : ''}
             >
               <Check className="w-4 h-4 mr-1" />
