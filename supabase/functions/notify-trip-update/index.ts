@@ -101,6 +101,12 @@ serve(async (req) => {
         notificationType = 'trip_overdue';
         break;
 
+      case 'confirmed_safe':
+        title = '✅ Usuario confirmó estar bien';
+        message = `${userName} confirmó que está bien y sigue en camino a ${destination}.`;
+        notificationType = 'trip_confirmed_safe';
+        break;
+
       case 'cancelled':
         title = '🚫 Viaje cancelado';
         message = `${userName} ha cancelado su viaje a ${destination}.`;

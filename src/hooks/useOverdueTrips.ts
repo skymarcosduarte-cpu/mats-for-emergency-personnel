@@ -1,15 +1,27 @@
 // Hook for detecting overdue trips and sending notifications
-import { useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const OVERDUE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
 const CHECK_INTERVAL_MS = 60 * 1000; // Check every minute
 
+interface OverdueTrip {
+  id: string;
+  user_id: string;
+  origin: string;
+  destination: string;
+  eta: string;
+  overdueMinutes: number;
+}
+
 export function useOverdueTrips() {
+  const [overdueTrip, setOverdueTrip] = useState<OverdueTrip | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   const notifiedTripsRef = useRef<Set<string>>(new Set());
-  const contactsNotifiedRef = useRef<Set<string>>(new Set()); // Track trips where contacts were notified
+  const contactsNotifiedRef = useRef<Set<string>>(new Set());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const safeConfirmedRef = useRef<Set<string>>(new Set()); // Tracks trips where user confirmed safe
 
   // Notify emergency contacts about overdue trip
   const notifyContactsOverdue = useCallback(async (trip: {
@@ -19,9 +31,7 @@ export function useOverdueTrips() {
     destination: string;
     eta: string;
   }, overdueMinutes: number) => {
-    // Only notify contacts once per trip
     if (contactsNotifiedRef.current.has(trip.id)) {
-      console.log('[useOverdueTrips] Contacts already notified for trip:', trip.id);
       return;
     }
 
@@ -46,11 +56,6 @@ export function useOverdueTrips() {
       }
 
       contactsNotifiedRef.current.add(trip.id);
-      
-      if (data?.contactsNotified > 0) {
-        toast.info(`Tus ${data.contactsNotified} contacto(s) de emergencia fueron notificados de tu retraso`);
-      }
-      
       console.log('[useOverdueTrips] Contacts notified:', data);
     } catch (error) {
       console.error('[useOverdueTrips] Error calling notify-trip-update:', error);
@@ -62,7 +67,6 @@ export function useOverdueTrips() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch active trips for the current user
       const { data: trips, error } = await supabase
         .from('transit_trips')
         .select('*')
@@ -80,35 +84,32 @@ export function useOverdueTrips() {
         const etaDate = new Date(trip.eta);
         const overdueMs = now - etaDate.getTime();
 
-        // Check if trip is overdue by 30+ minutes
         if (overdueMs >= OVERDUE_THRESHOLD_MS) {
           const tripKey = trip.id;
           const overdueMinutes = Math.floor(overdueMs / 60000);
           
-          // Only notify once per trip
+          // Skip if user already confirmed safe for this trip recently
+          if (safeConfirmedRef.current.has(tripKey)) {
+            return;
+          }
+          
+          // Only show dialog/notify once per trip
           if (!notifiedTripsRef.current.has(tripKey)) {
             notifiedTripsRef.current.add(tripKey);
             
-            // Show persistent warning toast
-            toast.warning(
-              `⚠️ Viaje atrasado: ${trip.origin} → ${trip.destination}`,
-              {
-                description: 'Han pasado más de 30 minutos desde tu hora estimada de llegada. ¿Estás bien?',
-                duration: Infinity,
-                action: {
-                  label: '✓ Llegué',
-                  onClick: () => markTripArrived(trip.id, trip.user_id, trip.origin, trip.destination),
-                },
-              }
-            );
+            // Set the overdue trip to show dialog
+            setOverdueTrip({
+              id: trip.id,
+              user_id: trip.user_id,
+              origin: trip.origin,
+              destination: trip.destination,
+              eta: trip.eta,
+              overdueMinutes,
+            });
 
-            // Send browser notification if permitted
             sendBrowserNotification(trip);
-
-            // Notify emergency contacts
             notifyContactsOverdue(trip, overdueMinutes);
 
-            // Vibrate if supported
             if ('vibrate' in navigator) {
               navigator.vibrate([200, 100, 200, 100, 200]);
             }
@@ -122,7 +123,48 @@ export function useOverdueTrips() {
     }
   }, [notifyContactsOverdue]);
 
-  const markTripArrived = async (tripId: string, userId: string, origin: string, destination: string) => {
+  // Confirm user is safe but still traveling
+  const confirmSafe = useCallback(async () => {
+    if (!overdueTrip) return;
+    
+    setIsUpdating(true);
+    try {
+      // Mark as safe confirmed - won't show dialog again for 30 minutes
+      safeConfirmedRef.current.add(overdueTrip.id);
+      
+      // Clear after 30 minutes to check again
+      setTimeout(() => {
+        safeConfirmedRef.current.delete(overdueTrip.id);
+        notifiedTripsRef.current.delete(overdueTrip.id);
+      }, 30 * 60 * 1000);
+      
+      // Notify community that user confirmed safe
+      await supabase.functions.invoke('notify-trip-update', {
+        body: {
+          tripId: overdueTrip.id,
+          tripUserId: overdueTrip.user_id,
+          eventType: 'confirmed_safe',
+          origin: overdueTrip.origin,
+          destination: overdueTrip.destination,
+          eta: overdueTrip.eta,
+        }
+      });
+      
+      toast.success('¡Gracias por confirmar! Tu comunidad ha sido notificada.');
+      setOverdueTrip(null);
+    } catch (error) {
+      console.error('[useOverdueTrips] Error confirming safe:', error);
+      toast.error('Error al confirmar');
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [overdueTrip]);
+
+  // Mark trip as arrived
+  const confirmArrived = useCallback(async () => {
+    if (!overdueTrip) return;
+    
+    setIsUpdating(true);
     try {
       const { error } = await supabase
         .from('transit_trips')
@@ -130,33 +172,78 @@ export function useOverdueTrips() {
           status: 'ARRIVED', 
           arrived_at: new Date().toISOString() 
         })
-        .eq('id', tripId);
+        .eq('id', overdueTrip.id);
 
       if (error) throw error;
       
-      // Notify contacts about arrival
-      try {
-        await supabase.functions.invoke('notify-trip-update', {
-          body: {
-            tripId,
-            tripUserId: userId,
-            eventType: 'arrived',
-            origin,
-            destination,
-          }
-        });
-      } catch (notifyError) {
-        console.error('[useOverdueTrips] Error notifying contacts of arrival:', notifyError);
-      }
+      await supabase.functions.invoke('notify-trip-update', {
+        body: {
+          tripId: overdueTrip.id,
+          tripUserId: overdueTrip.user_id,
+          eventType: 'arrived',
+          origin: overdueTrip.origin,
+          destination: overdueTrip.destination,
+        }
+      });
       
       toast.success('¡Viaje completado! Tu comunidad ha sido notificada.');
-      notifiedTripsRef.current.delete(tripId);
-      contactsNotifiedRef.current.delete(tripId);
+      notifiedTripsRef.current.delete(overdueTrip.id);
+      contactsNotifiedRef.current.delete(overdueTrip.id);
+      safeConfirmedRef.current.delete(overdueTrip.id);
+      setOverdueTrip(null);
     } catch (error) {
-      console.error('[useOverdueTrips] Error marking trip arrived:', error);
+      console.error('[useOverdueTrips] Error marking arrived:', error);
       toast.error('Error al actualizar viaje');
+    } finally {
+      setIsUpdating(false);
     }
-  };
+  }, [overdueTrip]);
+
+  // Extend ETA by given minutes
+  const extendEta = useCallback(async (additionalMinutes: number) => {
+    if (!overdueTrip) return;
+    
+    setIsUpdating(true);
+    try {
+      const currentEta = new Date(overdueTrip.eta);
+      const newEta = new Date(Date.now() + additionalMinutes * 60 * 1000);
+      
+      const { error } = await supabase
+        .from('transit_trips')
+        .update({ eta: newEta.toISOString() })
+        .eq('id', overdueTrip.id);
+
+      if (error) throw error;
+      
+      await supabase.functions.invoke('notify-trip-update', {
+        body: {
+          tripId: overdueTrip.id,
+          tripUserId: overdueTrip.user_id,
+          eventType: 'eta_updated',
+          origin: overdueTrip.origin,
+          destination: overdueTrip.destination,
+          eta: newEta.toISOString(),
+          oldEta: overdueTrip.eta,
+        }
+      });
+      
+      toast.success(`ETA actualizado: +${additionalMinutes} minutos`);
+      notifiedTripsRef.current.delete(overdueTrip.id);
+      contactsNotifiedRef.current.delete(overdueTrip.id);
+      safeConfirmedRef.current.delete(overdueTrip.id);
+      setOverdueTrip(null);
+    } catch (error) {
+      console.error('[useOverdueTrips] Error extending ETA:', error);
+      toast.error('Error al actualizar ETA');
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [overdueTrip]);
+
+  // Dismiss dialog without action
+  const dismissDialog = useCallback(() => {
+    setOverdueTrip(null);
+  }, []);
 
   const sendBrowserNotification = async (trip: { 
     id: string; 
@@ -186,10 +273,7 @@ export function useOverdueTrips() {
   };
 
   useEffect(() => {
-    // Initial check
     checkOverdueTrips();
-
-    // Set up interval for periodic checks
     intervalRef.current = setInterval(checkOverdueTrips, CHECK_INTERVAL_MS);
 
     return () => {
@@ -199,5 +283,13 @@ export function useOverdueTrips() {
     };
   }, [checkOverdueTrips]);
 
-  return { checkOverdueTrips };
+  return { 
+    checkOverdueTrips,
+    overdueTrip,
+    isUpdating,
+    confirmSafe,
+    confirmArrived,
+    extendEta,
+    dismissDialog,
+  };
 }
