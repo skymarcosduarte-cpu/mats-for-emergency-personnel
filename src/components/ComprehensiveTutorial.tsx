@@ -1012,9 +1012,6 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
               </div>
               <div className="flex-1">
                 <h2 className="text-xl font-bold">{step.title}</h2>
-                <p className="text-sm text-muted-foreground">
-                  Paso {currentStep + 1} de {section.steps.length}
-                </p>
               </div>
             </div>
 
