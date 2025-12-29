@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { AlertTriangle, Send, Shield, Users, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AlertTriangle, Send, Shield, Users, X, MapPin, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -32,17 +34,50 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
   const [confirmed, setConfirmed] = useState(false);
   const [disclosureOpen, setDisclosureOpen] = useState(false);
   const [activeUsersCount, setActiveUsersCount] = useState<number | null>(null);
+  const [includeLocation, setIncludeLocation] = useState(true);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
-  // Fetch active users count when dialog opens
-  React.useEffect(() => {
+  // Fetch active users count and location when dialog opens
+  useEffect(() => {
     if (isOpen) {
       fetchActiveUsersCount();
+      fetchCurrentLocation();
       setStep('initial');
       setMessage('');
       setConfirmed(false);
       setDisclosureOpen(false);
+      setIncludeLocation(true);
+      setLocationError(null);
     }
   }, [isOpen]);
+
+  const fetchCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('GPS no disponible');
+      setIncludeLocation(false);
+      return;
+    }
+
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCurrentLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setLocationLoading(false);
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        setLocationError('No se pudo obtener ubicación');
+        setIncludeLocation(false);
+        setLocationLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const fetchActiveUsersCount = async () => {
     try {
@@ -96,7 +131,13 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
       }
 
       // Create messages for all active users
-      const broadcastMessage = `🚨 CLAVE 100 - EMERGENCIA MÁXIMA 🚨\n\n${message.trim()}`;
+      let broadcastMessage = `🚨 CLAVE 100 - EMERGENCIA MÁXIMA 🚨\n\n${message.trim()}`;
+      
+      // Add location if enabled and available
+      if (includeLocation && currentLocation) {
+        const mapsUrl = `https://www.google.com/maps?q=${currentLocation.lat},${currentLocation.lng}`;
+        broadcastMessage += `\n\n📍 Mi ubicación:\n${mapsUrl}`;
+      }
       
       const messagesToInsert = activeUsers.map(u => ({
         sender_id: user.id,
@@ -235,6 +276,41 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
             <p className="text-xs text-muted-foreground text-right">
               {message.length}/500 caracteres
             </p>
+
+            {/* Location toggle */}
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <div className="flex items-center gap-2">
+                <MapPin className={cn(
+                  "w-5 h-5",
+                  includeLocation && currentLocation ? "text-primary" : "text-muted-foreground"
+                )} />
+                <div>
+                  <Label htmlFor="include-location" className="text-sm font-medium cursor-pointer">
+                    Incluir mi ubicación GPS
+                  </Label>
+                  {locationLoading && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Obteniendo ubicación...
+                    </p>
+                  )}
+                  {!locationLoading && currentLocation && (
+                    <p className="text-xs text-muted-foreground">
+                      📍 Ubicación disponible
+                    </p>
+                  )}
+                  {!locationLoading && locationError && (
+                    <p className="text-xs text-destructive">{locationError}</p>
+                  )}
+                </div>
+              </div>
+              <Switch
+                id="include-location"
+                checked={includeLocation}
+                onCheckedChange={setIncludeLocation}
+                disabled={!currentLocation || locationLoading}
+              />
+            </div>
 
             <div className="flex gap-2">
               <Button
