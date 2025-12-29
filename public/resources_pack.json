@@ -1,0 +1,737 @@
+{
+  "packId": "desastres_esenciales_v1_30",
+  "language": "es",
+  "regionHint": "MX/LATAM",
+  "version": "1.0.0",
+  "disclaimer": "Guía rápida. No sustituye capacitación, supervisión médica ni protocolos locales. En riesgo vital, activa 911/servicios de emergencia. Procedimientos y fármacos: solo personal capacitado y autorizado por protocolo.",
+  "cards": [
+    {
+      "id": "plan_familiar_reunion",
+      "category": "comunidad_preparacion",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Plan familiar y punto de reunión",
+      "summary": "Define contactos, roles y 2 puntos de reunión (cerca/lejos).",
+      "doNow": [
+        "Elige 2 puntos de reunión y compártelos con todos.",
+        "Define un contacto fuera de la ciudad.",
+        "Haz una lista impresa de números y direcciones."
+      ],
+      "steps": [
+        "Acordar rutas alternativas para casa/escuela/trabajo.",
+        "Asignar roles: quién recoge a menores, quién lleva botiquín/documentos.",
+        "Practicar simulacro breve (mensual o trimestral).",
+        "Mantener copias de documentos esenciales (físicas y digitales)."
+      ],
+      "redFlags": [
+        "No dependas solo del celular: puede fallar la red.",
+        "Si hay riesgo estructural, no regreses por objetos."
+      ],
+      "handover": "Si solicitan información: nombres, último punto visto, punto de reunión, contacto externo."
+    },
+    {
+      "id": "mochila_72h",
+      "category": "comunidad_preparacion",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Mochila de emergencia (72 horas)",
+      "summary": "Agua/alimento, luz, comunicación, abrigo, higiene y documentos.",
+      "doNow": [
+        "Prepara una mochila por hogar (o por persona vulnerable).",
+        "Incluye linterna, radio, baterías/power bank.",
+        "Agrega botiquín básico y copias de documentos."
+      ],
+      "steps": [
+        "Agua y alimentos no perecederos (rotación cada 3–6 meses).",
+        "Abrigo: manta térmica/impermeable, cambio de ropa, cubrebocas.",
+        "Higiene: gel/jabón, toallas, bolsas, pañales si aplica.",
+        "Herramientas: navaja/multiherramienta, silbato, cinta.",
+        "Dinero en efectivo y lista de contactos impresa."
+      ],
+      "redFlags": [
+        "Evita sobrepeso: debe poder cargarse rápido.",
+        "Revisa caducidades y baterías periódicamente."
+      ],
+      "handover": "No aplica (autocuidado)."
+    },
+    {
+      "id": "reporte_911",
+      "category": "comunicacion",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Cómo reportar al 911 (mensaje útil)",
+      "summary": "Qué, dónde, cuántos, peligros y acceso.",
+      "doNow": [
+        "Da ubicación exacta (referencias/GPS).",
+        "Describe el incidente en 1 frase.",
+        "Reporta peligros (gas, cables, violencia, fuego)."
+      ],
+      "steps": [
+        "1) Dónde: calle/colonia/referencias.",
+        "2) Qué: choque, derrumbe, incendio, personas atrapadas.",
+        "3) Cuántos: estimación y si respiran.",
+        "4) Peligros: humo, químicos, cables, agresión.",
+        "5) Acceso: punto de encuentro y rutas libres."
+      ],
+      "redFlags": [
+        "No cuelgues si te piden seguir en línea.",
+        "No te expongas para "ver mejor"."
+      ],
+      "handover": "Repite lo mismo al primer respondiente que llegue."
+    },
+    {
+      "id": "autoevacuacion_rutas",
+      "category": "evacuacion",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Evacuación: rutas, prioridades y retorno seguro",
+      "summary": "Salir temprano y con orden reduce riesgo.",
+      "doNow": [
+        "Ubica 2 rutas de salida y un punto de encuentro.",
+        "Prioriza: personas vulnerables, medicinas, documentos.",
+        "Corta riesgos si es seguro (gas/energía) según indicación local."
+      ],
+      "steps": [
+        "Evacúa a pie si hay congestión o daño vial.",
+        "Lleva identificación visible y contacto de emergencia.",
+        "Evita zonas de riesgo (ríos crecidos, laderas, edificios dañados).",
+        "No regreses hasta autorización oficial o evaluación de seguridad."
+      ],
+      "redFlags": [
+        "Si hay humo/gas, evacúa sin accionar interruptores.",
+        "Después de sismo: cuidado con réplicas y caída de objetos."
+      ],
+      "handover": "Albergue/autoridad: nombre, necesidades médicas, contacto y procedencia."
+    },
+    {
+      "id": "seguridad_escena_publico",
+      "category": "seguridad",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Seguridad de escena: no te conviertas en víctima",
+      "summary": "Primero evalúa peligros y busca ayuda.",
+      "doNow": [
+        "Observa: fuego, cables, gas, estructuras inestables, violencia.",
+        "Mantén distancia y llama a emergencias.",
+        "Ayuda desde un lugar seguro (guía, ilumina, señaliza)."
+      ],
+      "steps": [
+        "No entres a edificios dañados.",
+        "No toques cables caídos ni charcos con electricidad.",
+        "Si hay químicos/olor fuerte: aléjate a favor del viento.",
+        "Usa guantes/cubrebocas si vas a apoyar (si tienes)."
+      ],
+      "redFlags": [
+        "Si no es seguro, tu mejor ayuda es reportar y señalizar.",
+        "Evita multitudes cerca de zonas inestables."
+      ],
+      "handover": "Informa peligros observados, ubicación y cuántas personas afectadas."
+    },
+    {
+      "id": "sismo_despues",
+      "category": "amenazas",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Después de un sismo: pasos clave",
+      "summary": "Réplicas, daños ocultos y fugas son el mayor riesgo.",
+      "doNow": [
+        "Sal a zona segura si hay daño visible o riesgo de caída.",
+        "Revisa lesiones y llama a emergencias si es necesario.",
+        "Si hueles gas o escuchas fuga: evacúa y reporta."
+      ],
+      "steps": [
+        "Evita elevadores; usa escaleras si es seguro.",
+        "Revisa grietas, inclinación, techos falsos y vidrios.",
+        "Ten una linterna; evita usar flamas abiertas.",
+        "Ayuda a vecinos vulnerables si es seguro."
+      ],
+      "redFlags": [
+        "Edificio con daño estructural: no reingresar.",
+        "Cables caídos: perímetro amplio y reporte inmediato."
+      ],
+      "handover": "Reporta dirección exacta, tipo de daño, personas atrapadas y riesgos (gas/cables)."
+    },
+    {
+      "id": "inundacion_seguridad",
+      "category": "amenazas",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Inundación: seguridad personal",
+      "summary": "El agua oculta corriente, huecos y electricidad.",
+      "doNow": [
+        "No cruces corrientes ni calles inundadas.",
+        "Evita contacto con agua sucia; usa botas si tienes.",
+        "Evacúa temprano si el nivel sube."
+      ],
+      "steps": [
+        "Corta energía si es seguro y autorizado.",
+        "Aléjate de postes, cables y transformadores.",
+        "No manejes: el vehículo puede flotar o atascarse.",
+        "Desinfecta superficies y manos al terminar."
+      ],
+      "redFlags": [
+        "Agua con chispas/zumbidos: posible electricidad.",
+        "Si hay herida abierta, evita contacto con agua contaminada."
+      ],
+      "handover": "Reporta calles intransitables, personas aisladas y nivel aproximado del agua."
+    },
+    {
+      "id": "fuga_gas_cables",
+      "category": "amenazas",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Fuga de gas y cables caídos",
+      "summary": "Aléjate, no enciendas nada, reporta.",
+      "doNow": [
+        "Si hueles gas: evacúa sin usar interruptores.",
+        "Ventila solo si es seguro y estás afuera/entrada abierta.",
+        "Cables caídos: mantén distancia amplia."
+      ],
+      "steps": [
+        "No uses encendedores, estufa ni chispas.",
+        "No toques vehículos cerca de cables caídos.",
+        "Marca perímetro y advierte a otros.",
+        "Llama a emergencias/compañía de servicios."
+      ],
+      "redFlags": [
+        "Olor fuerte + mareo = evacúa de inmediato.",
+        "Cables pueden energizar suelo/charcos."
+      ],
+      "handover": "Ubicación exacta, tipo de riesgo (gas/cable), si hay lesionados o fuego."
+    },
+    {
+      "id": "primeros_auxilios_basicos_publico",
+      "category": "primeros_auxilios",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Primeros auxilios básicos (público)",
+      "summary": "ABC simple: seguridad, respiración, sangrado, abrigo y ayuda.",
+      "doNow": [
+        "Seguridad primero y llama 911 si hay gravedad.",
+        "Si no respira normal: inicia RCP (si sabes).",
+        "Si sangra mucho: presión directa fuerte."
+      ],
+      "steps": [
+        "Revisa conciencia y respiración (≤10 s).",
+        "Controla sangrado con presión y vendaje.",
+        "Coloca en posición lateral si respira pero está inconsciente.",
+        "Abriga y tranquiliza; no des comida/bebida si está somnoliento."
+      ],
+      "redFlags": [
+        "Dolor torácico, disnea, confusión o sangrado incontrolable: emergencia.",
+        "No mover si sospechas lesión de columna (salvo peligro inmediato)."
+      ],
+      "handover": "Qué pasó, tiempos, cambios, medidas realizadas y respuesta."
+    },
+    {
+      "id": "rcp_solo_manos",
+      "category": "primeros_auxilios",
+      "audience": "publico",
+      "level": "basico",
+      "title": "RCP solo con manos (público)",
+      "summary": "Inconsciente + no respira normal: llama y comprime.",
+      "doNow": [
+        "Llama 911 (altavoz) y pide DEA si hay.",
+        "Manos al centro del pecho.",
+        "Comprime fuerte y rápido sin pausas largas."
+      ],
+      "steps": [
+        "No pierdas tiempo buscando pulso.",
+        "Releva si te cansas.",
+        "Si llega DEA: úsalo siguiendo instrucciones.",
+        "Si respira normal: posición lateral y vigila."
+      ],
+      "redFlags": [
+        "Jadeos (gasping) = respiración anormal → iniciar RCP.",
+        "Evita interrupciones prolongadas."
+      ],
+      "handover": "Tiempos aproximados, si hubo DEA y número de descargas (si aplica)."
+    },
+    {
+      "id": "dea_uso_publico",
+      "category": "primeros_auxilios",
+      "audience": "publico",
+      "level": "basico",
+      "title": "DEA (AED): uso seguro",
+      "summary": "Enciende, pega parches, despeja, sigue instrucciones.",
+      "doNow": [
+        "Enciende el DEA.",
+        "Pega parches en tórax desnudo y seco.",
+        "Nadie toca al paciente durante análisis/descarga."
+      ],
+      "steps": [
+        "Continúa RCP mientras preparan el DEA.",
+        "Seca el pecho; retira parches medicados si existen.",
+        "Si indica descarga: despeja y presiona botón.",
+        "Reanuda RCP inmediatamente."
+      ],
+      "redFlags": [
+        "Evita usar en charcos sin aislar la zona.",
+        "Marcapasos visible: coloca parche a unos cm."
+      ],
+      "handover": "Número de análisis/descargas y respuesta observada."
+    },
+    {
+      "id": "sangrado_grave_publico",
+      "category": "primeros_auxilios",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Sangrado grave (público): presión y vendaje",
+      "summary": "La presión directa salva vidas; no retires gasas empapadas.",
+      "doNow": [
+        "Presiona fuerte con tela/gasa limpia.",
+        "Si empapa, agrega más encima (sin quitar).",
+        "Llama 911 y mantén a la persona abrigada."
+      ],
+      "steps": [
+        "Mantén presión continua.",
+        "Si es extremidad y no cede y tienes torniquete comercial: úsalo (si sabes).",
+        "Si hay objeto clavado: no lo retires; estabiliza alrededor.",
+        "Observa palidez/mareo y mantén a la persona acostada si tolera."
+      ],
+      "redFlags": [
+        "Sangrado que no se controla rápido = emergencia absoluta.",
+        "No improvises torniquetes si no estás entrenado."
+      ],
+      "handover": "Dónde sangra, cuánto tiempo, medidas realizadas, síntomas (mareo/palidez)."
+    },
+    {
+      "id": "agua_segura_hogar",
+      "category": "salud_publica",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Agua segura en emergencia (hogar)",
+      "summary": "Prioriza agua potable y evita contaminación cruzada.",
+      "doNow": [
+        "Usa agua embotellada si es posible.",
+        "Si dudas de la fuente: sigue indicaciones oficiales (hervir/desinfectar).",
+        "Guarda agua en recipientes limpios y tapados."
+      ],
+      "steps": [
+        "Lávate manos antes de manipular agua/alimentos.",
+        "Usa utensilios limpios; evita meter manos al contenedor.",
+        "Separa agua para beber vs. limpieza.",
+        "Si hay aviso sanitario, respétalo (no consumir de la red)."
+      ],
+      "redFlags": [
+        "Agua turbia/olor fuerte: no consumir sin tratar según autoridad.",
+        "Diarrea/vómito en familia: refuerza higiene y busca atención si empeora."
+      ],
+      "handover": "Al albergue/autoridad: necesidades de agua y casos de enfermedad gastrointestinal."
+    },
+    {
+      "id": "apoyo_psicologico_primero_publico",
+      "category": "salud_mental",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Apoyo psicológico primero (PFA) – básico",
+      "summary": "Calma, escucha, conecta con apoyo y necesidades básicas.",
+      "doNow": [
+        "Acércate con respeto y pregunta si necesita ayuda.",
+        "Ayuda a respirar lento y ubicarse (qué pasó/dónde está).",
+        "Conecta con familiares, albergue o servicios."
+      ],
+      "steps": [
+        "Escucha sin presionar; evita promesas.",
+        "Prioriza: agua, abrigo, seguridad, información clara.",
+        "Reduce estímulos (ruido, multitudes) si es posible.",
+        "Si hay menores: no separarlos; busca reunificación."
+      ],
+      "redFlags": [
+        "Riesgo de autolesión/violencia o desconexión severa: busca ayuda profesional/autoridad.",
+        "Ataques de pánico con disnea intensa: evalúa también causas médicas."
+      ],
+      "handover": "Qué observaste, necesidades, red de apoyo y a quién fue derivado."
+    },
+    {
+      "id": "methane_reporte_inicial",
+      "category": "comando_comunicacion",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Reporte inicial M/ETHANE",
+      "summary": "Mensaje estructurado para activar recursos y conciencia situacional.",
+      "doNow": [
+        "Envíalo en <60 s.",
+        "Ubicación exacta + accesos.",
+        "Hechos + recursos requeridos."
+      ],
+      "steps": [
+        "M: incidente mayor (hora).",
+        "E: ubicación (GPS/referencias).",
+        "T: tipo de incidente.",
+        "H: peligros.",
+        "A: accesos y punto de reunión.",
+        "N: número/tipo de lesionados (estimado/triage).",
+        "E: servicios presentes/requeridos."
+      ],
+      "redFlags": [
+        "Actualiza si cambia el riesgo.",
+        "Evita suposiciones: reporta lo que ves."
+      ],
+      "handover": "Úsalo también como base para SITREP."
+    },
+    {
+      "id": "sitrep_breve",
+      "category": "comando_comunicacion",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "SITREP breve",
+      "summary": "Situación, acciones, números, necesidades y riesgos.",
+      "doNow": [
+        "Define periodicidad (15–30 min).",
+        "Incluye números (víctimas/recursos).",
+        "Destaca cambios desde el último reporte."
+      ],
+      "steps": [
+        "1) Situación (qué/dónde).",
+        "2) Víctimas: conteo por triage + destinos.",
+        "3) Acciones en curso.",
+        "4) Recursos: presentes/en camino/faltantes.",
+        "5) Riesgos: peligros/clima/seguridad.",
+        "6) Próximos pasos/decisiones."
+      ],
+      "redFlags": [
+        "Sin números, no hay control del incidente.",
+        "Cambios de peligro: reporta de inmediato."
+      ],
+      "handover": "Formato listo para radio/chat operativo."
+    },
+    {
+      "id": "sbar_clinico",
+      "category": "comando_comunicacion",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "SBAR (comunicación clínica)",
+      "summary": "Situación–Antecedentes–Evaluación–Recomendación.",
+      "doNow": [
+        "Abre con la inestabilidad si existe.",
+        "Da antecedentes relevantes y breves.",
+        "Pide algo concreto (recurso/acción)."
+      ],
+      "steps": [
+        "S: qué pasa ahora.",
+        "B: antecedentes clave (alergias/meds/condiciones).",
+        "A: evaluación (signos/impresión).",
+        "R: recomendación (qué necesitas/qué sigue)."
+      ],
+      "redFlags": [
+        "Evita detalles irrelevantes.",
+        "No ocultes incertidumbre: dilo explícitamente."
+      ],
+      "handover": "SBAR en 30–45 s, repetible."
+    },
+    {
+      "id": "ics_roles_staging",
+      "category": "mci_operaciones",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "Estructura básica de mando + Staging",
+      "summary": "Organiza recursos y evita caos de ambulancias/equipos.",
+      "doNow": [
+        "Nombra mando y seguridad.",
+        "Define Staging (recursos) y rutas.",
+        "Asigna triage, tratamiento, transporte y registro."
+      ],
+      "steps": [
+        "Separar flujo: ambulancias ≠ triage.",
+        "Zonas por color y rutas señalizadas.",
+        "Un canal de comunicaciones por función.",
+        "Actualiza prioridades según conteos y capacidad hospitalaria."
+      ],
+      "redFlags": [
+        "Sin staging, se pierden recursos.",
+        "Si el peligro cambia, reubica el puesto de mando."
+      ],
+      "handover": "Mapa simple + roles + canales + conteos."
+    },
+    {
+      "id": "triage_start",
+      "category": "mci_triage",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Triage START (RPM)",
+      "summary": "Clasificación rápida por respiración, perfusión y estado mental.",
+      "doNow": [
+        ""Si puedes caminar…" → VERDE.",
+        "Evalúa no deambulantes en ≤60 s.",
+        "Etiqueta y continúa (no te detengas)."
+      ],
+      "steps": [
+        "No respira → abre vía aérea: sigue apneico = NEGRO; respira = ROJO.",
+        "FR alta (punto de corte según protocolo local) → ROJO.",
+        "Perfusión mala (radial ausente/TEC lento) → ROJO.",
+        "No sigue comandos → ROJO; si sí → AMARILLO."
+      ],
+      "redFlags": [
+        "Adapta a tu protocolo local (colores/puntos de corte).",
+        "Usa JumpSTART en pediatría si aplica."
+      ],
+      "handover": "Conteos por color + sectores + cuellos de botella."
+    },
+    {
+      "id": "triage_salt",
+      "category": "mci_triage",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Triage SALT",
+      "summary": "Orden por comandos + intervenciones salvavidas rápidas (LSI).",
+      "doNow": [
+        "SORT por voz (camina / haz señal).",
+        "ASSESS individual.",
+        "LSI solo si rápido y disponible."
+      ],
+      "steps": [
+        "Separar mínimos (verdes) y focalizar críticos.",
+        "Evaluar respiración, perfusión, obediencia.",
+        "LSI: control hemorragia, abrir vía aérea, ventilaciones (niños) según protocolo.",
+        "Etiqueta y prioriza transporte."
+      ],
+      "redFlags": [
+        "LSI no debe frenar el flujo de triage.",
+        "Siempre dentro de alcance y EPP."
+      ],
+      "handover": "Conteo por categoría y necesidades críticas."
+    },
+    {
+      "id": "jumpstart_pediatrico",
+      "category": "mci_triage",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "Triage pediátrico JumpSTART (resumen)",
+      "summary": "Adaptación pediátrica de START; prioriza ventilación y estado mental.",
+      "doNow": [
+        "Separar deambulantes con guía.",
+        "Evalúa respiración/perfusión y aplica algoritmo adoptado.",
+        "Etiqueta y continúa."
+      ],
+      "steps": [
+        "Aplica el flujo JumpSTART solo si está adoptado por tu sistema.",
+        "Considera ventilaciones de rescate según algoritmo (si entrenado).",
+        "Clasifica por extremos respiratorios/perfusión/AVPU pediátrico.",
+        "Reevalúa y ajusta conforme evoluciona."
+      ],
+      "redFlags": [
+        "Requiere capacitación específica.",
+        "No retrasar evacuación por "perfeccionar" triage."
+      ],
+      "handover": "Conteo pediátrico por categoría + necesidades de vía aérea/ventilación."
+    },
+    {
+      "id": "lsi_torniquete",
+      "category": "mci_lsi_trauma",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "LSI: Hemorragia masiva y torniquete",
+      "summary": "Control rápido del sangrado antes de otras maniobras.",
+      "doNow": [
+        "Expón la herida y presión directa fuerte.",
+        "Si es extremidad y no cede: torniquete.",
+        "Anota hora y reevalúa control."
+      ],
+      "steps": [
+        "Torniquete 5–7 cm arriba de la herida (no articulación).",
+        "Ajusta hasta detener sangrado; no aflojar intermitente.",
+        "Si continúa: segundo torniquete proximal (si entrenado).",
+        "Prevén hipotermia y evacúa."
+      ],
+      "redFlags": [
+        "Dolor es esperado; prioriza control.",
+        "No retrases evacuación por maniobras adicionales."
+      ],
+      "handover": "Hora, sitio, número de torniquetes, control logrado."
+    },
+    {
+      "id": "lsi_packing_junctional",
+      "category": "mci_lsi_trauma",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "LSI: Packing (ingle/axila/cuello) + compresión",
+      "summary": "Si no hay torniquete posible: rellena y comprime.",
+      "doNow": [
+        "Localiza sangrado y expón.",
+        "Packing con gasa/hemostático si disponible.",
+        "Compresión firme sostenida."
+      ],
+      "steps": [
+        "Rellenar la cavidad hasta "llenar" el espacio.",
+        "Mantener compresión continua varios minutos (según entrenamiento).",
+        "Asegurar con vendaje compresivo si posible.",
+        "Revisar y reempaquetar si reaparece."
+      ],
+      "redFlags": [
+        "Cuello: sin comprometer vía aérea.",
+        "Si no logras control rápido: evacúa."
+      ],
+      "handover": "Sitio, material, tiempo de compresión, resultado."
+    },
+    {
+      "id": "abcde_trauma",
+      "category": "trauma",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Trauma: ABCDE + reevaluación",
+      "summary": "Orden y prioridades en escena de desastre.",
+      "doNow": [
+        "Seguridad + EPP.",
+        "Hemorragia masiva primero.",
+        "ABCDE rápido y decisión de transporte."
+      ],
+      "steps": [
+        "A: vía aérea + precaución cervical según criterio.",
+        "B: ventilación/tórax.",
+        "C: perfusión y control de sangrado.",
+        "D: AVPU/GCS, pupilas, glucosa si disponible.",
+        "E: exposición mínima + prevención de hipotermia."
+      ],
+      "redFlags": [
+        "Alteración mental o signos de choque = prioridad alta.",
+        "Evita retrasos en escena."
+      ],
+      "handover": "MIST: mecanismo, lesiones, signos vitales, tratamientos, tiempos."
+    },
+    {
+      "id": "neumotorax_tension",
+      "category": "trauma",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "Neumotórax a tensión (reconocimiento)",
+      "summary": "Hipoxia + choque + asimetría torácica tras trauma: sospecha y evacúa.",
+      "doNow": [
+        "Soporta ventilación (BVM) si falla.",
+        "Oxígeno si hipoxemia (según disponibilidad).",
+        "Traslado urgente; intervención invasiva solo si autorizada."
+      ],
+      "steps": [
+        "Busca disnea severa, deterioro rápido, perfusión pobre.",
+        "Revisa heridas abiertas y sella si corresponde.",
+        "Monitorea respuesta a soporte ventilatorio.",
+        "Documenta signos pre/post y tiempos."
+      ],
+      "redFlags": [
+        "La descompresión requiere protocolo y entrenamiento.",
+        "Si empeora rápido con BVM, aumenta sospecha."
+      ],
+      "handover": "Signos, soporte ventilatorio, acciones y respuesta."
+    },
+    {
+      "id": "shock_reconocer_priorizar",
+      "category": "medico",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Shock: reconocer y priorizar",
+      "summary": "Confusión, piel fría, taquicardia; hipotensión puede ser tardía.",
+      "doNow": [
+        "ABCDE y causa probable.",
+        "Abrigar y oxígeno si hipoxemia.",
+        "Traslado urgente y reevalúa seriado."
+      ],
+      "steps": [
+        "Perfusión: estado mental, piel, pulso, llenado capilar.",
+        "Posición supina si tolera; elevar piernas según contexto.",
+        "Fluidos/vasopresores solo por protocolo.",
+        "Registrar tendencia (mejoró/empeoró)."
+      ],
+      "redFlags": [
+        "Shock + disnea: piensa en causas letales.",
+        "No "normalices" con un solo signo vital."
+      ],
+      "handover": "Causa sospechada, signos seriales, medidas y respuesta."
+    },
+    {
+      "id": "anafilaxia_epi_protocolo",
+      "category": "medico",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Anafilaxia (epinefrina IM según protocolo)",
+      "summary": "Compromiso respiratorio/choque: tratar temprano y evacuar.",
+      "doNow": [
+        "Activa traslado y prepara vía aérea.",
+        "Epinefrina IM solo si protocolo/autoridad lo permite.",
+        "Monitorea cada 2–5 min."
+      ],
+      "steps": [
+        "Retira gatillo si es seguro.",
+        "Posición supina; lateral si vómito.",
+        "Oxígeno si hipoxemia; broncodilatador solo si protocolo.",
+        "Observa reacción bifásica; traslado aunque mejore."
+      ],
+      "redFlags": [
+        "Antihistamínicos/corticoides no sustituyen epinefrina.",
+        "Embarazo: inclinación lateral izquierda si posible."
+      ],
+      "handover": "Desencadenante, signos, hora/vía de epinefrina, respuesta."
+    },
+    {
+      "id": "opioides_ventilacion_naloxona",
+      "category": "medico",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Sobredosis por opioides: ventilación + naloxona (protocolo)",
+      "summary": "Prioriza ventilación; naloxona si disponible y autorizada.",
+      "doNow": [
+        "Si respira lento/ausente: BVM y oxígeno si disponible.",
+        "Activa sistema médico/traslado.",
+        "Naloxona solo según protocolo."
+      ],
+      "steps": [
+        "Signos: miosis, depresión respiratoria, cianosis, somnolencia profunda.",
+        "Ventila eficazmente; protege vía aérea si vómito.",
+        "Monitorea recaída (duración opioide > naloxona).",
+        "Considera co-ingestas (alcohol/sedantes)."
+      ],
+      "redFlags": [
+        "Agitación/vómito post-naloxona: riesgo de aspiración.",
+        "Re-sedación: vigilancia y traslado recomendados."
+      ],
+      "handover": "Respiración inicial, soporte ventilatorio, naloxona (vía/tiempos), respuesta."
+    },
+    {
+      "id": "checklist_refugio_operacion",
+      "category": "refugio",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Checklist rápida de refugio/albergue",
+      "summary": "Seguridad, registro, sectorización, salud y protección.",
+      "doNow": [
+        "Designa responsable y punto de mando del refugio.",
+        "Sectoriza áreas (familias/vulnerables/aislamiento).",
+        "Inicia registro básico y rutas de evacuación."
+      ],
+      "steps": [
+        "Seguridad: salidas, iluminación, control de acceso.",
+        "Salud: área de triage básico y vigilancia de brotes.",
+        "Protección: menores no acompañados, violencia, privacidad; canaliza a autoridad.",
+        "Logística: agua, alimentos, descanso, información y quejas."
+      ],
+      "redFlags": [
+        "Hacinamiento aumenta brotes: ventila y sectoriza.",
+        "Sin baños/agua funcional, el refugio se vuelve un riesgo."
+      ],
+      "handover": "SITREP refugio: #personas, necesidades críticas, incidentes de salud/seguridad."
+    },
+    {
+      "id": "wash_refugio_basico",
+      "category": "refugio_wash",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "WASH básico en albergue",
+      "summary": "Evita brotes: manos, agua segura, baños limpios y residuos.",
+      "doNow": [
+        "Instala estaciones de lavado de manos.",
+        "Asegura agua segura según guía local.",
+        "Define limpieza diaria y manejo de residuos."
+      ],
+      "steps": [
+        "Prioriza agua potable para beber y preparar alimentos.",
+        "Baños: suficientes, limpios y con insumos; separación por género si posible.",
+        "Residuos: contenedores, recolección, punzocortantes si hay clínica.",
+        "Vigilancia: diarrea/vómito/fiebre; aislar y notificar."
+      ],
+      "redFlags": [
+        "Un solo punto de agua crea cuellos de botella: planifica filas.",
+        "Si hay brote, refuerza higiene y sectoriza."
+      ],
+      "handover": "SITREP WASH: agua disponible, incidentes, necesidades de insumos."
+    }
+  ]
+}

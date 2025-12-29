@@ -16,6 +16,7 @@ import { StatusScreen } from '@/pages/StatusScreen';
 import { MarketScreen } from '@/pages/MarketScreen';
 import { SettingsScreen } from '@/pages/SettingsScreen';
 import { CommunityScreen } from '@/pages/CommunityScreen';
+import ResourcesScreen from '@/pages/ResourcesScreen';
 
 import InstallPage from '@/pages/InstallPage';
 import SharedTripPage from '@/pages/SharedTripPage';
@@ -443,6 +444,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       alerts: <AlertsScreen userRole={userRole} />,
       community: <CommunityScreen />,
       market: <MarketScreen userRole={userRole} />,
+      resources: <ResourcesScreen />,
       status: <StatusScreen userRole={userRole} />,
       settings: <SettingsScreen onLogout={handleLogout} />,
     };

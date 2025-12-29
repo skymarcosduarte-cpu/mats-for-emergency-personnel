@@ -9,12 +9,13 @@ import {
   ShoppingBag,
   Users,
   Star,
-  Cross
+  Cross,
+  BookOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUpdateAvailable } from '@/hooks/useUpdateCheck';
 
-export type TabId = 'map' | 'transit' | 'alerts' | 'community' | 'market' | 'settings';
+export type TabId = 'map' | 'transit' | 'alerts' | 'community' | 'market' | 'resources' | 'settings';
 
 interface NavItem {
   id: TabId;
@@ -45,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'map', label: 'Mapa', icon: <Map className="w-5 h-5" /> },
   { id: 'alerts', label: 'Alertas', icon: <Bell className="w-5 h-5" /> },
   { id: 'transit', label: 'Tránsito', icon: <Car className="w-5 h-5" /> },
+  { id: 'resources', label: 'Recursos', icon: <BookOpen className="w-5 h-5" /> },
   { 
     id: 'market', 
     label: 'Market', 

@@ -1,0 +1,352 @@
+import React, { useState, useEffect } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
+import { 
+  Search, 
+  Filter, 
+  Heart, 
+  Clock, 
+  AlertTriangle,
+  BookOpen,
+  X,
+  ChevronDown
+} from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { useResources, AudienceFilter, LevelFilter } from '@/hooks/useResources';
+import { ResourceCard } from '@/components/ResourceCard';
+import { ResourceDetailModal } from '@/components/ResourceDetailModal';
+import { getCategoryLabel } from '@/lib/resourcesCache';
+import { cn } from '@/lib/utils';
+
+export default function ResourcesScreen() {
+  const {
+    pack,
+    loading,
+    error,
+    favorites,
+    recents,
+    categories,
+    filteredCards,
+    searchQuery,
+    setSearchQuery,
+    categoryFilter,
+    setCategoryFilter,
+    audienceFilter,
+    setAudienceFilter,
+    levelFilter,
+    setLevelFilter,
+    showFavoritesOnly,
+    setShowFavoritesOnly,
+    showRecentsOnly,
+    setShowRecentsOnly,
+    toggleFavorite,
+    markAsViewed,
+    getCard,
+  } = useResources();
+
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const selectedCard = selectedCardId ? getCard(selectedCardId) : null;
+
+  const handleCardClick = (cardId: string) => {
+    setSelectedCardId(cardId);
+    markAsViewed(cardId);
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedCardId(null);
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setCategoryFilter('all');
+    setAudienceFilter('all');
+    setLevelFilter('all');
+    setShowFavoritesOnly(false);
+    setShowRecentsOnly(false);
+  };
+
+  const hasActiveFilters = 
+    searchQuery || 
+    categoryFilter !== 'all' || 
+    audienceFilter !== 'all' || 
+    levelFilter !== 'all' ||
+    showFavoritesOnly ||
+    showRecentsOnly;
+
+  if (loading) {
+    return (
+      <div className="flex flex-col h-full bg-background">
+        <div className="p-4 space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-8 w-48" />
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map(i => (
+              <Skeleton key={i} className="h-28 w-full" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <h2 className="text-xl font-bold mb-2">Error al cargar</h2>
+        <p className="text-muted-foreground">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-background">
+      {/* Disclaimer Banner */}
+      {pack?.disclaimer && (
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+              {pack.disclaimer}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="p-4 pb-2 space-y-3">
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-6 w-6 text-primary" />
+          <h1 className="text-xl font-bold">Recursos</h1>
+          <Badge variant="secondary" className="ml-auto">
+            {filteredCards.length} tarjetas
+          </Badge>
+        </div>
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar recursos..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-9"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+              onClick={() => setSearchQuery('')}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {/* Quick filters */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <Button
+            variant={showFavoritesOnly ? "default" : "outline"}
+            size="sm"
+            className="flex-shrink-0"
+            onClick={() => {
+              setShowFavoritesOnly(!showFavoritesOnly);
+              setShowRecentsOnly(false);
+            }}
+          >
+            <Heart className={cn("h-4 w-4 mr-1", showFavoritesOnly && "fill-current")} />
+            Favoritos
+            {favorites.length > 0 && (
+              <Badge variant="secondary" className="ml-1.5 h-5 px-1.5">
+                {favorites.length}
+              </Badge>
+            )}
+          </Button>
+          
+          <Button
+            variant={showRecentsOnly ? "default" : "outline"}
+            size="sm"
+            className="flex-shrink-0"
+            onClick={() => {
+              setShowRecentsOnly(!showRecentsOnly);
+              setShowFavoritesOnly(false);
+            }}
+          >
+            <Clock className="h-4 w-4 mr-1" />
+            Recientes
+          </Button>
+
+          <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant={hasActiveFilters && !showFavoritesOnly && !showRecentsOnly ? "default" : "outline"}
+                size="sm"
+                className="flex-shrink-0"
+              >
+                <Filter className="h-4 w-4 mr-1" />
+                Filtros
+                {hasActiveFilters && (
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-auto max-h-[70vh]">
+              <SheetHeader>
+                <SheetTitle>Filtros</SheetTitle>
+              </SheetHeader>
+              <div className="space-y-4 py-4">
+                {/* Category */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Categoría</label>
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas las categorías" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las categorías</SelectItem>
+                      {categories.map(cat => (
+                        <SelectItem key={cat} value={cat}>
+                          {getCategoryLabel(cat)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Audience */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Audiencia</label>
+                  <Select 
+                    value={audienceFilter} 
+                    onValueChange={(v) => setAudienceFilter(v as AudienceFilter)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Toda audiencia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toda audiencia</SelectItem>
+                      <SelectItem value="publico">Público general</SelectItem>
+                      <SelectItem value="personal_capacitado">Personal capacitado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Level */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Nivel</label>
+                  <Select 
+                    value={levelFilter} 
+                    onValueChange={(v) => setLevelFilter(v as LevelFilter)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos los niveles" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los niveles</SelectItem>
+                      <SelectItem value="basico">Básico</SelectItem>
+                      <SelectItem value="intermedio">Intermedio</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={clearFilters}
+                  >
+                    Limpiar filtros
+                  </Button>
+                  <Button 
+                    className="flex-1"
+                    onClick={() => setFiltersOpen(false)}
+                  >
+                    Aplicar
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex-shrink-0 text-muted-foreground"
+              onClick={clearFilters}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Limpiar
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Cards List */}
+      <ScrollArea className="flex-1 px-4">
+        <div className="space-y-3 pb-24">
+          {filteredCards.length === 0 ? (
+            <div className="text-center py-12">
+              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <p className="text-muted-foreground">
+                {showFavoritesOnly 
+                  ? "No tienes favoritos aún"
+                  : showRecentsOnly
+                  ? "No has visto recursos aún"
+                  : "No se encontraron recursos"}
+              </p>
+              {hasActiveFilters && (
+                <Button 
+                  variant="link" 
+                  className="mt-2"
+                  onClick={clearFilters}
+                >
+                  Limpiar filtros
+                </Button>
+              )}
+            </div>
+          ) : (
+            filteredCards.map(card => (
+              <ResourceCard
+                key={card.id}
+                card={card}
+                isFavorite={favorites.includes(card.id)}
+                onToggleFavorite={() => toggleFavorite(card.id)}
+                onClick={() => handleCardClick(card.id)}
+              />
+            ))
+          )}
+        </div>
+      </ScrollArea>
+
+      {/* Detail Modal */}
+      <ResourceDetailModal
+        card={selectedCard}
+        open={!!selectedCard}
+        onClose={handleCloseDetail}
+        isFavorite={selectedCardId ? favorites.includes(selectedCardId) : false}
+        onToggleFavorite={() => selectedCardId && toggleFavorite(selectedCardId)}
+      />
+    </div>
+  );
+}
