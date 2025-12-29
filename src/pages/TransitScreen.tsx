@@ -26,6 +26,7 @@ import { MediaCapture } from '@/components/MediaCapture';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { TripLocationPicker } from '@/components/TripLocationPicker';
 import TripRouteMap from '@/components/TripRouteMap';
+import MapErrorBoundary from '@/components/MapErrorBoundary';
 import { useLocation, getGoogleMapsLink, calculateDistance, formatDistance } from '@/hooks/useLocation';
 import { useTripPositionHistory } from '@/hooks/useTripPositionHistory';
 import { useDynamicEta, formatEtaInfo } from '@/hooks/useDynamicEta';
@@ -1043,7 +1044,11 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                         )}
                         
                         {/* Distance and time estimate for trips with coordinates (no progress available) */}
-                        {!tripProgress && trip.origin_lat && trip.origin_lng && trip.destination_lat && trip.destination_lng && (
+                        {!tripProgress &&
+                          trip.origin_lat !== null &&
+                          trip.origin_lng !== null &&
+                          trip.destination_lat !== null &&
+                          trip.destination_lng !== null && (
                           <div className="flex items-center gap-3 mt-2 text-xs bg-muted/30 rounded px-2 py-1.5">
                             <div className="flex items-center gap-1">
                               <Route className="w-3 h-3 text-primary" />
@@ -1082,15 +1087,20 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                         )}
                         
                         {/* Route map toggle button and map display */}
-                        {(positionCount > 0 || (trip.origin_lat && trip.destination_lat)) && activeInProgressTrip?.id === trip.id && (
+                        {(positionCount > 0 ||
+                          (trip.origin_lat !== null &&
+                            trip.origin_lng !== null &&
+                            trip.destination_lat !== null &&
+                            trip.destination_lng !== null)) &&
+                          activeInProgressTrip?.id === trip.id && (
                           <div className="mt-3 space-y-2">
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full text-xs gap-2"
-                              onClick={() => setShowRouteMapTripId(
-                                showRouteMapTripId === trip.id ? null : trip.id
-                              )}
+                              onClick={() =>
+                                setShowRouteMapTripId(showRouteMapTripId === trip.id ? null : trip.id)
+                              }
                             >
                               <Map className="w-3.5 h-3.5" />
                               {showRouteMapTripId === trip.id ? 'Ocultar mapa' : 'Ver ruta recorrida'}
@@ -1100,17 +1110,36 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                 </span>
                               )}
                             </Button>
-                            
+
                             {showRouteMapTripId === trip.id && (
-                              <TripRouteMap
-                                routeCoordinates={getRouteCoordinates()}
-                                originCoords={trip.origin_lat && trip.origin_lng ? { lat: trip.origin_lat, lng: trip.origin_lng } : null}
-                                destinationCoords={trip.destination_lat && trip.destination_lng ? { lat: trip.destination_lat, lng: trip.destination_lng } : null}
-                                currentPosition={position ? { lat: position.lat, lng: position.lng } : null}
-                                originName={trip.origin}
-                                destinationName={trip.destination}
-                                height="250px"
-                              />
+                              <MapErrorBoundary
+                                context={{
+                                  source: 'TransitScreen.activeTripInline',
+                                  tripId: trip.id,
+                                  positionCount,
+                                  hasGps: !!position,
+                                  origin: { lat: trip.origin_lat, lng: trip.origin_lng },
+                                  destination: { lat: trip.destination_lat, lng: trip.destination_lng },
+                                }}
+                              >
+                                <TripRouteMap
+                                  routeCoordinates={getRouteCoordinates()}
+                                  originCoords={
+                                    trip.origin_lat !== null && trip.origin_lng !== null
+                                      ? { lat: trip.origin_lat, lng: trip.origin_lng }
+                                      : null
+                                  }
+                                  destinationCoords={
+                                    trip.destination_lat !== null && trip.destination_lng !== null
+                                      ? { lat: trip.destination_lat, lng: trip.destination_lng }
+                                      : null
+                                  }
+                                  currentPosition={position ? { lat: position.lat, lng: position.lng } : null}
+                                  originName={trip.origin}
+                                  destinationName={trip.destination}
+                                  height="250px"
+                                />
+                              </MapErrorBoundary>
                             )}
                           </div>
                         )}
@@ -2114,15 +2143,42 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
                 )}
-                <TripRouteMap
-                  routeCoordinates={getCommunityRouteCoordinates()}
-                  originCoords={selectedCommunityTrip.origin_lat && selectedCommunityTrip.origin_lng ? { lat: selectedCommunityTrip.origin_lat, lng: selectedCommunityTrip.origin_lng } : null}
-                  destinationCoords={selectedCommunityTrip.destination_lat && selectedCommunityTrip.destination_lng ? { lat: selectedCommunityTrip.destination_lat, lng: selectedCommunityTrip.destination_lng } : null}
-                  currentPosition={selectedCommunityTrip.current_lat && selectedCommunityTrip.current_lng ? { lat: selectedCommunityTrip.current_lat, lng: selectedCommunityTrip.current_lng } : null}
-                  originName={selectedCommunityTrip.origin}
-                  destinationName={selectedCommunityTrip.destination}
-                  height="280px"
-                />
+                <MapErrorBoundary
+                  context={{
+                    source: 'TransitScreen.communityTripDialog',
+                    tripId: selectedCommunityTrip.id,
+                    origin: { lat: selectedCommunityTrip.origin_lat, lng: selectedCommunityTrip.origin_lng },
+                    destination: {
+                      lat: selectedCommunityTrip.destination_lat,
+                      lng: selectedCommunityTrip.destination_lng,
+                    },
+                    current: { lat: selectedCommunityTrip.current_lat, lng: selectedCommunityTrip.current_lng },
+                  }}
+                  onClose={() => setSelectedCommunityTrip(null)}
+                >
+                  <TripRouteMap
+                    routeCoordinates={getCommunityRouteCoordinates()}
+                    originCoords={
+                      selectedCommunityTrip.origin_lat !== null && selectedCommunityTrip.origin_lng !== null
+                        ? { lat: selectedCommunityTrip.origin_lat, lng: selectedCommunityTrip.origin_lng }
+                        : null
+                    }
+                    destinationCoords={
+                      selectedCommunityTrip.destination_lat !== null &&
+                      selectedCommunityTrip.destination_lng !== null
+                        ? { lat: selectedCommunityTrip.destination_lat, lng: selectedCommunityTrip.destination_lng }
+                        : null
+                    }
+                    currentPosition={
+                      selectedCommunityTrip.current_lat !== null && selectedCommunityTrip.current_lng !== null
+                        ? { lat: selectedCommunityTrip.current_lat, lng: selectedCommunityTrip.current_lng }
+                        : null
+                    }
+                    originName={selectedCommunityTrip.origin}
+                    destinationName={selectedCommunityTrip.destination}
+                    height="280px"
+                  />
+                </MapErrorBoundary>
               </div>
 
               <Button
