@@ -710,16 +710,25 @@ export const CommunityScreen: React.FC = () => {
             <div>
               <Label>Tipo de aviso *</Label>
               <Select
-                value={formData.event_type}
+                value={formData.event_type || undefined}
                 onValueChange={(v) => setFormData({ ...formData, event_type: v as CommunityEventType })}
+                onOpenChange={(open) => {
+                  // Debug for Android/WebView issues
+                  console.log('[CommunityScreen] event_type Select open:', open);
+                }}
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  className="touch-manipulation"
+                  onPointerDownCapture={(e) => {
+                    // Helps some Android/WebView touch stacks where the scroll container steals the gesture
+                    if ((e as any).pointerType === 'touch') e.preventDefault();
+                  }}
+                >
                   <SelectValue placeholder="Selecciona tipo" />
                 </SelectTrigger>
-                <SelectContent 
-                  className="z-[9999] bg-popover border-border max-h-[300px]"
-                  position="popper"
-                  sideOffset={4}
+                <SelectContent
+                  className="z-[10060] bg-popover border-border max-h-[320px]"
+                  position="item-aligned"
                 >
                   {EVENT_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value} className="cursor-pointer">
