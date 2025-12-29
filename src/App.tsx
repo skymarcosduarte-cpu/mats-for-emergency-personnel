@@ -36,6 +36,8 @@ import { Clave100Overlay } from '@/components/Clave100Overlay';
 
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
+import { ComprehensiveTutorial } from '@/components/ComprehensiveTutorial';
+import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { useAppState } from '@/hooks/useRealtime';
 import { useLocation } from '@/hooks/useLocation';
 import { useEarthquakeDetection } from '@/hooks/useEarthquakeDetection';
@@ -67,6 +69,7 @@ const queryClient = new QueryClient();
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showComprehensiveTutorial, setShowComprehensiveTutorial] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('map');
   const [userRole] = useState<UserRole>('SOS_ACTIVO');
@@ -78,13 +81,13 @@ function AppContent() {
   const isAuthenticated = !!user;
   const isProfileComplete = !!profile;
 
-  // Handle new user onboarding
+  // Handle new user onboarding - show comprehensive tutorial for new users
   useEffect(() => {
     if (isAuthenticated && isProfileComplete) {
-      const onboardingComplete = localStorage.getItem('onboarding-complete');
-      if (!onboardingComplete) {
+      const tutorialComplete = localStorage.getItem('comprehensive-tutorial-complete');
+      if (!tutorialComplete) {
         setIsNewUser(true);
-        setShowOnboarding(true);
+        setShowComprehensiveTutorial(true);
       }
     }
   }, [isAuthenticated, isProfileComplete]);
@@ -93,6 +96,12 @@ function AppContent() {
     setShowOnboarding(false);
     setIsNewUser(false);
     localStorage.setItem('onboarding-complete', 'true');
+  };
+
+  const handleComprehensiveTutorialComplete = () => {
+    setShowComprehensiveTutorial(false);
+    setIsNewUser(false);
+    localStorage.setItem('comprehensive-tutorial-complete', 'true');
   };
 
   const handleLogout = async () => {
@@ -131,9 +140,19 @@ function AppContent() {
     return <AuthGate onAuthComplete={() => {}} />;
   }
 
-  // Show onboarding for new users
+  // Show onboarding for new users (legacy - short version)
   if (showOnboarding) {
     return <OnboardingTutorial onComplete={handleOnboardingComplete} />;
+  }
+
+  // Show comprehensive tutorial for new users
+  if (showComprehensiveTutorial) {
+    return (
+      <ComprehensiveTutorial 
+        onComplete={handleComprehensiveTutorialComplete} 
+        onClose={handleComprehensiveTutorialComplete} 
+      />
+    );
   }
 
   return <AuthenticatedApp activeTab={activeTab} setActiveTab={setActiveTab} userRole={userRole} handleLogout={handleLogout} />;
@@ -579,6 +598,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
           }
         }}
       />
+
+      {/* Floating Help Button - Always accessible */}
+      <FloatingHelpButton />
 
     </div>
   );
