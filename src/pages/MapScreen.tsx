@@ -562,6 +562,56 @@ const createRescueUnitIcon = (hasEmergencyNearby: boolean = false) => L.divIcon(
   popupAnchor: [0, hasEmergencyNearby ? -22 : -18],
 });
 
+// K9 Unit icon - amber/brown color with dog emoji for search and rescue dogs
+const createK9UnitIcon = (hasEmergencyNearby: boolean = false) => L.divIcon({
+  className: 'k9-unit-marker',
+  html: `
+    <div style="
+      width: ${hasEmergencyNearby ? '44px' : '36px'};
+      height: ${hasEmergencyNearby ? '44px' : '36px'};
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        position: absolute;
+        width: ${hasEmergencyNearby ? '44px' : '36px'};
+        height: ${hasEmergencyNearby ? '44px' : '36px'};
+        background: rgba(217, 119, 6, ${hasEmergencyNearby ? '0.5' : '0.3'});
+        border-radius: 50%;
+        animation: ${hasEmergencyNearby ? 'pulseEmergency 0.8s infinite' : 'pulseMedical 2s infinite'};
+      "></div>
+      ${hasEmergencyNearby ? `
+      <div style="
+        position: absolute;
+        width: 56px;
+        height: 56px;
+        background: rgba(217, 119, 6, 0.2);
+        border-radius: 50%;
+        animation: pulseEmergencyOuter 1.2s infinite;
+      "></div>
+      ` : ''}
+      <div style="
+        width: ${hasEmergencyNearby ? '32px' : '28px'};
+        height: ${hasEmergencyNearby ? '32px' : '28px'};
+        background: #d97706;
+        border: ${hasEmergencyNearby ? '3px' : '2px'} solid white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+        box-shadow: 0 2px 8px rgba(217, 119, 6, ${hasEmergencyNearby ? '0.7' : '0.4'});
+        font-size: ${hasEmergencyNearby ? '16px' : '14px'};
+      ">🐕</div>
+    </div>
+  `,
+  iconSize: [hasEmergencyNearby ? 44 : 36, hasEmergencyNearby ? 44 : 36],
+  iconAnchor: [hasEmergencyNearby ? 22 : 18, hasEmergencyNearby ? 22 : 18],
+  popupAnchor: [0, hasEmergencyNearby ? -22 : -18],
+});
+
 // First aid kit / Paramédico icon - GREEN for medical assistance
 const createFirstAidKitIcon = () => L.divIcon({
   className: 'firstaid-marker',
@@ -1030,6 +1080,7 @@ export interface POIVisibility {
   first_aid_kit: boolean;
   ambulance: boolean;
   rescue_unit: boolean;
+  k9_unit: boolean;
 }
 
 // Collapsible Map Legend Component with POI toggles
@@ -1069,6 +1120,7 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
     { type: 'first_aid_kit', label: 'Botiquines', color: '#22c55e', emoji: '🩹' },
     { type: 'ambulance', label: 'Ambulancias', color: '#ef4444', emoji: '🚑' },
     { type: 'rescue_unit', label: 'Unidades Rescate', color: '#f97316', emoji: '🚒' },
+    { type: 'k9_unit', label: 'Binomios K9', color: '#d97706', emoji: '🐕' },
     { type: 'hospital', label: 'Hospitales', color: '#ef4444', emoji: '🏥' },
     { type: 'gas_station', label: 'Gasolineras', color: '#f97316', emoji: '⛽' },
     { type: 'pharmacy', label: 'Farmacias', color: '#22c55e', emoji: '💊' },
@@ -1315,6 +1367,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     first_aid_kit: false,
     ambulance: false,
     rescue_unit: false,
+    k9_unit: false,
   });
 
   // Specialty filter state
@@ -2505,7 +2558,54 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         }
       });
     }
-  }, [locations, poiVisibility.first_aid_kit, poiVisibility.ambulance, poiVisibility.rescue_unit, mapReady, helpRequests.length, panicEvents.length]);
+
+    // Handle K9 unit markers
+    if (poiVisibility.k9_unit) {
+      // First, remove existing K9 unit markers to update with new icon state
+      markersRef.current.forEach((marker, key) => {
+        if (key.startsWith('k9-unit-')) {
+          map.removeLayer(marker);
+          markersRef.current.delete(key);
+        }
+      });
+
+      // Add markers for users with K9 units
+      locations.forEach((loc) => {
+        const hasK9Unit = (loc as any).has_k9_unit ?? false;
+        if (!hasK9Unit) return;
+        
+        const key = `k9-unit-${loc.user_id}`;
+        
+        const emergencyMessage = hasActiveEmergency 
+          ? '<div style="font-size: 11px; color: #d97706; font-weight: bold; margin-top: 6px;">⚠️ Emergencia activa cercana</div>'
+          : '';
+        
+        const marker = L.marker([loc.lat, loc.lng], {
+          icon: createK9UnitIcon(hasActiveEmergency),
+          zIndexOffset: hasActiveEmergency ? 550 : 500,
+        })
+          .addTo(map)
+          .bindPopup(`
+            <div style="text-align: center; padding: 4px;">
+              <div style="font-size: 14px; font-weight: bold; color: #d97706;">🐕 Binomio Canino (K9) Disponible</div>
+              ${emergencyMessage}
+              <div style="font-size: 11px; color: #666; margin-top: 6px;">
+                Perro de búsqueda y rescate certificado
+              </div>
+            </div>
+          `);
+        markersRef.current.set(key, marker);
+      });
+    } else {
+      // Remove K9 unit markers
+      markersRef.current.forEach((marker, key) => {
+        if (key.startsWith('k9-unit-')) {
+          map.removeLayer(marker);
+          markersRef.current.delete(key);
+        }
+      });
+    }
+  }, [locations, poiVisibility.first_aid_kit, poiVisibility.ambulance, poiVisibility.rescue_unit, poiVisibility.k9_unit, mapReady, helpRequests.length, panicEvents.length]);
 
   // Update panic event markers - clicking opens detail modal
   // Now shows responder count badge and updates when responders change
