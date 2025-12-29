@@ -30,6 +30,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 import TripRouteMap from '@/components/TripRouteMap';
 import MapErrorBoundary from '@/components/MapErrorBoundary';
+import { TravelerLocationDialog } from '@/components/TravelerLocationDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow, differenceInMinutes, isPast, format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -98,6 +99,9 @@ export const CommunityScreen: React.FC = () => {
   const [greetingTarget, setGreetingTarget] = useState<NearbyBirthday | null>(null);
   const [greetingMessage, setGreetingMessage] = useState('');
   const [sendingGreeting, setSendingGreeting] = useState(false);
+  
+  // Traveler location dialog state
+  const [viewingTravelerId, setViewingTravelerId] = useState<string | null>(null);
 
   // Fetch route history when a trip is selected
   const fetchRouteHistory = useCallback(async (tripId: string) => {
@@ -693,18 +697,29 @@ export const CommunityScreen: React.FC = () => {
                               })}
                             </p>
                             {canMessage && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10"
-                                onClick={() => {
-                                  // Navigate to chat with this user
-                                  window.location.href = `/?chat=${tripUserId}`;
-                                }}
-                              >
-                                <MessageCircle className="w-3 h-3 mr-1" />
-                                Enviar mensaje
-                              </Button>
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
+                                  onClick={() => setViewingTravelerId(tripUserId)}
+                                >
+                                  <MapPin className="w-3 h-3 mr-1" />
+                                  Ver ubicación
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                                  onClick={() => {
+                                    // Navigate to chat with this user
+                                    window.location.href = `/?chat=${tripUserId}`;
+                                  }}
+                                >
+                                  <MessageCircle className="w-3 h-3 mr-1" />
+                                  Mensaje
+                                </Button>
+                              </>
                             )}
                           </div>
                         </div>
@@ -1138,6 +1153,18 @@ export const CommunityScreen: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Traveler Location Dialog */}
+      <TravelerLocationDialog
+        isOpen={!!viewingTravelerId}
+        onClose={() => setViewingTravelerId(null)}
+        userId={viewingTravelerId || ''}
+        onSendMessage={() => {
+          if (viewingTravelerId) {
+            window.location.href = `/?chat=${viewingTravelerId}`;
+          }
+        }}
+      />
     </div>
   );
 };
