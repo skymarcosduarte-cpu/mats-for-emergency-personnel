@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Check, CheckCheck, Circle, Maximize2, Minimize2 } from 'lucide-react';
+import { Check, CheckCheck, Circle, Maximize2, Minimize2, AlertTriangle } from 'lucide-react';
 import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus, Camera, MapPin } from 'lucide-react';
+import { Clave100Dialog } from './Clave100Dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,6 +72,36 @@ const ImageMessageBubble: React.FC<{ imagePath: string; onView: () => void }> = 
       className="max-w-[200px] max-h-[200px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
       onClick={onView}
     />
+  );
+};
+
+// Clave 100 emergency broadcast button
+const Clave100Button: React.FC = () => {
+  const [showClave100Dialog, setShowClave100Dialog] = useState(false);
+
+  return (
+    <>
+      <button
+        onClick={() => setShowClave100Dialog(true)}
+        className="w-full flex items-center gap-3 p-3 mb-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 transition-colors text-left"
+      >
+        <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center flex-shrink-0">
+          <AlertTriangle className="w-5 h-5 text-destructive" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="font-semibold text-sm text-destructive">
+            CLAVE 100
+          </span>
+          <p className="text-xs text-muted-foreground">
+            Mensaje de emergencia a todos
+          </p>
+        </div>
+      </button>
+      <Clave100Dialog 
+        isOpen={showClave100Dialog} 
+        onClose={() => setShowClave100Dialog(false)} 
+      />
+    </>
   );
 };
 
@@ -1127,6 +1158,9 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
           // Conversations List
           <ScrollArea className="flex-1">
             <div className="p-2">
+              {/* Clave 100 Button */}
+              <Clave100Button />
+              
               {conversations.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-30" />
