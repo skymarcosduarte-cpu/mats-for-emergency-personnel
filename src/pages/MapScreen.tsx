@@ -849,7 +849,7 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
     return (
       <button
         onClick={() => setIsHidden(false)}
-        className="fixed left-4 bottom-28 z-[1200] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border p-2 hover:bg-accent/50 transition-colors"
+        className="fixed left-4 bottom-36 z-[1200] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border p-2 hover:bg-accent/50 transition-colors"
         aria-label="Mostrar leyenda"
       >
         <Info className="w-4 h-4 text-muted-foreground" />
@@ -868,7 +868,7 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
   ];
 
   return (
-    <div className="fixed left-4 bottom-28 z-[1200] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border overflow-hidden max-h-[50vh] overflow-y-auto">
+    <div className="fixed left-4 bottom-36 z-[1200] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border overflow-hidden max-h-[50vh] overflow-y-auto">
       <div className="flex items-center">
         <button 
           onClick={() => setIsExpanded(!isExpanded)}
