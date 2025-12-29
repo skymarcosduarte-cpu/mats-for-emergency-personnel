@@ -79,6 +79,33 @@ interface SettingsScreenProps {
   onLogout?: () => void;
 }
 
+const SPECIALTIES = [
+  'Bombero',
+  'Rescatista urbano',
+  'Paramédico',
+  'Técnico en Urgencias Médicas (TUM)',
+  'Enfermera/Enfermero',
+  'Médico',
+  'Rescatista de alta montaña',
+  'Rescatista acuático',
+  'Buzo',
+  'Radioaficionado',
+  'Especialista en telecomunicaciones',
+  'Policía',
+  'Electricista',
+  'Plomero',
+  'Ingeniero civil',
+  'Psicólogo',
+  'Operador de maquinaria pesada',
+  'Conductor de ambulancia',
+  'Cocinero/preparación de alimentos',
+  'Coordinador de albergues',
+  'Traductor',
+  'Veterinario',
+  'Prensa',
+  'Sacerdote',
+];
+
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onLogout
 }) => {
@@ -120,6 +147,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     current_medications: profile?.current_medications || '',
     emergency_medical_notes: profile?.emergency_medical_notes || '',
   });
+  const [showSpecialtiesDialog, setShowSpecialtiesDialog] = useState(false);
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>(
+    Array.isArray(profile?.specialty) ? profile.specialty : []
+  );
+  const [savingSpecialties, setSavingSpecialties] = useState(false);
 
   const handleRequestPermission = async () => {
     setRequestingPermission(true);
@@ -194,8 +226,33 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         current_medications: profile.current_medications || '',
         emergency_medical_notes: profile.emergency_medical_notes || '',
       });
+      setSelectedSpecialties(Array.isArray(profile.specialty) ? profile.specialty : []);
     }
   }, [profile]);
+
+  // Handle specialty toggle
+  const handleSpecialtyToggle = (specialty: string) => {
+    setSelectedSpecialties(prev => 
+      prev.includes(specialty)
+        ? prev.filter(s => s !== specialty)
+        : [...prev, specialty]
+    );
+  };
+
+  // Save specialties
+  const handleSaveSpecialties = async () => {
+    setSavingSpecialties(true);
+    try {
+      await updateProfile({ 
+        specialty: selectedSpecialties.length > 0 ? selectedSpecialties : null 
+      } as any);
+      setShowSpecialtiesDialog(false);
+    } catch (error) {
+      console.error('Error saving specialties:', error);
+    } finally {
+      setSavingSpecialties(false);
+    }
+  };
 
   // Handle privacy toggle
   const handlePrivacyToggle = async (field: 'share_location' | 'share_medical_info', value: boolean) => {
@@ -822,7 +879,51 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </CardContent>
         </Card>
 
-        {/* Medical Emergency Data */}
+        {/* Specialties */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <span className="text-lg">📋</span>
+              Especialidades
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Indica tus especialidades para que otros miembros sepan cómo puedes ayudar en emergencias.
+            </p>
+            
+            {/* Current specialties display */}
+            <div className="p-3 rounded-lg bg-muted/50">
+              {Array.isArray(profile?.specialty) && profile.specialty.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {profile.specialty.map((spec: string) => (
+                    <Badge key={spec} variant="secondary" className="text-xs">
+                      {spec}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">
+                  No hay especialidades configuradas
+                </p>
+              )}
+            </div>
+            
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setSelectedSpecialties(Array.isArray(profile?.specialty) ? profile.specialty : []);
+                setShowSpecialtiesDialog(true);
+              }}
+            >
+              <span className="mr-2">📋</span>
+              {Array.isArray(profile?.specialty) && profile.specialty.length > 0 
+                ? 'Editar Especialidades' 
+                : 'Agregar Especialidades'}
+            </Button>
+          </CardContent>
+        </Card>
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -1789,7 +1890,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                       <p><strong>Nombre:</strong> {(userDataExport.profile as Record<string, unknown>).full_name as string}</p>
                       <p><strong>Apodo:</strong> {(userDataExport.profile as Record<string, unknown>).nickname as string}</p>
                       <p><strong>Teléfono:</strong> {(userDataExport.profile as Record<string, unknown>).phone as string}</p>
-                      <p><strong>Especialidad:</strong> {(userDataExport.profile as Record<string, unknown>).specialty as string || 'No especificada'}</p>
+                      <p><strong>Especialidades:</strong> {Array.isArray((userDataExport.profile as Record<string, unknown>).specialty) ? ((userDataExport.profile as Record<string, unknown>).specialty as string[]).join(', ') : 'No especificadas'}</p>
                       <p><strong>Cumpleaños:</strong> {(userDataExport.profile as Record<string, unknown>).birthday as string || 'No especificado'}</p>
                       <p><strong>Rol:</strong> {userDataExport.role || 'No asignado'}</p>
                     </div>
@@ -1913,6 +2014,83 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </Button>
             <Button onClick={() => setShowDataExportDialog(false)}>
               Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Specialties Dialog */}
+      <Dialog open={showSpecialtiesDialog} onOpenChange={setShowSpecialtiesDialog}>
+        <DialogContent className="sm:max-w-lg bg-card border-border max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-lg">📋</span>
+              Editar Especialidades
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona todas las especialidades que apliquen a tu perfil
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[50vh] pr-4">
+            <div className="grid grid-cols-1 gap-2">
+              {SPECIALTIES.map((spec) => {
+                const isSelected = selectedSpecialties.includes(spec);
+                return (
+                  <label
+                    key={spec}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all",
+                      isSelected
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleSpecialtyToggle(spec)}
+                      className="w-4 h-4 rounded accent-primary"
+                    />
+                    <span className={cn(
+                      "text-sm",
+                      isSelected ? "text-primary font-medium" : "text-foreground"
+                    )}>
+                      {spec}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </ScrollArea>
+
+          {selectedSpecialties.length > 0 && (
+            <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+              <p className="text-xs text-primary">
+                {selectedSpecialties.length} especialidad{selectedSpecialties.length !== 1 ? 'es' : ''} seleccionada{selectedSpecialties.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          )}
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowSpecialtiesDialog(false)}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveSpecialties}
+              disabled={savingSpecialties}
+              className="flex-1"
+            >
+              {savingSpecialties ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Check className="w-4 h-4 mr-2" />
+              )}
+              Guardar
             </Button>
           </DialogFooter>
         </DialogContent>

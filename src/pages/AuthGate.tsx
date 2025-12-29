@@ -32,15 +32,30 @@ import { cn } from '@/lib/utils';
 type AuthStep = 'auth' | 'profile';
 
 const SPECIALTIES = [
-  'Paramédico',
-  'EMT',
-  'Médico',
-  'Enfermero/a',
   'Bombero',
-  'Protección Civil',
-  'Cruz Roja',
-  'Rescatista',
-  'Otro',
+  'Rescatista urbano',
+  'Paramédico',
+  'Técnico en Urgencias Médicas (TUM)',
+  'Enfermera/Enfermero',
+  'Médico',
+  'Rescatista de alta montaña',
+  'Rescatista acuático',
+  'Buzo',
+  'Radioaficionado',
+  'Especialista en telecomunicaciones',
+  'Policía',
+  'Electricista',
+  'Plomero',
+  'Ingeniero civil',
+  'Psicólogo',
+  'Operador de maquinaria pesada',
+  'Conductor de ambulancia',
+  'Cocinero/preparación de alimentos',
+  'Coordinador de albergues',
+  'Traductor',
+  'Veterinario',
+  'Prensa',
+  'Sacerdote',
 ];
 
 interface AuthGateProps {
@@ -68,7 +83,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   const [profileForm, setProfileForm] = useState({
     fullName: '',
     nickname: '',
-    specialty: '',
+    specialties: [] as string[],
     phone: '',
     birthday: '',
     role: 'SOS_ACTIVO' as 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR',
@@ -298,7 +313,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       const { error: profileError } = await createProfile({
         full_name: profileForm.fullName,
         nickname,
-        specialty: profileForm.specialty || null,
+        specialty: profileForm.specialties.length > 0 ? profileForm.specialties : null,
         phone: profileForm.phone,
         birthday: profileForm.birthday,
         role: profileForm.role,
@@ -531,20 +546,48 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
               </div>
 
               <div>
-                <Label>Especialidad</Label>
-                <Select
-                  value={profileForm.specialty}
-                  onValueChange={(v) => setProfileForm({ ...profileForm, specialty: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona especialidad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SPECIALTIES.map((spec) => (
-                      <SelectItem key={spec} value={spec}>{spec}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Especialidades (selecciona todas las que apliquen)</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2 max-h-64 overflow-y-auto p-1">
+                  {SPECIALTIES.map((spec) => {
+                    const isSelected = profileForm.specialties.includes(spec);
+                    return (
+                      <label
+                        key={spec}
+                        className={cn(
+                          "flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all text-sm",
+                          isSelected
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border hover:border-primary/50"
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setProfileForm({
+                                ...profileForm,
+                                specialties: [...profileForm.specialties, spec],
+                              });
+                            } else {
+                              setProfileForm({
+                                ...profileForm,
+                                specialties: profileForm.specialties.filter((s) => s !== spec),
+                              });
+                            }
+                          }}
+                          className="w-4 h-4 rounded accent-primary"
+                        />
+                        <span>{spec}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {profileForm.specialties.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {profileForm.specialties.length} especialidad{profileForm.specialties.length !== 1 ? 'es' : ''} seleccionada{profileForm.specialties.length !== 1 ? 's' : ''}
+                  </p>
+                )}
               </div>
 
               <div>

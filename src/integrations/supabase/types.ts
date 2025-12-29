@@ -547,7 +547,7 @@ export type Database = {
           share_location: boolean
           share_medical_info: boolean
           show_name_on_map: boolean
-          specialty: string | null
+          specialty: string[] | null
           terms_accepted_at: string | null
           updated_at: string | null
         }
@@ -570,7 +570,7 @@ export type Database = {
           share_location?: boolean
           share_medical_info?: boolean
           show_name_on_map?: boolean
-          specialty?: string | null
+          specialty?: string[] | null
           terms_accepted_at?: string | null
           updated_at?: string | null
         }
@@ -593,7 +593,7 @@ export type Database = {
           share_location?: boolean
           share_medical_info?: boolean
           show_name_on_map?: boolean
-          specialty?: string | null
+          specialty?: string[] | null
           terms_accepted_at?: string | null
           updated_at?: string | null
         }
@@ -607,6 +607,7 @@ export type Database = {
           nickname: string | null
           share_location: boolean
           show_name_on_map: boolean
+          specialties: string[] | null
           updated_at: string
           user_id: string
         }
@@ -617,6 +618,7 @@ export type Database = {
           nickname?: string | null
           share_location?: boolean
           show_name_on_map?: boolean
+          specialties?: string[] | null
           updated_at?: string
           user_id: string
         }
@@ -627,6 +629,7 @@ export type Database = {
           nickname?: string | null
           share_location?: boolean
           show_name_on_map?: boolean
+          specialties?: string[] | null
           updated_at?: string
           user_id?: string
         }
@@ -1020,6 +1023,7 @@ export type Database = {
           lng: number | null
           role: Database["public"]["Enums"]["app_role"] | null
           show_name_on_map: boolean | null
+          specialties: string[] | null
           speed: number | null
           transit_destination: string | null
           transit_destination_lat: number | null

@@ -8,7 +8,7 @@ interface Profile {
   id: string;
   full_name: string;
   nickname: string;
-  specialty: string | null;
+  specialty: string[] | null;
   phone: string;
   birthday: string | null;
   can_provide_medical_assistance: boolean;
@@ -191,7 +191,7 @@ export function useAuth() {
   const createProfile = async (profileData: {
     full_name: string;
     nickname: string;
-    specialty: string | null;
+    specialty: string[] | null;
     phone: string;
     birthday?: string;
     role: 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR';

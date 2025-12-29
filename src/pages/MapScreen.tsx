@@ -1518,6 +1518,12 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const medicalInfo = medicalCapabilities.length > 0 
         ? `<div style="font-size: 10px; color: #22c55e; margin-top: 4px;">${medicalCapabilities.join(' • ')}</div>`
         : '';
+      
+      // Specialties info
+      const userSpecialties = (loc as any).specialties as string[] | null;
+      const specialtiesInfo = userSpecialties && userSpecialties.length > 0
+        ? `<div style="font-size: 10px; color: #3b82f6; margin-top: 4px; max-width: 200px; word-wrap: break-word;">📋 ${userSpecialties.join(', ')}</div>`
+        : '';
 
       // Badge HTML for role
       const roleBadge = `<span style="
@@ -1546,6 +1552,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
               ${roleBadge}
             </div>
           </div>
+          ${specialtiesInfo}
           ${medicalInfo}
           ${transitInfo}
           ${updatedInfo}
