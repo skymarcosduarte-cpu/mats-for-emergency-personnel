@@ -802,6 +802,18 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
               {step.content}
             </div>
 
+            {/* Large "Entendido" button for final step */}
+            {isLastStep && (
+              <Button 
+                size="lg" 
+                className="w-full mb-6 text-lg py-6"
+                onClick={handleNext}
+              >
+                <Check className="w-5 h-5 mr-2" />
+                ¡Entendido!
+              </Button>
+            )}
+
             {/* Tip box */}
             {step.tip && (
               <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 mb-6">
