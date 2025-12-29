@@ -32,7 +32,9 @@ import {
   HelpCircle,
   X,
   Stethoscope,
-  FileHeart
+  FileHeart,
+  BookOpen,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatsLogo } from '@/components/MatsLogo';
@@ -589,6 +591,127 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
             </div>
             <p className="text-sm text-muted-foreground">
               Si desactivas tu ubicación, no podrás recibir alertas de emergencias cercanas.
+            </p>
+          </div>
+        ),
+      },
+    ],
+  },
+  {
+    id: 'resources',
+    title: 'Recursos',
+    icon: <BookOpen className="w-6 h-6" />,
+    color: 'text-accent',
+    steps: [
+      {
+        title: '📚 Guías de Apoyo en Emergencias',
+        content: (
+          <div className="space-y-4">
+            <p>
+              La sección <strong>Recursos</strong> contiene guías rápidas para saber cómo actuar en diferentes situaciones de emergencia o desastre.
+            </p>
+            <div className="bg-warning/10 border border-warning/30 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-warning mb-1">Importante</p>
+                  <p className="text-sm">
+                    Estos recursos son <strong>material de apoyo básico</strong>. No sustituyen capacitación profesional, supervisión médica ni protocolos locales oficiales.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              En riesgo vital, siempre activa los servicios de emergencia (911).
+            </p>
+          </div>
+        ),
+        important: true,
+      },
+      {
+        title: 'Categorías de Recursos',
+        content: (
+          <div className="space-y-4">
+            <p>
+              Encontrarás guías organizadas por <strong>categorías</strong> para acceder rápidamente a lo que necesitas:
+            </p>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="bg-muted rounded p-2 text-center">🏠 Preparación</div>
+              <div className="bg-muted rounded p-2 text-center">📞 Comunicación</div>
+              <div className="bg-muted rounded p-2 text-center">🚨 Evacuación</div>
+              <div className="bg-muted rounded p-2 text-center">⚠️ Amenazas</div>
+              <div className="bg-muted rounded p-2 text-center">🩹 Primeros Auxilios</div>
+              <div className="bg-muted rounded p-2 text-center">🏥 Salud Pública</div>
+              <div className="bg-muted rounded p-2 text-center">🧠 Salud Mental</div>
+              <div className="bg-muted rounded p-2 text-center">🏕️ Refugios</div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        title: 'Niveles de Contenido',
+        content: (
+          <div className="space-y-4">
+            <p>
+              Cada recurso tiene un <strong>nivel</strong> que indica su complejidad:
+            </p>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 bg-safe/10 rounded-lg border border-safe/30">
+                <div className="w-6 h-6 rounded-full bg-safe flex items-center justify-center text-white text-xs font-bold">B</div>
+                <div>
+                  <p className="font-medium text-safe">Básico</p>
+                  <p className="text-sm text-muted-foreground">Cualquier persona puede aplicar estas guías</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-warning/10 rounded-lg border border-warning/30">
+                <div className="w-6 h-6 rounded-full bg-warning flex items-center justify-center text-white text-xs font-bold">I</div>
+                <div>
+                  <p className="font-medium text-warning">Intermedio</p>
+                  <p className="text-sm text-muted-foreground">Requiere algo de conocimiento previo</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+              <p className="text-sm font-medium text-destructive">
+                ⚕️ Algunas guías están marcadas como <strong>"Solo personal capacitado"</strong>. Estas incluyen procedimientos que requieren entrenamiento formal.
+              </p>
+            </div>
+          </div>
+        ),
+        tip: 'Los recursos marcados para personal capacitado muestran técnicas avanzadas de rescate y primeros auxilios',
+      },
+      {
+        title: 'Funciones de Recursos',
+        content: (
+          <div className="space-y-4">
+            <p>
+              La sección de Recursos incluye varias funciones útiles:
+            </p>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                <Heart className="w-5 h-5 text-panic mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">Favoritos</p>
+                  <p className="text-sm text-muted-foreground">Guarda las guías que más uses para acceso rápido</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                <Eye className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">Recientes</p>
+                  <p className="text-sm text-muted-foreground">Accede rápido a las guías que has visto recientemente</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                <MessageCircle className="w-5 h-5 text-safe mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">Compartir</p>
+                  <p className="text-sm text-muted-foreground">Comparte guías por WhatsApp o copia el contenido</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Los recursos están disponibles <strong>sin conexión</strong> una vez que los hayas cargado.
             </p>
           </div>
         ),
