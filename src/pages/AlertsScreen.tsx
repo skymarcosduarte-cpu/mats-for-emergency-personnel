@@ -454,6 +454,17 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             📋 Mías
           </TabsTrigger>
           <TabsTrigger value="earthquakes" className="text-xs px-1">Sismos</TabsTrigger>
+          <TabsTrigger value="weather" className="relative text-xs px-1">
+            NOAA/USA
+            {weatherAlerts.length > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
+              >
+                {weatherAlerts.length}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="otros" className="relative text-xs px-1">
             Otros
             {(gdacsAlerts.length > 0 || aemetAlerts.length > 0) && (
@@ -462,17 +473,6 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
               >
                 {gdacsAlerts.length + aemetAlerts.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="weather" className="relative text-xs px-1">
-            NOAA
-            {weatherAlerts.length > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
-              >
-                {weatherAlerts.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -708,11 +708,11 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
           )}
         </TabsContent>
 
-        {/* Otros - GDACS + AEMET International Alerts Tab */}
+        {/* Otros - International & Multi-source Alerts Tab */}
         <TabsContent value="otros" className="space-y-3 mt-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-muted-foreground">
-              Alertas internacionales (GDACS + AEMET España)
+              Alertas internacionales multirriesgo
             </p>
             <div className="flex items-center gap-1">
               <Button
@@ -724,6 +724,16 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 <RefreshCw className={cn('w-4 h-4', gdacsLoading && 'animate-spin')} />
               </Button>
             </div>
+          </div>
+          
+          {/* Source Attribution */}
+          <div className="flex flex-wrap gap-1.5 text-[10px] text-muted-foreground">
+            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">GDACS</Badge>
+            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">AEMET</Badge>
+            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">CONAGUA</Badge>
+            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">NASA EONET</Badge>
+            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">Interpol</Badge>
+            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">ReliefWeb</Badge>
           </div>
 
           {gdacsLoading ? (

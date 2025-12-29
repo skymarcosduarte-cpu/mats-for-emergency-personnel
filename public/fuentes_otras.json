@@ -1,0 +1,56 @@
+{
+    "sources": [
+        {
+            "category": "Clima y Huracanes",
+            "feeds": [
+                {
+                    "name": "Servicio Meteorológico Nacional (México - CONAGUA)",
+                    "url": "https://smn.conagua.gob.mx/rss/avisos.xml"
+                }
+            ]
+        },
+        {
+            "category": "Incendios, Erupciones y Desastres Naturales",
+            "feeds": [
+                {
+                    "name": "GDACS - Global Disaster Alert and Coordination System (ONU/UE)",
+                    "url": "https://www.gdacs.org/xml/rss.xml"
+                },
+                {
+                    "name": "NASA Earth Observatory Natural Event Tracker (EONET)",
+                    "url": "https://eonet.gsfc.nasa.gov/rss.xml"
+                }
+            ]
+        },
+        {
+            "category": "Terrorismo, Conflictos y Seguridad Global",
+            "feeds": [
+                {
+                    "name": "Interpol - Noticias y Alertas",
+                    "url": "https://www.interpol.int/en/rss"
+                },
+                {
+                    "name": "ReliefWeb - ONU OCHA",
+                    "url": "https://reliefweb.int/rss"
+                },
+                {
+                    "name": "ERCC - European Union Emergency Response Coordination Centre",
+                    "url": "https://erccportal.jrc.ec.europa.eu/feeds"
+                }
+            ]
+        },
+        {
+            "category": "Agregadores Multirriesgo",
+            "feeds": [
+                {
+                    "name": "Global Incident Map",
+                    "url": "https://www.globalincidentmap.com/rss.php"
+                },
+                {
+                    "name": "Crisis24 (GardaWorld Alerts)",
+                    "url": "https://crisis24.garda.com/alerts/rss"
+                }
+            ]
+        }
+    ]
+}
