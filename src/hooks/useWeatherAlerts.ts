@@ -1,5 +1,5 @@
 // NOAA Weather Alerts Hook for COMUNIDAD EX SOS
-// Fetches hurricane, storm, and severe weather alerts within radius
+// Fetches hurricane, storm, and severe weather alerts from multiple NOAA sources
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { calculateDistance } from '@/hooks/useLocation';
@@ -7,6 +7,17 @@ import type { GeoPosition } from '@/types';
 
 // NOAA Weather API endpoints
 const NOAA_ALERTS_API = 'https://api.weather.gov/alerts/active';
+
+// NHC RSS feeds
+const NHC_FEEDS = [
+  { url: 'https://www.nhc.noaa.gov/index-at.xml', basin: 'Atlantic' },
+  { url: 'https://www.nhc.noaa.gov/index-ep.xml', basin: 'Eastern Pacific' },
+  { url: 'https://www.nhc.noaa.gov/nhc_at_rss.xml', basin: 'Atlantic RSS' },
+  { url: 'https://www.nhc.noaa.gov/nhc_ep_rss.xml', basin: 'Eastern Pacific RSS' },
+];
+
+// Mexico weather alerts
+const MEXICO_ALERTS_URL = 'https://alerts.weather.gov/cap/mx.php?x=0';
 
 export interface NOAAAlert {
   id: string;
@@ -22,6 +33,7 @@ export interface NOAAAlert {
   areaDesc: string;
   distanceMiles: number | null;
   coordinates: [number, number] | null; // [lat, lng]
+  source: 'NOAA' | 'NHC' | 'Mexico';
 }
 
 // Severe weather event types to monitor
@@ -46,7 +58,155 @@ const SEVERE_EVENTS = [
   'High Wind Warning',
   'Tsunami Warning',
   'Tsunami Watch',
+  'Tropical Depression',
+  'Post-Tropical Cyclone',
+  'Potential Tropical Cyclone',
+  'Subtropical Storm',
+  'Subtropical Depression',
 ];
+
+// Parse NHC RSS feed
+async function parseNHCFeed(feedUrl: string, basin: string): Promise<NOAAAlert[]> {
+  try {
+    const response = await fetch(feedUrl, {
+      headers: {
+        'Accept': 'application/xml, text/xml, */*',
+      },
+    });
+    
+    if (!response.ok) {
+      console.warn(`Failed to fetch NHC feed ${basin}:`, response.status);
+      return [];
+    }
+    
+    const text = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, 'text/xml');
+    
+    const items = doc.querySelectorAll('item');
+    const alerts: NOAAAlert[] = [];
+    
+    items.forEach((item, index) => {
+      const title = item.querySelector('title')?.textContent || '';
+      const description = item.querySelector('description')?.textContent || '';
+      const pubDate = item.querySelector('pubDate')?.textContent || '';
+      const link = item.querySelector('link')?.textContent || '';
+      const guid = item.querySelector('guid')?.textContent || `nhc-${basin}-${index}`;
+      
+      // Skip non-storm items
+      const isStormRelated = SEVERE_EVENTS.some(event => 
+        title.toLowerCase().includes(event.toLowerCase()) ||
+        description.toLowerCase().includes(event.toLowerCase())
+      );
+      
+      // Also include items with common storm keywords
+      const hasStormKeywords = /hurricane|tropical|storm|cyclone|warning|watch|advisory/i.test(title + description);
+      
+      if (!isStormRelated && !hasStormKeywords) return;
+      
+      // Determine severity based on content
+      let severity: NOAAAlert['severity'] = 'Moderate';
+      if (/category\s*[45]|major hurricane|extreme/i.test(title + description)) {
+        severity = 'Extreme';
+      } else if (/category\s*[23]|hurricane warning|severe/i.test(title + description)) {
+        severity = 'Severe';
+      } else if (/watch|advisory/i.test(title + description)) {
+        severity = 'Minor';
+      }
+      
+      // Try to extract coordinates from description (NHC often includes lat/lon)
+      let coordinates: [number, number] | null = null;
+      const coordMatch = description.match(/(\d+\.?\d*)\s*N[,\s]+(\d+\.?\d*)\s*W/i);
+      if (coordMatch) {
+        const lat = parseFloat(coordMatch[1]);
+        const lng = -parseFloat(coordMatch[2]); // West longitude is negative
+        coordinates = [lat, lng];
+      }
+      
+      alerts.push({
+        id: guid,
+        event: title.split(' - ')[0] || title,
+        headline: title,
+        description: description.replace(/<[^>]*>/g, ''), // Strip HTML tags
+        severity,
+        urgency: 'Expected',
+        certainty: 'Likely',
+        effective: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+        senderName: `NHC - ${basin}`,
+        areaDesc: basin,
+        distanceMiles: null,
+        coordinates,
+        source: 'NHC',
+      });
+    });
+    
+    return alerts;
+  } catch (error) {
+    console.warn(`Error parsing NHC feed ${basin}:`, error);
+    return [];
+  }
+}
+
+// Parse Mexico CAP alerts
+async function parseMexicoAlerts(): Promise<NOAAAlert[]> {
+  try {
+    const response = await fetch(MEXICO_ALERTS_URL, {
+      headers: {
+        'Accept': 'application/xml, text/xml, */*',
+      },
+    });
+    
+    if (!response.ok) {
+      console.warn('Failed to fetch Mexico alerts:', response.status);
+      return [];
+    }
+    
+    const text = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, 'text/xml');
+    
+    const entries = doc.querySelectorAll('entry, alert');
+    const alerts: NOAAAlert[] = [];
+    
+    entries.forEach((entry, index) => {
+      const title = entry.querySelector('title, headline')?.textContent || '';
+      const summary = entry.querySelector('summary, description')?.textContent || '';
+      const updated = entry.querySelector('updated, sent')?.textContent || '';
+      const expires = entry.querySelector('expires')?.textContent || '';
+      const id = entry.querySelector('id')?.textContent || `mx-${index}`;
+      const severity = entry.querySelector('severity')?.textContent as NOAAAlert['severity'] || 'Moderate';
+      const urgency = entry.querySelector('urgency')?.textContent as NOAAAlert['urgency'] || 'Expected';
+      const certainty = entry.querySelector('certainty')?.textContent as NOAAAlert['certainty'] || 'Likely';
+      const areaDesc = entry.querySelector('areaDesc')?.textContent || 'México';
+      
+      // Skip if no meaningful content
+      if (!title && !summary) return;
+      
+      alerts.push({
+        id,
+        event: title,
+        headline: title,
+        description: summary,
+        severity: severity || 'Moderate',
+        urgency: urgency || 'Expected',
+        certainty: certainty || 'Likely',
+        effective: updated ? new Date(updated).toISOString() : new Date().toISOString(),
+        expires: expires ? new Date(expires).toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        senderName: 'SMN México',
+        areaDesc,
+        distanceMiles: null,
+        coordinates: null,
+        source: 'Mexico',
+      });
+    });
+    
+    return alerts;
+  } catch (error) {
+    console.warn('Error parsing Mexico alerts:', error);
+    return [];
+  }
+}
 
 export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: number = 100) {
   const [alerts, setAlerts] = useState<NOAAAlert[]>([]);
@@ -64,7 +224,7 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
   }, [position, radiusMiles]);
 
   // Parse NOAA alert response - stable callback using ref for radiusMiles
-  const parseAlerts = useCallback((data: any, userPosition: GeoPosition): NOAAAlert[] => {
+  const parseNOAAAlerts = useCallback((data: any, userPosition: GeoPosition): NOAAAlert[] => {
     if (!data?.features) return [];
 
     const radiusKm = radiusMilesRef.current * 1.60934;
@@ -114,6 +274,7 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
           areaDesc: props.areaDesc,
           distanceMiles: distanceKm ? distanceKm / 1.60934 : null,
           coordinates,
+          source: 'NOAA',
         };
 
         return alert;
@@ -131,9 +292,109 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
         const isActive = new Date(alert.expires) > new Date();
         
         return isSevere && isWithinRadius && isActive;
-      })
-      .sort((a: NOAAAlert, b: NOAAAlert) => {
-        // Sort by severity, then by distance
+      });
+  }, []); // No dependencies - uses ref for radiusMiles
+
+  // Calculate distance for alerts that have coordinates
+  const addDistanceToAlerts = useCallback((alertsList: NOAAAlert[], userPosition: GeoPosition): NOAAAlert[] => {
+    return alertsList.map(alert => {
+      if (alert.coordinates && userPosition) {
+        const distanceKm = calculateDistance(
+          userPosition.lat,
+          userPosition.lng,
+          alert.coordinates[0],
+          alert.coordinates[1]
+        );
+        return {
+          ...alert,
+          distanceMiles: distanceKm / 1.60934,
+        };
+      }
+      return alert;
+    });
+  }, []);
+
+  // Fetch alerts from all sources - stable callback using refs
+  const fetchAlerts = useCallback(async () => {
+    const currentPosition = positionRef.current;
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      const allAlerts: NOAAAlert[] = [];
+
+      // Fetch NOAA alerts (only if we have position)
+      if (currentPosition) {
+        try {
+          // NOAA API allows filtering by point and radius
+          const response = await fetch(
+            `${NOAA_ALERTS_API}?point=${currentPosition.lat},${currentPosition.lng}&status=actual`,
+            {
+              headers: {
+                'User-Agent': 'COMUNIDAD-EX-SOS-App',
+                'Accept': 'application/geo+json',
+              },
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            const parsed = parseNOAAAlerts(data, currentPosition);
+            allAlerts.push(...parsed);
+          } else {
+            // Fallback to fetching all active alerts if point query fails
+            const fallbackResponse = await fetch(NOAA_ALERTS_API, {
+              headers: {
+                'User-Agent': 'COMUNIDAD-EX-SOS-App',
+                'Accept': 'application/geo+json',
+              },
+            });
+            
+            if (fallbackResponse.ok) {
+              const data = await fallbackResponse.json();
+              const parsed = parseNOAAAlerts(data, currentPosition);
+              allAlerts.push(...parsed);
+            }
+          }
+        } catch (noaaError) {
+          console.warn('Error fetching NOAA alerts:', noaaError);
+        }
+      }
+
+      // Fetch NHC feeds in parallel
+      const nhcPromises = NHC_FEEDS.map(feed => parseNHCFeed(feed.url, feed.basin));
+      const nhcResults = await Promise.allSettled(nhcPromises);
+      
+      nhcResults.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value.length > 0) {
+          let nhcAlerts = result.value;
+          // Add distance if we have position
+          if (currentPosition) {
+            nhcAlerts = addDistanceToAlerts(nhcAlerts, currentPosition);
+          }
+          allAlerts.push(...nhcAlerts);
+        }
+      });
+
+      // Fetch Mexico alerts
+      try {
+        let mexicoAlerts = await parseMexicoAlerts();
+        if (currentPosition && mexicoAlerts.length > 0) {
+          mexicoAlerts = addDistanceToAlerts(mexicoAlerts, currentPosition);
+        }
+        allAlerts.push(...mexicoAlerts);
+      } catch (mxError) {
+        console.warn('Error fetching Mexico alerts:', mxError);
+      }
+
+      // Deduplicate by ID and sort
+      const uniqueAlerts = Array.from(
+        new Map(allAlerts.map(a => [a.id, a])).values()
+      );
+
+      // Sort by severity, then by distance
+      const sortedAlerts = uniqueAlerts.sort((a, b) => {
         const severityOrder = { 'Extreme': 0, 'Severe': 1, 'Moderate': 2, 'Minor': 3, 'Unknown': 4 };
         const aSev = severityOrder[a.severity] ?? 4;
         const bSev = severityOrder[b.severity] ?? 4;
@@ -145,50 +406,8 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
         }
         return 0;
       });
-  }, []); // No dependencies - uses ref for radiusMiles
 
-  // Fetch alerts from NOAA - stable callback using refs
-  const fetchAlerts = useCallback(async () => {
-    const currentPosition = positionRef.current;
-    if (!currentPosition) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      // NOAA API allows filtering by point and radius
-      const response = await fetch(
-        `${NOAA_ALERTS_API}?point=${currentPosition.lat},${currentPosition.lng}&status=actual`,
-        {
-          headers: {
-            'User-Agent': 'COMUNIDAD-EX-SOS-App',
-            'Accept': 'application/geo+json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        // Fallback to fetching all active alerts if point query fails
-        const fallbackResponse = await fetch(NOAA_ALERTS_API, {
-          headers: {
-            'User-Agent': 'COMUNIDAD-EX-SOS-App',
-            'Accept': 'application/geo+json',
-          },
-        });
-        
-        if (!fallbackResponse.ok) {
-          throw new Error('Failed to fetch weather alerts');
-        }
-        
-        const data = await fallbackResponse.json();
-        const parsed = parseAlerts(data, currentPosition);
-        setAlerts(parsed);
-      } else {
-        const data = await response.json();
-        const parsed = parseAlerts(data, currentPosition);
-        setAlerts(parsed);
-      }
-
+      setAlerts(sortedAlerts);
       setLastChecked(new Date());
     } catch (err) {
       console.error('Error fetching weather alerts:', err);
@@ -196,20 +415,16 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
     } finally {
       setLoading(false);
     }
-  }, [parseAlerts]); // Only depends on parseAlerts which is stable
+  }, [parseNOAAAlerts, addDistanceToAlerts]);
 
   // Initial fetch and refresh interval - runs only once
   useEffect(() => {
-    // Initial fetch
-    if (positionRef.current) {
-      fetchAlerts();
-    }
+    // Initial fetch (don't require position - NHC and Mexico feeds work globally)
+    fetchAlerts();
     
     // Refresh every 1 minute
     const interval = setInterval(() => {
-      if (positionRef.current) {
-        fetchAlerts();
-      }
+      fetchAlerts();
     }, 60 * 1000);
     
     return () => clearInterval(interval);
@@ -238,6 +453,16 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
     return '⚠️';
   };
 
+  // Get source badge color
+  const getSourceColor = (source: NOAAAlert['source']) => {
+    switch (source) {
+      case 'NOAA': return 'bg-primary/10 text-primary';
+      case 'NHC': return 'bg-warning/10 text-warning';
+      case 'Mexico': return 'bg-success/10 text-success';
+      default: return 'bg-muted text-muted-foreground';
+    }
+  };
+
   return {
     alerts,
     loading,
@@ -246,5 +471,6 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
     refresh: fetchAlerts,
     getSeverityColor,
     getEventIcon,
+    getSourceColor,
   };
 }
