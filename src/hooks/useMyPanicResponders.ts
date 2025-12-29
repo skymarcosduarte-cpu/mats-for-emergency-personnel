@@ -198,7 +198,7 @@ export function useMyPanicResponders() {
       fetchResponderSpeed(responder.user_id),
       supabase
         .from('profiles')
-        .select('can_provide_medical_assistance, has_ambulance, has_first_aid_kit')
+        .select('can_provide_medical_assistance, has_ambulance, has_first_aid_kit, has_rescue_unit')
         .eq('id', responder.user_id)
         .maybeSingle()
         .then(r => r.data),
@@ -208,6 +208,7 @@ export function useMyPanicResponders() {
     const credentials: string[] = [];
     if (profileData?.can_provide_medical_assistance) credentials.push('👨‍⚕️');
     if (profileData?.has_ambulance) credentials.push('🚑');
+    if (profileData?.has_rescue_unit) credentials.push('🚒');
     if (profileData?.has_first_aid_kit) credentials.push('🩹');
     const credentialsBadge = credentials.length > 0 ? ` ${credentials.join('')}` : '';
 
