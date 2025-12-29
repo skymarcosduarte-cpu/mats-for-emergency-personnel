@@ -32,6 +32,7 @@ import { TripSafetyCheckDialog } from '@/components/TripSafetyCheckDialog';
 import { ResponderTrackingMap } from '@/components/ResponderTrackingMap';
 import { InternalMessaging } from '@/components/InternalMessaging';
 import { UnreadMessagesBanner } from '@/components/UnreadMessagesBanner';
+import { Clave100Overlay } from '@/components/Clave100Overlay';
 
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
@@ -256,7 +257,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     unreadCount: unreadMessageCount, 
     lastUnreadSender, 
     bannerDismissed: messagesBannerDismissed,
-    dismissBanner: dismissMessagesBanner 
+    dismissBanner: dismissMessagesBanner,
+    clave100Alert,
+    dismissClave100
   } = useInternalMessages();
   
   // New user notifications
@@ -560,6 +563,19 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
           initialUserName={messagingUserName}
         />
       )}
+      
+      {/* Clave 100 Emergency Overlay */}
+      <Clave100Overlay
+        isVisible={!!clave100Alert?.isVisible}
+        senderName={clave100Alert?.senderName || 'Usuario'}
+        message={clave100Alert?.message || ''}
+        onDismiss={dismissClave100}
+        onOpenChat={() => {
+          if (clave100Alert?.senderId) {
+            handleOpenMessaging(clave100Alert.senderId, clave100Alert.senderName);
+          }
+        }}
+      />
 
     </div>
   );
