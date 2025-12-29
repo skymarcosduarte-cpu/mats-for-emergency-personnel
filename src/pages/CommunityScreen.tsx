@@ -29,6 +29,7 @@ import { useCommunityEvents, CommunityEventType } from '@/hooks/useCommunityEven
 import { useNotifications } from '@/hooks/useNotifications';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 import TripRouteMap from '@/components/TripRouteMap';
+import MapErrorBoundary from '@/components/MapErrorBoundary';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow, differenceInMinutes, isPast, format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -824,24 +825,36 @@ export const CommunityScreen: React.FC = () => {
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
                 )}
-                <TripRouteMap
-                  routeCoordinates={routeHistory}
-                  originCoords={selectedTrip.origin_lat && selectedTrip.origin_lng ? {
-                    lat: selectedTrip.origin_lat,
-                    lng: selectedTrip.origin_lng,
-                  } : null}
-                  destinationCoords={selectedTrip.destination_lat && selectedTrip.destination_lng ? {
-                    lat: selectedTrip.destination_lat,
-                    lng: selectedTrip.destination_lng,
-                  } : null}
-                  currentPosition={selectedTrip.current_lat && selectedTrip.current_lng ? {
-                    lat: selectedTrip.current_lat,
-                    lng: selectedTrip.current_lng,
-                  } : null}
-                  originName={selectedTrip.origin}
-                  destinationName={selectedTrip.destination}
-                  height="280px"
-                />
+                <MapErrorBoundary
+                  context={{
+                    feature: 'avisos_active_trip',
+                    tripId: selectedTrip.id,
+                    tripUserId: selectedTrip.user_id,
+                  }}
+                  onClose={() => setSelectedTrip(null)}
+                >
+                  <TripRouteMap
+                    routeCoordinates={routeHistory}
+                    originCoords={
+                      selectedTrip.origin_lat !== null && selectedTrip.origin_lng !== null
+                        ? { lat: selectedTrip.origin_lat, lng: selectedTrip.origin_lng }
+                        : null
+                    }
+                    destinationCoords={
+                      selectedTrip.destination_lat !== null && selectedTrip.destination_lng !== null
+                        ? { lat: selectedTrip.destination_lat, lng: selectedTrip.destination_lng }
+                        : null
+                    }
+                    currentPosition={
+                      selectedTrip.current_lat !== null && selectedTrip.current_lng !== null
+                        ? { lat: selectedTrip.current_lat, lng: selectedTrip.current_lng }
+                        : null
+                    }
+                    originName={selectedTrip.origin}
+                    destinationName={selectedTrip.destination}
+                    height="280px"
+                  />
+                </MapErrorBoundary>
                 {/* Route info badge */}
                 {routeHistory.length > 0 && (
                   <div className="absolute bottom-2 left-2 z-10">

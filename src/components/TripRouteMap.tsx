@@ -24,6 +24,14 @@ interface TripRouteMapProps {
   height?: string;
 }
 
+const isFiniteNumber = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
+
+const isValidLatLng = (lat: unknown, lng: unknown) =>
+  isFiniteNumber(lat) &&
+  isFiniteNumber(lng) &&
+  Math.abs(lat) <= 90 &&
+  Math.abs(lng) <= 180;
+
 // Custom icons
 const createIcon = (color: string, size: number = 24) => {
   return L.divIcon({
@@ -94,42 +102,76 @@ export default function TripRouteMap({
 }: TripRouteMapProps) {
   const [isMapReady, setIsMapReady] = useState(false);
 
+  const safeRouteCoordinates = useMemo(() => {
+    const input = routeCoordinates ?? [];
+    const filtered = input.filter(([lat, lng]) => isValidLatLng(lat, lng));
+
+    if (filtered.length !== input.length) {
+      console.warn('[TripRouteMap] Dropped invalid route points', {
+        total: input.length,
+        valid: filtered.length,
+      });
+    }
+
+    return filtered;
+  }, [routeCoordinates]);
+
+  const safeOrigin = useMemo(
+    () => (originCoords && isValidLatLng(originCoords.lat, originCoords.lng) ? originCoords : null),
+    [originCoords]
+  );
+
+  const safeDestination = useMemo(
+    () =>
+      destinationCoords && isValidLatLng(destinationCoords.lat, destinationCoords.lng)
+        ? destinationCoords
+        : null,
+    [destinationCoords]
+  );
+
+  const safeCurrent = useMemo(
+    () => (currentPosition && isValidLatLng(currentPosition.lat, currentPosition.lng) ? currentPosition : null),
+    [currentPosition]
+  );
+
   // Calculate bounds
   const bounds = useMemo(() => {
-    const allPoints: [number, number][] = [...routeCoordinates];
-    
-    if (originCoords) {
-      allPoints.push([originCoords.lat, originCoords.lng]);
+    const allPoints: [number, number][] = [...safeRouteCoordinates];
+
+    if (safeOrigin) {
+      allPoints.push([safeOrigin.lat, safeOrigin.lng]);
     }
-    if (destinationCoords) {
-      allPoints.push([destinationCoords.lat, destinationCoords.lng]);
+    if (safeDestination) {
+      allPoints.push([safeDestination.lat, safeDestination.lng]);
     }
-    if (currentPosition) {
-      allPoints.push([currentPosition.lat, currentPosition.lng]);
+    if (safeCurrent) {
+      allPoints.push([safeCurrent.lat, safeCurrent.lng]);
     }
 
     if (allPoints.length === 0) return null;
 
     return L.latLngBounds(allPoints.map(([lat, lng]) => [lat, lng]));
-  }, [routeCoordinates, originCoords, destinationCoords, currentPosition]);
+  }, [safeRouteCoordinates, safeOrigin, safeDestination, safeCurrent]);
 
   // Default center if no data
   const defaultCenter: [number, number] = useMemo(() => {
-    if (currentPosition) return [currentPosition.lat, currentPosition.lng];
-    if (originCoords) return [originCoords.lat, originCoords.lng];
-    if (routeCoordinates.length > 0) return routeCoordinates[0];
+    if (safeCurrent) return [safeCurrent.lat, safeCurrent.lng];
+    if (safeOrigin) return [safeOrigin.lat, safeOrigin.lng];
+    if (safeRouteCoordinates.length > 0) return safeRouteCoordinates[0];
     return [19.4326, -99.1332]; // Mexico City default
-  }, [currentPosition, originCoords, routeCoordinates]);
+  }, [safeCurrent, safeOrigin, safeRouteCoordinates]);
 
-  if (routeCoordinates.length === 0 && !originCoords && !destinationCoords && !currentPosition) {
+  if (
+    safeRouteCoordinates.length === 0 &&
+    !safeOrigin &&
+    !safeDestination &&
+    !safeCurrent
+  ) {
     return (
-      <div 
-        className={cn("flex items-center justify-center bg-muted rounded-lg", className)}
-        style={{ height }}
-      >
+      <div className={cn("flex items-center justify-center bg-muted rounded-lg", className)} style={{ height }}>
         <div className="text-center text-muted-foreground">
           <Navigation className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No hay datos de ruta disponibles</p>
+          <p className="text-sm">No hay datos de ubicación válidos</p>
         </div>
       </div>
     );
@@ -158,9 +200,9 @@ export default function TripRouteMap({
         />
 
         {/* Traveled route polyline */}
-        {routeCoordinates.length > 1 && (
+        {safeRouteCoordinates.length > 1 && (
           <Polyline
-            positions={routeCoordinates}
+            positions={safeRouteCoordinates}
             pathOptions={{
               color: '#3b82f6',
               weight: 4,
@@ -172,11 +214,8 @@ export default function TripRouteMap({
         )}
 
         {/* Origin marker */}
-        {originCoords && (
-          <Marker 
-            position={[originCoords.lat, originCoords.lng]} 
-            icon={originIcon}
-          >
+        {safeOrigin && (
+          <Marker position={[safeOrigin.lat, safeOrigin.lng]} icon={originIcon}>
             <Popup>
               <div className="text-center">
                 <MapPin className="w-4 h-4 inline mr-1 text-safe" />
@@ -188,11 +227,8 @@ export default function TripRouteMap({
         )}
 
         {/* Destination marker */}
-        {destinationCoords && (
-          <Marker 
-            position={[destinationCoords.lat, destinationCoords.lng]} 
-            icon={destinationIcon}
-          >
+        {safeDestination && (
+          <Marker position={[safeDestination.lat, safeDestination.lng]} icon={destinationIcon}>
             <Popup>
               <div className="text-center">
                 <Flag className="w-4 h-4 inline mr-1 text-destructive" />
@@ -204,11 +240,8 @@ export default function TripRouteMap({
         )}
 
         {/* Current position marker */}
-        {currentPosition && (
-          <Marker 
-            position={[currentPosition.lat, currentPosition.lng]} 
-            icon={currentIcon}
-          >
+        {safeCurrent && (
+          <Marker position={[safeCurrent.lat, safeCurrent.lng]} icon={currentIcon}>
             <Popup>
               <div className="text-center">
                 <Navigation className="w-4 h-4 inline mr-1 text-primary" />
