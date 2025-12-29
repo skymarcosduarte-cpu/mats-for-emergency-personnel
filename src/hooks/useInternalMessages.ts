@@ -524,11 +524,18 @@ export const useInternalMessagesStore = () => {
             // Check if it's a Clave 100 message
             const isClave100 = newMessage.message.includes('🚨 CLAVE 100') || newMessage.message.includes('CLAVE 100 - EMERGENCIA');
             
+            console.log('📨 New message received:', {
+              isClave100,
+              messagePreview: newMessage.message.substring(0, 50),
+              senderId: newMessage.sender_id
+            });
+            
             // Play notification sound and vibration (if not muted)
             const muted = localStorage.getItem('chat_notifications_muted') === 'true';
             if (!muted) {
               if (isClave100) {
                 // Play special Clave 100 alert - always loud
+                console.log('🚨 CLAVE 100 DETECTED - Playing emergency alert!');
                 playClave100Alert();
               } else {
                 playMessageNotification();
@@ -536,6 +543,7 @@ export const useInternalMessagesStore = () => {
               }
             } else if (isClave100) {
               // Even if muted, Clave 100 should alert (it's an emergency)
+              console.log('🚨 CLAVE 100 DETECTED (muted mode) - Playing emergency alert anyway!');
               playClave100Alert();
             }
             
@@ -560,6 +568,7 @@ export const useInternalMessagesStore = () => {
             );
             
             if (isClave100) {
+              console.log('🚨 Setting Clave 100 overlay visible for sender:', senderName);
               // Show fullscreen overlay for Clave 100
               setClave100Alert({
                 isVisible: true,
