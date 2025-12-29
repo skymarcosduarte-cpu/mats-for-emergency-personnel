@@ -76,6 +76,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showRouteMap, setShowRouteMap] = useState<{ requestId: string; lat: number; lng: number } | null>(null);
   
+  // Source filter for "Otros" tab
+  const [otrosSourceFilter, setOtrosSourceFilter] = useState<string | null>(null);
   // Messaging state
   const [messagingOpen, setMessagingOpen] = useState(false);
   const [messagingUserId, setMessagingUserId] = useState<string | null>(null);
@@ -742,14 +744,68 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             </div>
           </div>
           
-          {/* Source Attribution */}
-          <div className="flex flex-wrap gap-1.5 text-[10px] text-muted-foreground">
-            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">GDACS</Badge>
-            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">AEMET</Badge>
-            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">CONAGUA</Badge>
-            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">NASA EONET</Badge>
-            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">Interpol</Badge>
-            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">ReliefWeb</Badge>
+          {/* Source Filter Buttons */}
+          <div className="flex flex-wrap gap-1.5">
+            <Badge 
+              variant={otrosSourceFilter === null ? "default" : "outline"} 
+              className={cn(
+                "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
+                otrosSourceFilter === null && "bg-primary text-primary-foreground"
+              )}
+              onClick={() => setOtrosSourceFilter(null)}
+            >
+              Todas
+            </Badge>
+            <Badge 
+              variant={otrosSourceFilter === 'GDACS' ? "default" : "outline"} 
+              className={cn(
+                "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
+                otrosSourceFilter === 'GDACS' && "bg-primary text-primary-foreground"
+              )}
+              onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'GDACS' ? null : 'GDACS')}
+            >
+              GDACS
+            </Badge>
+            <Badge 
+              variant={otrosSourceFilter === 'CONAGUA' ? "default" : "outline"} 
+              className={cn(
+                "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
+                otrosSourceFilter === 'CONAGUA' && "bg-success text-success-foreground"
+              )}
+              onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'CONAGUA' ? null : 'CONAGUA')}
+            >
+              CONAGUA
+            </Badge>
+            <Badge 
+              variant={otrosSourceFilter === 'NASA' ? "default" : "outline"} 
+              className={cn(
+                "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
+                otrosSourceFilter === 'NASA' && "bg-blue-500 text-white"
+              )}
+              onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'NASA' ? null : 'NASA')}
+            >
+              NASA
+            </Badge>
+            <Badge 
+              variant={otrosSourceFilter === 'ReliefWeb' ? "default" : "outline"} 
+              className={cn(
+                "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
+                otrosSourceFilter === 'ReliefWeb' && "bg-orange-500 text-white"
+              )}
+              onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'ReliefWeb' ? null : 'ReliefWeb')}
+            >
+              ReliefWeb
+            </Badge>
+            <Badge 
+              variant={otrosSourceFilter === 'AEMET' ? "default" : "outline"} 
+              className={cn(
+                "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
+                otrosSourceFilter === 'AEMET' && "bg-amber-500 text-white"
+              )}
+              onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'AEMET' ? null : 'AEMET')}
+            >
+              AEMET
+            </Badge>
           </div>
 
           {gdacsLoading ? (
@@ -765,188 +821,211 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             <div className="text-center py-12 text-muted-foreground">
               <AlertTriangle className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p>No hay alertas internacionales activas</p>
-              <p className="text-xs mt-1">GDACS global + AEMET España</p>
+              <p className="text-xs mt-1">GDACS · CONAGUA · NASA · ReliefWeb · AEMET</p>
             </div>
           ) : (
             <>
               {/* Multi-source International Alerts Section */}
-              {gdacsAlerts.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    🌍 Alertas Internacionales ({gdacsAlerts.length})
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    GDACS · CONAGUA · NASA EONET · ReliefWeb
-                  </p>
-                  {gdacsAlerts.slice(0, 20).map((alert) => (
-                    <Card 
-                      key={alert.id} 
-                      className={cn(
-                        "bg-card border-border",
-                        alert.alertLevel === 'red' && "border-l-4 border-l-destructive",
-                        alert.alertLevel === 'orange' && "border-l-4 border-l-panic",
-                        alert.alertLevel === 'green' && "border-l-4 border-l-success"
-                      )}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <div className={cn(
-                            "p-2 rounded-full shrink-0 text-2xl",
-                            getAlertLevelColor(alert.alertLevel)
-                          )}>
-                            {getCategoryIcon(alert.category)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className={cn(
-                                "px-2 py-0.5 rounded-full text-xs font-bold uppercase",
-                                alert.alertLevel === 'red' && "bg-destructive text-destructive-foreground",
-                                alert.alertLevel === 'orange' && "bg-panic text-white",
-                                alert.alertLevel === 'green' && "bg-success text-success-foreground",
-                                !alert.alertLevel && "bg-muted text-muted-foreground"
-                              )}>
-                                {getCategoryLabel(alert.category)}
-                              </span>
-                              {/* Source badge */}
-                              <Badge variant="outline" className={cn(
-                                "text-[10px] px-1.5 py-0 h-4",
-                                alert.source === 'GDACS' && "border-primary text-primary",
-                                alert.source === 'CONAGUA' && "border-success text-success",
-                                alert.source === 'NASA' && "border-blue-500 text-blue-500",
-                                alert.source === 'ReliefWeb' && "border-orange-500 text-orange-500"
-                              )}>
-                                {alert.source}
-                              </Badge>
-                              {alert.alertLevel && (
-                                <Badge variant="outline" className={cn(
-                                  "text-xs",
-                                  alert.alertLevel === 'red' && "border-destructive text-destructive",
-                                  alert.alertLevel === 'orange' && "border-panic text-panic",
-                                  alert.alertLevel === 'green' && "border-success text-success"
-                                )}>
-                                  {alert.alertLevel === 'red' ? 'ROJO' : alert.alertLevel === 'orange' ? 'NARANJA' : 'VERDE'}
-                                </Badge>
-                              )}
-                              {alert.magnitude && (
-                                <Badge variant="outline" className="text-xs">
-                                  M{alert.magnitude.toFixed(1)}
-                                </Badge>
-                              )}
-                              {alert.country && (
-                                <span className="text-xs text-muted-foreground">
-                                  📍 {alert.country}
-                                </span>
-                              )}
-                            </div>
-                            <h3 className="font-semibold text-foreground text-sm line-clamp-2">{alert.title}</h3>
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {alert.description.substring(0, 150)}
-                              {alert.description.length > 150 && '...'}
-                            </p>
-                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {new Date(alert.pubDate).toLocaleDateString()}
-                              </span>
-                              {alert.link && (
-                                <Button
-                                  variant="link"
-                                  size="sm"
-                                  className="p-0 h-auto text-xs"
-                                  onClick={() => window.open(alert.link, '_blank')}
-                                >
-                                  Ver más →
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  {gdacsAlerts.length > 20 && (
-                    <p className="text-xs text-center text-muted-foreground">
-                      +{gdacsAlerts.length - 20} alertas más
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* AEMET Spain Alerts Section */}
-              {aemetAlerts.length > 0 && (
-                <div className="space-y-2 mt-4">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    🇪🇸 AEMET - Avisos España ({aemetAlerts.length})
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Agencia Estatal de Meteorología
-                  </p>
-                  {aemetAlerts.map((alert) => (
-                    <Card 
-                      key={alert.id} 
-                      className={cn(
-                        "bg-card border-border",
-                        alert.level === 'rojo' && "border-l-4 border-l-destructive",
-                        alert.level === 'naranja' && "border-l-4 border-l-panic",
-                        alert.level === 'amarillo' && "border-l-4 border-l-warning"
-                      )}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-start gap-3">
-                          <div className={cn(
-                            "p-2 rounded-full shrink-0",
-                            getAEMETLevelColor(alert.level)
-                          )}>
-                            <CloudRain className="w-4 h-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
-                              {alert.level && (
-                                <span className={cn(
-                                  "px-2 py-0.5 rounded-full text-xs font-bold uppercase",
-                                  alert.level === 'rojo' && "bg-destructive text-destructive-foreground",
-                                  alert.level === 'naranja' && "bg-panic text-white",
-                                  alert.level === 'amarillo' && "bg-warning text-warning-foreground"
-                                )}>
-                                  {alert.level.toUpperCase()}
-                                </span>
-                              )}
-                              {alert.zone && (
-                                <span className="text-xs text-muted-foreground">
-                                  📍 {alert.zone}
-                                </span>
-                              )}
-                            </div>
-                            <h4 className="font-medium text-foreground text-sm line-clamp-2">{alert.title}</h4>
-                            {alert.description && (
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                {alert.description.substring(0, 120)}
-                                {alert.description.length > 120 && '...'}
-                              </p>
+              {(() => {
+                // Filter alerts based on selected source
+                const filteredAlerts = otrosSourceFilter 
+                  ? gdacsAlerts.filter(a => a.source === otrosSourceFilter)
+                  : gdacsAlerts;
+                const filteredAemet = otrosSourceFilter === 'AEMET' || otrosSourceFilter === null 
+                  ? aemetAlerts 
+                  : [];
+                
+                if (filteredAlerts.length === 0 && filteredAemet.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <AlertCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No hay alertas de {otrosSourceFilter}</p>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <>
+                    {filteredAlerts.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                          🌍 {otrosSourceFilter ? `Alertas ${otrosSourceFilter}` : 'Alertas Internacionales'} ({filteredAlerts.length})
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          {otrosSourceFilter || 'GDACS · CONAGUA · NASA EONET · ReliefWeb'}
+                        </p>
+                        {filteredAlerts.slice(0, 20).map((alert) => (
+                          <Card 
+                            key={alert.id} 
+                            className={cn(
+                              "bg-card border-border",
+                              alert.alertLevel === 'red' && "border-l-4 border-l-destructive",
+                              alert.alertLevel === 'orange' && "border-l-4 border-l-panic",
+                              alert.alertLevel === 'green' && "border-l-4 border-l-success"
                             )}
-                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {new Date(alert.pubDate).toLocaleDateString()}
-                              </span>
-                              {alert.link && (
-                                <Button
-                                  variant="link"
-                                  size="sm"
-                                  className="p-0 h-auto text-xs"
-                                  onClick={() => window.open(alert.link, '_blank')}
-                                >
-                                  Ver más →
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-3">
+                                <div className={cn(
+                                  "p-2 rounded-full shrink-0 text-2xl",
+                                  getAlertLevelColor(alert.alertLevel)
+                                )}>
+                                  {getCategoryIcon(alert.category)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                    <span className={cn(
+                                      "px-2 py-0.5 rounded-full text-xs font-bold uppercase",
+                                      alert.alertLevel === 'red' && "bg-destructive text-destructive-foreground",
+                                      alert.alertLevel === 'orange' && "bg-panic text-white",
+                                      alert.alertLevel === 'green' && "bg-success text-success-foreground",
+                                      !alert.alertLevel && "bg-muted text-muted-foreground"
+                                    )}>
+                                      {getCategoryLabel(alert.category)}
+                                    </span>
+                                    {/* Source badge */}
+                                    <Badge variant="outline" className={cn(
+                                      "text-[10px] px-1.5 py-0 h-4",
+                                      alert.source === 'GDACS' && "border-primary text-primary",
+                                      alert.source === 'CONAGUA' && "border-success text-success",
+                                      alert.source === 'NASA' && "border-blue-500 text-blue-500",
+                                      alert.source === 'ReliefWeb' && "border-orange-500 text-orange-500"
+                                    )}>
+                                      {alert.source}
+                                    </Badge>
+                                    {alert.alertLevel && (
+                                      <Badge variant="outline" className={cn(
+                                        "text-xs",
+                                        alert.alertLevel === 'red' && "border-destructive text-destructive",
+                                        alert.alertLevel === 'orange' && "border-panic text-panic",
+                                        alert.alertLevel === 'green' && "border-success text-success"
+                                      )}>
+                                        {alert.alertLevel === 'red' ? 'ROJO' : alert.alertLevel === 'orange' ? 'NARANJA' : 'VERDE'}
+                                      </Badge>
+                                    )}
+                                    {alert.magnitude && (
+                                      <Badge variant="outline" className="text-xs">
+                                        M{alert.magnitude.toFixed(1)}
+                                      </Badge>
+                                    )}
+                                    {alert.country && (
+                                      <span className="text-xs text-muted-foreground">
+                                        📍 {alert.country}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h3 className="font-semibold text-foreground text-sm line-clamp-2">{alert.title}</h3>
+                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                    {alert.description.substring(0, 150)}
+                                    {alert.description.length > 150 && '...'}
+                                  </p>
+                                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {new Date(alert.pubDate).toLocaleDateString()}
+                                    </span>
+                                    {alert.link && (
+                                      <Button
+                                        variant="link"
+                                        size="sm"
+                                        className="p-0 h-auto text-xs"
+                                        onClick={() => window.open(alert.link, '_blank')}
+                                      >
+                                        Ver más →
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                        {filteredAlerts.length > 20 && (
+                          <p className="text-xs text-center text-muted-foreground">
+                            +{filteredAlerts.length - 20} alertas más
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* AEMET Spain Alerts Section */}
+                    {filteredAemet.length > 0 && (
+                      <div className="space-y-2 mt-4">
+                        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                          🇪🇸 AEMET - Avisos España ({filteredAemet.length})
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          Agencia Estatal de Meteorología
+                        </p>
+                        {filteredAemet.map((alert) => (
+                          <Card 
+                            key={alert.id} 
+                            className={cn(
+                              "bg-card border-border",
+                              alert.level === 'rojo' && "border-l-4 border-l-destructive",
+                              alert.level === 'naranja' && "border-l-4 border-l-panic",
+                              alert.level === 'amarillo' && "border-l-4 border-l-warning"
+                            )}
+                          >
+                            <CardContent className="p-3">
+                              <div className="flex items-start gap-3">
+                                <div className={cn(
+                                  "p-2 rounded-full shrink-0",
+                                  getAEMETLevelColor(alert.level)
+                                )}>
+                                  <CloudRain className="w-4 h-4" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                                    {alert.level && (
+                                      <span className={cn(
+                                        "px-2 py-0.5 rounded-full text-xs font-bold uppercase",
+                                        alert.level === 'rojo' && "bg-destructive text-destructive-foreground",
+                                        alert.level === 'naranja' && "bg-panic text-white",
+                                        alert.level === 'amarillo' && "bg-warning text-warning-foreground"
+                                      )}>
+                                        {alert.level.toUpperCase()}
+                                      </span>
+                                    )}
+                                    {alert.zone && (
+                                      <span className="text-xs text-muted-foreground">
+                                        📍 {alert.zone}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h4 className="font-medium text-foreground text-sm line-clamp-2">{alert.title}</h4>
+                                  {alert.description && (
+                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                      {alert.description.substring(0, 120)}
+                                      {alert.description.length > 120 && '...'}
+                                    </p>
+                                  )}
+                                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {new Date(alert.pubDate).toLocaleDateString()}
+                                    </span>
+                                    {alert.link && (
+                                      <Button
+                                        variant="link"
+                                        size="sm"
+                                        className="p-0 h-auto text-xs"
+                                        onClick={() => window.open(alert.link, '_blank')}
+                                      >
+                                        Ver más →
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </>
           )}
         </TabsContent>
