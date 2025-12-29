@@ -19,7 +19,6 @@ const CORS_PROXIES = [
 
 export interface EarthquakeWithDistance extends USGSEarthquake {
   distanceKm: number | null;
-  distanceMiles: number | null;
 }
 
 // Try fetching with multiple CORS proxies (fallback mechanism for Android)
@@ -220,18 +219,15 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
   const addDistances = useCallback((quakes: USGSEarthquake[], pos: GeoPosition | null): EarthquakeWithDistance[] => {
     return quakes.map(quake => {
       let distanceKm: number | null = null;
-      let distanceMiles: number | null = null;
 
       if (pos) {
         const [lng, lat] = quake.geometry.coordinates;
         distanceKm = calculateDistance(pos.lat, pos.lng, lat, lng);
-        distanceMiles = distanceKm / 1.60934;
       }
 
       return {
         ...quake,
         distanceKm,
-        distanceMiles,
       };
     });
   }, []);

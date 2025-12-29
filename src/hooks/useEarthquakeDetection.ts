@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { USGSEarthquake, GeoPosition } from '@/types';
 import { calculateDistance } from '@/hooks/useLocation';
-import { getEarthquakeRadiusMiles, getEarthquakeRadiusKm } from '@/hooks/useAlertSettings';
+import { getEarthquakeRadiusKm } from '@/hooks/useAlertSettings';
 
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
 const CHECK_INTERVAL_MS = 60 * 1000; // Check every 1 minute
@@ -152,7 +152,6 @@ export function useEarthquakeDetection(
     dismissAlert,
     markAsReported,
     refresh,
-    alertRadiusMiles: getEarthquakeRadiusMiles(),
     alertRadiusKm: getEarthquakeRadiusKm(),
   };
 }

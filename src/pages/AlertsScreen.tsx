@@ -577,10 +577,10 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                           {quake.geometry.coordinates[2].toFixed(0)}km prof.
                         </span>
                         {/* Distance from user */}
-                        {quake.distanceMiles !== null && (
+                        {quake.distanceKm !== null && (
                           <span className="flex items-center gap-1 text-primary font-medium">
                             <Navigation className="w-3 h-3" />
-                            {quake.distanceMiles.toFixed(0)} mi
+                            {quake.distanceKm.toFixed(0)} km
                           </span>
                         )}
                       </div>
@@ -695,10 +695,10 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                         <Badge variant="outline" className="text-xs">
                           {alert.source || 'NOAA'}
                         </Badge>
-                        {alert.distanceMiles !== null && (
+                        {alert.distanceKm !== null && (
                           <span className="text-xs text-primary font-medium flex items-center gap-1">
                             <Navigation className="w-3 h-3" />
-                            {alert.distanceMiles.toFixed(0)} mi
+                            {alert.distanceKm.toFixed(0)} km
                           </span>
                         )}
                       </div>
@@ -1549,10 +1549,10 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                     <MapPin className="w-3 h-3" />
                     {selectedQuake.geometry.coordinates[2].toFixed(0)}km prof.
                   </span>
-                  {selectedQuake.distanceMiles !== null && (
+                  {selectedQuake.distanceKm !== null && (
                     <span className="flex items-center gap-1 text-primary font-medium">
                       <Navigation className="w-3 h-3" />
-                      {selectedQuake.distanceMiles.toFixed(0)} mi de ti
+                      {selectedQuake.distanceKm.toFixed(0)} km de ti
                     </span>
                   )}
                 </div>

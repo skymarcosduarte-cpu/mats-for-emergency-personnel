@@ -31,7 +31,7 @@ export interface NOAAAlert {
   expires: string;
   senderName: string;
   areaDesc: string;
-  distanceMiles: number | null;
+  distanceKm: number | null;
   coordinates: [number, number] | null; // [lat, lng]
   source: 'NOAA' | 'NHC' | 'Mexico';
 }
@@ -135,7 +135,7 @@ async function parseNHCFeed(feedUrl: string, basin: string): Promise<NOAAAlert[]
         expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
         senderName: `NHC - ${basin}`,
         areaDesc: basin,
-        distanceMiles: null,
+        distanceKm: null,
         coordinates,
         source: 'NHC',
       });
@@ -195,7 +195,7 @@ async function parseMexicoAlerts(): Promise<NOAAAlert[]> {
         expires: expires ? new Date(expires).toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         senderName: 'SMN México',
         areaDesc,
-        distanceMiles: null,
+        distanceKm: null,
         coordinates: null,
         source: 'Mexico',
       });
@@ -208,7 +208,7 @@ async function parseMexicoAlerts(): Promise<NOAAAlert[]> {
   }
 }
 
-export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: number = 100) {
+export function useWeatherAlerts(position: GeoPosition | null, radiusKm: number = 160) {
   const [alerts, setAlerts] = useState<NOAAAlert[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -216,18 +216,18 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
   
   // Use refs for values that change frequently to avoid recreating callbacks
   const positionRef = useRef(position);
-  const radiusMilesRef = useRef(radiusMiles);
+  const radiusKmRef = useRef(radiusKm);
   
   useEffect(() => {
     positionRef.current = position;
-    radiusMilesRef.current = radiusMiles;
-  }, [position, radiusMiles]);
+    radiusKmRef.current = radiusKm;
+  }, [position, radiusKm]);
 
-  // Parse NOAA alert response - stable callback using ref for radiusMiles
+  // Parse NOAA alert response - stable callback using ref for radiusKm
   const parseNOAAAlerts = useCallback((data: any, userPosition: GeoPosition): NOAAAlert[] => {
     if (!data?.features) return [];
 
-    const radiusKm = radiusMilesRef.current * 1.60934;
+    const radiusKm = radiusKmRef.current;
 
     return data.features
       .map((feature: any) => {
@@ -272,7 +272,7 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
           expires: props.expires,
           senderName: props.senderName,
           areaDesc: props.areaDesc,
-          distanceMiles: distanceKm ? distanceKm / 1.60934 : null,
+          distanceKm: distanceKm ?? null,
           coordinates,
           source: 'NOAA',
         };
@@ -286,14 +286,14 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
         );
         
         // Filter by distance (if we have coordinates)
-        const isWithinRadius = alert.distanceMiles === null || alert.distanceMiles <= radiusMilesRef.current;
+        const isWithinRadius = alert.distanceKm === null || alert.distanceKm <= radiusKmRef.current;
         
         // Filter out expired alerts
         const isActive = new Date(alert.expires) > new Date();
         
         return isSevere && isWithinRadius && isActive;
       });
-  }, []); // No dependencies - uses ref for radiusMiles
+  }, []); // No dependencies - uses ref for radiusKm
 
   // Calculate distance for alerts that have coordinates
   const addDistanceToAlerts = useCallback((alertsList: NOAAAlert[], userPosition: GeoPosition): NOAAAlert[] => {
@@ -307,7 +307,7 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
         );
         return {
           ...alert,
-          distanceMiles: distanceKm / 1.60934,
+          distanceKm,
         };
       }
       return alert;
@@ -401,8 +401,8 @@ export function useWeatherAlerts(position: GeoPosition | null, radiusMiles: numb
         if (aSev !== bSev) return aSev - bSev;
         
         // Sort by distance
-        if (a.distanceMiles !== null && b.distanceMiles !== null) {
-          return a.distanceMiles - b.distanceMiles;
+        if (a.distanceKm !== null && b.distanceKm !== null) {
+          return a.distanceKm - b.distanceKm;
         }
         return 0;
       });
