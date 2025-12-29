@@ -91,6 +91,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     hasFirstAidKit: false,
     hasAmbulance: false,
     hasRescueUnit: false,
+    hasK9Unit: false,
   });
   
   // Privacy consent state
@@ -322,6 +323,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         has_first_aid_kit: profileForm.hasFirstAidKit,
         has_ambulance: profileForm.hasAmbulance,
         has_rescue_unit: profileForm.hasRescueUnit,
+        has_k9_unit: profileForm.hasK9Unit,
       });
 
       if (profileError) {
@@ -763,6 +765,28 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                       <div className="font-medium text-foreground">Tengo unidad de rescate disponible</div>
                       <div className="text-xs text-muted-foreground">
                         Cuento con vehículo o equipo especializado de rescate
+                      </div>
+                    </div>
+                  </label>
+
+                  <label 
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                      profileForm.hasK9Unit
+                        ? "border-amber-500 bg-amber-500/10"
+                        : "border-border hover:border-amber-500/50"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={profileForm.hasK9Unit}
+                      onChange={(e) => setProfileForm({ ...profileForm, hasK9Unit: e.target.checked })}
+                      className="w-5 h-5 rounded accent-amber-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-foreground">Tengo binomio canino (K9) disponible</div>
+                      <div className="text-xs text-muted-foreground">
+                        Cuento con perro de búsqueda y rescate certificado
                       </div>
                     </div>
                   </label>

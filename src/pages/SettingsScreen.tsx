@@ -141,9 +141,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [shareLocation, setShareLocation] = useState(profile?.share_location ?? false);
   const [shareMedicalInfo, setShareMedicalInfo] = useState(profile?.share_medical_info ?? false);
-  const [pendingMedicalDisable, setPendingMedicalDisable] = useState<'has_first_aid_kit' | 'has_ambulance' | 'has_rescue_unit' | null>(null);
+  const [pendingMedicalDisable, setPendingMedicalDisable] = useState<'has_first_aid_kit' | 'has_ambulance' | 'has_rescue_unit' | 'has_k9_unit' | null>(null);
   const [hasRescueUnit, setHasRescueUnit] = useState(
     profile?.has_rescue_unit ?? false
+  );
+  const [hasK9Unit, setHasK9Unit] = useState(
+    profile?.has_k9_unit ?? false
   );
   const [medicalForm, setMedicalForm] = useState({
     blood_type: profile?.blood_type || '',
@@ -224,6 +227,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       setHasFirstAidKit(profile.has_first_aid_kit ?? false);
       setHasAmbulance(profile.has_ambulance ?? false);
       setHasRescueUnit(profile.has_rescue_unit ?? false);
+      setHasK9Unit((profile as any).has_k9_unit ?? false);
       setShareLocation(profile.share_location ?? false);
       setShareMedicalInfo(profile.share_medical_info ?? false);
       setMedicalForm({
@@ -295,7 +299,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   // Update medical assistance settings
-  const handleMedicalToggle = async (field: 'can_provide_medical_assistance' | 'has_first_aid_kit' | 'has_ambulance' | 'has_rescue_unit', value: boolean) => {
+  const handleMedicalToggle = async (field: 'can_provide_medical_assistance' | 'has_first_aid_kit' | 'has_ambulance' | 'has_rescue_unit' | 'has_k9_unit', value: boolean) => {
     setSavingMedical(true);
     
     if (field === 'can_provide_medical_assistance') {
@@ -306,6 +310,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       setHasAmbulance(value);
     } else if (field === 'has_rescue_unit') {
       setHasRescueUnit(value);
+    } else if (field === 'has_k9_unit') {
+      setHasK9Unit(value);
     }
 
     try {
@@ -321,6 +327,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         setHasAmbulance(!value);
       } else if (field === 'has_rescue_unit') {
         setHasRescueUnit(!value);
+      } else if (field === 'has_k9_unit') {
+        setHasK9Unit(!value);
       }
     } finally {
       setSavingMedical(false);
@@ -943,9 +951,46 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   />
                 </div>
               </div>
+
+              {/* K9 Unit toggle */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                    <span className="text-lg">🐕</span>
+                  </div>
+                  <div>
+                    <Label htmlFor="k9-unit-toggle" className="text-foreground font-medium">
+                      Tengo binomio canino (K9) disponible
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Cuento con perro de búsqueda y rescate certificado
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {hasK9Unit && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                      onClick={() => setPendingMedicalDisable('has_k9_unit')}
+                      disabled={savingMedical}
+                      title="Ya no tengo binomio canino disponible"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                  <Switch
+                    id="k9-unit-toggle"
+                    checked={hasK9Unit}
+                    onCheckedChange={(value) => handleMedicalToggle('has_k9_unit', value)}
+                    disabled={savingMedical}
+                  />
+                </div>
+              </div>
             </div>
 
-            {(canProvideMedical || hasFirstAidKit || hasAmbulance || hasRescueUnit) && (
+            {(canProvideMedical || hasFirstAidKit || hasAmbulance || hasRescueUnit || hasK9Unit) && (
               <div className="mt-4 p-3 bg-safe/10 rounded-lg border border-safe/20">
                 <p className="text-xs text-safe flex items-center gap-2">
                   <HeartPulse className="w-4 h-4" />
