@@ -8,6 +8,7 @@ import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
 import { useMexicoAlerts, TropicalCycloneAlert, FireHotspot } from '@/hooks/useMexicoAlerts';
 import { useGDACSAlerts, GDACSAlert, AEMETAlert } from '@/hooks/useGDACSAlerts';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { areInternationalRedAlertsEnabled } from '@/hooks/useAlertSettings';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -155,8 +156,13 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     onNewFires: handleNewFires,
   });
 
-  // Callback for new red alerts
+  // Callback for new red alerts (only if enabled in settings)
   const handleNewRedAlert = useCallback((alert: any) => {
+    // Check if international red alerts are enabled
+    if (!areInternationalRedAlertsEnabled()) {
+      console.log('[AlertsScreen] Red alert ignored (disabled in settings):', alert.title);
+      return;
+    }
     console.log('[AlertsScreen] New RED alert:', alert.title);
     showRedAlertNotification(alert);
     playUrgentAlert();
