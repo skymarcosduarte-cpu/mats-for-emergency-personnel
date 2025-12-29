@@ -139,16 +139,8 @@ serve(async (req) => {
         title,
         message,
         read: false,
-        metadata: {
-          trip_id: tripId,
-          trip_user_id: tripUserId,
-          origin,
-          destination,
-          origin_lat: originLat,
-          origin_lng: originLng,
-          destination_lat: destinationLat,
-          destination_lng: destinationLng,
-        }
+        // Store trip_user_id in listing_id field for direct messaging capability
+        listing_id: tripUserId,
       }));
 
       const { error: insertError } = await supabase

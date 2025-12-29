@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -638,7 +638,13 @@ export const CommunityScreen: React.FC = () => {
                 <p>No tienes notificaciones</p>
               </div>
             ) : (
-              notifications.map((notification) => (
+              notifications.map((notification) => {
+                // Check if this is a trip-related notification that allows messaging
+                const isTripNotification = notification.type.startsWith('trip_');
+                const tripUserId = isTripNotification && notification.listing_id ? notification.listing_id : null;
+                const canMessage = tripUserId && tripUserId !== user?.id;
+                
+                return (
                 <Card 
                   key={notification.id} 
                   className={cn(
@@ -653,10 +659,16 @@ export const CommunityScreen: React.FC = () => {
                           "p-2 rounded-full",
                           notification.type === 'marketplace_contact' 
                             ? "bg-primary/10 text-primary"
-                            : "bg-muted text-muted-foreground"
+                            : isTripNotification
+                              ? notification.type === 'trip_overdue' 
+                                ? "bg-destructive/10 text-destructive"
+                                : "bg-amber-500/10 text-amber-600"
+                              : "bg-muted text-muted-foreground"
                         )}>
                           {notification.type === 'marketplace_contact' ? (
                             <ShoppingBag className="w-4 h-4" />
+                          ) : isTripNotification ? (
+                            <Car className="w-4 h-4" />
                           ) : (
                             <Bell className="w-4 h-4" />
                           )}
@@ -673,12 +685,28 @@ export const CommunityScreen: React.FC = () => {
                               {notification.message}
                             </p>
                           )}
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {formatDistanceToNow(new Date(notification.created_at), { 
-                              addSuffix: true,
-                              locale: es 
-                            })}
-                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <p className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(notification.created_at), { 
+                                addSuffix: true,
+                                locale: es 
+                              })}
+                            </p>
+                            {canMessage && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                                onClick={() => {
+                                  // Navigate to chat with this user
+                                  window.location.href = `/?chat=${tripUserId}`;
+                                }}
+                              >
+                                <MessageCircle className="w-3 h-3 mr-1" />
+                                Enviar mensaje
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex gap-1">
@@ -704,7 +732,8 @@ export const CommunityScreen: React.FC = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ))
+              );
+              })
             )}
           </div>
         </TabsContent>
