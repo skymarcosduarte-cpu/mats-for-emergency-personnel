@@ -1,13 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { AlertTriangle, X, MessageCircle, MapPin, Volume2 } from 'lucide-react';
+import { AlertTriangle, X, MessageCircle, MapPin, Volume2, Play, Pause, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { stopClave100Alert } from '@/lib/alertSound';
+import { formatDuration } from '@/lib/audioUtils';
 
 interface Clave100OverlayProps {
   isVisible: boolean;
   senderName: string;
   message: string;
+  imageUrl?: string | null;
+  audioUrl?: string | null;
+  audioDurationMs?: number | null;
   onDismiss: () => void;
   onOpenChat: () => void;
 }
@@ -16,12 +20,18 @@ export const Clave100Overlay: React.FC<Clave100OverlayProps> = ({
   isVisible,
   senderName,
   message,
+  imageUrl,
+  audioUrl,
+  audioDurationMs,
   onDismiss,
   onOpenChat,
 }) => {
   const [showContent, setShowContent] = useState(false);
   const [flashPhase, setFlashPhase] = useState(0);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [showFullImage, setShowFullImage] = useState(false);
   const flashIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (isVisible) {
@@ -42,19 +52,48 @@ export const Clave100Overlay: React.FC<Clave100OverlayProps> = ({
     } else {
       setShowContent(false);
       setFlashPhase(0);
+      setIsPlayingAudio(false);
+      setShowFullImage(false);
       if (flashIntervalRef.current) {
         clearInterval(flashIntervalRef.current);
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
     }
   }, [isVisible]);
 
+  const toggleAudioPlayback = () => {
+    if (!audioUrl) return;
+
+    if (!audioRef.current) {
+      audioRef.current = new Audio(audioUrl);
+      audioRef.current.onended = () => setIsPlayingAudio(false);
+    }
+
+    if (isPlayingAudio) {
+      audioRef.current.pause();
+      setIsPlayingAudio(false);
+    } else {
+      audioRef.current.play();
+      setIsPlayingAudio(true);
+    }
+  };
+
   const handleDismiss = () => {
     stopClave100Alert();
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
     onDismiss();
   };
 
   const handleOpenChat = () => {
     stopClave100Alert();
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
     onOpenChat();
     onDismiss();
   };
@@ -195,6 +234,53 @@ export const Clave100Overlay: React.FC<Clave100OverlayProps> = ({
               {cleanMessage}
             </p>
           </div>
+
+          {/* Attached Image */}
+          {imageUrl && (
+            <div className="relative">
+              <button 
+                onClick={() => setShowFullImage(!showFullImage)}
+                className="w-full"
+              >
+                <img 
+                  src={imageUrl} 
+                  alt="Imagen de emergencia" 
+                  className={cn(
+                    "w-full rounded-lg border-2 border-destructive/40 object-cover transition-all",
+                    showFullImage ? "max-h-[400px]" : "max-h-[150px]"
+                  )}
+                />
+                <div className="absolute bottom-2 right-2 px-2 py-1 bg-background/80 backdrop-blur-sm rounded text-xs flex items-center gap-1">
+                  <ImageIcon className="w-3 h-3" />
+                  {showFullImage ? 'Reducir' : 'Ver imagen'}
+                </div>
+              </button>
+            </div>
+          )}
+
+          {/* Attached Audio */}
+          {audioUrl && (
+            <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+              <button
+                onClick={toggleAudioPlayback}
+                className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center"
+              >
+                {isPlayingAudio ? (
+                  <Pause className="w-5 h-5" />
+                ) : (
+                  <Play className="w-5 h-5 ml-0.5" />
+                )}
+              </button>
+              <div className="flex-1">
+                <p className="text-sm font-medium">🎤 Nota de voz adjunta</p>
+                {audioDurationMs && (
+                  <p className="text-xs text-muted-foreground font-mono">
+                    {formatDuration(audioDurationMs)}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Location button if present */}
           {locationUrl && (

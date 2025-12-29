@@ -569,6 +569,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
         isVisible={!!clave100Alert?.isVisible}
         senderName={clave100Alert?.senderName || 'Usuario'}
         message={clave100Alert?.message || ''}
+        imageUrl={clave100Alert?.imageUrl}
+        audioUrl={clave100Alert?.audioUrl}
+        audioDurationMs={clave100Alert?.audioDurationMs}
         onDismiss={dismissClave100}
         onOpenChat={() => {
           if (clave100Alert?.senderId) {
