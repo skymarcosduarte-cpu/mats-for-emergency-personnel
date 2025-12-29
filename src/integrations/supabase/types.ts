@@ -539,6 +539,7 @@ export type Database = {
           full_name: string
           has_ambulance: boolean | null
           has_first_aid_kit: boolean | null
+          has_rescue_unit: boolean | null
           id: string
           medical_conditions: string | null
           nickname: string
@@ -563,6 +564,7 @@ export type Database = {
           full_name: string
           has_ambulance?: boolean | null
           has_first_aid_kit?: boolean | null
+          has_rescue_unit?: boolean | null
           id: string
           medical_conditions?: string | null
           nickname: string
@@ -587,6 +589,7 @@ export type Database = {
           full_name?: string
           has_ambulance?: boolean | null
           has_first_aid_kit?: boolean | null
+          has_rescue_unit?: boolean | null
           id?: string
           medical_conditions?: string | null
           nickname?: string
@@ -607,6 +610,7 @@ export type Database = {
           can_provide_medical_assistance: boolean | null
           has_ambulance: boolean | null
           has_first_aid_kit: boolean | null
+          has_rescue_unit: boolean | null
           nickname: string | null
           share_location: boolean
           show_name_on_map: boolean
@@ -618,6 +622,7 @@ export type Database = {
           can_provide_medical_assistance?: boolean | null
           has_ambulance?: boolean | null
           has_first_aid_kit?: boolean | null
+          has_rescue_unit?: boolean | null
           nickname?: string | null
           share_location?: boolean
           show_name_on_map?: boolean
@@ -629,6 +634,7 @@ export type Database = {
           can_provide_medical_assistance?: boolean | null
           has_ambulance?: boolean | null
           has_first_aid_kit?: boolean | null
+          has_rescue_unit?: boolean | null
           nickname?: string | null
           share_location?: boolean
           show_name_on_map?: boolean

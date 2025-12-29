@@ -90,6 +90,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     canProvideMedicalAssistance: false,
     hasFirstAidKit: false,
     hasAmbulance: false,
+    hasRescueUnit: false,
   });
   
   // Privacy consent state
@@ -320,6 +321,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         can_provide_medical_assistance: profileForm.canProvideMedicalAssistance,
         has_first_aid_kit: profileForm.hasFirstAidKit,
         has_ambulance: profileForm.hasAmbulance,
+        has_rescue_unit: profileForm.hasRescueUnit,
       });
 
       if (profileError) {
@@ -717,6 +719,50 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                       <div className="font-medium text-foreground">Tengo botiquín disponible</div>
                       <div className="text-xs text-muted-foreground">
                         Cuento con equipo de primeros auxilios en mi ubicación
+                      </div>
+                    </div>
+                  </label>
+
+                  <label 
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                      profileForm.hasAmbulance
+                        ? "border-destructive bg-destructive/10"
+                        : "border-border hover:border-destructive/50"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={profileForm.hasAmbulance}
+                      onChange={(e) => setProfileForm({ ...profileForm, hasAmbulance: e.target.checked })}
+                      className="w-5 h-5 rounded accent-destructive"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-foreground">Tengo ambulancia disponible</div>
+                      <div className="text-xs text-muted-foreground">
+                        Cuento con ambulancia o vehículo de emergencia
+                      </div>
+                    </div>
+                  </label>
+
+                  <label 
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                      profileForm.hasRescueUnit
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={profileForm.hasRescueUnit}
+                      onChange={(e) => setProfileForm({ ...profileForm, hasRescueUnit: e.target.checked })}
+                      className="w-5 h-5 rounded accent-primary"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-foreground">Tengo unidad de rescate disponible</div>
+                      <div className="text-xs text-muted-foreground">
+                        Cuento con vehículo o equipo especializado de rescate
                       </div>
                     </div>
                   </label>

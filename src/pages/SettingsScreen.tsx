@@ -141,7 +141,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [shareLocation, setShareLocation] = useState(profile?.share_location ?? false);
   const [shareMedicalInfo, setShareMedicalInfo] = useState(profile?.share_medical_info ?? false);
-  const [pendingMedicalDisable, setPendingMedicalDisable] = useState<'has_first_aid_kit' | 'has_ambulance' | null>(null);
+  const [pendingMedicalDisable, setPendingMedicalDisable] = useState<'has_first_aid_kit' | 'has_ambulance' | 'has_rescue_unit' | null>(null);
+  const [hasRescueUnit, setHasRescueUnit] = useState(
+    profile?.has_rescue_unit ?? false
+  );
   const [medicalForm, setMedicalForm] = useState({
     blood_type: profile?.blood_type || '',
     allergies: profile?.allergies || '',
@@ -220,6 +223,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       setCanProvideMedical(profile.can_provide_medical_assistance ?? false);
       setHasFirstAidKit(profile.has_first_aid_kit ?? false);
       setHasAmbulance(profile.has_ambulance ?? false);
+      setHasRescueUnit(profile.has_rescue_unit ?? false);
       setShareLocation(profile.share_location ?? false);
       setShareMedicalInfo(profile.share_medical_info ?? false);
       setMedicalForm({
@@ -291,15 +295,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   // Update medical assistance settings
-  const handleMedicalToggle = async (field: 'can_provide_medical_assistance' | 'has_first_aid_kit' | 'has_ambulance', value: boolean) => {
+  const handleMedicalToggle = async (field: 'can_provide_medical_assistance' | 'has_first_aid_kit' | 'has_ambulance' | 'has_rescue_unit', value: boolean) => {
     setSavingMedical(true);
     
     if (field === 'can_provide_medical_assistance') {
       setCanProvideMedical(value);
     } else if (field === 'has_first_aid_kit') {
       setHasFirstAidKit(value);
-    } else {
+    } else if (field === 'has_ambulance') {
       setHasAmbulance(value);
+    } else if (field === 'has_rescue_unit') {
+      setHasRescueUnit(value);
     }
 
     try {
@@ -309,8 +315,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       // Revert on error
       if (field === 'can_provide_medical_assistance') {
         setCanProvideMedical(!value);
-      } else {
+      } else if (field === 'has_first_aid_kit') {
         setHasFirstAidKit(!value);
+      } else if (field === 'has_ambulance') {
+        setHasAmbulance(!value);
+      } else if (field === 'has_rescue_unit') {
+        setHasRescueUnit(!value);
       }
     } finally {
       setSavingMedical(false);
@@ -896,9 +906,46 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   />
                 </div>
               </div>
+
+              {/* Rescue Unit toggle */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-lg">🚒</span>
+                  </div>
+                  <div>
+                    <Label htmlFor="rescue-unit-toggle" className="text-foreground font-medium">
+                      Tengo unidad de rescate disponible
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Cuento con vehículo o equipo especializado de rescate
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {hasRescueUnit && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                      onClick={() => setPendingMedicalDisable('has_rescue_unit')}
+                      disabled={savingMedical}
+                      title="Ya no tengo unidad de rescate disponible"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                  <Switch
+                    id="rescue-unit-toggle"
+                    checked={hasRescueUnit}
+                    onCheckedChange={(value) => handleMedicalToggle('has_rescue_unit', value)}
+                    disabled={savingMedical}
+                  />
+                </div>
+              </div>
             </div>
 
-            {(canProvideMedical || hasFirstAidKit || hasAmbulance) && (
+            {(canProvideMedical || hasFirstAidKit || hasAmbulance || hasRescueUnit) && (
               <div className="mt-4 p-3 bg-safe/10 rounded-lg border border-safe/20">
                 <p className="text-xs text-safe flex items-center gap-2">
                   <HeartPulse className="w-4 h-4" />
