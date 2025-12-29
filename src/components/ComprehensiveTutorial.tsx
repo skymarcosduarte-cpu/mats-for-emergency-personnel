@@ -909,8 +909,11 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* Navigation - extra padding for mobile nav bar */}
-      <div className="p-4 pb-28 border-t border-border bg-background safe-bottom" style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))' }}>
+      {/* Navigation - fixed at bottom with safe area padding */}
+      <div 
+        className="flex-shrink-0 p-4 border-t border-border bg-background"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 16px))' }}
+      >
         <div className="flex items-center justify-between gap-4 max-w-lg mx-auto">
           <Button
             variant="outline"
