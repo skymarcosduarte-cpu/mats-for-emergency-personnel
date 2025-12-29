@@ -50,6 +50,7 @@ import { toast } from 'sonner';
 import { MyAlertsHistory } from '@/components/MyAlertsHistory';
 import { QuakeCheckinMap } from '@/components/QuakeCheckinMap';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
+import { useRecentQuakeCheckins } from '@/hooks/useRecentQuakeCheckins';
 
 // Removed - now using useEarthquakeHistory hook
 
@@ -96,7 +97,9 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   // Active trips from community members
   const { trips: activeTrips, loading: tripsLoading, refresh: refreshTrips } = useActiveTrips();
 
-  // Use earthquake history hook with offline caching
+  // Recent quake checkins for community tab
+  const { checkins: quakeCheckins, loading: quakeCheckinsLoading, refresh: refreshQuakeCheckins } = useRecentQuakeCheckins(15);
+
   const { 
     earthquakes, 
     loading, 
@@ -987,15 +990,99 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             </div>
           )}
 
+          {/* Quake Checkins Section */}
+          {quakeCheckins.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-primary" />
+                  Reportes de sismos (24h)
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={refreshQuakeCheckins}
+                  disabled={quakeCheckinsLoading}
+                >
+                  <RefreshCw className={cn('w-3.5 h-3.5', quakeCheckinsLoading && 'animate-spin')} />
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {quakeCheckins.map((checkin) => (
+                  <Card 
+                    key={checkin.id} 
+                    className={cn(
+                      "bg-card border-border",
+                      checkin.damage_report === 'DAMAGE' && "border-l-4 border-l-destructive"
+                    )}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-3">
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                          checkin.damage_report === 'OK' && "bg-safe",
+                          checkin.damage_report === 'UNSURE' && "bg-warning",
+                          checkin.damage_report === 'DAMAGE' && "bg-destructive"
+                        )}>
+                          <span className="text-white font-bold text-sm">
+                            {checkin.damage_report === 'OK' ? '✓' : 
+                             checkin.damage_report === 'UNSURE' ? '?' : '⚠'}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            {checkin.nickname && (
+                              <span className="text-xs font-semibold text-foreground">
+                                {checkin.nickname}
+                              </span>
+                            )}
+                            <Badge
+                              variant={
+                                checkin.damage_report === 'OK' ? 'default' :
+                                checkin.damage_report === 'UNSURE' ? 'secondary' : 'destructive'
+                              }
+                              className="text-[10px] px-1.5 py-0"
+                            >
+                              {checkin.damage_report === 'OK' ? 'Todo bien' :
+                               checkin.damage_report === 'UNSURE' ? 'No seguro' : 'Reporta daños'}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {formatDistanceToNow(new Date(checkin.created_at), { 
+                                addSuffix: true, 
+                                locale: es 
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={() => window.open(getGoogleMapsLink(checkin.lat, checkin.lng), '_blank')}
+                        >
+                          <MapPin className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Help Requests Section */}
-          {helpRequests.filter(r => !r.resolved).length === 0 && activeTrips.length === 0 ? (
+          {helpRequests.filter(r => !r.resolved).length === 0 && activeTrips.length === 0 && quakeCheckins.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p>No hay actividad de la comunidad</p>
             </div>
           ) : helpRequests.filter(r => !r.resolved).length > 0 && (
             <div className="space-y-2">
-              {activeTrips.length > 0 && (
+              {(activeTrips.length > 0 || quakeCheckins.length > 0) && (
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mt-4">
                   <AlertTriangle className="w-4 h-4 text-destructive" />
                   Solicitudes de ayuda
