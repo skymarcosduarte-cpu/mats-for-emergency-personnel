@@ -1121,6 +1121,14 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                   origin: { lat: trip.origin_lat, lng: trip.origin_lng },
                                   destination: { lat: trip.destination_lat, lng: trip.destination_lng },
                                 }}
+                                tripData={{
+                                  originLat: trip.origin_lat,
+                                  originLng: trip.origin_lng,
+                                  destinationLat: trip.destination_lat,
+                                  destinationLng: trip.destination_lng,
+                                  currentLat: position?.lat,
+                                  currentLng: position?.lng,
+                                }}
                               >
                                 <TripRouteMap
                                   routeCoordinates={getRouteCoordinates()}
@@ -2153,6 +2161,14 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                       lng: selectedCommunityTrip.destination_lng,
                     },
                     current: { lat: selectedCommunityTrip.current_lat, lng: selectedCommunityTrip.current_lng },
+                  }}
+                  tripData={{
+                    originLat: selectedCommunityTrip.origin_lat,
+                    originLng: selectedCommunityTrip.origin_lng,
+                    destinationLat: selectedCommunityTrip.destination_lat,
+                    destinationLng: selectedCommunityTrip.destination_lng,
+                    currentLat: selectedCommunityTrip.current_lat,
+                    currentLng: selectedCommunityTrip.current_lng,
                   }}
                   onClose={() => setSelectedCommunityTrip(null)}
                 >
