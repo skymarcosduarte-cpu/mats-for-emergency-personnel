@@ -51,6 +51,7 @@ import { toast } from 'sonner';
 import { MyAlertsHistory } from '@/components/MyAlertsHistory';
 import { QuakeCheckinMap } from '@/components/QuakeCheckinMap';
 import { CycloneMap } from '@/components/CycloneMap';
+import { SeismicWaveMap } from '@/components/SeismicWaveMap';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 import { useRecentQuakeCheckins } from '@/hooks/useRecentQuakeCheckins';
 
@@ -1614,6 +1615,22 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
 
               {/* Checkin map - intensity reports */}
               <div>
+                {/* Seismic wave propagation map */}
+                <div>
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <Navigation className="w-4 h-4 text-primary" />
+                    Propagación de Ondas Sísmicas
+                  </h3>
+                  <SeismicWaveMap
+                    epicenterLat={selectedQuake.geometry.coordinates[1]}
+                    epicenterLng={selectedQuake.geometry.coordinates[0]}
+                    magnitude={selectedQuake.properties.mag}
+                    earthquakeTime={selectedQuake.properties.time}
+                    userPosition={position}
+                    className="h-[300px] rounded-lg overflow-hidden"
+                  />
+                </div>
+
                 <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-warning" />
                   Reportes de la Comunidad
