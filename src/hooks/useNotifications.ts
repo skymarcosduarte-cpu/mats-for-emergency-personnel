@@ -134,6 +134,66 @@ export function useNotifications() {
         ]);
       }
     }
+    // Trip arrived with delay - user is OK
+    else if (notification.type === 'trip_arrived_delayed') {
+      playPositiveAlert();
+      
+      toast.success(notification.title, {
+        description: notification.message || 'El usuario llegó con retraso pero está bien',
+        duration: 10000,
+        icon: '✅',
+      });
+
+      if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200]);
+      }
+    }
+    // Trip confirmed safe - still on the way
+    else if (notification.type === 'trip_confirmed_safe') {
+      playPositiveAlert();
+      
+      toast.success(notification.title, {
+        description: notification.message || 'El usuario confirmó que está bien',
+        duration: 8000,
+        icon: '👍',
+      });
+
+      if ('vibrate' in navigator) {
+        navigator.vibrate([150, 100, 150]);
+      }
+    }
+    // Trip overdue - warning
+    else if (notification.type === 'trip_overdue') {
+      playUrgentAlert();
+      
+      toast.warning(notification.title, {
+        description: notification.message || 'Un viaje está retrasado',
+        duration: 15000,
+        icon: '⚠️',
+      });
+
+      if ('vibrate' in navigator) {
+        navigator.vibrate([300, 100, 300, 100, 300]);
+      }
+    }
+    // Trip arrived - normal
+    else if (notification.type === 'trip_arrived') {
+      playPositiveAlert();
+      
+      toast.success(notification.title, {
+        description: notification.message || 'El usuario llegó a su destino',
+        duration: 6000,
+        icon: '✅',
+      });
+    }
+    // Trip ETA updated
+    else if (notification.type === 'trip_eta_updated') {
+      toast.info(notification.title, {
+        description: notification.message || 'ETA actualizado',
+        duration: 6000,
+        icon: '🕐',
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -245,6 +305,28 @@ export function useNotifications() {
     }
   };
 
+  const deleteAllRead = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const readNotificationIds = notifications.filter(n => n.read).map(n => n.id);
+      if (readNotificationIds.length === 0) return;
+
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('read', true);
+
+      if (error) throw error;
+      
+      setNotifications(prev => prev.filter(n => !n.read));
+    } catch (error) {
+      console.error('Error deleting read notifications:', error);
+    }
+  };
+
   return {
     notifications,
     unreadCount,
@@ -252,6 +334,7 @@ export function useNotifications() {
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    deleteAllRead,
     refetch: fetchNotifications,
   };
 }

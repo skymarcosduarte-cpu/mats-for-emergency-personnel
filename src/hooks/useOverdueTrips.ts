@@ -160,7 +160,7 @@ export function useOverdueTrips() {
     }
   }, [overdueTrip]);
 
-  // Mark trip as arrived
+  // Mark trip as arrived (with delay info if applicable)
   const confirmArrived = useCallback(async () => {
     if (!overdueTrip) return;
     
@@ -176,13 +176,15 @@ export function useOverdueTrips() {
 
       if (error) throw error;
       
+      // Send arrived_delayed event with delay info since trip was overdue
       await supabase.functions.invoke('notify-trip-update', {
         body: {
           tripId: overdueTrip.id,
           tripUserId: overdueTrip.user_id,
-          eventType: 'arrived',
+          eventType: 'arrived_delayed',
           origin: overdueTrip.origin,
           destination: overdueTrip.destination,
+          overdueMinutes: overdueTrip.overdueMinutes,
         }
       });
       
