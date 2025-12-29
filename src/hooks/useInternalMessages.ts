@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { playMessageNotification, triggerMessageVibration } from '@/lib/alertSound';
+import { playMessageNotification, triggerMessageVibration, playClave100Alert } from '@/lib/alertSound';
 import { toast } from 'sonner';
 
 export interface InternalMessage {
@@ -509,11 +509,22 @@ export const useInternalMessagesStore = () => {
               }
             });
 
+            // Check if it's a Clave 100 message
+            const isClave100 = newMessage.message.includes('🚨 CLAVE 100') || newMessage.message.includes('CLAVE 100 - EMERGENCIA');
+            
             // Play notification sound and vibration (if not muted)
             const muted = localStorage.getItem('chat_notifications_muted') === 'true';
             if (!muted) {
-              playMessageNotification();
-              triggerMessageVibration();
+              if (isClave100) {
+                // Play special Clave 100 alert - always loud
+                playClave100Alert();
+              } else {
+                playMessageNotification();
+                triggerMessageVibration();
+              }
+            } else if (isClave100) {
+              // Even if muted, Clave 100 should alert (it's an emergency)
+              playClave100Alert();
             }
             
             // Get sender name for notification
@@ -530,12 +541,23 @@ export const useInternalMessagesStore = () => {
               senderNamesCache.current.set(newMessage.sender_id, senderName);
             }
             
-            showBrowserNotification(senderName, newMessage.message, newMessage.sender_id);
+            showBrowserNotification(
+              isClave100 ? '🚨 CLAVE 100 - EMERGENCIA' : senderName, 
+              newMessage.message, 
+              newMessage.sender_id
+            );
             
-            toast.info(`💬 ${senderName}`, {
-              description: newMessage.message.substring(0, 80) + (newMessage.message.length > 80 ? '...' : ''),
-              duration: 5000,
-            });
+            if (isClave100) {
+              toast.error(`🚨 CLAVE 100 de ${senderName}`, {
+                description: newMessage.message.substring(0, 100) + (newMessage.message.length > 100 ? '...' : ''),
+                duration: 15000,
+              });
+            } else {
+              toast.info(`💬 ${senderName}`, {
+                description: newMessage.message.substring(0, 80) + (newMessage.message.length > 80 ? '...' : ''),
+                duration: 5000,
+              });
+            }
           }
         }
       )
