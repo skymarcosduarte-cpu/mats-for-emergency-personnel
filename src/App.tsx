@@ -28,6 +28,7 @@ import { EmergencyAlertOverlay } from '@/components/EmergencyAlertOverlay';
 import { ActiveAlertBanner } from '@/components/ActiveAlertBanner';
 import { QuakeDamageBanner } from '@/components/QuakeDamageBanner';
 import { ResponderComingOverlay } from '@/components/ResponderComingOverlay';
+import { TripSafetyCheckDialog } from '@/components/TripSafetyCheckDialog';
 import { ResponderTrackingMap } from '@/components/ResponderTrackingMap';
 import { InternalMessaging } from '@/components/InternalMessaging';
 import { UnreadMessagesBanner } from '@/components/UnreadMessagesBanner';
@@ -230,8 +231,15 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     return null;
   }, [allMyResponders]);
   
-  // Monitor for overdue trips (30+ minutes past ETA) - client side
-  useOverdueTrips();
+  // Monitor for overdue trips (30+ minutes past ETA) - client side with dialog
+  const { 
+    overdueTrip, 
+    isUpdating: isUpdatingTrip,
+    confirmSafe: confirmTripSafe,
+    confirmArrived: confirmTripArrived,
+    extendEta,
+    dismissDialog: dismissTripDialog,
+  } = useOverdueTrips();
   
   // Check for delayed trips and send push notifications - calls edge function
   useDelayedTripChecker();
@@ -477,6 +485,16 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
         onConfirmSafe={handleConfirmSafe}
         onNeedHelp={handleNeedHelp}
         onDismiss={dismissPrompt}
+      />
+
+      {/* Trip Safety Check Dialog - shown when trip is 30+ min overdue */}
+      <TripSafetyCheckDialog
+        trip={overdueTrip}
+        onConfirmSafe={confirmTripSafe}
+        onConfirmArrived={confirmTripArrived}
+        onExtendEta={extendEta}
+        onDismiss={dismissTripDialog}
+        isUpdating={isUpdatingTrip}
       />
 
       {/* Prominent Emergency Alert Overlay for community alerts */}
