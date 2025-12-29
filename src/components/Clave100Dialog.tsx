@@ -421,6 +421,7 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
                 <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-sm space-y-2">
                   <p className="font-semibold text-destructive">⚠️ ADVERTENCIA</p>
                   <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                    <li><strong>Si tienes una emergencia personal utiliza la opción de Alertas</strong>, no mandes Clave 100, esta se usa solo en casos de desastres o siniestros mayores.</li>
                     <li>Esta función es <strong>ÚNICAMENTE</strong> para casos de <strong>verdadera emergencia</strong>.</li>
                     <li>El mensaje será enviado a <strong>TODOS</strong> los usuarios activos en la comunidad.</li>
                     <li>El uso indebido de esta función puede resultar en la suspensión de tu cuenta.</li>
