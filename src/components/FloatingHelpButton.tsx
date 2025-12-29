@@ -55,10 +55,10 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
           whileTap={{ scale: 0.95 }}
           onClick={() => setIsExpanded(!isExpanded)}
           className={cn(
-            "w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-colors",
+            "w-9 h-9 rounded-full shadow-md flex items-center justify-center transition-colors",
             isExpanded 
               ? "bg-muted text-muted-foreground" 
-              : "bg-primary text-primary-foreground hover:bg-primary/90"
+              : "bg-primary/80 text-primary-foreground hover:bg-primary"
           )}
           aria-label={isExpanded ? "Cerrar ayuda" : "Abrir ayuda"}
         >
@@ -71,7 +71,7 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
                 exit={{ rotate: 90, opacity: 0 }}
                 transition={{ duration: 0.15 }}
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </motion.div>
             ) : (
               <motion.div
@@ -81,7 +81,7 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
                 exit={{ rotate: -90, opacity: 0 }}
                 transition={{ duration: 0.15 }}
               >
-                <HelpCircle className="w-5 h-5" />
+                <HelpCircle className="w-4 h-4" />
               </motion.div>
             )}
           </AnimatePresence>
