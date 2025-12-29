@@ -293,9 +293,9 @@ export const CycloneMap: React.FC<CycloneMapProps> = ({
               <h3 className="font-semibold text-foreground pr-6">{selectedAlert.event}</h3>
               <p className="text-xs text-muted-foreground mt-1">{selectedAlert.senderName}</p>
               <p className="text-sm text-foreground mt-2 line-clamp-4">{selectedAlert.headline}</p>
-              {selectedAlert.distanceMiles !== null && (
+              {selectedAlert.distanceKm !== null && (
                 <Badge variant="outline" className="mt-2">
-                  {selectedAlert.distanceMiles.toFixed(0)} millas de ti
+                  {selectedAlert.distanceKm.toFixed(0)} km de ti
                 </Badge>
               )}
             </div>

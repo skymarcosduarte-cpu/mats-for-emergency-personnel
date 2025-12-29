@@ -5,19 +5,19 @@ import { useState, useEffect, useCallback } from 'react';
 
 const STORAGE_KEY = 'mats-alert-settings';
 
-const DEFAULT_EARTHQUAKE_RADIUS_MILES = 30;
+const DEFAULT_EARTHQUAKE_RADIUS_KM = 50;
 
 interface AlertSettings {
   helpRequestSounds: boolean;
   earthquakeSounds: boolean;
-  earthquakeRadiusMiles: number;
+  earthquakeRadiusKm: number;
   internationalRedAlerts: boolean;
 }
 
 const DEFAULT_SETTINGS: AlertSettings = {
   helpRequestSounds: true,
   earthquakeSounds: true,
-  earthquakeRadiusMiles: DEFAULT_EARTHQUAKE_RADIUS_MILES,
+  earthquakeRadiusKm: DEFAULT_EARTHQUAKE_RADIUS_KM,
   internationalRedAlerts: true,
 };
 
@@ -60,10 +60,10 @@ export function useAlertSettings() {
     saveSettings({ earthquakeSounds: enabled });
   }, [saveSettings]);
 
-  const setEarthquakeRadiusMiles = useCallback((radius: number) => {
-    // Clamp between 10 and 100 miles
-    const clampedRadius = Math.max(10, Math.min(100, radius));
-    saveSettings({ earthquakeRadiusMiles: clampedRadius });
+  const setEarthquakeRadiusKm = useCallback((radius: number) => {
+    // Clamp between 15 and 160 km
+    const clampedRadius = Math.max(15, Math.min(160, radius));
+    saveSettings({ earthquakeRadiusKm: clampedRadius });
   }, [saveSettings]);
 
   const setInternationalRedAlerts = useCallback((enabled: boolean) => {
@@ -75,7 +75,7 @@ export function useAlertSettings() {
     loaded,
     setHelpRequestSounds,
     setEarthquakeSounds,
-    setEarthquakeRadiusMiles,
+    setEarthquakeRadiusKm,
     setInternationalRedAlerts,
   };
 }
@@ -122,21 +122,16 @@ export function areInternationalRedAlertsEnabled(): boolean {
   return true;
 }
 
-// Standalone function to get earthquake radius in miles
-export function getEarthquakeRadiusMiles(): number {
+// Standalone function to get earthquake radius in kilometers
+export function getEarthquakeRadiusKm(): number {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      return parsed.earthquakeRadiusMiles ?? DEFAULT_EARTHQUAKE_RADIUS_MILES;
+      return parsed.earthquakeRadiusKm ?? DEFAULT_EARTHQUAKE_RADIUS_KM;
     }
   } catch (e) {
     // Ignore
   }
-  return DEFAULT_EARTHQUAKE_RADIUS_MILES;
-}
-
-// Get earthquake radius in kilometers
-export function getEarthquakeRadiusKm(): number {
-  return getEarthquakeRadiusMiles() * 1.60934;
+  return DEFAULT_EARTHQUAKE_RADIUS_KM;
 }

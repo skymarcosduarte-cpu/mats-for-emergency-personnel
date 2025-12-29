@@ -113,7 +113,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 }) => {
   const { profile, role, signOut, updateProfile, updateRole, deleteAccount } = useAuth();
   const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
-  const { helpRequestSounds, earthquakeSounds, earthquakeRadiusMiles, internationalRedAlerts, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusMiles, setInternationalRedAlerts } = useAlertSettings();
+  const { helpRequestSounds, earthquakeSounds, earthquakeRadiusKm, internationalRedAlerts, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusKm, setInternationalRedAlerts } = useAlertSettings();
   const { loading: loadingDataExport, data: userDataExport, fetchAllUserData, downloadAsJson } = useUserDataExport();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showDataExportDialog, setShowDataExportDialog] = useState(false);
@@ -1242,20 +1242,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     </p>
                   </div>
                   <span className="text-lg font-bold text-warning">
-                    {earthquakeRadiusMiles} mi
+                    {earthquakeRadiusKm} km
                   </span>
                 </div>
                 <Slider
-                  value={[earthquakeRadiusMiles]}
-                  onValueChange={(v) => setEarthquakeRadiusMiles(v[0])}
-                  min={10}
-                  max={100}
+                  value={[earthquakeRadiusKm]}
+                  onValueChange={(v) => setEarthquakeRadiusKm(v[0])}
+                  min={15}
+                  max={160}
                   step={5}
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground px-1">
-                  <span>10 millas</span>
-                  <span>100 millas</span>
+                  <span>15 km</span>
+                  <span>160 km</span>
                 </div>
               </div>
 
