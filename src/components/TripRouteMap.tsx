@@ -1,17 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import { MapPin, Navigation, Flag, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import 'leaflet/dist/leaflet.css';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import L from "leaflet";
+import { Loader2, Navigation } from "lucide-react";
+import { cn } from "@/lib/utils";
+import "leaflet/dist/leaflet.css";
 
-// Fix Leaflet default marker icon issue
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
+/**
+ * TripRouteMap
+ * Imperative Leaflet implementation (no react-leaflet) to avoid runtime issues in some builds.
+ */
 
 interface TripRouteMapProps {
   routeCoordinates: [number, number][];
@@ -24,7 +20,7 @@ interface TripRouteMapProps {
   height?: string;
 }
 
-const isFiniteNumber = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
+const isFiniteNumber = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n);
 
 const isValidLatLng = (lat: unknown, lng: unknown) =>
   isFiniteNumber(lat) &&
@@ -32,94 +28,61 @@ const isValidLatLng = (lat: unknown, lng: unknown) =>
   Math.abs(lat) <= 90 &&
   Math.abs(lng) <= 180;
 
-// Custom icons
-const createIcon = (color: string, size: number = 24) => {
-  return L.divIcon({
+const hslVar = (cssVarName: string, fallback: string) => {
+  try {
+    const raw = getComputedStyle(document.documentElement)
+      .getPropertyValue(cssVarName)
+      .trim();
+    return raw ? `hsl(${raw})` : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const createDotIcon = (bg: string, size = 22) =>
+  L.divIcon({
     html: `<div style="
-      background-color: ${color};
+      background-color: ${bg};
       width: ${size}px;
       height: ${size}px;
-      border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      border-radius: 9999px;
+      border: 3px solid ${hslVar("--background", "#ffffff")};
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
     "></div>`,
-    className: 'custom-marker',
+    className: "",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
-};
-
-const originIcon = createIcon('#22c55e', 20); // Green for origin
-const destinationIcon = createIcon('#ef4444', 20); // Red for destination
-const currentIcon = createIcon('#3b82f6', 24); // Blue for current position
-
-// Component to fit bounds safely
-function FitBounds({ bounds }: { bounds: L.LatLngBounds | null }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!bounds) return;
-    
-    try {
-      // Double-check validity before calling fitBounds
-      if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
-      }
-    } catch (err) {
-      console.warn('[FitBounds] Error fitting bounds:', err);
-    }
-  }, [map, bounds]);
-
-  return null;
-}
-
-// Component to track when map is ready
-function MapReadyHandler({ onReady }: { onReady: () => void }) {
-  const map = useMap();
-
-  useEffect(() => {
-    // Wait for tiles to start loading, then mark as ready
-    const handleLoad = () => {
-      onReady();
-    };
-    
-    // Mark ready after a short delay to ensure map container is visible
-    const timeout = setTimeout(handleLoad, 300);
-    
-    map.on('load', handleLoad);
-    
-    return () => {
-      clearTimeout(timeout);
-      map.off('load', handleLoad);
-    };
-  }, [map, onReady]);
-
-  return null;
-}
 
 export default function TripRouteMap({
   routeCoordinates,
   originCoords,
   destinationCoords,
   currentPosition,
-  originName = 'Origen',
-  destinationName = 'Destino',
+  originName = "Origen",
+  destinationName = "Destino",
   className,
-  height = '300px',
+  height = "300px",
 }: TripRouteMapProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const tileRef = useRef<L.TileLayer | null>(null);
+  const routeRef = useRef<L.Polyline | null>(null);
+  const originMarkerRef = useRef<L.Marker | null>(null);
+  const destMarkerRef = useRef<L.Marker | null>(null);
+  const currentMarkerRef = useRef<L.Marker | null>(null);
+
   const [isMapReady, setIsMapReady] = useState(false);
 
   const safeRouteCoordinates = useMemo(() => {
     const input = routeCoordinates ?? [];
     const filtered = input.filter(([lat, lng]) => isValidLatLng(lat, lng));
-
     if (filtered.length !== input.length) {
-      console.warn('[TripRouteMap] Dropped invalid route points', {
+      console.warn("[TripRouteMap] Dropped invalid route points", {
         total: input.length,
         valid: filtered.length,
       });
     }
-
     return filtered;
   }, [routeCoordinates]);
 
@@ -141,47 +104,148 @@ export default function TripRouteMap({
     [currentPosition]
   );
 
-  // Calculate bounds - need at least 2 points for valid bounds
-  const bounds = useMemo(() => {
-    const allPoints: [number, number][] = [...safeRouteCoordinates];
-
-    if (safeOrigin) {
-      allPoints.push([safeOrigin.lat, safeOrigin.lng]);
-    }
-    if (safeDestination) {
-      allPoints.push([safeDestination.lat, safeDestination.lng]);
-    }
-    if (safeCurrent) {
-      allPoints.push([safeCurrent.lat, safeCurrent.lng]);
-    }
-
-    // Need at least 2 distinct points to create valid bounds
-    if (allPoints.length < 2) return null;
-
-    try {
-      const latLngs = allPoints.map(([lat, lng]) => L.latLng(lat, lng));
-      const b = L.latLngBounds(latLngs);
-      return b.isValid() ? b : null;
-    } catch (err) {
-      console.warn('[TripRouteMap] Error creating bounds:', err);
-      return null;
-    }
+  const pointsForBounds = useMemo(() => {
+    const all: [number, number][] = [...safeRouteCoordinates];
+    if (safeOrigin) all.push([safeOrigin.lat, safeOrigin.lng]);
+    if (safeDestination) all.push([safeDestination.lat, safeDestination.lng]);
+    if (safeCurrent) all.push([safeCurrent.lat, safeCurrent.lng]);
+    return all;
   }, [safeRouteCoordinates, safeOrigin, safeDestination, safeCurrent]);
 
-  // Default center if no data
   const defaultCenter: [number, number] = useMemo(() => {
     if (safeCurrent) return [safeCurrent.lat, safeCurrent.lng];
     if (safeOrigin) return [safeOrigin.lat, safeOrigin.lng];
     if (safeRouteCoordinates.length > 0) return safeRouteCoordinates[0];
-    return [19.4326, -99.1332]; // Mexico City default
+    return [19.4326, -99.1332];
   }, [safeCurrent, safeOrigin, safeRouteCoordinates]);
 
-  if (
-    safeRouteCoordinates.length === 0 &&
-    !safeOrigin &&
-    !safeDestination &&
-    !safeCurrent
-  ) {
+  const hasAnyData =
+    safeRouteCoordinates.length > 0 || !!safeOrigin || !!safeDestination || !!safeCurrent;
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    // Initialize once
+    if (!mapRef.current) {
+      setIsMapReady(false);
+
+      const map = L.map(containerRef.current, {
+        center: defaultCenter,
+        zoom: 13,
+        zoomControl: false,
+      });
+
+      mapRef.current = map;
+
+      const tile = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "© OpenStreetMap",
+      });
+
+      tile.on("load", () => setIsMapReady(true));
+      tile.addTo(map);
+      tileRef.current = tile;
+
+      // Ensure proper sizing inside dialogs
+      const t = window.setTimeout(() => {
+        try {
+          map.invalidateSize();
+        } catch {}
+      }, 80);
+
+      const ro = new ResizeObserver(() => {
+        try {
+          map.invalidateSize();
+        } catch {}
+      });
+      ro.observe(containerRef.current);
+
+      return () => {
+        window.clearTimeout(t);
+        ro.disconnect();
+        map.remove();
+        mapRef.current = null;
+        tileRef.current = null;
+        routeRef.current = null;
+        originMarkerRef.current = null;
+        destMarkerRef.current = null;
+        currentMarkerRef.current = null;
+      };
+    }
+  }, [defaultCenter]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Update route
+    if (routeRef.current) {
+      routeRef.current.remove();
+      routeRef.current = null;
+    }
+    if (safeRouteCoordinates.length > 1) {
+      const routeColor = hslVar("--primary", "#3b82f6");
+      routeRef.current = L.polyline(safeRouteCoordinates, {
+        color: routeColor,
+        weight: 4,
+        opacity: 0.85,
+        lineCap: "round",
+        lineJoin: "round",
+      }).addTo(map);
+    }
+
+    // Origin marker
+    if (originMarkerRef.current) {
+      originMarkerRef.current.remove();
+      originMarkerRef.current = null;
+    }
+    if (safeOrigin) {
+      const icon = createDotIcon(hslVar("--safe", "#22c55e"), 20);
+      originMarkerRef.current = L.marker([safeOrigin.lat, safeOrigin.lng], { icon })
+        .addTo(map)
+        .bindPopup(`<strong>Origen</strong><br/>${originName}`);
+    }
+
+    // Destination marker
+    if (destMarkerRef.current) {
+      destMarkerRef.current.remove();
+      destMarkerRef.current = null;
+    }
+    if (safeDestination) {
+      const icon = createDotIcon(hslVar("--destructive", "#ef4444"), 20);
+      destMarkerRef.current = L.marker([safeDestination.lat, safeDestination.lng], { icon })
+        .addTo(map)
+        .bindPopup(`<strong>Destino</strong><br/>${destinationName}`);
+    }
+
+    // Current marker
+    if (currentMarkerRef.current) {
+      currentMarkerRef.current.remove();
+      currentMarkerRef.current = null;
+    }
+    if (safeCurrent) {
+      const icon = createDotIcon(hslVar("--primary", "#3b82f6"), 24);
+      currentMarkerRef.current = L.marker([safeCurrent.lat, safeCurrent.lng], { icon })
+        .addTo(map)
+        .bindPopup("<strong>Posición actual</strong>");
+    }
+
+    // Fit bounds / set view
+    try {
+      if (pointsForBounds.length >= 2) {
+        const bounds = L.latLngBounds(pointsForBounds.map(([lat, lng]) => L.latLng(lat, lng)));
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
+        }
+      } else {
+        map.setView(defaultCenter, 13, { animate: false });
+      }
+    } catch (err) {
+      console.warn("[TripRouteMap] Error fitting bounds", err);
+    }
+  }, [safeRouteCoordinates, safeOrigin, safeDestination, safeCurrent, originName, destinationName, pointsForBounds, defaultCenter]);
+
+  if (!hasAnyData) {
     return (
       <div className={cn("flex items-center justify-center bg-muted rounded-lg", className)} style={{ height }}>
         <div className="text-center text-muted-foreground">
@@ -193,8 +257,10 @@ export default function TripRouteMap({
   }
 
   return (
-    <div className={cn("rounded-lg overflow-hidden border relative", className)} style={{ height, background: 'hsl(var(--muted))' }}>
-      {/* Loading overlay */}
+    <div
+      className={cn("rounded-lg overflow-hidden border relative", className)}
+      style={{ height, background: "hsl(var(--muted))" }}
+    >
       {!isMapReady && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-muted">
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -203,72 +269,7 @@ export default function TripRouteMap({
           </div>
         </div>
       )}
-      <MapContainer
-        center={defaultCenter}
-        zoom={13}
-        style={{ height: '100%', width: '100%' }}
-        zoomControl={false}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        {/* Traveled route polyline */}
-        {safeRouteCoordinates.length > 1 && (
-          <Polyline
-            positions={safeRouteCoordinates}
-            pathOptions={{
-              color: '#3b82f6',
-              weight: 4,
-              opacity: 0.8,
-              lineCap: 'round',
-              lineJoin: 'round',
-            }}
-          />
-        )}
-
-        {/* Origin marker */}
-        {safeOrigin && (
-          <Marker position={[safeOrigin.lat, safeOrigin.lng]} icon={originIcon}>
-            <Popup>
-              <div className="text-center">
-                <MapPin className="w-4 h-4 inline mr-1 text-safe" />
-                <strong>Origen</strong>
-                <p className="text-sm text-muted-foreground">{originName}</p>
-              </div>
-            </Popup>
-          </Marker>
-        )}
-
-        {/* Destination marker */}
-        {safeDestination && (
-          <Marker position={[safeDestination.lat, safeDestination.lng]} icon={destinationIcon}>
-            <Popup>
-              <div className="text-center">
-                <Flag className="w-4 h-4 inline mr-1 text-destructive" />
-                <strong>Destino</strong>
-                <p className="text-sm text-muted-foreground">{destinationName}</p>
-              </div>
-            </Popup>
-          </Marker>
-        )}
-
-        {/* Current position marker */}
-        {safeCurrent && (
-          <Marker position={[safeCurrent.lat, safeCurrent.lng]} icon={currentIcon}>
-            <Popup>
-              <div className="text-center">
-                <Navigation className="w-4 h-4 inline mr-1 text-primary" />
-                <strong>Posición actual</strong>
-              </div>
-            </Popup>
-          </Marker>
-        )}
-
-        <FitBounds bounds={bounds} />
-        <MapReadyHandler onReady={() => setIsMapReady(true)} />
-      </MapContainer>
+      <div ref={containerRef} className="h-full w-full" />
     </div>
   );
 }
