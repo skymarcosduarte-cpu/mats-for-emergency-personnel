@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { 
   AlertTriangle, 
   MapPin, 
@@ -740,6 +741,12 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
       } catch (error) {
         console.error('[Tutorial] Error saving disclaimer acceptance:', error);
       }
+      
+      // Show success toast
+      toast.success('¡Tutorial completado!', {
+        description: 'Ya estás listo para usar M.A.T.S. Bienvenido a la comunidad.',
+        duration: 5000,
+      });
       
       // Small delay to let confetti show before closing
       setTimeout(() => {
