@@ -11,12 +11,14 @@ interface AlertSettings {
   helpRequestSounds: boolean;
   earthquakeSounds: boolean;
   earthquakeRadiusMiles: number;
+  internationalRedAlerts: boolean;
 }
 
 const DEFAULT_SETTINGS: AlertSettings = {
   helpRequestSounds: true,
   earthquakeSounds: true,
   earthquakeRadiusMiles: DEFAULT_EARTHQUAKE_RADIUS_MILES,
+  internationalRedAlerts: true,
 };
 
 export function useAlertSettings() {
@@ -64,12 +66,17 @@ export function useAlertSettings() {
     saveSettings({ earthquakeRadiusMiles: clampedRadius });
   }, [saveSettings]);
 
+  const setInternationalRedAlerts = useCallback((enabled: boolean) => {
+    saveSettings({ internationalRedAlerts: enabled });
+  }, [saveSettings]);
+
   return {
     ...settings,
     loaded,
     setHelpRequestSounds,
     setEarthquakeSounds,
     setEarthquakeRadiusMiles,
+    setInternationalRedAlerts,
   };
 }
 
@@ -94,6 +101,20 @@ export function areEarthquakeSoundsEnabled(): boolean {
     if (stored) {
       const parsed = JSON.parse(stored);
       return parsed.earthquakeSounds ?? true;
+    }
+  } catch (e) {
+    // Ignore
+  }
+  return true;
+}
+
+// Standalone function to check if international red alerts are enabled
+export function areInternationalRedAlertsEnabled(): boolean {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed.internationalRedAlerts ?? true;
     }
   } catch (e) {
     // Ignore

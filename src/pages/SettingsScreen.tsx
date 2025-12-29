@@ -113,7 +113,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 }) => {
   const { profile, role, signOut, updateProfile, updateRole, deleteAccount } = useAuth();
   const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
-  const { helpRequestSounds, earthquakeSounds, earthquakeRadiusMiles, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusMiles } = useAlertSettings();
+  const { helpRequestSounds, earthquakeSounds, earthquakeRadiusMiles, internationalRedAlerts, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusMiles, setInternationalRedAlerts } = useAlertSettings();
   const { loading: loadingDataExport, data: userDataExport, fetchAllUserData, downloadAsJson } = useUserDataExport();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showDataExportDialog, setShowDataExportDialog] = useState(false);
@@ -1287,7 +1287,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 />
               </div>
 
-              {/* Test sound buttons */}
+              {/* International Red Alerts Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center",
+                    internationalRedAlerts ? "bg-red-500/10" : "bg-muted"
+                  )}>
+                    {internationalRedAlerts ? (
+                      <Bell className="w-5 h-5 text-red-500" />
+                    ) : (
+                      <BellOff className="w-5 h-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="international-red-alerts" className="text-foreground font-medium">
+                      Alertas rojas internacionales
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      GDACS, CONAGUA, NASA, ReliefWeb
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="international-red-alerts"
+                  checked={internationalRedAlerts}
+                  onCheckedChange={setInternationalRedAlerts}
+                />
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   variant="outline"
