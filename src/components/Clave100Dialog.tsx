@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Send, Shield, Users, X, MapPin, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { AlertTriangle, Send, Shield, Users, X, MapPin, Loader2, Camera, Mic, Image as ImageIcon, Trash2, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,6 +21,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { compressImages, isValidImageType } from '@/lib/imageCompress';
+import { createAudioRecorder, formatDuration, AUDIO_LIMITS, supportsAudioRecording } from '@/lib/audioUtils';
 
 interface Clave100DialogProps {
   isOpen: boolean;
@@ -38,6 +40,22 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  
+  // Media state
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioDuration, setAudioDuration] = useState<number>(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const recorderRef = useRef<ReturnType<typeof createAudioRecorder> | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const recordingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Fetch active users count and location when dialog opens
   useEffect(() => {
@@ -50,8 +68,29 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
       setDisclosureOpen(false);
       setIncludeLocation(true);
       setLocationError(null);
+      setImageFile(null);
+      setImagePreview(null);
+      setAudioBlob(null);
+      setAudioDuration(0);
+      setIsRecording(false);
+      setRecordingDuration(0);
     }
   }, [isOpen]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (recorderRef.current) {
+        recorderRef.current.destroy();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+    };
+  }, []);
 
   const fetchCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -96,12 +135,159 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
     }
   };
 
+  // Image handling
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!isValidImageType(file)) {
+      toast.error('Solo se permiten imágenes (JPG, PNG, WebP)');
+      return;
+    }
+
+    try {
+      const { results, errors } = await compressImages([file]);
+      if (errors.length > 0) {
+        toast.error(errors[0].error);
+        return;
+      }
+      if (results.length > 0) {
+        setImageFile(results[0].file);
+        setImagePreview(URL.createObjectURL(results[0].file));
+      }
+    } catch (err) {
+      toast.error('Error al procesar la imagen');
+    }
+    
+    // Reset input
+    e.target.value = '';
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  // Audio recording
+  const startRecording = async () => {
+    if (!supportsAudioRecording()) {
+      toast.error('Tu navegador no soporta grabación de audio');
+      return;
+    }
+
+    recorderRef.current = createAudioRecorder((state) => {
+      if (state.blob) {
+        setAudioBlob(state.blob);
+        setAudioDuration(state.duration);
+        setIsRecording(false);
+        if (recordingIntervalRef.current) {
+          clearInterval(recordingIntervalRef.current);
+        }
+      }
+      if (state.error) {
+        toast.error(state.error);
+        setIsRecording(false);
+      }
+    });
+
+    await recorderRef.current.start();
+    setIsRecording(true);
+    setRecordingDuration(0);
+    
+    // Start timer
+    recordingIntervalRef.current = setInterval(() => {
+      setRecordingDuration(prev => {
+        const next = prev + 100;
+        if (next >= AUDIO_LIMITS.MAX_DURATION_MS) {
+          stopRecording();
+        }
+        return next;
+      });
+    }, 100);
+  };
+
+  const stopRecording = async () => {
+    if (recorderRef.current) {
+      await recorderRef.current.stop();
+    }
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+    }
+    setIsRecording(false);
+  };
+
+  const removeAudio = () => {
+    if (recorderRef.current) {
+      recorderRef.current.destroy();
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setAudioBlob(null);
+    setAudioDuration(0);
+    setIsPlayingAudio(false);
+  };
+
+  const toggleAudioPlayback = () => {
+    if (!audioBlob) return;
+
+    if (!audioRef.current) {
+      audioRef.current = new Audio(URL.createObjectURL(audioBlob));
+      audioRef.current.onended = () => setIsPlayingAudio(false);
+    }
+
+    if (isPlayingAudio) {
+      audioRef.current.pause();
+      setIsPlayingAudio(false);
+    } else {
+      audioRef.current.play();
+      setIsPlayingAudio(true);
+    }
+  };
+
   const handleConfirmEmergency = () => {
     if (!confirmed) {
       toast.error('Debes confirmar que es una emergencia real');
       return;
     }
     setStep('compose');
+  };
+
+  const uploadMedia = async (): Promise<{ imageUrl: string | null; audioUrl: string | null }> => {
+    let imageUrl: string | null = null;
+    let audioUrl: string | null = null;
+
+    if (imageFile) {
+      const fileName = `clave100/${user?.id}/${Date.now()}_image.jpg`;
+      const { data, error } = await supabase.storage
+        .from('reports_media')
+        .upload(fileName, imageFile, { contentType: imageFile.type });
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('reports_media')
+        .getPublicUrl(fileName);
+      
+      imageUrl = urlData.publicUrl;
+    }
+
+    if (audioBlob) {
+      const fileName = `clave100/${user?.id}/${Date.now()}_audio.webm`;
+      const { data, error } = await supabase.storage
+        .from('reports_media')
+        .upload(fileName, audioBlob, { contentType: 'audio/webm' });
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('reports_media')
+        .getPublicUrl(fileName);
+      
+      audioUrl = urlData.publicUrl;
+    }
+
+    return { imageUrl, audioUrl };
   };
 
   const handleSendBroadcast = async () => {
@@ -113,6 +299,11 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
     setStep('sending');
 
     try {
+      // Upload media first if present
+      setUploadingMedia(true);
+      const { imageUrl, audioUrl } = await uploadMedia();
+      setUploadingMedia(false);
+
       // Get all active users (excluding current user)
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
       const { data: activeUsers, error: usersError } = await supabase
@@ -143,7 +334,10 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
         sender_id: user.id,
         receiver_id: u.user_id,
         message: broadcastMessage,
-        read: false
+        read: false,
+        image_url: imageUrl,
+        audio_url: audioUrl,
+        audio_duration_ms: audioUrl ? audioDuration : null
       }));
 
       const { error: insertError } = await supabase
@@ -165,12 +359,16 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
     setStep('initial');
     setMessage('');
     setConfirmed(false);
+    removeImage();
+    removeAudio();
     onClose();
   };
 
+  const hasMedia = imageFile || audioBlob;
+
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <AlertDialogContent className="max-w-md">
+      <AlertDialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <AlertDialogHeader>
           <div className="flex items-center justify-between">
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
@@ -185,6 +383,23 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
             Emergencia Máxima - Mensaje a todos los usuarios activos
           </AlertDialogDescription>
         </AlertDialogHeader>
+
+        {/* Hidden file inputs */}
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageSelect}
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={handleImageSelect}
+        />
 
         {step === 'initial' && (
           <div className="space-y-4">
@@ -270,12 +485,116 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Describe la emergencia: ¿Qué sucede? ¿Dónde estás? ¿Qué ayuda necesitas?"
-              className="min-h-[120px] resize-none"
+              className="min-h-[100px] resize-none"
               maxLength={500}
             />
             <p className="text-xs text-muted-foreground text-right">
               {message.length}/500 caracteres
             </p>
+
+            {/* Media attachments section */}
+            <div className="space-y-3 p-3 bg-muted/50 rounded-lg border border-border">
+              <p className="text-sm font-medium">Adjuntar evidencia (opcional)</p>
+              
+              {/* Image preview */}
+              {imagePreview && (
+                <div className="relative w-full">
+                  <img 
+                    src={imagePreview} 
+                    alt="Foto adjunta" 
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                  <button
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 w-8 h-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-lg"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Audio preview */}
+              {audioBlob && (
+                <div className="flex items-center gap-3 p-3 bg-background rounded-lg">
+                  <button
+                    onClick={toggleAudioPlayback}
+                    className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center"
+                  >
+                    {isPlayingAudio ? (
+                      <Pause className="w-4 h-4" />
+                    ) : (
+                      <Play className="w-4 h-4 ml-0.5" />
+                    )}
+                  </button>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Nota de voz</p>
+                    <p className="text-xs text-muted-foreground">{formatDuration(audioDuration)}</p>
+                  </div>
+                  <button
+                    onClick={removeAudio}
+                    className="w-8 h-8 text-muted-foreground hover:text-destructive flex items-center justify-center"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Recording indicator */}
+              {isRecording && (
+                <div className="flex items-center gap-3 p-3 bg-destructive/10 rounded-lg animate-pulse">
+                  <div className="w-3 h-3 rounded-full bg-destructive animate-pulse" />
+                  <span className="text-sm font-medium text-destructive">Grabando...</span>
+                  <span className="text-sm font-mono">{formatDuration(recordingDuration)}</span>
+                  <Button 
+                    size="sm" 
+                    variant="destructive"
+                    onClick={stopRecording}
+                    className="ml-auto"
+                  >
+                    Detener
+                  </Button>
+                </div>
+              )}
+
+              {/* Media buttons */}
+              {!isRecording && (
+                <div className="flex gap-2">
+                  {!imagePreview && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => cameraInputRef.current?.click()}
+                        className="flex-1"
+                      >
+                        <Camera className="w-4 h-4 mr-2" />
+                        Cámara
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => imageInputRef.current?.click()}
+                        className="flex-1"
+                      >
+                        <ImageIcon className="w-4 h-4 mr-2" />
+                        Galería
+                      </Button>
+                    </>
+                  )}
+                  {!audioBlob && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={startRecording}
+                      className={cn("flex-1", imagePreview && "w-full")}
+                    >
+                      <Mic className="w-4 h-4 mr-2" />
+                      Grabar audio
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Location toggle */}
             <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
@@ -322,7 +641,7 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
               </Button>
               <Button
                 onClick={handleSendBroadcast}
-                disabled={!message.trim()}
+                disabled={!message.trim() || isRecording}
                 className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               >
                 <Send className="w-4 h-4 mr-2" />
@@ -335,8 +654,8 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
         {step === 'sending' && (
           <div className="flex flex-col items-center justify-center py-8 gap-4">
             <div className="w-12 h-12 border-4 border-destructive border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-muted-foreground">
-              Enviando mensaje a todos los usuarios...
+            <p className="text-sm text-muted-foreground text-center">
+              {uploadingMedia ? 'Subiendo archivos...' : 'Enviando mensaje a todos los usuarios...'}
             </p>
           </div>
         )}

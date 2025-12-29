@@ -77,6 +77,9 @@ export const useInternalMessagesStore = () => {
     senderName: string;
     senderId: string;
     message: string;
+    imageUrl: string | null;
+    audioUrl: string | null;
+    audioDurationMs: number | null;
   } | null>(null);
   
   const dismissClave100 = useCallback(() => {
@@ -574,7 +577,10 @@ export const useInternalMessagesStore = () => {
                 isVisible: true,
                 senderName,
                 senderId: newMessage.sender_id,
-                message: newMessage.message
+                message: newMessage.message,
+                imageUrl: newMessage.image_url || null,
+                audioUrl: newMessage.audio_url || null,
+                audioDurationMs: newMessage.audio_duration_ms || null
               });
               
               toast.error(`🚨 CLAVE 100 de ${senderName}`, {
