@@ -13,6 +13,7 @@ interface NativeNotificationsState {
 
 // Notification channel IDs for Android
 const CHANNELS = {
+  CLAVE_100: 'clave_100_alerts',
   EMERGENCY: 'emergency_alerts',
   SEISMIC: 'seismic_alerts',
   MESSAGES: 'messages',
@@ -72,6 +73,19 @@ export function useNativeNotifications() {
     if (!isNative || Capacitor.getPlatform() !== 'android') return;
 
     try {
+      // CLAVE 100 - Maximum priority channel
+      await LocalNotifications.createChannel({
+        id: CHANNELS.CLAVE_100,
+        name: 'CLAVE 100 - Emergencia Máxima',
+        description: 'Alertas de emergencia CLAVE 100 - máxima prioridad',
+        importance: 5, // MAX
+        visibility: 1, // PUBLIC
+        vibration: true,
+        sound: 'clave100.wav',
+        lights: true,
+        lightColor: '#ff0000',
+      });
+
       await LocalNotifications.createChannel({
         id: CHANNELS.EMERGENCY,
         name: 'Alertas de Emergencia',
@@ -117,6 +131,73 @@ export function useNativeNotifications() {
       console.log('[NativeNotifications] Channels created');
     } catch (error) {
       console.error('[NativeNotifications] Failed to create channels:', error);
+    }
+  }, [isNative]);
+
+  // Show CLAVE 100 notification - highest priority emergency
+  const showClave100Notification = useCallback(async (
+    senderName: string,
+    message: string,
+    senderId?: string
+  ) => {
+    console.log('[NativeNotifications] 🚨 CLAVE 100 notification triggered');
+    
+    // Maximum haptic feedback - repeated vibration pattern
+    if (isNative) {
+      try {
+        // Triple heavy impact for maximum attention
+        await Haptics.notification({ type: NotificationType.Error });
+        await Haptics.impact({ style: ImpactStyle.Heavy });
+        await new Promise(r => setTimeout(r, 200));
+        await Haptics.impact({ style: ImpactStyle.Heavy });
+        await new Promise(r => setTimeout(r, 200));
+        await Haptics.impact({ style: ImpactStyle.Heavy });
+        await new Promise(r => setTimeout(r, 200));
+        await Haptics.impact({ style: ImpactStyle.Heavy });
+      } catch (e) {
+        console.warn('[NativeNotifications] Haptics failed:', e);
+      }
+    }
+
+    const title = '🚨 CLAVE 100 - EMERGENCIA MÁXIMA 🚨';
+    const body = `${senderName}: ${message.substring(0, 150)}${message.length > 150 ? '...' : ''}`;
+
+    if (!isNative) {
+      // Web fallback - use requireInteraction to keep it visible
+      if (Notification.permission === 'granted') {
+        const notification = new Notification(title, {
+          body,
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          tag: 'clave100',
+          requireInteraction: true,
+        });
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+      }
+      return;
+    }
+
+    try {
+      const notification: LocalNotificationSchema = {
+        id: Date.now(),
+        title,
+        body,
+        channelId: CHANNELS.CLAVE_100,
+        smallIcon: 'ic_stat_icon',
+        largeIcon: 'ic_launcher',
+        iconColor: '#ff0000',
+        ongoing: true, // Keep notification visible until dismissed
+        autoCancel: false,
+        extra: { type: 'clave100', senderId, senderName },
+      };
+
+      await LocalNotifications.schedule({ notifications: [notification] });
+      console.log('[NativeNotifications] 🚨 CLAVE 100 notification shown');
+    } catch (error) {
+      console.error('[NativeNotifications] Failed to show CLAVE 100 notification:', error);
     }
   }, [isNative]);
 
@@ -305,7 +386,9 @@ export function useNativeNotifications() {
         console.log('[NativeNotifications] Action performed:', event);
         // Handle notification tap - navigate to appropriate screen
         const extra = event.notification.extra;
-        if (extra?.type === 'seismic') {
+        if (extra?.type === 'clave100') {
+          window.location.href = '/community';
+        } else if (extra?.type === 'seismic') {
           window.location.href = '/alerts?tab=seismic';
         } else if (extra?.type === 'message') {
           window.location.href = '/community';
@@ -326,6 +409,7 @@ export function useNativeNotifications() {
     ...state,
     checkPermissions,
     requestPermissions,
+    showClave100Notification,
     showEmergencyNotification,
     showSeismicNotification,
     showMessageNotification,

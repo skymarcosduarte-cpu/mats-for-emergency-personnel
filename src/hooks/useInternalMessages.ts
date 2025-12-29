@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, createContext, useContext } f
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { playMessageNotification, triggerMessageVibration, playClave100Alert } from '@/lib/alertSound';
+import { triggerClave100Notification } from './useClave100Notification';
 import { toast } from 'sonner';
 
 export interface InternalMessage {
@@ -562,6 +563,12 @@ export const useInternalMessagesStore = () => {
               
               senderName = data?.show_name_on_map && data?.display_name ? data.display_name : 'Usuario';
               senderNamesCache.current.set(newMessage.sender_id, senderName);
+            }
+            
+            // Trigger native notification for Clave 100 (works in background)
+            if (isClave100) {
+              console.log('🚨 Triggering native Clave 100 notification');
+              triggerClave100Notification(senderName, newMessage.message, newMessage.sender_id);
             }
             
             showBrowserNotification(
