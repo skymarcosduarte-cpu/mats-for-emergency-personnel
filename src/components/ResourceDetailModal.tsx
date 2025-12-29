@@ -110,84 +110,84 @@ export function ResourceDetailModal({
         
         {/* Header */}
         <DialogHeader className="p-4 pb-3 border-b flex-shrink-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1">
-              <DialogTitle className="text-xl leading-tight pr-8">
-                {card.title}
-              </DialogTitle>
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                <Badge variant="outline" className="text-xs">
-                  {getCategoryLabel(card.category)}
+          <div className="pr-8">
+            <DialogTitle className="text-xl leading-tight">
+              {card.title}
+            </DialogTitle>
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              <Badge variant="outline" className="text-xs">
+                {getCategoryLabel(card.category)}
+              </Badge>
+              {isTrainedPersonnel ? (
+                <Badge className="text-xs bg-amber-500 hover:bg-amber-600 text-white">
+                  <Shield className="w-3 h-3 mr-1" />
+                  Solo personal capacitado
                 </Badge>
-                {isTrainedPersonnel ? (
-                  <Badge className="text-xs bg-amber-500 hover:bg-amber-600 text-white">
-                    <Shield className="w-3 h-3 mr-1" />
-                    Solo personal capacitado
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="text-xs">
-                    Público
-                  </Badge>
+              ) : (
+                <Badge variant="secondary" className="text-xs">
+                  Público
+                </Badge>
+              )}
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "text-xs",
+                  card.level === 'intermedio' && "border-blue-500 text-blue-600"
                 )}
-                <Badge 
-                  variant="outline" 
-                  className={cn(
-                    "text-xs",
-                    card.level === 'intermedio' && "border-blue-500 text-blue-600"
-                  )}
-                >
-                  {card.level === 'basico' ? 'Básico' : 'Intermedio'}
-                </Badge>
-              </div>
-            </div>
-            <div className="flex gap-1">
-              {/* Share dropdown */}
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Share2 className="h-5 w-5 text-muted-foreground" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-background z-[200]">
-                  <DropdownMenuItem 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleShareWhatsApp();
-                    }}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2 text-green-500" />
-                    Compartir por WhatsApp
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCopyToClipboard();
-                    }}
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copiar al portapapeles
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                onClick={onToggleFavorite}
               >
-                <Heart 
-                  className={cn(
-                    "h-5 w-5",
-                    isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground"
-                  )} 
-                />
-              </Button>
+                {card.level === 'basico' ? 'Básico' : 'Intermedio'}
+              </Badge>
+              
+              {/* Action buttons inline with badges */}
+              <div className="flex gap-1 ml-auto">
+                {/* Share dropdown */}
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Share2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-background z-[200]">
+                    <DropdownMenuItem 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShareWhatsApp();
+                      }}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2 text-green-500" />
+                      Compartir por WhatsApp
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyToClipboard();
+                      }}
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar al portapapeles
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={onToggleFavorite}
+                >
+                  <Heart 
+                    className={cn(
+                      "h-4 w-4",
+                      isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground"
+                    )} 
+                  />
+                </Button>
+              </div>
             </div>
           </div>
         </DialogHeader>
