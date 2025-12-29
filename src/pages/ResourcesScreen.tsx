@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,8 @@ import {
   X,
   ChevronDown,
   Mic,
-  MicOff
+  MicOff,
+  LayoutGrid
 } from 'lucide-react';
 import {
   Select,
@@ -30,11 +31,16 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { useResources, AudienceFilter, LevelFilter } from '@/hooks/useResources';
 import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 import { ResourceCard } from '@/components/ResourceCard';
 import { ResourceDetailModal } from '@/components/ResourceDetailModal';
-import { getCategoryLabel } from '@/lib/resourcesCache';
+import { getCategoryLabel, getCategoryIcon, getCategoryCounts } from '@/lib/resourcesCache';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -66,6 +72,15 @@ export default function ResourcesScreen() {
 
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+
+  // Calculate category counts
+  const categoryCounts = useMemo(() => {
+    if (!pack?.cards) return {};
+    return getCategoryCounts(pack.cards);
+  }, [pack?.cards]);
+
+  const totalCards = pack?.cards?.length || 0;
 
   // Voice search
   const handleVoiceResult = useCallback((transcript: string) => {
@@ -154,9 +169,14 @@ export default function ResourcesScreen() {
         <div className="flex items-center gap-2">
           <BookOpen className="h-6 w-6 text-primary" />
           <h1 className="text-xl font-bold">Recursos</h1>
-          <Badge variant="secondary" className="ml-auto">
-            {filteredCards.length} tarjetas
-          </Badge>
+          <div className="ml-auto flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">
+              {totalCards} total
+            </Badge>
+            <Badge variant="secondary">
+              {filteredCards.length} mostradas
+            </Badge>
+          </div>
         </div>
 
         {/* Search with Voice */}
@@ -243,6 +263,19 @@ export default function ResourcesScreen() {
           >
             <Clock className="h-4 w-4 mr-1" />
             Recientes
+          </Button>
+
+          <Button
+            variant={categoriesOpen ? "default" : "outline"}
+            size="sm"
+            className="flex-shrink-0"
+            onClick={() => setCategoriesOpen(!categoriesOpen)}
+          >
+            <LayoutGrid className="h-4 w-4 mr-1" />
+            Categorías
+            <Badge variant="secondary" className="ml-1.5 h-5 px-1.5">
+              {categories.length}
+            </Badge>
           </Button>
 
           <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
@@ -350,6 +383,55 @@ export default function ResourcesScreen() {
             </Button>
           )}
         </div>
+
+        {/* Categories Grid */}
+        <Collapsible open={categoriesOpen} onOpenChange={setCategoriesOpen}>
+          <CollapsibleContent className="pt-2">
+            <div className="bg-muted/50 rounded-lg p-3">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setCategoryFilter('all')}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all",
+                    categoryFilter === 'all'
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background border border-border hover:border-primary"
+                  )}
+                >
+                  <span>📚</span>
+                  <span>Todas</span>
+                  <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                    {totalCards}
+                  </Badge>
+                </button>
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(categoryFilter === cat ? 'all' : cat)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all",
+                      categoryFilter === cat
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background border border-border hover:border-primary"
+                    )}
+                  >
+                    <span>{getCategoryIcon(cat)}</span>
+                    <span>{getCategoryLabel(cat)}</span>
+                    <Badge 
+                      variant={categoryFilter === cat ? "outline" : "secondary"} 
+                      className={cn(
+                        "h-5 px-1.5 text-xs",
+                        categoryFilter === cat && "border-primary-foreground/30"
+                      )}
+                    >
+                      {categoryCounts[cat] || 0}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       {/* Cards List */}
