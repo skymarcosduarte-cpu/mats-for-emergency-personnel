@@ -1,9 +1,9 @@
 {
-  "packId": "desastres_esenciales_v1_30",
+  "packId": "recursos_emergencias_offline_v1",
   "language": "es",
   "regionHint": "MX/LATAM",
-  "version": "1.0.0",
-  "disclaimer": "Guía rápida. No sustituye capacitación, supervisión médica ni protocolos locales. En riesgo vital, activa 911/servicios de emergencia. Procedimientos y fármacos: solo personal capacitado y autorizado por protocolo.",
+  "version": "1.2.0",
+  "disclaimer": "Guía rápida. No sustituye capacitación, supervisión médica ni protocolos locales. En riesgo vital, activa 911/servicios de emergencia o autoridades locales. En situaciones de violencia, prioriza tu seguridad y busca apoyo profesional. Procedimientos y fármacos: solo personal capacitado y autorizado por protocolo.",
   "cards": [
     {
       "id": "plan_familiar_reunion",
@@ -732,6 +732,1251 @@
         "Si hay brote, refuerza higiene y sectoriza."
       ],
       "handover": "SITREP WASH: agua disponible, incidentes, necesidades de insumos."
+    },
+    {
+      "id": "sci_8_pasos_iniciales",
+      "category": "sci_mando",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "SCI: 8 pasos iniciales (primeros minutos)",
+      "summary": "Secuencia práctica para arrancar el Sistema de Comando de Incidentes en campo.",
+      "doNow": [
+        "Asume y anuncia el Mando (quién, dónde y canal).",
+        "Evalúa escena y riesgos; establece perímetro inicial.",
+        "Define objetivos inmediatos (vida, estabilización del incidente, propiedad/ambiente)."
+      ],
+      "steps": [
+        "1) Establecer Mando y Seguridad (Safety).",
+        "2) Size-up: qué pasa, alcance, peligros, pronóstico.",
+        "3) Objetivos operacionales (3–5, medibles).",
+        "4) Estrategia general (cómo lograr objetivos).",
+        "5) Organización mínima (roles/sectores) y asignaciones.",
+        "6) Plan de comunicaciones (canales, disciplina).",
+        "7) Recursos: staging, check-in, pedidos y tracking.",
+        "8) Reevaluar y ajustar (SITREP, nuevo periodo operativo)."
+      ],
+      "redFlags": [
+        "Si el peligro cambia (colapso, violencia, HAZMAT), reubica mando y actualiza objetivos.",
+        "Evita 'mando invisible': el equipo debe saber quién decide y cómo comunicarse."
+      ],
+      "handover": "Al relevo: situación, objetivos actuales, organización, recursos, riesgos, próximos pasos (SITREP)."
+    },
+    {
+      "id": "sci_roles_minimos_5min",
+      "category": "sci_mando",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "SCI: roles mínimos en los primeros 5 minutos",
+      "summary": "Qué roles cubrir primero para evitar caos en incidentes dinámicos.",
+      "doNow": [
+        "IC (Incident Commander): mando único y canal de decisión.",
+        "Safety: vigila riesgos y detiene operaciones inseguras.",
+        "Comms/Runner: apoyo a radio, enlaces, registro rápido."
+      ],
+      "steps": [
+        "Prioriza 1) Mando, 2) Seguridad, 3) Triage/Operaciones (si hay víctimas), 4) Staging/Logística básica.",
+        "Define punto de mando (visible) y punto de reunión de recursos.",
+        "Asigna sectores con nombres claros (Alfa/Bravo, Norte/Sur).",
+        "Establece reglas: check-in, EPP mínimo, rutas de entrada/salida."
+      ],
+      "redFlags": [
+        "Sin Safety, aumentan lesionados secundarios.",
+        "Sin staging, se desperdician ambulancias/equipos."
+      ],
+      "handover": "Entrega organigrama simple: quién es quién, sectores, canales, tareas y pendientes."
+    },
+    {
+      "id": "objetivos_operacionales_3a5",
+      "category": "sci_planificacion",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "Objetivos operacionales (3–5) y prioridades",
+      "summary": "Cómo escribir objetivos claros para guiar equipos y recursos.",
+      "doNow": [
+        "Escribe 3–5 objetivos máximos.",
+        "Hazlos específicos y medibles (qué, dónde, cuándo).",
+        "Ordena: Vida → Estabilizar incidente → Propiedad/ambiente."
+      ],
+      "steps": [
+        "Ejemplo estructura: 'Evacuar sector X antes de HH:MM'.",
+        "Asigna a cada objetivo un responsable (sector/grupo).",
+        "Define 'fin de objetivo' (criterio de éxito).",
+        "Comparte en briefing de 60–90 s a todo el personal."
+      ],
+      "redFlags": [
+        "Objetivos vagos ('controlar la situación') no guían decisiones.",
+        "Demasiados objetivos = nadie sabe qué es prioritario."
+      ],
+      "handover": "Lista de objetivos vigentes + estado (en curso/completado/bloqueado) y motivos."
+    },
+    {
+      "id": "iap_ultra_rapido",
+      "category": "sci_planificacion",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "IAP ultra-rápido (contenido mínimo)",
+      "summary": "Plan de Acción del Incidente mínimo para operar con coherencia.",
+      "doNow": [
+        "Define periodo operativo (p.ej., 0–2h).",
+        "Objetivos + organización + comunicaciones.",
+        "Riesgos clave y controles."
+      ],
+      "steps": [
+        "Incluye: 1) Objetivos, 2) Organigrama/sectores, 3) Asignaciones, 4) Comms plan (canales), 5) Safety messages.",
+        "Si hay atención médica: flujo Triage–Tratamiento–Transporte y punto de ambulancias.",
+        "Mapa simple: límites, accesos, zonas (caliente/tibia/fría), staging, albergue.",
+        "Actualiza al cambiar el peligro o al iniciar nuevo periodo."
+      ],
+      "redFlags": [
+        "Si no se comunica el plan, no existe (briefing obligatorio).",
+        "Evita cambios de canal/roles sin anunciarlo."
+      ],
+      "handover": "Entrega el IAP mínimo (foto o nota) + cambios recientes."
+    },
+    {
+      "id": "check_in_check_out_recursos",
+      "category": "sci_logistica",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Check-in / Check-out de recursos (control y trazabilidad)",
+      "summary": "Registra quién llegó, dónde está y cuándo se libera.",
+      "doNow": [
+        "Define un punto de Check-in (en staging o mando).",
+        "Registra: unidad, personal, capacidad, hora, asignación.",
+        "Haz check-out al liberar o reubicar."
+      ],
+      "steps": [
+        "Usa formato simple: ID/unidad – líder – #personas – tipo – hora – sector.",
+        "Marca recursos 'disponible / asignado / fuera de servicio'.",
+        "Registra relevo de personal y tiempos de descanso (rehab).",
+        "Centraliza pedidos: una sola vía para solicitar recursos."
+      ],
+      "redFlags": [
+        "Sin control, se duplican tareas y faltan recursos críticos.",
+        "Recursos no identificados = riesgo de seguridad y coordinación."
+      ],
+      "handover": "Listado actualizado de recursos por estado y ubicación."
+    },
+    {
+      "id": "staging_operacion_3_reglas",
+      "category": "sci_logistica",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "Staging: 3 reglas para que funcione",
+      "summary": "Evita saturación y asegura despliegue eficiente.",
+      "doNow": [
+        "Ubícalo fuera de la zona de peligro y sin bloquear accesos.",
+        "Asigna un Staging Manager.",
+        "Todo recurso entra por staging salvo excepción autorizada."
+      ],
+      "steps": [
+        "Define ruta de entrada/salida y punto de espera de ambulancias.",
+        "Mantén inventario y tiempos: quién está listo para despliegue.",
+        "Separa por tipo: USAR, EMS, logística, seguridad, maquinaria.",
+        "Coordina reabasto (combustible, baterías, agua, EPP)."
+      ],
+      "redFlags": [
+        "Staging dentro del peligro crea víctimas secundarias.",
+        "Ambulancias sin control = bloqueo de flujo de pacientes."
+      ],
+      "handover": "Ubicación, responsable, inventario y reglas de despacho."
+    },
+    {
+      "id": "zonas_caliente_tibia_fria",
+      "category": "seguridad_operativa",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Zonas: caliente / tibia / fría (control de acceso)",
+      "summary": "Sectoriza por riesgo para operar seguro (especialmente HAZMAT/colapso).",
+      "doNow": [
+        "Delimita perímetro y entradas/salidas.",
+        "Define quién puede entrar y con qué EPP.",
+        "Señaliza y comunica por radio."
+      ],
+      "steps": [
+        "Caliente: operación directa en peligro; acceso restringido.",
+        "Tibia: transición/soporte (decon, herramientas, relevo).",
+        "Fría: mando, staging, prensa, albergue, logística.",
+        "Usa control de acceso: lista, brazalete o tarjetas."
+      ],
+      "redFlags": [
+        "Si cambia el viento o hay fuga, las zonas cambian.",
+        "No mezcles tránsito de público con rutas operativas."
+      ],
+      "handover": "Mapa verbal: límites, accesos, responsables y reglas por zona."
+    },
+    {
+      "id": "hazmat_awareness_aislar_notificar",
+      "category": "hazmat",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "HAZMAT (awareness): reconocer, aislar, notificar",
+      "summary": "Respuesta inicial sin exponerse: identifica indicios y protege.",
+      "doNow": [
+        "Detén avance; no te acerques a identificar de cerca.",
+        "Aísla el área y evacúa a favor del viento.",
+        "Notifica y solicita equipo especializado."
+      ],
+      "steps": [
+        "Indicios: olor fuerte, niebla/vapores, etiquetas, corrosión, víctimas súbitas.",
+        "Define zona caliente/tibia/fría y punto de reunión.",
+        "Evita fuentes de ignición; controla curiosos.",
+        "Documenta: dirección del viento, fuente posible, afectados, accesos."
+      ],
+      "redFlags": [
+        "No improvises EPP avanzado si no estás entrenado.",
+        "Síntomas en respondientes = retirarse y activar atención médica."
+      ],
+      "handover": "Peligro sospechado, viento, perímetros, víctimas y recursos solicitados."
+    },
+    {
+      "id": "decon_corredor_basico",
+      "category": "hazmat",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "Decon básico (corredor) – concepto operativo",
+      "summary": "Organiza descontaminación para evitar contaminación cruzada.",
+      "doNow": [
+        "Define zona tibia como área de decon.",
+        "Separa entrada/salida de víctimas y personal.",
+        "Controla residuos y ropa contaminada."
+      ],
+      "steps": [
+        "Prioriza: retirar ropa contaminada si protocolo lo permite y mantener privacidad.",
+        "Enjuague/limpieza según guía local y sustancia sospechada.",
+        "Evita hipotermia: cobijo térmico tras decon.",
+        "Registra quién pasó y hacia dónde se derivó."
+      ],
+      "redFlags": [
+        "No uses procedimientos decon sin insumos/agua/seguridad: mejor aislar y esperar equipo.",
+        "Residuos contaminados deben contenerse."
+      ],
+      "handover": "Configuración del corredor, flujo, insumos, número de personas procesadas."
+    },
+    {
+      "id": "comunicaciones_disciplina_radio",
+      "category": "comando_comunicacion",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Disciplina de radio en desastre (lo que sí funciona)",
+      "summary": "Mensajes cortos, claros y repetibles para evitar saturación.",
+      "doNow": [
+        "Usa lenguaje claro (evita códigos locales si hay multiagencia).",
+        "Inicia con a quién llamas y quién eres.",
+        "Reporta en 1–2 frases y confirma recibido."
+      ],
+      "steps": [
+        "Estructura: 'Para [Destino] de [Origen]: [Mensaje]. Cambio.'",
+        "Evita conversaciones largas; usa canales por función.",
+        "Repite números críticos (víctimas, unidades) y pide confirmación.",
+        "Si falla radio: plan alterno (mensajero, punto de reporte fijo)."
+      ],
+      "redFlags": [
+        "Saturación: prioriza mensajes de seguridad y vida.",
+        "Cambios de canal sin avisar = pérdida de coordinación."
+      ],
+      "handover": "Canales activos por función + contacto de cada sector."
+    },
+    {
+      "id": "rehab_sector_respondientes",
+      "category": "seguridad_operativa",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "Rehab de respondientes (fatiga, calor, hidratación)",
+      "summary": "Reduce colapsos y errores: descanso, hidratación y vigilancia.",
+      "doNow": [
+        "Establece área de rehab en zona fría.",
+        "Define ciclos trabajo/descanso según calor y carga.",
+        "Asegura agua, sombra y evaluación básica."
+      ],
+      "steps": [
+        "Señales: confusión, calambres, cefalea, mareo, pulso alto persistente.",
+        "Retira a respondiente sintomático y evalúa.",
+        "Rotación de EPP para evitar sobrecalentamiento.",
+        "Registra tiempos de entrada/salida y retorno a servicio."
+      ],
+      "redFlags": [
+        "Golpe de calor es emergencia: manejo según protocolo y evacuación.",
+        "Fatiga aumenta errores y accidentes operativos."
+      ],
+      "handover": "Conteo en rehab, incidentes médicos y tiempos de rotación."
+    },
+    {
+      "id": "lces_seguridad_lineas",
+      "category": "seguridad_operativa",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "LCES (seguridad operativa) para entornos dinámicos",
+      "summary": "Marco simple de seguridad: Observadores, Comunicación, Rutas, Zonas seguras.",
+      "doNow": [
+        "Asigna Lookouts (observadores) cuando el riesgo sea cambiante.",
+        "Define canales/llamadas de retirada.",
+        "Marca rutas de escape y zona segura."
+      ],
+      "steps": [
+        "Lookouts: monitorean peligro (fuego, agua, colapso, violencia).",
+        "Comms: palabra clave para retiro inmediato (p.ej., 'RETIRADA').",
+        "Escape Routes: mínimo 2 si es posible; señalizadas.",
+        "Safety Zones: área protegida, fuera de alcance del peligro."
+      ],
+      "redFlags": [
+        "Sin ruta de escape, no entres.",
+        "Si pierdes comunicación, reconsidera continuar."
+      ],
+      "handover": "Quiénes son lookouts, rutas, zonas seguras y palabra clave."
+    },
+    {
+      "id": "usar_principios_basicos",
+      "category": "busqueda_rescate",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "Búsqueda y rescate urbano: principios básicos",
+      "summary": "Seguridad, evaluación, marcaje y trabajo por binomios.",
+      "doNow": [
+        "Evaluación rápida de colapso y riesgos secundarios.",
+        "No entrar sin control de acceso y plan de salida.",
+        "Trabaja por binomios y con conteo."
+      ],
+      "steps": [
+        "Size-up estructural: grietas, inclinación, sonidos, cargas suspendidas.",
+        "Establece perímetro de exclusión y rutas seguras.",
+        "Marcaje y registro: qué se buscó y qué se encontró.",
+        "Comunicación constante con mando y Safety."
+      ],
+      "redFlags": [
+        "Réplica/colapso progresivo: evacúa de inmediato.",
+        "No muevas elementos estructurales sin soporte y capacitación."
+      ],
+      "handover": "Zonas exploradas, marcajes, hallazgos y riesgos activos."
+    },
+    {
+      "id": "marcaje_usar_basico",
+      "category": "busqueda_rescate",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "Marcaje USAR (concepto) y registro de búsqueda",
+      "summary": "Estandariza qué se revisó, por quién y con qué resultado (según tu sistema).",
+      "doNow": [
+        "Usa el sistema de marcaje adoptado por tu agencia (local/INSARAG/otro).",
+        "Marca entrada/fecha/equipo y estado (buscado/no buscado).",
+        "Registra hallazgos críticos (víctimas, peligros)."
+      ],
+      "steps": [
+        "Define quién autoriza el marcaje para evitar duplicidad.",
+        "Mantén registro paralelo (libreta/foto) por si se borra el marcaje.",
+        "Incluye: hora, nombres/unidad, método, resultado.",
+        "Coordina con mando para actualizar mapa del incidente."
+      ],
+      "redFlags": [
+        "No uses marcaje si no conoces el estándar local: puede confundir equipos.",
+        "Marcaje sin registro = pérdida de trazabilidad."
+      ],
+      "handover": "Entrega mapa/registro de marcajes y sectores pendientes."
+    },
+    {
+      "id": "evacuacion_masiva_puntos_control",
+      "category": "evacuacion",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "Evacuación masiva: puntos de control y flujo",
+      "summary": "Organiza salida, transporte y reunificación minimizando pánico.",
+      "doNow": [
+        "Define rutas y puntos de control (PC) con señalización.",
+        "Separa flujo: salida, transporte, albergue, registro.",
+        "Prioriza población vulnerable (PMR, niños, mayores)."
+      ],
+      "steps": [
+        "PC1: información y dirección; PC2: registro; PC3: transporte/albergue.",
+        "Mantén carril libre para emergencias (fire/EMS).",
+        "Evita cuellos de botella con filas y personal guía.",
+        "Actualiza mensajes oficiales para reducir rumores."
+      ],
+      "redFlags": [
+        "Evacuación tardía aumenta atrapamientos.",
+        "No mezcles público con operación pesada (maquinaria/USAR)."
+      ],
+      "handover": "Conteos evacuados, rutas activas, problemas y necesidades de transporte."
+    },
+    {
+      "id": "reunificacion_familiar_menores",
+      "category": "proteccion",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Reunificación familiar y menores no acompañados",
+      "summary": "Evita separación y crea proceso seguro y trazable.",
+      "doNow": [
+        "Designa área y responsable de reunificación.",
+        "Registra identidad (nombre, edad, señas, foto si política lo permite).",
+        "No entregar menores sin verificación mínima."
+      ],
+      "steps": [
+        "Etiqueta/folio a menor y acompañante temporal (si existe).",
+        "Busca contacto a través de listas, altavoz y autoridades.",
+        "Respeta protección de datos según normativa local.",
+        "Coordina con DIF/autoridad equivalente y organizaciones."
+      ],
+      "redFlags": [
+        "Riesgo de trata/abuso: control estricto de entrega.",
+        "No publicar datos sensibles en redes."
+      ],
+      "handover": "Lista de menores, folios, estado y autoridad receptora."
+    },
+    {
+      "id": "flujo_mci_triage_trat_transp",
+      "category": "mci_operaciones",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "MCI: flujo Triage → Tratamiento → Transporte",
+      "summary": "Diseño de flujo para evitar colapso del sistema y pérdidas de control.",
+      "doNow": [
+        "Define zonas separadas por color y una ruta unidireccional.",
+        "Asigna líder de transporte y registro de destinos.",
+        "Alinea con hospitales (capacidad y especialidades)."
+      ],
+      "steps": [
+        "Triage: rápido, etiqueta y mueve; no 'tratar en triage'.",
+        "Tratamiento: intervenciones priorizadas y re-triage.",
+        "Transporte: decide destino por prioridad/capacidad, no por cercanía solamente.",
+        "Registro: cada salida con hora, destino, prioridad, acompañamiento."
+      ],
+      "redFlags": [
+        "Si el transporte se lleva pacientes sin registro, pierdes trazabilidad.",
+        "Tratamiento dentro de zona peligrosa aumenta bajas."
+      ],
+      "handover": "Conteos por zona, salidas, destinos y pendientes críticos."
+    },
+    {
+      "id": "tracking_pacientes_papel_backup",
+      "category": "mci_logistica",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Tracking de pacientes: mínimo viable (con respaldo en papel)",
+      "summary": "Trazabilidad aun sin red: folio, triage, destino y hora.",
+      "doNow": [
+        "Asigna un folio único (etiqueta/tarjeta).",
+        "Registra triage, hora y destino.",
+        "Toma foto del registro al final de cada periodo (si permitido)."
+      ],
+      "steps": [
+        "Usa hoja simple: folio – nombre si disponible – triage – hallazgos – destino – hora – transportista.",
+        "Un punto único de salida (transport) para consolidar.",
+        "Respaldo: duplicado o fotografía periódica.",
+        "Reporta a mando conteos y destinos cada 15–30 min."
+      ],
+      "redFlags": [
+        "Sin folio, no hay búsqueda/reunificación posterior.",
+        "Evita compartir listas en redes por privacidad."
+      ],
+      "handover": "Libro/hoja de tracking + conteos por destino y faltantes."
+    },
+    {
+      "id": "coordinacion_hospitales_capacidad",
+      "category": "salud_sistema",
+      "audience": "personal_capacitado",
+      "level": "intermedio",
+      "title": "Coordinación con hospitales: capacidad y distribución",
+      "summary": "Evita saturar un solo hospital: distribuye por capacidad y perfil.",
+      "doNow": [
+        "Establece enlace hospitalario/medical branch.",
+        "Solicita 'bed status' o capacidad aproximada por tipo.",
+        "Ajusta destinos en tiempo real."
+      ],
+      "steps": [
+        "Categoriza: trauma, pediatría, quemados, obstetricia (según red local).",
+        "Envía reportes cortos con SBAR/MIST y número de pacientes en ruta.",
+        "Usa transporte escalonado: primero rojos, luego amarillos.",
+        "Coordina puntos de transferencia si hay bloqueo de accesos."
+      ],
+      "redFlags": [
+        "Sin coordinación, llega ola de pacientes y colapsa urgencias.",
+        "No envíes pacientes críticos a sitios sin capacidad resolutiva."
+      ],
+      "handover": "Listado de hospitales contactados, capacidades, acuerdos y destinos asignados."
+    },
+    {
+      "id": "pio_manejo_rumores",
+      "category": "comunicacion_publica",
+      "audience": "personal_capacitado",
+      "level": "basico",
+      "title": "Información pública: mensajes clave y control de rumores",
+      "summary": "Mensajes consistentes reducen pánico y mejoran cooperación.",
+      "doNow": [
+        "Designa un vocero (PIO) o punto único de información.",
+        "Comunica: qué pasa, qué hacer, qué NO hacer, dónde informarse.",
+        "Actualiza con frecuencia definida (p.ej., cada hora)."
+      ],
+      "steps": [
+        "Mensajes de 3 puntos: situación – acción – fuente oficial.",
+        "Evita cifras no confirmadas; di 'estimado' si aplica.",
+        "Canaliza prensa a zona fría y respeta privacidad de víctimas.",
+        "Monitorea rumores comunes y desmiéntelos con datos verificables."
+      ],
+      "redFlags": [
+        "Múltiples voceros = mensajes contradictorios.",
+        "Publicar imágenes sensibles puede generar problemas legales y éticos."
+      ],
+      "handover": "Guion de mensajes clave + calendario de actualizaciones + canales oficiales."
+    },
+    {
+      "id": "extorsion_telefonica_secuestro_virtual",
+      "category": "seguridad_personal",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Extorsión telefónica / “secuestro virtual”: qué hacer",
+      "summary": "Corta el control emocional: verifica, no pagues, reporta.",
+      "doNow": [
+        "Cuelga: no negocies ni prolongues la llamada.",
+        "Verifica por tu cuenta (llama a tu familiar/contacto por otro canal).",
+        "Reporta al 911 o autoridad local y avisa a tu red cercana."
+      ],
+      "steps": [
+        "Respira y detente: buscan pánico y urgencia.",
+        "Verifica con 2–3 contactos (familia, trabajo, escuela).",
+        "No compartas datos: direcciones, rutinas, claves, códigos, ubicaciones.",
+        "Guarda evidencia: número, hora, notas del guion; sin ponerte en riesgo.",
+        "Bloquea el número y alerta a tu red para prevenir nuevas llamadas."
+      ],
+      "redFlags": [
+        "Exigencia de secreto + pago urgente + amenaza inmediata = patrón típico.",
+        "Si alguien parece realmente desaparecido, trátalo como emergencia real y activa protocolo con autoridades."
+      ],
+      "handover": "Entrega: número(s), hora, amenazas, método de pago solicitado, datos expuestos."
+    },
+    {
+      "id": "asalto_via_publica",
+      "category": "seguridad_personal",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Asalto en vía pública: sobrevivir y pedir ayuda",
+      "summary": "Prioriza vida: reduce escalada, sal del lugar, reporta.",
+      "doNow": [
+        "No confrontes: entrega objetos si eso reduce riesgo.",
+        "Ve a un lugar seguro y concurrido; llama al 911.",
+        "Si hubo lesiones, solicita atención médica."
+      ],
+      "steps": [
+        "Observa rasgos generales y dirección de huida solo si es seguro.",
+        "Evita perseguir; prioriza resguardo.",
+        "Bloquea tarjetas y dispositivos; cambia contraseñas.",
+        "Documenta pérdidas y hechos cuando estés a salvo.",
+        "Denuncia si procede; es útil para patrones y recuperación."
+      ],
+      "redFlags": [
+        "Si hay arma, movimientos bruscos aumentan riesgo.",
+        "Si crees que te siguen, entra a un sitio concurrido y llama a emergencias."
+      ],
+      "handover": "Lugar exacto, hora, dirección de huida, descripción general, lesiones y objetos robados."
+    },
+    {
+      "id": "robo_casa_habitacion",
+      "category": "seguridad_hogar",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Robo a casa/habitación: qué hacer al detectarlo",
+      "summary": "No entres si hay riesgo: resguarda, reporta, preserva evidencia.",
+      "doNow": [
+        "Si ves puerta/ventana forzada: NO entres; aléjate.",
+        "Llama al 911/autoridad y espera en un lugar seguro.",
+        "Si ya entraste y ves señales, sal de inmediato."
+      ],
+      "steps": [
+        "Evita tocar superficies; preserva evidencia.",
+        "Toma fotos de daños/objetos faltantes si es seguro.",
+        "Revisa a personas vulnerables y mascotas.",
+        "Cambia cerraduras/contraseñas y revisa accesos.",
+        "Notifica a administración/vecinos y refuerza seguridad."
+      ],
+      "redFlags": [
+        "Ruidos adentro o sospecha de intruso: mantén distancia y espera a la autoridad.",
+        "No enfrentes a un intruso."
+      ],
+      "handover": "Daños observados, lista de objetos, fotos, hora estimada, cámaras disponibles."
+    },
+    {
+      "id": "robo_auto_transporte",
+      "category": "seguridad_personal",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Robo/asalto en auto o transporte: pasos seguros",
+      "summary": "Evita escalada, retírate a zona segura, documenta y reporta.",
+      "doNow": [
+        "Mantén la calma y cumple indicaciones si hay amenaza directa.",
+        "Cuando sea seguro, ve a un lugar iluminado y concurrido.",
+        "Llama al 911 y comparte ubicación."
+      ],
+      "steps": [
+        "No persigas ni discutas; prioriza salir ileso/a.",
+        "Pide ayuda en un comercio o a un tercero confiable si te quedas sin teléfono.",
+        "Anota mentalmente dirección/vehículo/placa parcial si es seguro.",
+        "Bloquea dispositivos y tarjetas lo antes posible.",
+        "Reporta rápido a autoridad/seguro si se trata de robo de vehículo."
+      ],
+      "redFlags": [
+        "Retenes falsos/vehículos sospechosos: prioriza escapar hacia zonas seguras/autoridad.",
+        "No pongas resistencia si hay arma."
+      ],
+      "handover": "Ubicación, trayecto, descripción general, vehículo/placa parcial, hora y pérdidas."
+    },
+    {
+      "id": "agresion_sexual_que_hacer",
+      "category": "proteccion_salud",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Agresión sexual/violación: qué hacer (seguridad y atención)",
+      "summary": "Seguridad primero, atención médica y apoyo; preserva evidencia si decides denunciar.",
+      "doNow": [
+        "Ve a un lugar seguro y llama al 911 o a alguien de confianza.",
+        "Busca atención médica lo antes posible (lesiones, ITS, anticoncepción de emergencia según criterio médico).",
+        "Si quieres preservar evidencia: evita bañarte/cambiarte/cepillarte antes de valoración, si es posible."
+      ],
+      "steps": [
+        "Pide acompañamiento de una persona segura.",
+        "Guarda ropa en bolsa limpia separada (ideal: papel; si no, una bolsa limpia). No la laves.",
+        "Anota/recuerda hora y lugar cuando te sea posible.",
+        "Solicita apoyo psicológico de crisis.",
+        "La atención médica puede ser independiente de la denuncia (según jurisdicción)."
+      ],
+      "redFlags": [
+        "Sangrado intenso, dolor severo, pérdida de conciencia, estrangulación o dificultad respiratoria: urgencia médica.",
+        "Si temes por tu seguridad, busca resguardo con autoridad/red de apoyo."
+      ],
+      "handover": "A personal médico/autoridad: hora, lugar, lesiones, consumo de sustancias (si aplica), necesidades de protección."
+    },
+    {
+      "id": "violencia_domestica_plan_seguridad",
+      "category": "proteccion_salud",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Violencia doméstica: plan rápido de seguridad",
+      "summary": "Reduce riesgo: salida segura, apoyo, evidencia y protección.",
+      "doNow": [
+        "Si hay peligro inmediato: llama al 911 y sal si es posible.",
+        "Identifica una salida y un lugar seguro (vecino/familiar/refugio).",
+        "Define una palabra clave con tu red para pedir ayuda."
+      ],
+      "steps": [
+        "Prepara una bolsa discreta: documentos, llaves, medicamentos, efectivo.",
+        "Evita discutir en cocina/baño (zonas con objetos peligrosos/encierro).",
+        "Guarda evidencia solo si no te pone en más riesgo (fotos/mensajes).",
+        "En albergues, solicita confidencialidad y responsable de protección.",
+        "Si hay menores, planifica salida y contacto alterno."
+      ],
+      "redFlags": [
+        "Amenazas con armas, estrangulación, control extremo = alto riesgo: busca ayuda urgente.",
+        "No anuncies tu plan si aumenta el riesgo."
+      ],
+      "handover": "A autoridad/refugio: incidentes previos, amenazas, lesiones, necesidades (niños, medicinas)."
+    },
+    {
+      "id": "incidente_nuclear_radiologico_publico",
+      "category": "amenazas",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Incidente nuclear/radiológico: acciones para público",
+      "summary": "Refúgiate adentro, reduce exposición y sigue instrucciones oficiales.",
+      "doNow": [
+        "Entra a un edificio y aléjate de ventanas.",
+        "Cierra puertas/ventanas y apaga ventilación que meta aire exterior.",
+        "Sigue alertas oficiales (radio) y evita desplazarte."
+      ],
+      "steps": [
+        "Si estabas afuera cerca del evento: quita ropa exterior y guárdala aparte; dúchate con agua y jabón si puedes.",
+        "Evita consumir alimentos/agua expuestos al polvo.",
+        "Permanece en una habitación interior (si hay sótano, puede ayudar).",
+        "No tomes yoduro de potasio (KI) salvo indicación oficial/médica.",
+        "Si ordenan evacuar, sigue ruta indicada y lleva identificación/medicinas."
+      ],
+      "redFlags": [
+        "La exposición puede ser invisible: no salgas a 'ver qué pasó'.",
+        "Síntomas agudos intensos tras exposición requieren evaluación médica urgente."
+      ],
+      "handover": "Ubicación, tiempo cerca del evento, si hubo descontaminación, síntomas y contactos."
+    },
+    {
+      "id": "apagon_masivo_72h",
+      "category": "infraestructura",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Apagón masivo: qué hacer (primeras 72h)",
+      "summary": "Iluminación segura, agua/alimentos, comunicación y seguridad del hogar.",
+      "doNow": [
+        "Usa linterna (evita velas si hay gas/combustible).",
+        "Ahorra batería: modo ahorro/avión y mensajes breves.",
+        "Mantén refrigerador cerrado; consume perecederos primero."
+      ],
+      "steps": [
+        "Agua: llena recipientes si aún hay presión; raciona.",
+        "Seguridad: asegura puertas/ventanas; coordina con vecinos.",
+        "Calor/frío: abrigo por capas; evita braseros interiores (CO).",
+        "Generadores: siempre afuera, lejos de puertas/ventanas.",
+        "Información: radio a pilas y fuentes oficiales."
+      ],
+      "redFlags": [
+        "Síntomas de monóxido (dolor de cabeza, mareo, náusea) = salir a aire fresco y pedir ayuda.",
+        "No uses estufa de gas para calentar interiores."
+      ],
+      "handover": "En albergue/autoridad: necesidades médicas eléctricas (oxígeno, equipos), ubicación y dependientes."
+    },
+    {
+      "id": "pandemia_brote_respuesta_hogar",
+      "category": "salud_publica",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Pandemia/brote: medidas en hogar y comunidad",
+      "summary": "Reduce contagio: ventilación, higiene, aislamiento e información confiable.",
+      "doNow": [
+        "Ventila espacios y evita aglomeraciones si hay alta transmisión.",
+        "Quédate en casa si estás enfermo/a (salvo atención médica).",
+        "Monitorea síntomas y sigue indicaciones de autoridades sanitarias."
+      ],
+      "steps": [
+        "Define un área para la persona enferma; higiene de manos y limpieza de alto contacto.",
+        "No compartas bebidas/utensilios si hay síntomas.",
+        "Planifica cierres: escuela/trabajo, cuidado de menores y abastecimiento.",
+        "Mantén al día vacunas/medicación crónica según indicación médica.",
+        "Cuida salud mental: rutinas, descanso y apoyo social seguro."
+      ],
+      "redFlags": [
+        "Dificultad para respirar, dolor torácico, confusión o empeoramiento rápido: busca atención médica.",
+        "Deshidratación por fiebre/vómito/diarrea: atención si no mejora."
+      ],
+      "handover": "Síntomas, inicio, contactos cercanos, factores de riesgo y medidas realizadas."
+    },
+    {
+      "id": "fraude_digital_robo_identidad",
+      "category": "seguridad_digital",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Fraude digital/robo de identidad en crisis: protección rápida",
+      "summary": "En desastres suben fraudes: protege cuentas y verifica fuentes.",
+      "doNow": [
+        "No abras enlaces de “ayuda urgente” sin verificar.",
+        "Cambia contraseñas clave y activa 2FA si puedes.",
+        "Si te robaron el teléfono, bloquea/borra remoto y avisa a tu banco."
+      ],
+      "steps": [
+        "Verifica donaciones/ayudas en canales oficiales (gobierno/ONG reconocida).",
+        "Revisa movimientos bancarios; congela tarjetas si hay sospecha.",
+        "Avisa a contactos si tu cuenta fue comprometida.",
+        "Guarda capturas y datos del fraude para reporte.",
+        "En albergues, evita exponer documentos a la vista."
+      ],
+      "redFlags": [
+        "Solicitudes de pagos por adelantado o “depósitos para liberar ayuda” suelen ser fraude.",
+        "Mensajes con urgencia extrema + secreto + amenazas: señal de estafa."
+      ],
+      "handover": "Datos del fraude: números, enlaces, cuentas destino, capturas, montos y horarios."
+    },
+    {
+      "id": "ready_alertas_advertencias",
+      "category": "comunicacion",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Alertas y advertencias: cómo recibirlas y actuar",
+      "summary": "Activa alertas, conoce señales locales y responde sin demora.",
+      "doNow": [
+        "Activa alertas de emergencia en tu celular.",
+        "Ten un radio a pilas/manivela para información oficial.",
+        "Si hay orden de evacuar o refugiarte, actúa de inmediato."
+      ],
+      "steps": [
+        "Regístrate en sistemas locales de alertas (Protección Civil/municipio, si existe).",
+        "Define una fuente oficial principal y una secundaria.",
+        "Evita difundir rumores: confirma antes de reenviar.",
+        "Guarda baterías/power bank y cables listos."
+      ],
+      "redFlags": [
+        "Si la alerta dice 'evacúa ahora', no retrases por recoger cosas.",
+        "Alertas falsas circulan en crisis: verifica con canales oficiales."
+      ],
+      "handover": "Comparte con familia: tipo de alerta, zona, instrucción oficial y punto de reunión."
+    },
+    {
+      "id": "ready_plan_comunicacion_familiar",
+      "category": "comunidad_preparacion",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Plan de comunicación familiar (plantilla rápida)",
+      "summary": "Contactos, puntos de reunión y rutas alternativas por si se cae la red.",
+      "doNow": [
+        "Define 1 contacto fuera de tu ciudad.",
+        "Escribe números y direcciones en papel (cartera/mochila).",
+        "Acordar 2 puntos de reunión (cerca/lejos)."
+      ],
+      "steps": [
+        "Incluye: escuelas, cuidadores, médicos, vecinos clave.",
+        "Define quién recoge a menores y quién lleva medicinas/documentos.",
+        "Practica un simulacro simple y revisa cada 6 meses.",
+        "Incluye un plan si se pierde internet (SMS, llamadas breves, radio)."
+      ],
+      "redFlags": [
+        "No dependas solo de apps: puede no haber datos.",
+        "Si cambian escuelas/trabajos, actualiza el plan."
+      ],
+      "handover": "Al reunirse: confirma quién falta, último punto visto y siguiente acción."
+    },
+    {
+      "id": "ready_kit_casa_mini_kit",
+      "category": "comunidad_preparacion",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Kit en casa + mini kit personal (enfoque Ready.gov)",
+      "summary": "Un kit grande en casa y uno portátil para salir rápido.",
+      "doNow": [
+        "Ten agua/alimentos para varios días y un mini kit 'salida rápida'.",
+        "Agrega linterna, radio, baterías y cargadores.",
+        "Incluye medicinas, copias de documentos y efectivo."
+      ],
+      "steps": [
+        "Kit casa: agua, comida, higiene, luz, herramientas y primeros auxilios.",
+        "Mini kit: botella, snacks, silbato, manta térmica, copia de IDs, power bank.",
+        "Rotación: caducidades, baterías y medicamentos cada 3–6 meses.",
+        "Adapta por hogar: bebés, mayores, mascotas, enfermedades crónicas."
+      ],
+      "redFlags": [
+        "Sin plan para medicinas (insulina, inhaladores) el kit se vuelve incompleto.",
+        "Evita sobrepeso: lo portátil debe poder cargarse."
+      ],
+      "handover": "Si evacúas: lista de necesidades médicas y contactos en el kit."
+    },
+    {
+      "id": "ready_documenta_asegura_propiedad",
+      "category": "recuperacion",
+      "audience": "publico",
+      "level": "intermedio",
+      "title": "Documenta daños y protege tus trámites (post-desastre)",
+      "summary": "Fotos, lista de daños y recibos antes de limpiar ayudan en apoyos/seguros.",
+      "doNow": [
+        "Toma fotos y video de daños antes de limpiar si es seguro.",
+        "Haz una lista de pertenencias dañadas.",
+        "Guarda recibos de gastos y reparaciones temporales."
+      ],
+      "steps": [
+        "Evita tirar objetos dañados antes de documentarlos (si es seguro).",
+        "Guarda copias de documentos importantes en físico y digital.",
+        "Verifica apoyos y contratistas por canales oficiales.",
+        "Organiza carpeta: identidad, propiedad, pólizas, fotos, recibos."
+      ],
+      "redFlags": [
+        "Cuidado con estafas de 'ayuda' o 'contratistas' que piden anticipo.",
+        "No entres a estructuras inseguras solo para tomar fotos."
+      ],
+      "handover": "Entrega a seguro/autoridad: fotos, lista de daños, recibos, fechas y datos de contacto."
+    },
+    {
+      "id": "ready_shelter_in_place_basico",
+      "category": "evacuacion",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Refugio en el lugar (Shelter-in-place) por amenaza externa",
+      "summary": "Qué hacer si piden quedarte dentro (humo, químicos, radiación).",
+      "doNow": [
+        "Entra a un edificio y cierra puertas/ventanas.",
+        "Elige un cuarto interior con pocas ventanas (si es posible).",
+        "Apaga ventilación que meta aire exterior."
+      ],
+      "steps": [
+        "Sella rendijas con toallas húmedas si hay humo/polvo y lo indican autoridades.",
+        "Mantén a mascotas dentro; evita salir a 'revisar'.",
+        "Escucha radio/alertas y espera instrucciones oficiales.",
+        "Ten kit, agua y cargadores a la mano."
+      ],
+      "redFlags": [
+        "No uses generadores o combustión dentro (CO).",
+        "Si hay fuego dentro del edificio, evacúa según ruta segura."
+      ],
+      "handover": "Comparte a familia: dónde estás refugiado y tu estado; sigue órdenes oficiales."
+    },
+    {
+      "id": "ready_evacuar_orden",
+      "category": "evacuacion",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Si hay orden de evacuación: pasos esenciales",
+      "summary": "Evacúa temprano, sigue rutas indicadas y no retrases.",
+      "doNow": [
+        "Evacúa inmediatamente cuando se emita la orden.",
+        "Sigue rutas indicadas y evita atajos por zonas de riesgo.",
+        "Lleva tu kit y documentos; lleva a tus mascotas."
+      ],
+      "steps": [
+        "Cierra agua/gas/energía solo si es seguro y recomendado localmente.",
+        "Informa a tu contacto fuera de la ciudad que evacúas y a dónde.",
+        "Evita conducir por agua/derrumbes/humo denso.",
+        "Al llegar a refugio: regístrate y reporta necesidades médicas."
+      ],
+      "redFlags": [
+        "No esperes a 'una señal más': el tiempo se acaba rápido.",
+        "No regreses hasta autorización oficial."
+      ],
+      "handover": "A refugio/autoridad: nombre, procedencia, necesidades médicas, contactos y mascotas."
+    },
+    {
+      "id": "ready_mascotas_desastre",
+      "category": "comunidad_preparacion",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Mascotas en desastres: plan y kit",
+      "summary": "Identificación, alimento/agua y reglas del refugio.",
+      "doNow": [
+        "Collar con placa + foto reciente de tu mascota.",
+        "Kit: alimento, agua, correa, bolsas y medicinas.",
+        "Identifica refugios/traslado pet-friendly."
+      ],
+      "steps": [
+        "Transportadora para gatos/perros pequeños.",
+        "Copia de vacunas/registro (si lo tienes).",
+        "No dejes mascotas amarradas afuera en evacuación.",
+        "Define un cuidador alterno si no puedes regresar."
+      ],
+      "redFlags": [
+        "Mascota asustada puede morder/huir: usa correa/transportadora.",
+        "Agua contaminada también enferma a mascotas."
+      ],
+      "handover": "En refugio: especie, necesidades médicas, vacunas (si disponibles) y contacto."
+    },
+    {
+      "id": "ready_necesidades_especiales_discapacidad",
+      "category": "salud_publica",
+      "audience": "publico",
+      "level": "intermedio",
+      "title": "Personas con discapacidad/enfermedad crónica: plan de continuidad",
+      "summary": "Medicinas, equipos eléctricos, transporte y red de apoyo.",
+      "doNow": [
+        "Lista impresa de medicamentos, dosis y alergias.",
+        "Plan para equipos que usan electricidad (baterías/traslado).",
+        "Contactos de cuidadores y médicos."
+      ],
+      "steps": [
+        "Mantén reserva de medicación según indicación médica y disponibilidad.",
+        "Etiqueta equipos con instrucciones básicas (en caso de relevo).",
+        "Define transporte alterno para citas/evacuación.",
+        "En refugio: solicita área tranquila/segura y acceso a carga eléctrica si aplica."
+      ],
+      "redFlags": [
+        "Si dependes de oxígeno/equipo vital, planea con anticipación opciones de energía/traslado.",
+        "No esperes a quedarte sin medicinas para evacuar."
+      ],
+      "handover": "Lista de medicación/equipo, necesidades de energía, y contacto médico."
+    },
+    {
+      "id": "ready_generador_monoxido_seguridad",
+      "category": "infraestructura",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Generadores y monóxido de carbono (CO): seguridad crítica",
+      "summary": "Generador solo afuera; el CO mata sin olor.",
+      "doNow": [
+        "Usa generadores SOLO al aire libre y lejos de puertas/ventanas.",
+        "No uses estufa de gas para calentar interiores.",
+        "Si hay alarma de CO o síntomas: sal a aire fresco."
+      ],
+      "steps": [
+        "Coloca el generador en un área ventilada, con lluvia controlada pero sin encerrar.",
+        "No conectes 'a la casa' sin electricista/protocolo (riesgo de electrocución).",
+        "Ten detectores de CO si están disponibles (ideal con batería).",
+        "Ventila si usas combustibles/braseros (mejor evitarlos en interiores)."
+      ],
+      "redFlags": [
+        "Dolor de cabeza, mareo, náusea, somnolencia: sospecha CO y evacúa.",
+        "Nunca uses generador dentro de casa/garaje aunque la puerta esté abierta."
+      ],
+      "handover": "Síntomas, tiempo de exposición, uso de combustión y ubicación."
+    },
+    {
+      "id": "ready_incendio_casa_plan_escape",
+      "category": "amenazas",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Incendio en casa: plan de escape y seguridad",
+      "summary": "Sal rápido, puerta cerrada al dormir, alarmas y punto de reunión.",
+      "doNow": [
+        "Si hay humo/fuego: sal y llama al 911; no regreses.",
+        "Si una puerta está caliente, no la abras: busca otra salida.",
+        "Reúnete en el punto acordado."
+      ],
+      "steps": [
+        "Alarmas de humo: prueba periódica y baterías.",
+        "Mantén rutas libres y 2 salidas por habitación si es posible.",
+        "Duerme con la puerta cerrada (reduce humo).",
+        "Practica un simulacro familiar."
+      ],
+      "redFlags": [
+        "Humo = riesgo inmediato: agáchate y sal.",
+        "No intentes combatir incendios grandes sin entrenamiento."
+      ],
+      "handover": "A bomberos: quién falta, dónde se vio por última vez y presencia de gas/combustibles."
+    },
+    {
+      "id": "ready_terremoto_durante",
+      "category": "amenazas",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Durante un sismo: Agáchate, Cúbrete y Agárrate",
+      "summary": "No corras al exterior: protégete de caída de objetos.",
+      "doNow": [
+        "AGÁCHATE al suelo.",
+        "CÚBRETE bajo una mesa resistente o junto a un mueble firme.",
+        "AGÁRRATE hasta que termine el movimiento."
+      ],
+      "steps": [
+        "Aléjate de ventanas y objetos que caen.",
+        "Si estás en cama: cúbrete cabeza y cuello con una almohada.",
+        "Si estás afuera: aléjate de edificios, postes y cables.",
+        "Al terminar: evalúa daños y evacúa si hay riesgo."
+      ],
+      "redFlags": [
+        "No uses elevadores.",
+        "En zona costera, sigue alertas por tsunami si aplica."
+      ],
+      "handover": "Reporta lesiones, daños y riesgos (gas/cables) a autoridades."
+    },
+    {
+      "id": "ready_inundacion_turn_around",
+      "category": "amenazas",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Inundación: 'Da la vuelta, no te ahogues'",
+      "summary": "No camines ni manejes en agua: la corriente y hoyos son invisibles.",
+      "doNow": [
+        "No cruces calles inundadas a pie ni en auto.",
+        "Muévete a terreno alto si el agua sube.",
+        "Evita cables caídos y zonas con electricidad."
+      ],
+      "steps": [
+        "Sigue órdenes de evacuación y rutas seguras.",
+        "Si estás atrapado en un edificio, sube a un nivel alto (no al ático sin salida).",
+        "Evita contacto con agua sucia; desinfecta al terminar.",
+        "Regresa solo cuando autoridades lo indiquen."
+      ],
+      "redFlags": [
+        "Solo unos centímetros de agua en movimiento pueden derribar.",
+        "Agua + electricidad = mortal: mantén distancia."
+      ],
+      "handover": "Ubicación, nivel del agua, personas atrapadas y accesos disponibles."
+    },
+    {
+      "id": "ready_incendio_forestal_humo",
+      "category": "amenazas",
+      "audience": "publico",
+      "level": "intermedio",
+      "title": "Incendio forestal y humo: protección respiratoria y evacuación",
+      "summary": "Evacúa temprano si te lo indican; reduce exposición al humo.",
+      "doNow": [
+        "Si autoridades indican evacuar: evacúa de inmediato.",
+        "Cierra ventanas y pon A/C en recirculación si hay humo.",
+        "Si sales, usa mascarilla N95/KN95 bien ajustada si la tienes."
+      ],
+      "steps": [
+        "Prepara 'go bag' con documentos, medicinas, agua y cargadores.",
+        "Evita actividades que generen humo dentro (freír, velas).",
+        "Monitorea síntomas respiratorios; grupos vulnerables deben extremar cuidado.",
+        "Al volver, limpia ceniza con métodos húmedos y protección básica."
+      ],
+      "redFlags": [
+        "Disnea, opresión torácica o crisis asmática: busca atención médica.",
+        "No esperes 'ver el fuego': el humo y el tráfico pueden atraparte."
+      ],
+      "handover": "Ruta tomada, síntomas, medicación respiratoria usada y personas vulnerables."
+    },
+    {
+      "id": "ready_calor_extremo",
+      "category": "amenazas",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Calor extremo: prevenir golpe de calor",
+      "summary": "Hidratación, sombra, enfriamiento y vigilancia de signos.",
+      "doNow": [
+        "Toma agua frecuentemente (aunque no tengas sed).",
+        "Evita esfuerzo en horas de más calor.",
+        "Busca lugares frescos/ventilados o centros de enfriamiento."
+      ],
+      "steps": [
+        "Usa ropa ligera y descansa a la sombra.",
+        "Revisa a mayores, niños y personas con enfermedades crónicas.",
+        "Enfría el cuerpo (paños húmedos, ducha tibia-fría).",
+        "Nunca dejes niños/mascotas en autos."
+      ],
+      "redFlags": [
+        "Confusión, piel caliente, desmayo: posible golpe de calor = emergencia.",
+        "Calambres/dolor de cabeza/mareo: detén actividad y rehidrata."
+      ],
+      "handover": "Síntomas, tiempo de exposición, líquidos ingeridos y medidas de enfriamiento."
+    },
+    {
+      "id": "ready_frio_extremo_tormenta_invernal",
+      "category": "amenazas",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Frío extremo/tormenta invernal: protección y CO",
+      "summary": "Abrigo por capas, evitar hipotermia y usar calefacción segura.",
+      "doNow": [
+        "Abrígate por capas y mantente seco.",
+        "Evita calefactores/braseros sin ventilación (CO).",
+        "Si es inseguro salir, refúgiate y escucha alertas."
+      ],
+      "steps": [
+        "Protege tuberías y agua según condiciones locales.",
+        "Ten cobijas, alimentos y agua para varios días.",
+        "En auto: mantén kit de invierno (manta, guantes, agua, snacks).",
+        "Si hay corte de luz y frío extremo, busca refugio comunitario si es seguro."
+      ],
+      "redFlags": [
+        "Somnolencia, confusión, temblores que paran: hipotermia posible.",
+        "Síntomas de CO: dolor de cabeza/mareo/náusea."
+      ],
+      "handover": "Síntomas, temperatura aproximada, tiempo de exposición y métodos de calefacción usados."
+    },
+    {
+      "id": "ready_recuperacion_limpieza_segura",
+      "category": "recuperacion",
+      "audience": "publico",
+      "level": "intermedio",
+      "title": "Limpieza segura tras desastre (inundación/escombros)",
+      "summary": "Evita lesiones, moho y electrocución durante la limpieza.",
+      "doNow": [
+        "Usa guantes, botas y cubrebocas si hay polvo/moho.",
+        "Corta energía si hay agua dentro y es seguro.",
+        "Ventila y descarta alimentos expuestos a agua sucia."
+      ],
+      "steps": [
+        "No enciendas electricidad si hubo inundación hasta revisión.",
+        "Limpia con métodos húmedos para polvo/ceniza.",
+        "Seca y ventila para reducir moho.",
+        "Mantén niños/mascotas fuera de áreas peligrosas.",
+        "Descansa e hidrátate: la limpieza también causa golpes de calor."
+      ],
+      "redFlags": [
+        "Olor a gas, chisporroteo eléctrico, estructura inestable: detén y reporta.",
+        "Heridas profundas o punzantes: atención médica (riesgo de infección/tétanos)."
+      ],
+      "handover": "Riesgos presentes, acciones tomadas y necesidades de apoyo (materiales, retiro de escombro)."
+    },
+    {
+      "id": "ready_estafas_post_desastre",
+      "category": "recuperacion",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Estafas post-desastre: cómo evitarlas",
+      "summary": "En crisis aparecen falsos apoyos/contratistas: verifica antes de pagar.",
+      "doNow": [
+        "No pagues anticipos grandes a desconocidos.",
+        "Verifica identificaciones y referencias por canales oficiales.",
+        "Desconfía de presión/urgencia para firmar o pagar."
+      ],
+      "steps": [
+        "Pide contrato por escrito y detalle de costos.",
+        "Evita compartir CURP/INE/pasaporte por mensajes no seguros.",
+        "Confirma programas de ayuda en sitios/canales oficiales.",
+        "Reporta intentos de fraude a autoridad local."
+      ],
+      "redFlags": [
+        "Promesas de 'ayuda garantizada' a cambio de pago = estafa probable.",
+        "Ofertas demasiado baratas o sin dirección física verificable."
+      ],
+      "handover": "Datos del estafador: nombres, teléfonos, placas, cuentas, capturas."
+    },
+    {
+      "id": "ready_plan_trabajo_escuela",
+      "category": "comunidad_preparacion",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Plan para escuela y trabajo: reunificación y roles",
+      "summary": "Qué hacer si el evento ocurre cuando no están juntos.",
+      "doNow": [
+        "Conoce el plan de la escuela/guardería y puntos de entrega.",
+        "Define quién puede recoger a menores (lista autorizada).",
+        "Acordar un punto alterno si la escuela no es accesible."
+      ],
+      "steps": [
+        "Ten copias de IDs y contactos de emergencia actualizados.",
+        "Define rutas alternativas y transporte alterno.",
+        "Practica mensajes cortos: 'Estoy bien / voy a X'",
+        "Si no puedes llegar, activa el contacto externo."
+      ],
+      "redFlags": [
+        "No invadas zonas de operación; sigue indicaciones de autoridades.",
+        "Evita rumores: usa canales oficiales de la escuela."
+      ],
+      "handover": "A autoridad/escuela: nombre del menor, grupo, quién lo recoge y contacto alterno."
+    },
+    {
+      "id": "ready_vecindario_ayuda_mutua",
+      "category": "comunidad_preparacion",
+      "audience": "publico",
+      "level": "intermedio",
+      "title": "Red vecinal (ayuda mutua): organización mínima",
+      "summary": "Vecinos coordinados mejoran seguridad, información y apoyo a vulnerables.",
+      "doNow": [
+        "Crea un chat/lista de contactos vecinal (con reglas).",
+        "Identifica personas vulnerables (voluntario y confidencial).",
+        "Define un punto de reunión y un responsable rotativo."
+      ],
+      "steps": [
+        "Mapea recursos: botiquín, herramientas, vehículo, conocimientos médicos.",
+        "Acordar señales simples (silbato, luz, cartel).",
+        "Turnos de vigilancia comunitaria sin confrontación (solo reportar).",
+        "En albergue, asigna enlace vecinal para información y necesidades."
+      ],
+      "redFlags": [
+        "No tomes justicia por mano propia; reporta a autoridad.",
+        "Protege datos personales y ubicaciones sensibles."
+      ],
+      "handover": "Lista de necesidades, recursos disponibles y responsables por calle/edificio."
+    },
+    {
+      "id": "ready_reabasto_medicinas_frio",
+      "category": "salud_publica",
+      "audience": "publico",
+      "level": "intermedio",
+      "title": "Medicinas que requieren refrigeración: plan en apagón",
+      "summary": "Define cómo conservar o trasladar medicinas sensibles al calor/frío.",
+      "doNow": [
+        "Identifica qué medicinas requieren frío (según indicación del empaque/médico).",
+        "Ten una hielera/gel packs listos (si puedes).",
+        "Planea un sitio con energía (familiar/albergue/centro comunitario)."
+      ],
+      "steps": [
+        "Mantén refrigerador cerrado el mayor tiempo posible.",
+        "Usa termómetro si disponible para controlar temperatura.",
+        "No congeles medicinas que no lo permiten.",
+        "Coordina con servicios de salud/autoridad si el corte será prolongado."
+      ],
+      "redFlags": [
+        "Dudas sobre conservación = consulta a profesional de salud cuando sea posible.",
+        "No uses medicinas alteradas si se ven/sienten diferentes (según guía del fabricante)."
+      ],
+      "handover": "Nombre de medicina, requerimiento de temperatura, tiempo sin refrigeración y síntomas."
+    },
+    {
+      "id": "ready_info_riesgos_locales",
+      "category": "comunidad_preparacion",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Conoce tus riesgos locales y rutas seguras",
+      "summary": "Tu plan cambia según amenazas: sismo, inundación, incendio, huracán, etc.",
+      "doNow": [
+        "Identifica amenazas principales de tu zona (Protección Civil/autoridad local).",
+        "Ubica rutas de evacuación y refugios cercanos.",
+        "Define puntos de reunión fuera de zonas de riesgo."
+      ],
+      "steps": [
+        "Marca en un mapa: hospital, estación de bomberos, refugios, gasolineras.",
+        "Evita rutas por laderas, ríos y puentes vulnerables (según contexto).",
+        "Ten un plan alterno si la ruta principal se bloquea.",
+        "Revisa cambios estacionales (lluvias, calor, incendios)."
+      ],
+      "redFlags": [
+        "Las rutas pueden cambiar: revisa periódicamente.",
+        "No te acerques a zonas acordonadas por curiosidad."
+      ],
+      "handover": "Comparte mapa simple con familia y vecinos; actualiza tras cambios."
     }
-  ]
+  ],
+  "attribution": {
+    "adaptedFrom": [
+      "FEMA Ready.gov (guías de preparación y peligros)"
+    ],
+    "note": "Contenido adaptado para uso general en MX/LATAM; sigue siempre indicaciones de autoridades locales."
+  }
 }
