@@ -2,6 +2,7 @@
 // Plays notification sounds using Web Audio API
 
 let audioContext: AudioContext | null = null;
+let audioUnlocked = false;
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -15,6 +16,47 @@ function getAudioContext(): AudioContext | null {
     }
   }
   return audioContext;
+}
+
+/**
+ * Unlock audio context for iOS/mobile devices
+ * Must be called from a user interaction event
+ */
+export function unlockAudioContext(): Promise<void> {
+  return new Promise((resolve) => {
+    const ctx = getAudioContext();
+    if (!ctx) {
+      resolve();
+      return;
+    }
+    
+    if (audioUnlocked && ctx.state === 'running') {
+      resolve();
+      return;
+    }
+    
+    // Resume the audio context
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(() => {
+        console.log('Audio context resumed');
+        audioUnlocked = true;
+        resolve();
+      }).catch((e) => {
+        console.warn('Failed to resume audio context:', e);
+        resolve();
+      });
+    } else {
+      // Play a silent sound to unlock on iOS
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(0);
+      audioUnlocked = true;
+      console.log('Audio unlocked with silent buffer');
+      resolve();
+    }
+  });
 }
 
 /**
@@ -582,13 +624,27 @@ export function stopClave100Alert(): void {
  * Play Clave 100 alert - MAXIMUM EMERGENCY
  * Continuous sound and vibration until dismissed
  */
-export function playClave100Alert(): void {
+export async function playClave100Alert(): Promise<void> {
   console.log('🚨 Clave100Alert: STARTING MAXIMUM EMERGENCY ALERT');
   
   // Stop any existing alert first
   stopClave100Alert();
   
-  // Play immediately - try multiple times to ensure it plays
+  // Unlock audio context first (critical for iOS/mobile)
+  await unlockAudioContext();
+  
+  // Resume audio context if needed
+  const ctx = getAudioContext();
+  if (ctx && ctx.state === 'suspended') {
+    try {
+      await ctx.resume();
+      console.log('Clave100Alert: Audio context resumed');
+    } catch (e) {
+      console.error('Clave100Alert: Failed to resume audio context:', e);
+    }
+  }
+  
+  // Play immediately
   try {
     playClave100Sound();
     triggerClave100Vibration();
@@ -596,7 +652,7 @@ export function playClave100Alert(): void {
     console.error('Clave100Alert: Error on initial play:', e);
   }
   
-  // Retry after a short delay (helps with audio context issues)
+  // Retry after a short delay (helps with audio context issues on mobile)
   setTimeout(() => {
     try {
       playClave100Sound();
@@ -605,6 +661,15 @@ export function playClave100Alert(): void {
       console.error('Clave100Alert: Error on retry:', e);
     }
   }, 500);
+  
+  // Additional retry for stubborn mobile browsers
+  setTimeout(() => {
+    try {
+      playClave100Sound();
+    } catch (e) {
+      console.error('Clave100Alert: Error on second retry:', e);
+    }
+  }, 1500);
   
   // Keep repeating sound every 4 seconds until stopped
   clave100SoundInterval = setInterval(() => {

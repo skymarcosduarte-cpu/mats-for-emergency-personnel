@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { AlertTriangle, X, MessageCircle, MapPin, Volume2, Play, Pause, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { stopClave100Alert } from '@/lib/alertSound';
+import { stopClave100Alert, playClave100Alert, unlockAudioContext } from '@/lib/alertSound';
 import { formatDuration } from '@/lib/audioUtils';
 
 interface Clave100OverlayProps {
@@ -30,11 +30,26 @@ export const Clave100Overlay: React.FC<Clave100OverlayProps> = ({
   const [flashPhase, setFlashPhase] = useState(0);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
+  const [audioActivated, setAudioActivated] = useState(false);
   const flashIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Handler for user interaction to unlock audio on mobile
+  const handleUserInteraction = async () => {
+    if (audioActivated) return;
+    
+    console.log('Clave100Overlay: User interaction detected, unlocking audio...');
+    setAudioActivated(true);
+    
+    // Unlock and play the alert
+    await unlockAudioContext();
+    playClave100Alert();
+  };
+
   useEffect(() => {
     if (isVisible) {
+      setAudioActivated(false);
+      
       // Small delay for animation
       const timer = setTimeout(() => setShowContent(true), 100);
       
@@ -54,6 +69,7 @@ export const Clave100Overlay: React.FC<Clave100OverlayProps> = ({
       setFlashPhase(0);
       setIsPlayingAudio(false);
       setShowFullImage(false);
+      setAudioActivated(false);
       if (flashIntervalRef.current) {
         clearInterval(flashIntervalRef.current);
       }
@@ -125,7 +141,18 @@ export const Clave100Overlay: React.FC<Clave100OverlayProps> = ({
         "transition-all duration-100",
         showContent ? "opacity-100" : "opacity-0"
       )}
+      onClick={handleUserInteraction}
+      onTouchStart={handleUserInteraction}
     >
+      {/* Tap to activate sound banner for mobile */}
+      {!audioActivated && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 animate-pulse">
+          <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2">
+            <Volume2 className="w-5 h-5 text-white" />
+            <span className="text-white text-sm font-medium">Toca para activar sonido</span>
+          </div>
+        </div>
+      )}
       {/* Multiple pulsing rings for maximum visual impact */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Ring 1 */}
