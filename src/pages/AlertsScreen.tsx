@@ -535,9 +535,13 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                         )}
                         <Badge variant="outline" className={cn(
                           "text-[10px] px-1.5 py-0 h-4",
-                          quake.source === 'SSN' ? "border-success text-success" : "border-primary text-primary"
+                          quake.source === 'SSN' 
+                            ? "border-success text-success" 
+                            : quake.source === 'EMSC'
+                            ? "border-amber-500 text-amber-500"
+                            : "border-primary text-primary"
                         )}>
-                          {quake.source === 'SSN' ? 'SSN México' : 'USGS'}
+                          {quake.source === 'SSN' ? 'SSN' : quake.source === 'EMSC' ? 'EMSC' : 'USGS'}
                         </Badge>
                       </div>
                       <div className="text-sm text-foreground font-medium">
@@ -1395,9 +1399,13 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                   </span>
                   <Badge variant="outline" className={cn(
                     "text-xs",
-                    selectedQuake.source === 'SSN' ? "border-success text-success" : "border-primary text-primary"
+                    selectedQuake.source === 'SSN' 
+                      ? "border-success text-success" 
+                      : selectedQuake.source === 'EMSC'
+                      ? "border-amber-500 text-amber-500"
+                      : "border-primary text-primary"
                   )}>
-                    {selectedQuake.source === 'SSN' ? 'SSN México' : 'USGS'}
+                    {selectedQuake.source === 'SSN' ? 'SSN México' : selectedQuake.source === 'EMSC' ? 'EMSC Europa' : 'USGS'}
                   </Badge>
                 </div>
                 <p className="text-sm text-foreground font-medium mb-2">
