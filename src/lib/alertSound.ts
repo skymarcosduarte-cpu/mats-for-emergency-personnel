@@ -409,3 +409,99 @@ export function playCancelledAlert(): void {
   playCancelledSound();
   triggerCancelVibration();
 }
+
+/**
+ * Play EXTREME emergency alert sound for Clave 100
+ * Very loud, attention-grabbing alarm-like sound
+ */
+export function playClave100Sound(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
+
+  const now = ctx.currentTime;
+  
+  // Intense alarm pattern - alternating high frequencies like a siren
+  const alarmPattern = [
+    // First alarm cycle - high-low alternating
+    { freq: 1200, delay: 0, duration: 0.2, volume: 0.6 },
+    { freq: 800, delay: 0.2, duration: 0.2, volume: 0.6 },
+    { freq: 1200, delay: 0.4, duration: 0.2, volume: 0.65 },
+    { freq: 800, delay: 0.6, duration: 0.2, volume: 0.65 },
+    // Second cycle - more intense
+    { freq: 1400, delay: 0.85, duration: 0.15, volume: 0.7 },
+    { freq: 900, delay: 1.0, duration: 0.15, volume: 0.7 },
+    { freq: 1400, delay: 1.15, duration: 0.15, volume: 0.7 },
+    { freq: 900, delay: 1.3, duration: 0.15, volume: 0.7 },
+    // Final warning beeps
+    { freq: 1600, delay: 1.5, duration: 0.1, volume: 0.75 },
+    { freq: 1600, delay: 1.65, duration: 0.1, volume: 0.75 },
+    { freq: 1600, delay: 1.8, duration: 0.1, volume: 0.75 },
+    { freq: 1600, delay: 1.95, duration: 0.2, volume: 0.8 },
+  ];
+  
+  alarmPattern.forEach(({ freq, delay, duration, volume }) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    osc.type = 'square'; // Square wave is more piercing
+    const startTime = now + delay;
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(volume, startTime + 0.01);
+    gain.gain.setValueAtTime(volume, startTime + duration * 0.8);
+    gain.gain.linearRampToValueAtTime(0, startTime + duration);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  });
+}
+
+/**
+ * Trigger extreme vibration pattern for Clave 100
+ * Maximum attention - continuous long vibrations
+ */
+export function triggerClave100Vibration(): void {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate([
+        // First wave - strong continuous
+        500, 100, 500, 100, 500,
+        200,
+        // Second wave - rapid fire
+        100, 50, 100, 50, 100, 50, 100, 50, 100, 50, 100,
+        200,
+        // Third wave - long emergency pulse
+        700, 150, 700, 150, 700,
+        300,
+        // Final attention grab
+        200, 50, 200, 50, 200, 50, 200, 50, 200
+      ]);
+    } catch (e) {
+      console.warn('Vibration not supported');
+    }
+  }
+}
+
+/**
+ * Play Clave 100 alert (extreme sound + vibration)
+ * Repeats multiple times for maximum attention
+ */
+export function playClave100Alert(): void {
+  playClave100Sound();
+  triggerClave100Vibration();
+  
+  // Repeat sound after 2.5 seconds
+  setTimeout(() => {
+    playClave100Sound();
+    triggerClave100Vibration();
+  }, 2500);
+  
+  // One more time after 5 seconds
+  setTimeout(() => {
+    playClave100Sound();
+  }, 5000);
+}
