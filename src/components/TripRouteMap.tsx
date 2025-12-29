@@ -122,57 +122,67 @@ export default function TripRouteMap({
   const hasAnyData =
     safeRouteCoordinates.length > 0 || !!safeOrigin || !!safeDestination || !!safeCurrent;
 
+  // Store initial center to avoid re-creating map on data changes
+  const initialCenterRef = useRef<[number, number] | null>(null);
+  if (!initialCenterRef.current && hasAnyData) {
+    initialCenterRef.current = defaultCenter;
+  }
+
   useEffect(() => {
     if (!containerRef.current) return;
+    // Prevent multiple initializations
+    if (mapRef.current) return;
 
-    // Initialize once
-    if (!mapRef.current) {
-      setIsMapReady(false);
+    setIsMapReady(false);
 
-      const map = L.map(containerRef.current, {
-        center: defaultCenter,
-        zoom: 13,
-        zoomControl: false,
-      });
+    const center = initialCenterRef.current || defaultCenter;
+    const map = L.map(containerRef.current, {
+      center,
+      zoom: 13,
+      zoomControl: false,
+    });
 
-      mapRef.current = map;
+    mapRef.current = map;
 
-      const tile = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "© OpenStreetMap",
-      });
+    const tile = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap",
+    });
 
-      tile.on("load", () => setIsMapReady(true));
-      tile.addTo(map);
-      tileRef.current = tile;
+    tile.on("load", () => setIsMapReady(true));
+    tile.addTo(map);
+    tileRef.current = tile;
 
-      // Ensure proper sizing inside dialogs
-      const t = window.setTimeout(() => {
-        try {
-          map.invalidateSize();
-        } catch {}
-      }, 80);
+    // Ensure proper sizing inside dialogs
+    const t = window.setTimeout(() => {
+      try {
+        map.invalidateSize();
+      } catch {}
+    }, 80);
 
-      const ro = new ResizeObserver(() => {
-        try {
-          map.invalidateSize();
-        } catch {}
-      });
-      ro.observe(containerRef.current);
+    const container = containerRef.current;
+    const ro = new ResizeObserver(() => {
+      try {
+        map.invalidateSize();
+      } catch {}
+    });
+    ro.observe(container);
 
-      return () => {
-        window.clearTimeout(t);
-        ro.disconnect();
-        map.remove();
-        mapRef.current = null;
-        tileRef.current = null;
-        routeRef.current = null;
-        originMarkerRef.current = null;
-        destMarkerRef.current = null;
-        currentMarkerRef.current = null;
-      };
-    }
-  }, [defaultCenter]);
+    return () => {
+      window.clearTimeout(t);
+      ro.disconnect();
+      map.remove();
+      mapRef.current = null;
+      tileRef.current = null;
+      routeRef.current = null;
+      originMarkerRef.current = null;
+      destMarkerRef.current = null;
+      currentMarkerRef.current = null;
+      initialCenterRef.current = null;
+    };
+  // Empty deps - only run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const map = mapRef.current;

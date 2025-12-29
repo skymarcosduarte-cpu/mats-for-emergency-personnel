@@ -180,12 +180,9 @@ export function useActiveTrips() {
     };
   }, [fetchActiveTrips]);
 
-  // Separate subscription for location updates with throttling
+  // Separate subscription for location updates - update in-place without full refetch
   useEffect(() => {
     if (activeUserIds.size === 0) return;
-
-    let lastFetchTime = 0;
-    const minInterval = 30000; // Throttle to max once per 30 seconds
 
     const locationsChannel = supabase
       .channel('active_trips_locations')
@@ -197,13 +194,40 @@ export function useActiveTrips() {
           table: 'user_locations',
         },
         (payload) => {
-          const userId = (payload.new as { user_id?: string })?.user_id;
+          const newLoc = payload.new as { user_id?: string; lat?: number; lng?: number; speed?: number; updated_at?: string };
+          const userId = newLoc?.user_id;
+          
           if (userId && activeUserIds.has(userId)) {
-            const now = Date.now();
-            if (now - lastFetchTime >= minInterval) {
-              lastFetchTime = now;
-              fetchActiveTrips();
-            }
+            // Update trip in-place instead of full refetch
+            setTrips(prev => prev.map(trip => {
+              if (trip.user_id !== userId) return trip;
+              
+              // Calculate new remaining distance and ETA
+              let remainingDistanceKm: number | null = null;
+              let dynamicEtaMinutes: number | null = null;
+              
+              if (newLoc.lat && newLoc.lng && trip.destination_lat && trip.destination_lng) {
+                remainingDistanceKm = calculateDistance(
+                  newLoc.lat,
+                  newLoc.lng,
+                  trip.destination_lat,
+                  trip.destination_lng
+                );
+                const speedKmh = newLoc.speed ? newLoc.speed * 3.6 : null;
+                const effectiveSpeed = speedKmh && speedKmh > 5 ? speedKmh : 60;
+                dynamicEtaMinutes = Math.round((remainingDistanceKm / effectiveSpeed) * 60);
+              }
+              
+              return {
+                ...trip,
+                current_lat: newLoc.lat ?? trip.current_lat,
+                current_lng: newLoc.lng ?? trip.current_lng,
+                current_speed: newLoc.speed ?? trip.current_speed,
+                location_updated_at: newLoc.updated_at ?? trip.location_updated_at,
+                remaining_distance_km: remainingDistanceKm,
+                dynamic_eta_minutes: dynamicEtaMinutes,
+              };
+            }));
           }
         }
       )
@@ -212,7 +236,7 @@ export function useActiveTrips() {
     return () => {
       supabase.removeChannel(locationsChannel);
     };
-  }, [fetchActiveTrips, activeUserIds]);
+  }, [activeUserIds]);
 
   return {
     trips,
