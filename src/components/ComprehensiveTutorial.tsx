@@ -640,6 +640,13 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
                 Juntos nos cuidamos. Juntos somos más fuertes.
               </p>
             </div>
+            
+            {/* Disclaimer */}
+            <div className="bg-muted/50 border border-border rounded-lg p-4 mt-4">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                <strong className="text-foreground">Importante:</strong> M.A.T.S., sus desarrolladores y creadores, no se responsabilizan por el tipo, recursos, tiempo de respuesta ni efectividad de la respuesta a tus emergencias, así como tampoco por la disponibilidad de esta aplicación. Es responsabilidad de toda la comunidad el ofrecer el mejor apoyo disponible entre todos. Tampoco se responsabiliza a los usuarios que piden y ofrecen ayuda, todo es en un tenor voluntario y en la mejor disposición posible.
+              </p>
+            </div>
           </div>
         ),
       },
