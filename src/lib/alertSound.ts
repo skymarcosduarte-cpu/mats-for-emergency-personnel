@@ -412,7 +412,7 @@ export function playCancelledAlert(): void {
 
 /**
  * Play EXTREME emergency alert sound for Clave 100
- * Very loud, attention-grabbing alarm-like sound
+ * Maximum volume, piercing alarm - this is the highest priority alert
  */
 export function playClave100Sound(): void {
   const ctx = getAudioContext();
@@ -424,36 +424,88 @@ export function playClave100Sound(): void {
 
   const now = ctx.currentTime;
   
-  // Intense alarm pattern - alternating high frequencies like a siren
-  const alarmPattern = [
-    // First alarm cycle - high-low alternating
-    { freq: 1200, delay: 0, duration: 0.2, volume: 0.6 },
-    { freq: 800, delay: 0.2, duration: 0.2, volume: 0.6 },
-    { freq: 1200, delay: 0.4, duration: 0.2, volume: 0.65 },
-    { freq: 800, delay: 0.6, duration: 0.2, volume: 0.65 },
-    // Second cycle - more intense
-    { freq: 1400, delay: 0.85, duration: 0.15, volume: 0.7 },
-    { freq: 900, delay: 1.0, duration: 0.15, volume: 0.7 },
-    { freq: 1400, delay: 1.15, duration: 0.15, volume: 0.7 },
-    { freq: 900, delay: 1.3, duration: 0.15, volume: 0.7 },
-    // Final warning beeps
-    { freq: 1600, delay: 1.5, duration: 0.1, volume: 0.75 },
-    { freq: 1600, delay: 1.65, duration: 0.1, volume: 0.75 },
-    { freq: 1600, delay: 1.8, duration: 0.1, volume: 0.75 },
-    { freq: 1600, delay: 1.95, duration: 0.2, volume: 0.8 },
+  // Create a compressor for maximum loudness
+  const compressor = ctx.createDynamicsCompressor();
+  compressor.threshold.value = -50;
+  compressor.knee.value = 40;
+  compressor.ratio.value = 12;
+  compressor.attack.value = 0;
+  compressor.release.value = 0.25;
+  compressor.connect(ctx.destination);
+  
+  // Intense continuous siren - European emergency style
+  const sirenDuration = 3; // 3 seconds of continuous alarm
+  
+  // Main siren oscillator with frequency sweep
+  const sirenOsc = ctx.createOscillator();
+  const sirenGain = ctx.createGain();
+  sirenOsc.connect(sirenGain);
+  sirenGain.connect(compressor);
+  sirenOsc.type = 'sawtooth'; // Harsh, attention-grabbing
+  sirenGain.gain.setValueAtTime(0.8, now);
+  
+  // Sweep frequency up and down like a real siren
+  sirenOsc.frequency.setValueAtTime(600, now);
+  for (let i = 0; i < 6; i++) {
+    const cycleStart = now + i * 0.5;
+    sirenOsc.frequency.linearRampToValueAtTime(1400, cycleStart + 0.25);
+    sirenOsc.frequency.linearRampToValueAtTime(600, cycleStart + 0.5);
+  }
+  sirenOsc.start(now);
+  sirenOsc.stop(now + sirenDuration);
+  sirenGain.gain.setValueAtTime(0.8, now + sirenDuration - 0.1);
+  sirenGain.gain.linearRampToValueAtTime(0, now + sirenDuration);
+  
+  // Add a secondary piercing alarm layer
+  const alarmOsc = ctx.createOscillator();
+  const alarmGain = ctx.createGain();
+  alarmOsc.connect(alarmGain);
+  alarmGain.connect(compressor);
+  alarmOsc.type = 'square'; // Very piercing
+  alarmGain.gain.setValueAtTime(0.5, now);
+  
+  // Rapid alternating beeps
+  for (let i = 0; i < 15; i++) {
+    const beepStart = now + i * 0.2;
+    alarmOsc.frequency.setValueAtTime(i % 2 === 0 ? 1800 : 1200, beepStart);
+  }
+  alarmOsc.start(now);
+  alarmOsc.stop(now + sirenDuration);
+  alarmGain.gain.setValueAtTime(0.5, now + sirenDuration - 0.1);
+  alarmGain.gain.linearRampToValueAtTime(0, now + sirenDuration);
+  
+  // Add low frequency rumble for physical impact
+  const bassOsc = ctx.createOscillator();
+  const bassGain = ctx.createGain();
+  bassOsc.connect(bassGain);
+  bassGain.connect(compressor);
+  bassOsc.type = 'sine';
+  bassOsc.frequency.value = 80; // Deep bass
+  bassGain.gain.setValueAtTime(0.6, now);
+  bassOsc.start(now);
+  bassOsc.stop(now + sirenDuration);
+  bassGain.gain.setValueAtTime(0.6, now + sirenDuration - 0.1);
+  bassGain.gain.linearRampToValueAtTime(0, now + sirenDuration);
+  
+  // Final piercing warning beeps after siren
+  const warningTones = [
+    { freq: 2000, delay: sirenDuration + 0.1, duration: 0.15 },
+    { freq: 2000, delay: sirenDuration + 0.3, duration: 0.15 },
+    { freq: 2000, delay: sirenDuration + 0.5, duration: 0.15 },
+    { freq: 2400, delay: sirenDuration + 0.7, duration: 0.3 },
   ];
   
-  alarmPattern.forEach(({ freq, delay, duration, volume }) => {
+  warningTones.forEach(({ freq, delay, duration }) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(compressor);
     osc.frequency.value = freq;
-    osc.type = 'square'; // Square wave is more piercing
+    osc.type = 'square';
     const startTime = now + delay;
     gain.gain.setValueAtTime(0, startTime);
-    gain.gain.linearRampToValueAtTime(volume, startTime + 0.01);
-    gain.gain.setValueAtTime(volume, startTime + duration * 0.8);
+    gain.gain.linearRampToValueAtTime(0.9, startTime + 0.01);
+    gain.gain.setValueAtTime(0.9, startTime + duration - 0.02);
     gain.gain.linearRampToValueAtTime(0, startTime + duration);
     osc.start(startTime);
     osc.stop(startTime + duration);
@@ -461,24 +513,28 @@ export function playClave100Sound(): void {
 }
 
 /**
- * Trigger extreme vibration pattern for Clave 100
- * Maximum attention - continuous long vibrations
+ * Trigger EXTREME vibration pattern for Clave 100
+ * Continuous, intense, impossible to ignore
  */
 export function triggerClave100Vibration(): void {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
       navigator.vibrate([
-        // First wave - strong continuous
-        500, 100, 500, 100, 500,
+        // Initial shock - very long continuous
+        1000, 100,
+        // Rapid intense bursts
+        200, 50, 200, 50, 200, 50, 200, 50, 200, 50,
+        150,
+        // Long emergency pulses
+        800, 100, 800, 100, 800,
+        150,
+        // Machine gun bursts
+        100, 30, 100, 30, 100, 30, 100, 30, 100, 30, 100, 30, 100, 30, 100,
         200,
-        // Second wave - rapid fire
-        100, 50, 100, 50, 100, 50, 100, 50, 100, 50, 100,
-        200,
-        // Third wave - long emergency pulse
-        700, 150, 700, 150, 700,
-        300,
-        // Final attention grab
-        200, 50, 200, 50, 200, 50, 200, 50, 200
+        // Final long attention grab
+        1200, 150,
+        // Quick finish
+        150, 50, 150, 50, 150, 50, 150
       ]);
     } catch (e) {
       console.warn('Vibration not supported');
@@ -486,22 +542,52 @@ export function triggerClave100Vibration(): void {
   }
 }
 
+// Store interval IDs for persistent alerts
+let clave100SoundInterval: ReturnType<typeof setInterval> | null = null;
+let clave100VibrationInterval: ReturnType<typeof setInterval> | null = null;
+
 /**
- * Play Clave 100 alert (extreme sound + vibration)
- * Repeats multiple times for maximum attention
+ * Stop the persistent Clave 100 alert
+ */
+export function stopClave100Alert(): void {
+  if (clave100SoundInterval) {
+    clearInterval(clave100SoundInterval);
+    clave100SoundInterval = null;
+  }
+  if (clave100VibrationInterval) {
+    clearInterval(clave100VibrationInterval);
+    clave100VibrationInterval = null;
+  }
+  // Stop any ongoing vibration
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    navigator.vibrate(0);
+  }
+}
+
+/**
+ * Play Clave 100 alert - MAXIMUM EMERGENCY
+ * Continuous sound and vibration until dismissed
  */
 export function playClave100Alert(): void {
+  // Stop any existing alert first
+  stopClave100Alert();
+  
+  // Play immediately
   playClave100Sound();
   triggerClave100Vibration();
   
-  // Repeat sound after 2.5 seconds
-  setTimeout(() => {
+  // Keep repeating sound every 4 seconds until stopped
+  clave100SoundInterval = setInterval(() => {
     playClave100Sound();
-    triggerClave100Vibration();
-  }, 2500);
+  }, 4000);
   
-  // One more time after 5 seconds
+  // Keep repeating vibration every 6 seconds until stopped
+  clave100VibrationInterval = setInterval(() => {
+    triggerClave100Vibration();
+  }, 6000);
+  
+  // Auto-stop after 60 seconds as a safety measure
   setTimeout(() => {
-    playClave100Sound();
-  }, 5000);
+    stopClave100Alert();
+  }, 60000);
 }
