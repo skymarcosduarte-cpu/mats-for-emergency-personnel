@@ -773,27 +773,52 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
         </div>
       </div>
 
-      {/* Section tabs */}
-      <div className="flex items-center gap-1 px-4 py-2 overflow-x-auto scrollbar-none border-b border-border bg-muted/30">
-        {TUTORIAL_SECTIONS.map((s, index) => (
-          <button
-            key={s.id}
-            onClick={() => handleJumpToSection(index)}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all',
-              index === currentSection
-                ? 'bg-primary text-primary-foreground'
-                : index < currentSection
-                  ? 'bg-primary/20 text-primary'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            )}
+      {/* Section tabs with navigation hint for first page */}
+      <div className="relative">
+        {/* Arrow hint for first page on mobile */}
+        {isFirstStep && (
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1 text-primary"
           >
-            <span className={cn('w-4 h-4', s.color)}>
-              {s.icon}
-            </span>
-            <span className="hidden sm:inline">{s.title}</span>
-          </button>
-        ))}
+            <motion.div
+              animate={{ x: [0, 5, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </motion.div>
+            <span className="text-xs font-medium bg-background/80 px-1 rounded">Desliza</span>
+          </motion.div>
+        )}
+        
+        <div className="flex items-center gap-1 px-4 py-2 overflow-x-auto scrollbar-none border-b border-border bg-muted/30">
+          {TUTORIAL_SECTIONS.map((s, index) => (
+            <button
+              key={s.id}
+              onClick={() => handleJumpToSection(index)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all',
+                index === currentSection
+                  ? 'bg-primary text-primary-foreground'
+                  : index < currentSection
+                    ? 'bg-primary/20 text-primary'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              {/* Icon with proper color - white when selected to avoid red-on-red */}
+              <span className={cn(
+                'w-4 h-4',
+                index === currentSection 
+                  ? 'text-primary-foreground' 
+                  : s.color
+              )}>
+                {s.icon}
+              </span>
+              <span className="hidden sm:inline">{s.title}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Progress bar */}
