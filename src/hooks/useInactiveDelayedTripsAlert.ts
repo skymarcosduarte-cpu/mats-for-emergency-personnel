@@ -2,7 +2,7 @@
 // Triggers audio alert when a delayed traveler hasn't updated location in 30+ minutes
 // Excludes flights since they don't update location during flight
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { playUrgentAlert } from '@/lib/alertSound';
 import { toast } from 'sonner';
@@ -11,7 +11,7 @@ const LOCATION_INACTIVE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
 const OVERDUE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes overdue
 const CHECK_INTERVAL_MS = 5 * 60 * 1000; // Check every 5 minutes
 
-interface InactiveDelayedTrip {
+export interface InactiveDelayedTrip {
   tripId: string;
   userId: string;
   nickname: string;
@@ -23,6 +23,8 @@ interface InactiveDelayedTrip {
 }
 
 export function useInactiveDelayedTripsAlert() {
+  // State to expose the current inactive trip for UI display
+  const [pendingInactiveTrip, setPendingInactiveTrip] = useState<InactiveDelayedTrip | null>(null);
   const alertedTripsRef = useRef<Set<string>>(new Set());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -144,14 +146,18 @@ export function useInactiveDelayedTripsAlert() {
           // Play urgent alert sound
           playUrgentAlert();
           
-          // Show toast notification
+          // Set the pending trip so UI can handle it
+          setPendingInactiveTrip(trip);
+          
+          // Show toast notification with action that sets the pending trip
           toast.error(`⚠️ ${trip.nickname} sin actualización`, {
             description: `Viaje a ${trip.destination} retrasado ${trip.overdueMinutes} min. Sin actualización de ubicación por ${trip.minutesSinceUpdate} min.`,
             duration: 30000,
             action: {
               label: 'Ver',
               onClick: () => {
-                window.location.href = `/?chat=${trip.userId}`;
+                // Set the trip so the UI can handle opening the dialog
+                setPendingInactiveTrip(trip);
               },
             },
           });
@@ -173,6 +179,11 @@ export function useInactiveDelayedTripsAlert() {
     }
   }, []);
 
+  // Dismiss the pending inactive trip alert
+  const dismissInactiveTrip = useCallback(() => {
+    setPendingInactiveTrip(null);
+  }, []);
+
   useEffect(() => {
     // Initial check
     checkInactiveDelayedTrips();
@@ -187,5 +198,9 @@ export function useInactiveDelayedTripsAlert() {
     };
   }, [checkInactiveDelayedTrips]);
 
-  return { checkInactiveDelayedTrips };
+  return { 
+    checkInactiveDelayedTrips,
+    pendingInactiveTrip,
+    dismissInactiveTrip,
+  };
 }
