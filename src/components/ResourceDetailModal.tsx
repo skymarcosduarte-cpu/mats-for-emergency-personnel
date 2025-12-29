@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   Heart, 
   Zap, 
@@ -16,8 +22,11 @@ import {
   AlertTriangle, 
   ArrowRightLeft,
   Shield,
-  X
+  Share2,
+  Copy,
+  MessageCircle
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { ResourceCard, getCategoryLabel } from '@/lib/resourcesCache';
 import { cn } from '@/lib/utils';
 
@@ -36,6 +45,53 @@ export function ResourceDetailModal({
   isFavorite, 
   onToggleFavorite 
 }: ResourceDetailModalProps) {
+  // Format card content for sharing
+  const formatCardForSharing = useCallback(() => {
+    if (!card) return '';
+    
+    const lines = [
+      `📋 *${card.title}*`,
+      '',
+      card.summary,
+      '',
+      '⚡ *QUÉ HACER AHORA:*',
+      ...card.doNow.map((item, i) => `${i + 1}. ${item}`),
+      '',
+      '📝 *PASOS:*',
+      ...card.steps.map(step => `• ${step}`),
+      '',
+      '⚠️ *ALERTAS:*',
+      ...card.redFlags.map(flag => `⚠ ${flag}`),
+      '',
+      '🔄 *ENTREGA:*',
+      card.handover,
+      '',
+      `📱 Recurso de M.A.T.S. - ${card.audience === 'personal_capacitado' ? 'Solo personal capacitado' : 'Público general'}`,
+    ];
+    
+    return lines.join('\n');
+  }, [card]);
+
+  const handleCopyToClipboard = useCallback(async () => {
+    const text = formatCardForSharing();
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Copiado al portapapeles', {
+        description: 'Puedes pegarlo donde quieras',
+      });
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      toast.error('Error al copiar');
+    }
+  }, [formatCardForSharing]);
+
+  const handleShareWhatsApp = useCallback(() => {
+    const text = formatCardForSharing();
+    const encodedText = encodeURIComponent(text);
+    const whatsappUrl = `https://wa.me/?text=${encodedText}`;
+    window.open(whatsappUrl, '_blank');
+  }, [formatCardForSharing]);
+
   if (!card) return null;
 
   const isTrainedPersonnel = card.audience === 'personal_capacitado';
@@ -76,6 +132,29 @@ export function ResourceDetailModal({
               </div>
             </div>
             <div className="flex gap-1">
+              {/* Share dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9"
+                  >
+                    <Share2 className="h-5 w-5 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-background">
+                  <DropdownMenuItem onClick={handleShareWhatsApp}>
+                    <MessageCircle className="h-4 w-4 mr-2 text-green-500" />
+                    Compartir por WhatsApp
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleCopyToClipboard}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copiar al portapapeles
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
               <Button
                 variant="ghost"
                 size="icon"
