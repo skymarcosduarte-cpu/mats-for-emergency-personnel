@@ -56,6 +56,28 @@ import { useRecentQuakeCheckins } from '@/hooks/useRecentQuakeCheckins';
 
 // Removed - now using useEarthquakeHistory hook
 
+// Seismic wave velocities (km/s)
+const P_WAVE_VELOCITY = 6.0; // Primary waves (fastest, less destructive)
+const S_WAVE_VELOCITY = 3.5; // Secondary/Shear waves (slower, more destructive)
+
+// Calculate seismic wave arrival times based on distance
+function calculateSeismicETA(distanceKm: number): { pWaveSeconds: number; sWaveSeconds: number } {
+  return {
+    pWaveSeconds: distanceKm / P_WAVE_VELOCITY,
+    sWaveSeconds: distanceKm / S_WAVE_VELOCITY,
+  };
+}
+
+// Format seconds to human readable
+function formatSeismicTime(seconds: number): string {
+  if (seconds < 60) {
+    return `${Math.round(seconds)}s`;
+  }
+  const minutes = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+  return secs > 0 ? `${minutes}m ${secs}s` : `${minutes}m`;
+}
+
 interface AlertsScreenProps {
   userRole?: UserRole;
 }
@@ -578,10 +600,16 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                         </span>
                         {/* Distance from user */}
                         {quake.distanceKm !== null && (
-                          <span className="flex items-center gap-1 text-primary font-medium">
-                            <Navigation className="w-3 h-3" />
-                            {quake.distanceKm.toFixed(0)} km
-                          </span>
+                          <>
+                            <span className="flex items-center gap-1 text-primary font-medium">
+                              <Navigation className="w-3 h-3" />
+                              {quake.distanceKm.toFixed(0)} km
+                            </span>
+                            {/* Seismic wave ETA */}
+                            <span className="flex items-center gap-1 text-warning font-medium" title="Tiempo de llegada de ondas sísmicas (P/S)">
+                              ⚡ {formatSeismicTime(calculateSeismicETA(quake.distanceKm).sWaveSeconds)}
+                            </span>
+                          </>
                         )}
                       </div>
                     </div>
@@ -1556,6 +1584,32 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                     </span>
                   )}
                 </div>
+
+                {/* Seismic wave ETA info */}
+                {selectedQuake.distanceKm !== null && (
+                  <div className="mt-3 p-3 bg-warning/10 rounded-lg border border-warning/20">
+                    <div className="text-xs font-semibold text-warning mb-2 flex items-center gap-1">
+                      ⚡ Tiempo de llegada de ondas sísmicas
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Onda P (rápida):</span>
+                        <span className="ml-1 font-bold text-foreground">
+                          {formatSeismicTime(calculateSeismicETA(selectedQuake.distanceKm).pWaveSeconds)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Onda S (fuerte):</span>
+                        <span className="ml-1 font-bold text-warning">
+                          {formatSeismicTime(calculateSeismicETA(selectedQuake.distanceKm).sWaveSeconds)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2 italic">
+                      La onda S es más lenta pero causa mayor daño. Estos tiempos son aproximados desde el momento del sismo.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Checkin map - intensity reports */}
