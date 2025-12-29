@@ -2,7 +2,7 @@
   "packId": "recursos_emergencias_offline_v1",
   "language": "es",
   "regionHint": "MX/LATAM",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "disclaimer": "Guía rápida. No sustituye capacitación, supervisión médica ni protocolos locales. En riesgo vital, activa 911/servicios de emergencia o autoridades locales. En situaciones de violencia, prioriza tu seguridad y busca apoyo profesional. Procedimientos y fármacos: solo personal capacitado y autorizado por protocolo.",
   "cards": [
     {
@@ -1971,6 +1971,31 @@
         "No te acerques a zonas acordonadas por curiosidad."
       ],
       "handover": "Comparte mapa simple con familia y vecinos; actualiza tras cambios."
+    },
+    {
+      "id": "amenaza_bomba",
+      "category": "seguridad_personal",
+      "audience": "publico",
+      "level": "basico",
+      "title": "Amenaza de bomba: qué hacer",
+      "summary": "Tómala en serio: reporta, evacúa con calma y no toques objetos sospechosos.",
+      "doNow": [
+        "Llama al 911/autoridad local y sigue sus instrucciones.",
+        "Evacúa si te lo indican o si hay riesgo inmediato; aléjate del área.",
+        "NO toques ni muevas paquetes/objetos sospechosos."
+      ],
+      "steps": [
+        "Si la amenaza llega por teléfono: mantén la calma e intenta mantener la llamada; anota palabras exactas, voz/ruidos de fondo, hora y número.",
+        "Si la amenaza llega por mensaje/redes: guarda capturas y datos del remitente; no reenvíes públicamente.",
+        "Avisa discretamente a seguridad/autoridad del lugar (si aplica) y activa el plan de evacuación del sitio.",
+        "Evacúa por rutas seguras, sin correr ni usar elevadores; lleva solo lo esencial.",
+        "Reúnete en el punto de encuentro y espera autorización antes de regresar."
+      ],
+      "redFlags": [
+        "Objeto extraño con cables, cinta, olor químico o ubicación inusual: aléjate y crea perímetro.",
+        "Evita usar radios/celulares muy cerca de un objeto sospechoso si la autoridad lo indica; prioriza distancia y obedecer instrucciones."
+      ],
+      "handover": "Entrega a autoridad: tipo de amenaza (teléfono/mensaje/presencial), hora, texto exacto, número/origen, ubicación, objetos sospechosos, rutas usadas y conteo aproximado de evacuados."
     }
   ],
   "attribution": {
