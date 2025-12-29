@@ -20,6 +20,7 @@ import { AlertsPanel } from '@/components/AlertsPanel';
 import { AlertDetailModal } from '@/components/AlertDetailModal';
 import { ActiveUsersPanel } from '@/components/ActiveUsersPanel';
 import { InternalMessaging } from '@/components/InternalMessaging';
+import { SpecialtyFilter } from '@/components/SpecialtyFilter';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -1092,6 +1093,9 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     ambulance: false,
   });
 
+  // Specialty filter state
+  const [selectedSpecialtyFilters, setSelectedSpecialtyFilters] = useState<string[]>([]);
+
   const { position, error: locationError, getCurrentPosition, loading: locationLoading, watching: locationWatching } = useLocation();
   const { role, user } = useAuth();
   const { locations, refetch: refetchLocations } = useUserLocations();
@@ -1118,6 +1122,38 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
 
   // Check if any POI type is enabled
   const anyPOIEnabled = Object.values(poiVisibility).some(v => v);
+
+  // Calculate available specialties and counts from active users
+  const { availableSpecialties, specialistCounts, filteredLocations } = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    const available = new Set<string>();
+    
+    locations.forEach(loc => {
+      const userSpecialties = (loc as any).specialties as string[] | null;
+      if (userSpecialties && userSpecialties.length > 0) {
+        userSpecialties.forEach(spec => {
+          available.add(spec);
+          counts[spec] = (counts[spec] || 0) + 1;
+        });
+      }
+    });
+    
+    // Filter locations based on selected specialties
+    let filtered = locations;
+    if (selectedSpecialtyFilters.length > 0) {
+      filtered = locations.filter(loc => {
+        const userSpecialties = (loc as any).specialties as string[] | null;
+        if (!userSpecialties || userSpecialties.length === 0) return false;
+        return selectedSpecialtyFilters.some(filter => userSpecialties.includes(filter));
+      });
+    }
+    
+    return {
+      availableSpecialties: Array.from(available),
+      specialistCounts: counts,
+      filteredLocations: filtered,
+    };
+  }, [locations, selectedSpecialtyFilters]);
 
   // Toggle POI visibility
   const handleTogglePOI = useCallback((type: keyof POIVisibility) => {
@@ -1427,15 +1463,18 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     }
   }, [position, mapReady]);
 
-  // Update user location markers
+  // Update user location markers (respects specialty filter)
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
     const map = mapInstanceRef.current;
 
+    // Use filtered locations when specialty filter is active, otherwise use all locations
+    const locationsToShow = selectedSpecialtyFilters.length > 0 ? filteredLocations : locations;
+
     // Filter out stale locations (older than 10 minutes) except current user
     const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
     const now = Date.now();
-    const activeLocations = locations.filter(loc => {
+    const activeLocations = locationsToShow.filter(loc => {
       if (loc.user_id === currentUserId) return true; // Always show current user
       if (!loc.updated_at) return false;
       const updatedMs = new Date(loc.updated_at).getTime();
@@ -1572,7 +1611,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         markersRef.current.set(key, marker);
       }
     });
-  }, [locations, mapReady]);
+  }, [locations, filteredLocations, selectedSpecialtyFilters, mapReady, currentUserId]);
 
   // Draw transit routes for users in transit
   const transitRoutesRef = useRef<Map<string, L.Polyline>>(new Map());
@@ -2716,6 +2755,14 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         onTogglePOI={handleTogglePOI}
         poisLoading={poisLoading}
         isNavigating={!!selectedMapAlert || usersPanelOpen}
+      />
+
+      {/* Specialty Filter - always visible */}
+      <SpecialtyFilter
+        selectedSpecialties={selectedSpecialtyFilters}
+        onSpecialtiesChange={setSelectedSpecialtyFilters}
+        availableSpecialties={availableSpecialties}
+        specialistCounts={specialistCounts}
       />
 
       {/* Active Users Panel */}
