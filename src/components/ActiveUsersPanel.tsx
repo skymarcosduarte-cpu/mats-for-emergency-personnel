@@ -169,7 +169,7 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
   const familiarCount = activeUsers.filter(u => u.role === 'FAMILIAR' && !u.is_in_transit).length;
 
   return (
-    <div className={cn('absolute top-20 right-4 z-[1000] flex', className)}>
+    <div className={cn('fixed top-[calc(var(--app-header-height)+58px)] right-4 z-[1000] flex', className)}>
       {/* Toggle Button */}
       <button
         onClick={handleToggle}
