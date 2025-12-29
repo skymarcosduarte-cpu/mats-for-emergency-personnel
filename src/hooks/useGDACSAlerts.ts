@@ -1,5 +1,5 @@
-// GDACS + AEMET RSS Feeds Hook
-// Integrates GDACS global alerts and AEMET Spain alerts
+// Multi-source International Alerts Hook
+// Integrates GDACS, AEMET, CONAGUA, NASA EONET, ReliefWeb, and other sources
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
@@ -7,18 +7,23 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 const GDACS_FEEDS = {
   all_24h: 'https://gdacs.org/xml/rss_24h.xml',
   all_7d: 'https://gdacs.org/xml/rss_7d.xml',
-  eq_24h: 'https://gdacs.org/xml/rss_eq_24h.xml',
-  eq_48h_low: 'https://gdacs.org/xml/rss_eq_48h_low.xml',
-  eq_48h_med: 'https://gdacs.org/xml/rss_eq_48h_med.xml',
   tc_7d: 'https://gdacs.org/xml/rss_tc_7d.xml',
   fl_7d: 'https://gdacs.org/xml/rss_fl_7d.xml',
 };
 
-// AEMET RSS Feed URL
-const AEMET_FEED = 'https://www.aemet.es/es/rss_info/avisos/esp';
+// Additional RSS Feed URLs from fuentes_otras.json
+const ADDITIONAL_FEEDS = {
+  conagua: 'https://smn.conagua.gob.mx/rss/avisos.xml',
+  nasa_eonet: 'https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=20',
+  reliefweb: 'https://reliefweb.int/updates/rss.xml',
+  aemet: 'https://www.aemet.es/es/rss_info/avisos/esp',
+};
 
 // CORS proxy for fetching external feeds
-const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+const CORS_PROXIES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+];
 
 export interface GDACSAlert {
   id: string;
@@ -26,12 +31,12 @@ export interface GDACSAlert {
   description: string;
   link: string;
   pubDate: string;
-  category: 'earthquake' | 'cyclone' | 'flood' | 'volcano' | 'drought' | 'wildfire' | 'other';
+  category: 'earthquake' | 'cyclone' | 'flood' | 'volcano' | 'drought' | 'wildfire' | 'weather' | 'security' | 'humanitarian' | 'other';
   alertLevel?: 'green' | 'orange' | 'red';
   country?: string;
   coordinates?: [number, number];
   magnitude?: number;
-  source: 'GDACS';
+  source: 'GDACS' | 'CONAGUA' | 'NASA' | 'ReliefWeb' | 'Interpol' | 'ERCC';
 }
 
 export interface AEMETAlert {
@@ -53,13 +58,30 @@ export interface GDACSAlertsState {
   lastChecked: Date | null;
 }
 
+// Fetch with CORS proxy fallback
+async function fetchWithCorsProxy(url: string): Promise<Response | null> {
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const proxyUrl = proxy + encodeURIComponent(url);
+      const response = await fetch(proxyUrl, { 
+        signal: AbortSignal.timeout(15000) 
+      });
+      if (response.ok) {
+        return response;
+      }
+    } catch (error) {
+      console.warn(`[Proxy ${proxy}] Failed for ${url}`);
+    }
+  }
+  return null;
+}
+
 // Parse GDACS RSS feed
 async function parseGDACSFeed(feedUrl: string): Promise<GDACSAlert[]> {
   try {
-    const proxyUrl = CORS_PROXY + encodeURIComponent(feedUrl);
-    const response = await fetch(proxyUrl);
-    if (!response.ok) {
-      console.warn(`[GDACS] Failed to fetch ${feedUrl}: ${response.status}`);
+    const response = await fetchWithCorsProxy(feedUrl);
+    if (!response) {
+      console.warn(`[GDACS] Failed to fetch ${feedUrl}`);
       return [];
     }
     
@@ -83,7 +105,7 @@ async function parseGDACSFeed(feedUrl: string): Promise<GDACSAlert[]> {
       const pubDate = item.querySelector('pubDate')?.textContent || '';
       const categoryEl = item.querySelector('category')?.textContent?.toLowerCase() || '';
       
-      // Parse category from title or category element
+      // Parse category
       let category: GDACSAlert['category'] = 'other';
       const titleLower = title.toLowerCase();
       if (titleLower.includes('earthquake') || titleLower.includes('terremoto') || categoryEl.includes('eq')) {
@@ -100,7 +122,7 @@ async function parseGDACSFeed(feedUrl: string): Promise<GDACSAlert[]> {
         category = 'wildfire';
       }
       
-      // Parse alert level from title (Green, Orange, Red)
+      // Parse alert level
       let alertLevel: GDACSAlert['alertLevel'];
       if (titleLower.includes('red') || titleLower.includes('rojo')) {
         alertLevel = 'red';
@@ -110,21 +132,21 @@ async function parseGDACSFeed(feedUrl: string): Promise<GDACSAlert[]> {
         alertLevel = 'green';
       }
       
-      // Try to extract magnitude for earthquakes
+      // Extract magnitude for earthquakes
       let magnitude: number | undefined;
       const magMatch = title.match(/M\s*([\d.]+)/i) || description.match(/magnitude\s*([\d.]+)/i);
       if (magMatch) {
         magnitude = parseFloat(magMatch[1]);
       }
       
-      // Try to extract country
+      // Extract country
       let country: string | undefined;
       const countryMatch = title.match(/in\s+([A-Z][a-zA-Z\s]+?)(?:\s*-|\s*$|,)/);
       if (countryMatch) {
         country = countryMatch[1].trim();
       }
       
-      // Try to extract coordinates
+      // Extract coordinates
       let coordinates: [number, number] | undefined;
       const geoLat = item.querySelector('geo\\:lat, lat')?.textContent;
       const geoLong = item.querySelector('geo\\:long, long')?.textContent;
@@ -154,13 +176,193 @@ async function parseGDACSFeed(feedUrl: string): Promise<GDACSAlert[]> {
   }
 }
 
+// Parse CONAGUA RSS feed (Mexico weather alerts)
+async function parseCONAGUAFeed(): Promise<GDACSAlert[]> {
+  try {
+    const response = await fetchWithCorsProxy(ADDITIONAL_FEEDS.conagua);
+    if (!response) {
+      console.warn('[CONAGUA] Failed to fetch');
+      return [];
+    }
+    
+    const text = await response.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, 'text/xml');
+    
+    const parseError = xml.querySelector('parsererror');
+    if (parseError) {
+      console.warn('[CONAGUA] XML parse error');
+      return [];
+    }
+    
+    const items = xml.querySelectorAll('item');
+    const alerts: GDACSAlert[] = [];
+    
+    items.forEach((item, index) => {
+      const title = item.querySelector('title')?.textContent || '';
+      const description = item.querySelector('description')?.textContent || '';
+      const link = item.querySelector('link')?.textContent || '';
+      const pubDate = item.querySelector('pubDate')?.textContent || new Date().toISOString();
+      
+      // Determine category from content
+      let category: GDACSAlert['category'] = 'weather';
+      const titleLower = title.toLowerCase();
+      if (titleLower.includes('huracán') || titleLower.includes('ciclón') || titleLower.includes('tormenta tropical')) {
+        category = 'cyclone';
+      } else if (titleLower.includes('lluvia') || titleLower.includes('inundación')) {
+        category = 'flood';
+      }
+      
+      // Determine alert level
+      let alertLevel: GDACSAlert['alertLevel'];
+      if (titleLower.includes('rojo') || titleLower.includes('extremo') || titleLower.includes('mayor')) {
+        alertLevel = 'red';
+      } else if (titleLower.includes('naranja') || titleLower.includes('alto')) {
+        alertLevel = 'orange';
+      } else {
+        alertLevel = 'green';
+      }
+      
+      alerts.push({
+        id: `conagua-${index}-${Date.now()}`,
+        title: title.replace(/<[^>]*>/g, '').trim(),
+        description: description.replace(/<[^>]*>/g, '').trim(),
+        link,
+        pubDate,
+        category,
+        alertLevel,
+        country: 'México',
+        source: 'CONAGUA',
+      });
+    });
+    
+    return alerts;
+  } catch (error) {
+    console.error('[CONAGUA] Error fetching feed:', error);
+    return [];
+  }
+}
+
+// Parse NASA EONET API (natural events)
+async function parseNASAEONET(): Promise<GDACSAlert[]> {
+  try {
+    const response = await fetchWithCorsProxy(ADDITIONAL_FEEDS.nasa_eonet);
+    if (!response) {
+      console.warn('[NASA EONET] Failed to fetch');
+      return [];
+    }
+    
+    const data = await response.json();
+    const alerts: GDACSAlert[] = [];
+    
+    if (data.events && Array.isArray(data.events)) {
+      data.events.forEach((event: any, index: number) => {
+        // Map NASA category to our categories
+        let category: GDACSAlert['category'] = 'other';
+        const categoryId = event.categories?.[0]?.id || '';
+        
+        if (categoryId === 'wildfires') category = 'wildfire';
+        else if (categoryId === 'volcanoes') category = 'volcano';
+        else if (categoryId === 'severeStorms') category = 'cyclone';
+        else if (categoryId === 'floods') category = 'flood';
+        else if (categoryId === 'drought') category = 'drought';
+        else if (categoryId === 'earthquakes') category = 'earthquake';
+        
+        // Get coordinates from geometry
+        let coordinates: [number, number] | undefined;
+        const geometry = event.geometry?.[0];
+        if (geometry?.coordinates) {
+          coordinates = [geometry.coordinates[1], geometry.coordinates[0]]; // [lat, lng]
+        }
+        
+        alerts.push({
+          id: `nasa-${event.id || index}-${Date.now()}`,
+          title: event.title || 'NASA EONET Event',
+          description: `Categoría: ${event.categories?.[0]?.title || 'Evento natural'}. Fuente: ${event.sources?.[0]?.id || 'NASA'}`,
+          link: event.sources?.[0]?.url || 'https://eonet.gsfc.nasa.gov/',
+          pubDate: geometry?.date || new Date().toISOString(),
+          category,
+          alertLevel: 'orange',
+          coordinates,
+          source: 'NASA',
+        });
+      });
+    }
+    
+    return alerts;
+  } catch (error) {
+    console.error('[NASA EONET] Error fetching:', error);
+    return [];
+  }
+}
+
+// Parse ReliefWeb RSS feed (humanitarian alerts)
+async function parseReliefWebFeed(): Promise<GDACSAlert[]> {
+  try {
+    const response = await fetchWithCorsProxy(ADDITIONAL_FEEDS.reliefweb);
+    if (!response) {
+      console.warn('[ReliefWeb] Failed to fetch');
+      return [];
+    }
+    
+    const text = await response.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, 'text/xml');
+    
+    const parseError = xml.querySelector('parsererror');
+    if (parseError) {
+      console.warn('[ReliefWeb] XML parse error');
+      return [];
+    }
+    
+    const items = xml.querySelectorAll('item');
+    const alerts: GDACSAlert[] = [];
+    
+    // Only take latest 10 items
+    const itemsArray = Array.from(items).slice(0, 10);
+    
+    itemsArray.forEach((item, index) => {
+      const title = item.querySelector('title')?.textContent || '';
+      const description = item.querySelector('description')?.textContent || '';
+      const link = item.querySelector('link')?.textContent || '';
+      const pubDate = item.querySelector('pubDate')?.textContent || new Date().toISOString();
+      
+      // Determine category from content
+      let category: GDACSAlert['category'] = 'humanitarian';
+      const titleLower = title.toLowerCase();
+      if (titleLower.includes('earthquake') || titleLower.includes('terremoto')) {
+        category = 'earthquake';
+      } else if (titleLower.includes('flood') || titleLower.includes('inundación')) {
+        category = 'flood';
+      } else if (titleLower.includes('conflict') || titleLower.includes('crisis') || titleLower.includes('emergency')) {
+        category = 'security';
+      }
+      
+      alerts.push({
+        id: `reliefweb-${index}-${Date.now()}`,
+        title: title.replace(/<[^>]*>/g, '').trim(),
+        description: description.replace(/<[^>]*>/g, '').substring(0, 300).trim(),
+        link,
+        pubDate,
+        category,
+        alertLevel: 'orange',
+        source: 'ReliefWeb',
+      });
+    });
+    
+    return alerts;
+  } catch (error) {
+    console.error('[ReliefWeb] Error fetching feed:', error);
+    return [];
+  }
+}
+
 // Parse AEMET RSS feed
 async function parseAEMETFeed(): Promise<AEMETAlert[]> {
   try {
-    const proxyUrl = CORS_PROXY + encodeURIComponent(AEMET_FEED);
-    const response = await fetch(proxyUrl);
-    if (!response.ok) {
-      console.warn(`[AEMET] Failed to fetch: ${response.status}`);
+    const response = await fetchWithCorsProxy(ADDITIONAL_FEEDS.aemet);
+    if (!response) {
+      console.warn('[AEMET] Failed to fetch');
       return [];
     }
     
@@ -233,23 +435,38 @@ export function useGDACSAlerts() {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      // Fetch all GDACS feeds in parallel
+      // Fetch all feeds in parallel
       const [
-        all24h,
-        tc7d,
-        fl7d,
+        gdacs24h,
+        gdacsTc,
+        gdacsFl,
+        conaguaAlerts,
+        nasaAlerts,
+        reliefwebAlerts,
         aemetAlerts,
       ] = await Promise.all([
         parseGDACSFeed(GDACS_FEEDS.all_24h),
         parseGDACSFeed(GDACS_FEEDS.tc_7d),
         parseGDACSFeed(GDACS_FEEDS.fl_7d),
+        parseCONAGUAFeed(),
+        parseNASAEONET(),
+        parseReliefWebFeed(),
         parseAEMETFeed(),
       ]);
 
-      // Combine and deduplicate GDACS alerts by title
-      const allGDACS = [...all24h, ...tc7d, ...fl7d];
+      // Combine all alerts
+      const allAlerts = [
+        ...gdacs24h,
+        ...gdacsTc,
+        ...gdacsFl,
+        ...conaguaAlerts,
+        ...nasaAlerts,
+        ...reliefwebAlerts,
+      ];
+      
+      // Deduplicate by title
       const seenTitles = new Set<string>();
-      const uniqueGDACS = allGDACS.filter(alert => {
+      const uniqueAlerts = allAlerts.filter(alert => {
         const key = alert.title.toLowerCase().substring(0, 50);
         if (seenTitles.has(key)) return false;
         seenTitles.add(key);
@@ -258,22 +475,24 @@ export function useGDACSAlerts() {
 
       // Sort by alert level (red > orange > green > undefined) then by date
       const levelOrder = { red: 0, orange: 1, green: 2 };
-      uniqueGDACS.sort((a, b) => {
+      uniqueAlerts.sort((a, b) => {
         const levelA = a.alertLevel ? levelOrder[a.alertLevel] : 3;
         const levelB = b.alertLevel ? levelOrder[b.alertLevel] : 3;
         if (levelA !== levelB) return levelA - levelB;
         return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
       });
 
+      console.log(`[Alerts] Fetched: GDACS=${gdacs24h.length + gdacsTc.length + gdacsFl.length}, CONAGUA=${conaguaAlerts.length}, NASA=${nasaAlerts.length}, ReliefWeb=${reliefwebAlerts.length}, AEMET=${aemetAlerts.length}`);
+
       setState({
-        gdacsAlerts: uniqueGDACS,
+        gdacsAlerts: uniqueAlerts,
         aemetAlerts,
         loading: false,
         error: null,
         lastChecked: new Date(),
       });
     } catch (error) {
-      console.error('[GDACS/AEMET] Error fetching alerts:', error);
+      console.error('[Alerts] Error fetching:', error);
       setState(prev => ({
         ...prev,
         loading: false,
@@ -298,6 +517,9 @@ export function useGDACSAlerts() {
       case 'volcano': return '🌋';
       case 'drought': return '☀️';
       case 'wildfire': return '🔥';
+      case 'weather': return '🌤️';
+      case 'security': return '🛡️';
+      case 'humanitarian': return '🆘';
       default: return '⚠️';
     }
   };
@@ -310,6 +532,9 @@ export function useGDACSAlerts() {
       case 'volcano': return 'Volcán';
       case 'drought': return 'Sequía';
       case 'wildfire': return 'Incendio';
+      case 'weather': return 'Clima';
+      case 'security': return 'Seguridad';
+      case 'humanitarian': return 'Humanitario';
       default: return 'Otro';
     }
   };
@@ -332,6 +557,16 @@ export function useGDACSAlerts() {
     }
   };
 
+  const getSourceColor = (source: GDACSAlert['source']) => {
+    switch (source) {
+      case 'GDACS': return 'border-primary text-primary';
+      case 'CONAGUA': return 'border-success text-success';
+      case 'NASA': return 'border-blue-500 text-blue-500';
+      case 'ReliefWeb': return 'border-orange-500 text-orange-500';
+      default: return 'border-muted-foreground text-muted-foreground';
+    }
+  };
+
   return {
     ...state,
     refresh: fetchAlerts,
@@ -339,5 +574,6 @@ export function useGDACSAlerts() {
     getCategoryLabel,
     getAlertLevelColor,
     getAEMETLevelColor,
+    getSourceColor,
   };
 }

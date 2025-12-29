@@ -753,16 +753,16 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             </div>
           ) : (
             <>
-              {/* GDACS Alerts Section */}
+              {/* Multi-source International Alerts Section */}
               {gdacsAlerts.length > 0 && (
                 <div className="space-y-2">
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    🌍 GDACS - Alertas Globales ({gdacsAlerts.length})
+                    🌍 Alertas Internacionales ({gdacsAlerts.length})
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Sistema Global de Alerta y Coordinación de Desastres
+                    GDACS · CONAGUA · NASA EONET · ReliefWeb
                   </p>
-                  {gdacsAlerts.slice(0, 15).map((alert) => (
+                  {gdacsAlerts.slice(0, 20).map((alert) => (
                     <Card 
                       key={alert.id} 
                       className={cn(
@@ -791,6 +791,16 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                               )}>
                                 {getCategoryLabel(alert.category)}
                               </span>
+                              {/* Source badge */}
+                              <Badge variant="outline" className={cn(
+                                "text-[10px] px-1.5 py-0 h-4",
+                                alert.source === 'GDACS' && "border-primary text-primary",
+                                alert.source === 'CONAGUA' && "border-success text-success",
+                                alert.source === 'NASA' && "border-blue-500 text-blue-500",
+                                alert.source === 'ReliefWeb' && "border-orange-500 text-orange-500"
+                              )}>
+                                {alert.source}
+                              </Badge>
                               {alert.alertLevel && (
                                 <Badge variant="outline" className={cn(
                                   "text-xs",
@@ -838,9 +848,9 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                       </CardContent>
                     </Card>
                   ))}
-                  {gdacsAlerts.length > 15 && (
+                  {gdacsAlerts.length > 20 && (
                     <p className="text-xs text-center text-muted-foreground">
-                      +{gdacsAlerts.length - 15} alertas más
+                      +{gdacsAlerts.length - 20} alertas más
                     </p>
                   )}
                 </div>
