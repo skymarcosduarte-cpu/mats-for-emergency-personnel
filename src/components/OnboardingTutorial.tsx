@@ -106,7 +106,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background flex flex-col">
+    <div className="fixed inset-0 z-[10000] bg-background flex flex-col">
       {/* Header with skip button */}
       <div className="flex items-center justify-between p-4">
         <MatsLogo size={32} />
@@ -170,7 +170,10 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
       </div>
 
       {/* Navigation buttons */}
-      <div className="p-6 pb-8 flex items-center justify-between gap-4">
+      <div
+        className="p-6 border-t border-border bg-background flex items-center justify-between gap-4"
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+      >
         <Button
           variant="outline"
           onClick={handlePrev}

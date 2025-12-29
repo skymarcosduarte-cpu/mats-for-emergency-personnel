@@ -988,7 +988,7 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))]">
         <AnimatePresence mode="wait">
           <motion.div
             key={`${currentSection}-${currentStep}`}
@@ -1120,9 +1120,9 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
       </div>
 
       {/* Navigation - fixed at bottom with safe area padding */}
-      <div 
-        className="flex-shrink-0 p-4 border-t border-border bg-background"
-        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 16px))' }}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-[10002] p-4 border-t border-border bg-background"
+        style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
       >
         <div className="flex items-center justify-between gap-4 max-w-lg mx-auto">
           <Button
