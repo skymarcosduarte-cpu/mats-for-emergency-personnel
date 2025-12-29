@@ -149,30 +149,59 @@ export function getCategories(cards: ResourceCard[]): string[] {
 }
 
 /**
- * Category labels for display
+ * Category labels and icons for display
  */
-export const CATEGORY_LABELS: Record<string, string> = {
-  'comunidad_preparacion': 'Preparación',
-  'comunicacion': 'Comunicación',
-  'evacuacion': 'Evacuación',
-  'seguridad': 'Seguridad',
-  'amenazas': 'Amenazas',
-  'primeros_auxilios': 'Primeros Auxilios',
-  'salud_publica': 'Salud Pública',
-  'salud_mental': 'Salud Mental',
-  'comando_comunicacion': 'Comando',
-  'mci_operaciones': 'MCI Operaciones',
-  'mci_triage': 'Triage',
-  'mci_lsi_trauma': 'LSI/Trauma',
-  'trauma': 'Trauma',
-  'medico': 'Médico',
-  'refugio': 'Refugio',
-  'refugio_wash': 'WASH',
+export const CATEGORY_CONFIG: Record<string, { label: string; icon: string }> = {
+  'comunidad_preparacion': { label: 'Preparación', icon: '🏠' },
+  'comunicacion': { label: 'Comunicación', icon: '📞' },
+  'evacuacion': { label: 'Evacuación', icon: '🚨' },
+  'seguridad': { label: 'Seguridad', icon: '🛡️' },
+  'amenazas': { label: 'Amenazas', icon: '⚠️' },
+  'primeros_auxilios': { label: 'Primeros Auxilios', icon: '🩹' },
+  'salud_publica': { label: 'Salud Pública', icon: '🏥' },
+  'salud_mental': { label: 'Salud Mental', icon: '🧠' },
+  'comando_comunicacion': { label: 'Comando', icon: '📡' },
+  'mci_operaciones': { label: 'MCI Operaciones', icon: '🚒' },
+  'mci_triage': { label: 'Triage', icon: '🏷️' },
+  'mci_lsi_trauma': { label: 'LSI/Trauma', icon: '🩸' },
+  'trauma': { label: 'Trauma', icon: '🚑' },
+  'medico': { label: 'Médico', icon: '⚕️' },
+  'refugio': { label: 'Refugio', icon: '🏕️' },
+  'refugio_wash': { label: 'WASH', icon: '🚿' },
+  'sci_mando': { label: 'SCI Mando', icon: '👮' },
+  'sci_planificacion': { label: 'SCI Planificación', icon: '📋' },
+  'sci_logistica': { label: 'SCI Logística', icon: '📦' },
+  'seguridad_operativa': { label: 'Seguridad Operativa', icon: '🦺' },
+  'proteccion_vulnerable': { label: 'Protección Vulnerable', icon: '👶' },
+  'violencia_crisis': { label: 'Violencia/Crisis', icon: '🆘' },
+  'conflicto_social': { label: 'Conflicto Social', icon: '⚡' },
 };
+
+// Backwards compatibility
+export const CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(CATEGORY_CONFIG).map(([key, val]) => [key, val.label])
+);
 
 /**
  * Get category label
  */
 export function getCategoryLabel(category: string): string {
-  return CATEGORY_LABELS[category] || category;
+  return CATEGORY_CONFIG[category]?.label || category;
+}
+
+/**
+ * Get category icon
+ */
+export function getCategoryIcon(category: string): string {
+  return CATEGORY_CONFIG[category]?.icon || '📄';
+}
+
+/**
+ * Get category counts from cards
+ */
+export function getCategoryCounts(cards: ResourceCard[]): Record<string, number> {
+  return cards.reduce((acc, card) => {
+    acc[card.category] = (acc[card.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 }
