@@ -34,7 +34,8 @@ import {
   MapPin,
   FileText,
   Database,
-  FileDown
+  FileDown,
+  GraduationCap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,6 +74,7 @@ import type { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 import { useUserDataExport } from '@/hooks/useUserDataExport';
 import { Badge } from '@/components/ui/badge';
+import { ComprehensiveTutorial } from '@/components/ComprehensiveTutorial';
 import QRCode from 'qrcode';
 
 interface SettingsScreenProps {
@@ -152,6 +154,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     Array.isArray(profile?.specialty) ? profile.specialty : []
   );
   const [savingSpecialties, setSavingSpecialties] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const handleRequestPermission = async () => {
     setRequestingPermission(true);
@@ -503,6 +506,33 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               </div>
             </div>
             <UpdateButton />
+          </CardContent>
+        </Card>
+
+        {/* Tutorial Card */}
+        <Card className="bg-card border-border border-safe/30">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-safe/10 flex items-center justify-center">
+                  <GraduationCap className="w-5 h-5 text-safe" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Tutorial Completo</p>
+                  <p className="text-xs text-muted-foreground">
+                    Aprende a usar todas las funciones de la app
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTutorial(true)}
+                className="border-safe/30 text-safe hover:bg-safe/10"
+              >
+                Ver Tutorial
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -2181,6 +2211,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Comprehensive Tutorial */}
+      {showTutorial && (
+        <ComprehensiveTutorial
+          onComplete={() => setShowTutorial(false)}
+          onClose={() => setShowTutorial(false)}
+        />
+      )}
     </div>
   );
 };
