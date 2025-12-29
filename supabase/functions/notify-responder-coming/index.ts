@@ -113,16 +113,22 @@ serve(async (req) => {
     // Get responder's name and location
     const { data: responderProfile } = await supabase
       .from('profiles')
-      .select('nickname, full_name, can_provide_medical_assistance, has_ambulance, has_first_aid_kit')
+      .select('nickname, full_name, can_provide_medical_assistance, has_ambulance, has_first_aid_kit, has_rescue_unit')
       .eq('id', responderUserId)
       .maybeSingle();
 
     const responderName = responderProfile?.nickname || responderProfile?.full_name || 'Un rescatista';
     
+    // Check if responder has special resources
+    const hasAmbulance = responderProfile?.has_ambulance ?? false;
+    const hasRescueUnit = responderProfile?.has_rescue_unit ?? false;
+    const hasMedicalAssistance = responderProfile?.can_provide_medical_assistance ?? false;
+    
     // Build responder credentials for notification
     const credentials: string[] = [];
-    if (responderProfile?.can_provide_medical_assistance) credentials.push('👨‍⚕️ Médico');
-    if (responderProfile?.has_ambulance) credentials.push('🚑 Ambulancia');
+    if (hasMedicalAssistance) credentials.push('👨‍⚕️ Médico');
+    if (hasAmbulance) credentials.push('🚑 Ambulancia');
+    if (hasRescueUnit) credentials.push('🚒 Rescate');
     if (responderProfile?.has_first_aid_kit) credentials.push('🩹 Botiquín');
     const credentialsText = credentials.length > 0 ? ` (${credentials.join(', ')})` : '';
 
@@ -187,7 +193,16 @@ serve(async (req) => {
 
     switch (eventType) {
       case 'responding':
-        title = '🚨 ¡Ayuda en camino!';
+        // Special titles for ambulance or rescue unit
+        if (hasAmbulance) {
+          title = '🚑 ¡AMBULANCIA EN CAMINO!';
+        } else if (hasRescueUnit) {
+          title = '🚒 ¡UNIDAD DE RESCATE EN CAMINO!';
+        } else if (hasMedicalAssistance) {
+          title = '👨‍⚕️ ¡Asistencia médica en camino!';
+        } else {
+          title = '🚨 ¡Ayuda en camino!';
+        }
         
         // Build detailed message
         const parts: string[] = [`${responderName}${credentialsText}`];
@@ -209,17 +224,29 @@ serve(async (req) => {
         message = responderCount > 1 
           ? `${responderCount} rescatistas están respondiendo. ${parts.join(' ')}`
           : parts.join(' ');
-        notificationType = 'responder_coming';
+        notificationType = hasAmbulance ? 'ambulance_coming' : hasRescueUnit ? 'rescue_unit_coming' : 'responder_coming';
         break;
       
       case 'proximity':
-        title = '📍 ¡Rescatista muy cerca!';
+        if (hasAmbulance) {
+          title = '🚑 ¡Ambulancia muy cerca!';
+        } else if (hasRescueUnit) {
+          title = '🚒 ¡Unidad de rescate muy cerca!';
+        } else {
+          title = '📍 ¡Rescatista muy cerca!';
+        }
         message = `${responderName}${credentialsText} está a menos de 500 metros de tu ubicación. ¡Ya casi llega!`;
         notificationType = 'responder_proximity';
         break;
         
       case 'arrived':
-        title = '✅ ¡Rescatista llegó!';
+        if (hasAmbulance) {
+          title = '🚑 ¡Ambulancia llegó!';
+        } else if (hasRescueUnit) {
+          title = '🚒 ¡Unidad de rescate llegó!';
+        } else {
+          title = '✅ ¡Rescatista llegó!';
+        }
         message = `${responderName}${credentialsText} ha llegado a tu ubicación. La ayuda está aquí.`;
         notificationType = 'responder_arrived';
         break;
