@@ -992,33 +992,52 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
         <AnimatePresence mode="wait">
           <motion.div
             key={`${currentSection}-${currentStep}`}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, y: 15, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            transition={{ 
+              duration: 0.25, 
+              ease: [0.4, 0, 0.2, 1],
+              opacity: { duration: 0.2 }
+            }}
             className="p-6 max-w-lg mx-auto"
           >
             {/* Step title */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className={cn(
-                'w-12 h-12 rounded-full flex items-center justify-center',
-                step.important 
-                  ? 'bg-destructive/20 animate-pulse' 
-                  : 'bg-muted'
-              )}>
+            <motion.div 
+              className="flex items-center gap-3 mb-6"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1, duration: 0.2 }}
+            >
+              <motion.div 
+                className={cn(
+                  'w-12 h-12 rounded-full flex items-center justify-center',
+                  step.important 
+                    ? 'bg-destructive/20 animate-pulse' 
+                    : 'bg-muted'
+                )}
+                initial={{ scale: 0.8, rotate: -10 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.05, type: "spring", stiffness: 300, damping: 20 }}
+              >
                 <span className={cn('w-6 h-6', section.color)}>
                   {section.icon}
                 </span>
-              </div>
+              </motion.div>
               <div className="flex-1">
                 <h2 className="text-xl font-bold">{step.title}</h2>
               </div>
-            </div>
+            </motion.div>
 
             {/* Step content */}
-            <div className="mb-6">
+            <motion.div 
+              className="mb-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.25 }}
+            >
               {step.content}
-            </div>
+            </motion.div>
 
             {/* Disclaimer acceptance checkbox and button for final step */}
             {isLastStep && (
