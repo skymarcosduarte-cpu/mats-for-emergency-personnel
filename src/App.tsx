@@ -34,6 +34,7 @@ import { ResponderTrackingMap } from '@/components/ResponderTrackingMap';
 import { InternalMessaging } from '@/components/InternalMessaging';
 import { UnreadMessagesBanner } from '@/components/UnreadMessagesBanner';
 import { Clave100Overlay } from '@/components/Clave100Overlay';
+import { TravelerLocationDialog } from '@/components/TravelerLocationDialog';
 
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
@@ -274,7 +275,10 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   useDelayedTripChecker();
   
   // Alert when delayed travelers haven't updated location in 30+ minutes (excludes flights)
-  useInactiveDelayedTripsAlert();
+  const { 
+    pendingInactiveTrip, 
+    dismissInactiveTrip 
+  } = useInactiveDelayedTripsAlert();
   
   // Emergency contact notification
   const { notifyEmergencyContacts } = useEmergencyNotification();
@@ -589,6 +593,19 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
           onClose={() => setMessagingOpen(false)}
           initialUserId={messagingUserId}
           initialUserName={messagingUserName}
+        />
+      )}
+      
+      {/* Inactive Delayed Trip Location Dialog */}
+      {pendingInactiveTrip && (
+        <TravelerLocationDialog
+          isOpen={!!pendingInactiveTrip}
+          onClose={dismissInactiveTrip}
+          userId={pendingInactiveTrip.userId}
+          onSendMessage={() => {
+            handleOpenMessaging(pendingInactiveTrip.userId, pendingInactiveTrip.nickname);
+            dismissInactiveTrip();
+          }}
         />
       )}
       
