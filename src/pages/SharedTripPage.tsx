@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TripRouteMap from '@/components/TripRouteMap';
+import MapErrorBoundary from '@/components/MapErrorBoundary';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow, differenceInMinutes, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -215,24 +216,34 @@ export default function SharedTripPage() {
         {/* Map */}
         <Card>
           <CardContent className="p-0 overflow-hidden rounded-lg">
-            <TripRouteMap
-              routeCoordinates={routeHistory}
-              originCoords={trip.origin_lat && trip.origin_lng ? {
-                lat: trip.origin_lat,
-                lng: trip.origin_lng,
-              } : null}
-              destinationCoords={trip.destination_lat && trip.destination_lng ? {
-                lat: trip.destination_lat,
-                lng: trip.destination_lng,
-              } : null}
-              currentPosition={location ? {
-                lat: location.lat,
-                lng: location.lng,
-              } : null}
-              originName={trip.origin}
-              destinationName={trip.destination}
-              height="300px"
-            />
+            <MapErrorBoundary
+              context={{
+                source: 'SharedTripPage',
+                tripId: trip.id,
+                origin: { lat: trip.origin_lat, lng: trip.origin_lng },
+                destination: { lat: trip.destination_lat, lng: trip.destination_lng },
+                hasLocation: !!location,
+                routePoints: routeHistory.length,
+              }}
+            >
+              <TripRouteMap
+                routeCoordinates={routeHistory}
+                originCoords={
+                  trip.origin_lat !== null && trip.origin_lng !== null
+                    ? { lat: trip.origin_lat, lng: trip.origin_lng }
+                    : null
+                }
+                destinationCoords={
+                  trip.destination_lat !== null && trip.destination_lng !== null
+                    ? { lat: trip.destination_lat, lng: trip.destination_lng }
+                    : null
+                }
+                currentPosition={location ? { lat: location.lat, lng: location.lng } : null}
+                originName={trip.origin}
+                destinationName={trip.destination}
+                height="300px"
+              />
+            </MapErrorBoundary>
           </CardContent>
         </Card>
 

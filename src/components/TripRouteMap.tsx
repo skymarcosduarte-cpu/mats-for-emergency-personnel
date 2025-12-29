@@ -53,13 +53,20 @@ const originIcon = createIcon('#22c55e', 20); // Green for origin
 const destinationIcon = createIcon('#ef4444', 20); // Red for destination
 const currentIcon = createIcon('#3b82f6', 24); // Blue for current position
 
-// Component to fit bounds
+// Component to fit bounds safely
 function FitBounds({ bounds }: { bounds: L.LatLngBounds | null }) {
   const map = useMap();
 
   useEffect(() => {
-    if (bounds && bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [30, 30] });
+    if (!bounds) return;
+    
+    try {
+      // Double-check validity before calling fitBounds
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
+      }
+    } catch (err) {
+      console.warn('[FitBounds] Error fitting bounds:', err);
     }
   }, [map, bounds]);
 
@@ -134,7 +141,7 @@ export default function TripRouteMap({
     [currentPosition]
   );
 
-  // Calculate bounds
+  // Calculate bounds - need at least 2 points for valid bounds
   const bounds = useMemo(() => {
     const allPoints: [number, number][] = [...safeRouteCoordinates];
 
@@ -148,9 +155,17 @@ export default function TripRouteMap({
       allPoints.push([safeCurrent.lat, safeCurrent.lng]);
     }
 
-    if (allPoints.length === 0) return null;
+    // Need at least 2 distinct points to create valid bounds
+    if (allPoints.length < 2) return null;
 
-    return L.latLngBounds(allPoints.map(([lat, lng]) => [lat, lng]));
+    try {
+      const latLngs = allPoints.map(([lat, lng]) => L.latLng(lat, lng));
+      const b = L.latLngBounds(latLngs);
+      return b.isValid() ? b : null;
+    } catch (err) {
+      console.warn('[TripRouteMap] Error creating bounds:', err);
+      return null;
+    }
   }, [safeRouteCoordinates, safeOrigin, safeDestination, safeCurrent]);
 
   // Default center if no data
