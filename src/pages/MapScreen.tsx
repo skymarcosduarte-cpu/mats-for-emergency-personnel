@@ -512,6 +512,56 @@ const createAmbulanceIcon = (hasEmergencyNearby: boolean = false) => L.divIcon({
   popupAnchor: [0, hasEmergencyNearby ? -22 : -18],
 });
 
+// Rescue Unit icon - similar to ambulance but with fire truck emoji
+const createRescueUnitIcon = (hasEmergencyNearby: boolean = false) => L.divIcon({
+  className: 'rescue-unit-marker',
+  html: `
+    <div style="
+      width: ${hasEmergencyNearby ? '44px' : '36px'};
+      height: ${hasEmergencyNearby ? '44px' : '36px'};
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        position: absolute;
+        width: ${hasEmergencyNearby ? '44px' : '36px'};
+        height: ${hasEmergencyNearby ? '44px' : '36px'};
+        background: rgba(249, 115, 22, ${hasEmergencyNearby ? '0.5' : '0.3'});
+        border-radius: 50%;
+        animation: ${hasEmergencyNearby ? 'pulseEmergency 0.8s infinite' : 'pulseMedical 2s infinite'};
+      "></div>
+      ${hasEmergencyNearby ? `
+      <div style="
+        position: absolute;
+        width: 56px;
+        height: 56px;
+        background: rgba(249, 115, 22, 0.2);
+        border-radius: 50%;
+        animation: pulseEmergencyOuter 1.2s infinite;
+      "></div>
+      ` : ''}
+      <div style="
+        width: ${hasEmergencyNearby ? '32px' : '28px'};
+        height: ${hasEmergencyNearby ? '32px' : '28px'};
+        background: #f97316;
+        border: ${hasEmergencyNearby ? '3px' : '2px'} solid white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+        box-shadow: 0 2px 8px rgba(249, 115, 22, ${hasEmergencyNearby ? '0.7' : '0.4'});
+        font-size: ${hasEmergencyNearby ? '16px' : '14px'};
+      ">🚒</div>
+    </div>
+  `,
+  iconSize: [hasEmergencyNearby ? 44 : 36, hasEmergencyNearby ? 44 : 36],
+  iconAnchor: [hasEmergencyNearby ? 22 : 18, hasEmergencyNearby ? 22 : 18],
+  popupAnchor: [0, hasEmergencyNearby ? -22 : -18],
+});
+
 // First aid kit / Paramédico icon - GREEN for medical assistance
 const createFirstAidKitIcon = () => L.divIcon({
   className: 'firstaid-marker',
@@ -979,6 +1029,7 @@ export interface POIVisibility {
   fire_station: boolean;
   first_aid_kit: boolean;
   ambulance: boolean;
+  rescue_unit: boolean;
 }
 
 // Collapsible Map Legend Component with POI toggles
@@ -1017,11 +1068,12 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
   const poiItems: { type: keyof POIVisibility; label: string; color: string; emoji: string }[] = [
     { type: 'first_aid_kit', label: 'Botiquines', color: '#22c55e', emoji: '🩹' },
     { type: 'ambulance', label: 'Ambulancias', color: '#ef4444', emoji: '🚑' },
+    { type: 'rescue_unit', label: 'Unidades Rescate', color: '#f97316', emoji: '🚒' },
     { type: 'hospital', label: 'Hospitales', color: '#ef4444', emoji: '🏥' },
     { type: 'gas_station', label: 'Gasolineras', color: '#f97316', emoji: '⛽' },
     { type: 'pharmacy', label: 'Farmacias', color: '#22c55e', emoji: '💊' },
     { type: 'police', label: 'Policía', color: '#3b82f6', emoji: '👮' },
-    { type: 'fire_station', label: 'Bomberos', color: '#dc2626', emoji: '🚒' },
+    { type: 'fire_station', label: 'Bomberos', color: '#dc2626', emoji: '🧑‍🚒' },
   ];
 
   return (
@@ -1100,6 +1152,21 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
               </div>
               <div className="text-[9px] text-muted-foreground leading-tight mt-0.5">
                 Cuenta con vehículo de emergencia
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 bg-accent/30 p-2 rounded-md border border-border/50">
+            <div className="relative flex-shrink-0 mt-0.5">
+              <div className="w-5 h-5 rounded-full" style={{ background: '#f97316' }} />
+              <span style={{ fontSize: '10px', position: 'absolute', top: '-2px', right: '-2px' }}>🚒</span>
+            </div>
+            <div className="flex-1">
+              <div className="text-[10px] font-medium text-foreground leading-tight">
+                Naranja = Unidad de Rescate
+              </div>
+              <div className="text-[9px] text-muted-foreground leading-tight mt-0.5">
+                Cuenta con vehículo o equipo de rescate
               </div>
             </div>
           </div>
@@ -1247,6 +1314,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     fire_station: false,
     first_aid_kit: false,
     ambulance: false,
+    rescue_unit: false,
   });
 
   // Specialty filter state
@@ -2390,7 +2458,54 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         }
       });
     }
-  }, [locations, poiVisibility.first_aid_kit, poiVisibility.ambulance, mapReady, helpRequests.length, panicEvents.length]);
+
+    // Handle rescue unit markers
+    if (poiVisibility.rescue_unit) {
+      // First, remove existing rescue unit markers to update with new icon state
+      markersRef.current.forEach((marker, key) => {
+        if (key.startsWith('rescue-unit-')) {
+          map.removeLayer(marker);
+          markersRef.current.delete(key);
+        }
+      });
+
+      // Add markers for users with rescue units
+      locations.forEach((loc) => {
+        const hasRescueUnit = (loc as any).has_rescue_unit ?? false;
+        if (!hasRescueUnit) return;
+        
+        const key = `rescue-unit-${loc.user_id}`;
+        
+        const emergencyMessage = hasActiveEmergency 
+          ? '<div style="font-size: 11px; color: #f97316; font-weight: bold; margin-top: 6px;">⚠️ Emergencia activa cercana</div>'
+          : '';
+        
+        const marker = L.marker([loc.lat, loc.lng], {
+          icon: createRescueUnitIcon(hasActiveEmergency),
+          zIndexOffset: hasActiveEmergency ? 550 : 500,
+        })
+          .addTo(map)
+          .bindPopup(`
+            <div style="text-align: center; padding: 4px;">
+              <div style="font-size: 14px; font-weight: bold; color: #f97316;">🚒 Unidad de Rescate Disponible</div>
+              ${emergencyMessage}
+              <div style="font-size: 11px; color: #666; margin-top: 6px;">
+                Miembro con vehículo o equipo de rescate
+              </div>
+            </div>
+          `);
+        markersRef.current.set(key, marker);
+      });
+    } else {
+      // Remove rescue unit markers
+      markersRef.current.forEach((marker, key) => {
+        if (key.startsWith('rescue-unit-')) {
+          map.removeLayer(marker);
+          markersRef.current.delete(key);
+        }
+      });
+    }
+  }, [locations, poiVisibility.first_aid_kit, poiVisibility.ambulance, poiVisibility.rescue_unit, mapReady, helpRequests.length, panicEvents.length]);
 
   // Update panic event markers - clicking opens detail modal
   // Now shows responder count badge and updates when responders change
