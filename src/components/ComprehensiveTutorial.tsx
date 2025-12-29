@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   AlertTriangle, 
   MapPin, 
@@ -714,7 +715,7 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
     }, 300);
   }, []);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < section.steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else if (currentSection < TUTORIAL_SECTIONS.length - 1) {
@@ -724,6 +725,21 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
       // Tutorial completed - trigger celebration!
       triggerCelebration();
       localStorage.setItem('comprehensive-tutorial-complete', 'true');
+      
+      // Save disclaimer acceptance to database
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase
+            .from('profiles')
+            .update({ tutorial_disclaimer_accepted_at: new Date().toISOString() })
+            .eq('id', user.id);
+          console.log('[Tutorial] Disclaimer acceptance saved to database');
+        }
+      } catch (error) {
+        console.error('[Tutorial] Error saving disclaimer acceptance:', error);
+      }
+      
       // Small delay to let confetti show before closing
       setTimeout(() => {
         onComplete();
