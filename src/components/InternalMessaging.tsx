@@ -176,8 +176,13 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
           .maybeSingle();
         
         if (!error && data) {
+          // Check if user is truly online: is_online must be true AND updated_at within last 5 minutes
+          const lastUpdate = data.updated_at ? new Date(data.updated_at) : null;
+          const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+          const isRecentlyActive = lastUpdate && lastUpdate > fiveMinutesAgo;
+          
           setUserOnlineStatus({
-            isOnline: data.is_online ?? false,
+            isOnline: (data.is_online ?? false) && !!isRecentlyActive,
             lastSeen: data.updated_at
           });
         } else {
@@ -204,8 +209,13 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
         },
         (payload: any) => {
           if (payload.new) {
+            // Check if user is truly online: is_online must be true AND updated_at within last 5 minutes
+            const lastUpdate = payload.new.updated_at ? new Date(payload.new.updated_at) : null;
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+            const isRecentlyActive = lastUpdate && lastUpdate > fiveMinutesAgo;
+            
             setUserOnlineStatus({
-              isOnline: payload.new.is_online ?? false,
+              isOnline: (payload.new.is_online ?? false) && !!isRecentlyActive,
               lastSeen: payload.new.updated_at
             });
           }
@@ -1262,7 +1272,7 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                   </Button>
                 </div>
               ) : (
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                   {/* Hidden input for gallery */}
                   <input
                     ref={imageInputRef}
@@ -1280,74 +1290,85 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                     onChange={handleImageSelect}
                     className="hidden"
                   />
-                  {/* Camera button */}
-                  <Button
-                    onClick={() => cameraInputRef.current?.click()}
-                    size="icon"
-                    variant="ghost"
-                    disabled={sending}
-                    title="Tomar foto"
-                  >
-                    <Camera className="w-4 h-4" />
-                  </Button>
-                  {/* Gallery button */}
-                  <Button
-                    onClick={() => imageInputRef.current?.click()}
-                    size="icon"
-                    variant="ghost"
-                    disabled={sending}
-                    title="Enviar imagen de galería"
-                  >
-                    <ImagePlus className="w-4 h-4" />
-                  </Button>
-                  {/* Location button */}
-                  <Button
-                    onClick={handleSendLocation}
-                    size="icon"
-                    variant="ghost"
-                    disabled={sending || sendingLocation}
-                    title="Enviar ubicación"
-                  >
-                    {sendingLocation ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <MapPin className="w-4 h-4" />
-                    )}
-                  </Button>
-                  <Button
-                    onClick={startRecording}
-                    size="icon"
-                    variant="ghost"
-                    disabled={sending}
-                    title="Grabar nota de voz"
-                  >
-                    <Mic className="w-4 h-4" />
-                  </Button>
-                  <Input
-                    ref={inputRef}
-                    value={messageText}
-                    onChange={(e) => {
-                      setMessageText(e.target.value);
-                      sendTyping(e.target.value.length > 0);
-                    }}
-                    onKeyDown={handleKeyDown}
-                    onBlur={() => sendTyping(false)}
-                    placeholder="Escribe un mensaje..."
-                    className="flex-1"
-                    disabled={sending}
-                  />
-                  <Button
-                    onClick={handleSend}
-                    disabled={!messageText.trim() || sending}
-                    size="icon"
-                    className="flex-shrink-0"
-                  >
-                    {sending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
-                  </Button>
+                  {/* Row 1: Text input and send button */}
+                  <div className="flex gap-2">
+                    <Input
+                      ref={inputRef}
+                      value={messageText}
+                      onChange={(e) => {
+                        setMessageText(e.target.value);
+                        sendTyping(e.target.value.length > 0);
+                      }}
+                      onKeyDown={handleKeyDown}
+                      onBlur={() => sendTyping(false)}
+                      placeholder="Escribe un mensaje..."
+                      className="flex-1 min-h-[44px]"
+                      disabled={sending}
+                    />
+                    <Button
+                      onClick={handleSend}
+                      disabled={!messageText.trim() || sending}
+                      size="icon"
+                      className="flex-shrink-0 h-[44px] w-[44px]"
+                    >
+                      {sending ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Send className="w-5 h-5" />
+                      )}
+                    </Button>
+                  </div>
+                  {/* Row 2: Action buttons */}
+                  <div className="flex justify-center gap-4">
+                    {/* Camera button */}
+                    <Button
+                      onClick={() => cameraInputRef.current?.click()}
+                      size="icon"
+                      variant="ghost"
+                      disabled={sending}
+                      title="Tomar foto"
+                      className="h-9 w-9"
+                    >
+                      <Camera className="w-5 h-5" />
+                    </Button>
+                    {/* Gallery button */}
+                    <Button
+                      onClick={() => imageInputRef.current?.click()}
+                      size="icon"
+                      variant="ghost"
+                      disabled={sending}
+                      title="Enviar imagen de galería"
+                      className="h-9 w-9"
+                    >
+                      <ImagePlus className="w-5 h-5" />
+                    </Button>
+                    {/* Location button */}
+                    <Button
+                      onClick={handleSendLocation}
+                      size="icon"
+                      variant="ghost"
+                      disabled={sending || sendingLocation}
+                      title="Enviar ubicación"
+                      className="h-9 w-9"
+                    >
+                      {sendingLocation ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <MapPin className="w-5 h-5" />
+                      )}
+                    </Button>
+                    {/* Voice note button */}
+                    <Button
+                      onClick={startRecording}
+                      size="icon"
+                      variant="ghost"
+                      disabled={sending}
+                      title="Grabar nota de voz"
+                      className="h-9 w-9"
+                    >
+                      <Mic className="w-5 h-5" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
