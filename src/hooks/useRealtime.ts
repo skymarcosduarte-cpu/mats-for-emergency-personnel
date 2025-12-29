@@ -22,6 +22,7 @@ interface UserLocation {
   can_provide_medical_assistance: boolean | null;
   has_first_aid_kit: boolean | null;
   has_ambulance: boolean | null;
+  specialties: string[] | null;
   is_in_transit: boolean;
   transit_destination: string | null;
   transit_destination_lat: number | null;
