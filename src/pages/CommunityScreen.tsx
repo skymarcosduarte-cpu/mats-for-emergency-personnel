@@ -831,6 +831,14 @@ export const CommunityScreen: React.FC = () => {
                     tripId: selectedTrip.id,
                     tripUserId: selectedTrip.user_id,
                   }}
+                  tripData={{
+                    originLat: selectedTrip.origin_lat,
+                    originLng: selectedTrip.origin_lng,
+                    destinationLat: selectedTrip.destination_lat,
+                    destinationLng: selectedTrip.destination_lng,
+                    currentLat: selectedTrip.current_lat,
+                    currentLng: selectedTrip.current_lng,
+                  }}
                   onClose={() => setSelectedTrip(null)}
                 >
                   <TripRouteMap

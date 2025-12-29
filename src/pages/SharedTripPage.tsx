@@ -225,6 +225,14 @@ export default function SharedTripPage() {
                 hasLocation: !!location,
                 routePoints: routeHistory.length,
               }}
+              tripData={{
+                originLat: trip.origin_lat,
+                originLng: trip.origin_lng,
+                destinationLat: trip.destination_lat,
+                destinationLng: trip.destination_lng,
+                currentLat: location?.lat,
+                currentLng: location?.lng,
+              }}
             >
               <TripRouteMap
                 routeCoordinates={routeHistory}
