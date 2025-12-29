@@ -230,6 +230,60 @@ export const QuakeCheckinMap: React.FC<QuakeCheckinMapProps> = ({
         </div>
       </div>
 
+      {/* Checkins list */}
+      {checkins.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-muted-foreground">Reportes recientes:</h4>
+          <div className="max-h-48 overflow-y-auto space-y-2">
+            {checkins.map((checkin) => (
+              <div 
+                key={checkin.id}
+                className={cn(
+                  "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors",
+                  selectedCheckin?.id === checkin.id 
+                    ? "bg-primary/10 border border-primary/30" 
+                    : "bg-muted/30 hover:bg-muted/50"
+                )}
+                onClick={() => setSelectedCheckin(checkin)}
+              >
+                <div className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                  checkin.damage_report === 'OK' && "bg-safe",
+                  checkin.damage_report === 'UNSURE' && "bg-warning",
+                  checkin.damage_report === 'DAMAGE' && "bg-destructive"
+                )}>
+                  <span className="text-white font-bold text-sm">
+                    {checkin.damage_report === 'OK' ? '✓' : 
+                     checkin.damage_report === 'UNSURE' ? '?' : '⚠'}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={
+                        checkin.damage_report === 'OK' ? 'default' :
+                        checkin.damage_report === 'UNSURE' ? 'secondary' : 'destructive'
+                      }
+                      className="text-[10px] px-1.5 py-0"
+                    >
+                      {checkin.damage_report === 'OK' ? 'Todo bien' :
+                       checkin.damage_report === 'UNSURE' ? 'No seguro' : 'Daños'}
+                    </Badge>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                    {formatDistanceToNow(new Date(checkin.created_at), { 
+                      addSuffix: true, 
+                      locale: es 
+                    })}
+                  </div>
+                </div>
+                <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Selected checkin details */}
       {selectedCheckin && (
         <div className="bg-muted/50 rounded-lg p-3 text-sm">
