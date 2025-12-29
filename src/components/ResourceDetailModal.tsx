@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ import {
 import { toast } from 'sonner';
 import { ResourceCard, getCategoryLabel } from '@/lib/resourcesCache';
 import { cn } from '@/lib/utils';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 interface ResourceDetailModalProps {
   card: ResourceCard | null;
@@ -99,6 +101,13 @@ export function ResourceDetailModal({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg h-[90vh] flex flex-col p-0 gap-0">
+        {/* Hidden description for accessibility */}
+        <VisuallyHidden>
+          <DialogDescription>
+            Detalle del recurso: {card.title}
+          </DialogDescription>
+        </VisuallyHidden>
+        
         {/* Header */}
         <DialogHeader className="p-4 pb-3 border-b flex-shrink-0">
           <div className="flex items-start justify-between gap-2">
@@ -133,22 +142,33 @@ export function ResourceDetailModal({
             </div>
             <div className="flex gap-1">
               {/* Share dropdown */}
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-9 w-9"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <Share2 className="h-5 w-5 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-background">
-                  <DropdownMenuItem onClick={handleShareWhatsApp}>
+                <DropdownMenuContent align="end" className="bg-background z-[200]">
+                  <DropdownMenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleShareWhatsApp();
+                    }}
+                  >
                     <MessageCircle className="h-4 w-4 mr-2 text-green-500" />
                     Compartir por WhatsApp
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleCopyToClipboard}>
+                  <DropdownMenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyToClipboard();
+                    }}
+                  >
                     <Copy className="h-4 w-4 mr-2" />
                     Copiar al portapapeles
                   </DropdownMenuItem>
