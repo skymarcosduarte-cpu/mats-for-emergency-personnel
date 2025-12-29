@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { USGSEarthquake } from '@/types';
 import type { TropicalCycloneAlert, FireHotspot } from '@/hooks/useMexicoAlerts';
+import type { GDACSAlert } from '@/hooks/useGDACSAlerts';
 
 interface PushNotificationState {
   permission: NotificationPermission | 'unsupported';
@@ -176,6 +177,55 @@ export function usePushNotifications() {
     }
   }, [state.isSupported]);
 
+  // Show notification for red-level international alerts
+  const showRedAlertNotification = useCallback((
+    alert: GDACSAlert
+  ) => {
+    if (!state.isSupported || Notification.permission !== 'granted') {
+      return false;
+    }
+
+    // Map category to emoji
+    const categoryEmojis: Record<string, string> = {
+      earthquake: '🌍',
+      cyclone: '🌀',
+      flood: '🌊',
+      volcano: '🌋',
+      wildfire: '🔥',
+      drought: '☀️',
+      weather: '⛈️',
+      security: '🛡️',
+      humanitarian: '🆘',
+      other: '⚠️',
+    };
+
+    const emoji = categoryEmojis[alert.category] || '⚠️';
+    const sourceLabel = alert.source || 'Internacional';
+
+    try {
+      const notification = new Notification(`🔴 ALERTA ROJA - ${sourceLabel}`, {
+        body: `${emoji} ${alert.title}\n${alert.country ? `📍 ${alert.country}` : ''}`,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: `red-alert-${alert.id}`,
+        requireInteraction: true,
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        if (alert.link) {
+          window.open(alert.link, '_blank');
+        }
+        notification.close();
+      };
+
+      return true;
+    } catch (error) {
+      console.error('Error showing red alert notification:', error);
+      return false;
+    }
+  }, [state.isSupported]);
+
   return {
     ...state,
     requestPermission,
@@ -183,5 +233,6 @@ export function usePushNotifications() {
     showCycloneNotification,
     showFireNotification,
     showGenericNotification,
+    showRedAlertNotification,
   };
 }
