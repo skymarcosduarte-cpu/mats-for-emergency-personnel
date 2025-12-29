@@ -973,19 +973,21 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
             </span>
           </div>
 
-          <Button onClick={handleNext}>
-            {isLastStep ? (
-              <>
-                <Check className="w-4 h-4 mr-1" />
-                ¡Empezar!
-              </>
-            ) : (
-              <>
-                Siguiente
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </>
-            )}
-          </Button>
+          {isLastStep ? (
+            <Button 
+              onClick={handleNext}
+              disabled={!disclaimerAccepted}
+              className={!disclaimerAccepted ? 'opacity-50' : ''}
+            >
+              <Check className="w-4 h-4 mr-1" />
+              ¡Entendido!
+            </Button>
+          ) : (
+            <Button onClick={handleNext}>
+              Siguiente
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          )}
         </div>
         
         {/* Skip button */}
