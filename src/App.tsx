@@ -82,15 +82,22 @@ function AppContent() {
   const isProfileComplete = !!profile;
 
   // Handle new user onboarding - show comprehensive tutorial for new users
+  // Check database for disclaimer acceptance, not just localStorage
   useEffect(() => {
-    if (isAuthenticated && isProfileComplete) {
-      const tutorialComplete = localStorage.getItem('comprehensive-tutorial-complete');
-      if (!tutorialComplete) {
+    if (isAuthenticated && isProfileComplete && profile) {
+      // Check if disclaimer was accepted in database
+      const disclaimerAccepted = !!profile.tutorial_disclaimer_accepted_at;
+      
+      if (!disclaimerAccepted) {
+        // Force tutorial if disclaimer not accepted in database
         setIsNewUser(true);
         setShowComprehensiveTutorial(true);
+      } else {
+        // Sync localStorage with database state
+        localStorage.setItem('comprehensive-tutorial-complete', 'true');
       }
     }
-  }, [isAuthenticated, isProfileComplete]);
+  }, [isAuthenticated, isProfileComplete, profile]);
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);

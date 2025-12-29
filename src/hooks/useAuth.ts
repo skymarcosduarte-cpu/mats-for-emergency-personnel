@@ -24,6 +24,7 @@ interface Profile {
   share_medical_info: boolean;
   privacy_consent_at: string | null;
   terms_accepted_at: string | null;
+  tutorial_disclaimer_accepted_at: string | null;
   created_at: string;
   updated_at: string;
 }
