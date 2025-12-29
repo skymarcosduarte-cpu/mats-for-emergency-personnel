@@ -68,7 +68,7 @@ import { UpdateButton, InstallButton } from '@/components/UpdatePrompt';
 import { supabase } from '@/integrations/supabase/client';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useAlertSettings } from '@/hooks/useAlertSettings';
-import { playSubtleAlert, playUrgentAlert } from '@/lib/alertSound';
+import { playSubtleAlert, playUrgentAlert, playClave100Alert, stopClave100Alert } from '@/lib/alertSound';
 import type { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 import { useUserDataExport } from '@/hooks/useUserDataExport';
@@ -1187,6 +1187,50 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   <Volume2 className="w-4 h-4 mr-2" />
                   Sonido cercano
                 </Button>
+              </div>
+              
+              {/* Clave 100 Test */}
+              <div className="mt-4 p-3 bg-destructive/10 rounded-lg border border-destructive/30">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center animate-pulse">
+                    <AlertTriangle className="w-5 h-5 text-destructive" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-destructive">Prueba Clave 100</p>
+                    <p className="text-xs text-muted-foreground">
+                      Verifica que el sonido y vibración de emergencia funcionan
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      console.log('🚨 Testing Clave 100 alert from settings');
+                      playClave100Alert();
+                    }}
+                    className="flex-1"
+                  >
+                    <Volume2 className="w-4 h-4 mr-2" />
+                    🚨 Probar Alerta
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      console.log('Stopping Clave 100 test');
+                      stopClave100Alert();
+                    }}
+                    className="flex-1 border-destructive/50 text-destructive hover:bg-destructive/10"
+                  >
+                    <VolumeX className="w-4 h-4 mr-2" />
+                    Detener
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  ⚠️ El sonido es muy fuerte - asegúrate de que tu volumen esté bajo
+                </p>
               </div>
             </div>
           </CardContent>
