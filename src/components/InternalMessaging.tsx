@@ -953,7 +953,7 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
           )}
           <div
             className={cn(
-              'max-w-[80%] rounded-2xl px-4 py-2 transition-all duration-300',
+              'max-w-[80%] rounded-2xl px-4 py-2 transition-all duration-300 overflow-hidden',
               isMine
                 ? 'bg-primary text-primary-foreground rounded-br-md'
                 : 'bg-muted text-foreground rounded-bl-md',
@@ -984,7 +984,7 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                 </span>
               </button>
             ) : (
-              <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+              <p className="text-sm whitespace-pre-wrap break-all">{msg.message}</p>
             )}
             <div
               className={cn(
@@ -1205,8 +1205,8 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
         ) : (
           // Messages View
           <>
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-3">
+            <ScrollArea className="flex-1 p-4 overflow-x-hidden">
+              <div className="space-y-3 w-full overflow-hidden">
                 {renderedMessages}
                 {/* Sending indicator */}
                 {sending && (
