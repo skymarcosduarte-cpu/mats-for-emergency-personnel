@@ -160,16 +160,35 @@ export function useVoiceSearch({
       return;
     }
 
+    // Check if already listening to prevent double-start freeze on iOS
+    if (isListening) {
+      console.warn('Already listening, ignoring start request');
+      return;
+    }
+
     setError(null);
     setTranscript('');
     
     try {
-      recognitionRef.current?.start();
+      // Abort any existing recognition first (prevents iOS freeze)
+      recognitionRef.current?.abort();
+      
+      // Small delay to ensure previous session is fully stopped on iOS
+      setTimeout(() => {
+        try {
+          recognitionRef.current?.start();
+        } catch (err) {
+          console.warn('Recognition start error:', err);
+          setIsListening(false);
+          toast.error('No se pudo iniciar el reconocimiento de voz');
+        }
+      }, 100);
     } catch (err) {
       // Recognition might already be running
-      console.warn('Recognition start error:', err);
+      console.warn('Recognition abort error:', err);
+      setIsListening(false);
     }
-  }, [isSupported]);
+  }, [isSupported, isListening]);
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop();
