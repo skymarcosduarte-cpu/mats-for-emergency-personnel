@@ -1,7 +1,7 @@
 // Seismic Wave Propagation Map
 // Shows concentric circles expanding from earthquake epicenter representing P and S waves
 
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { AlertTriangle, X, Bell } from 'lucide-react';
@@ -37,6 +37,14 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * c;
 }
 
+// Format time helper
+function formatTime(seconds: number): string {
+  if (seconds < 0) return '0s';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+}
+
 export const SeismicWaveMap: React.FC<SeismicWaveMapProps> = ({
   epicenterLat,
   epicenterLng,
@@ -51,21 +59,25 @@ export const SeismicWaveMap: React.FC<SeismicWaveMapProps> = ({
   const pWaveCircleRef = useRef<L.Circle | null>(null);
   const sWaveCircleRef = useRef<L.Circle | null>(null);
   const animationRef = useRef<number | null>(null);
+  const lastUpdateRef = useRef<number>(0);
+  const isInitializedRef = useRef(false);
   
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [pWaveRadiusKm, setPWaveRadiusKm] = useState(0);
-  const [sWaveRadiusKm, setSWaveRadiusKm] = useState(0);
-  const [pWaveReached, setPWaveReached] = useState(false);
-  const [sWaveReached, setSWaveReached] = useState(false);
-  const [sWaveWarning, setSWaveWarning] = useState(false);
+  const [waveState, setWaveState] = useState({
+    elapsedSeconds: 0,
+    pWaveRadiusKm: 0,
+    sWaveRadiusKm: 0,
+    pWaveReached: false,
+    sWaveReached: false,
+    sWaveWarning: false,
+  });
 
-  // Calculate user distance from epicenter
+  // Calculate user distance from epicenter - memoized once
   const userDistanceKm = useMemo(() => {
     if (!userPosition) return null;
     return calculateDistance(epicenterLat, epicenterLng, userPosition.lat, userPosition.lng);
   }, [epicenterLat, epicenterLng, userPosition]);
 
-  // Calculate ETA for waves to reach user
+  // Calculate ETA for waves to reach user - memoized once
   const waveETAs = useMemo(() => {
     if (!userDistanceKm) return null;
     return {
@@ -74,14 +86,35 @@ export const SeismicWaveMap: React.FC<SeismicWaveMapProps> = ({
     };
   }, [userDistanceKm]);
 
-  // Initialize map
+  // Store initial values in refs to avoid dependency changes
+  const epicenterRef = useRef({ lat: epicenterLat, lng: epicenterLng });
+  const magnitudeRef = useRef(magnitude);
+  const userPositionRef = useRef(userPosition);
+  const earthquakeTimeRef = useRef(earthquakeTime);
+  const userDistanceKmRef = useRef(userDistanceKm);
+
+  // Update refs when props change
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    epicenterRef.current = { lat: epicenterLat, lng: epicenterLng };
+    magnitudeRef.current = magnitude;
+    userPositionRef.current = userPosition;
+    earthquakeTimeRef.current = earthquakeTime;
+    userDistanceKmRef.current = userDistanceKm;
+  }, [epicenterLat, epicenterLng, magnitude, userPosition, earthquakeTime, userDistanceKm]);
+
+  // Initialize map only once
+  useEffect(() => {
+    if (!mapRef.current || isInitializedRef.current) return;
+    isInitializedRef.current = true;
+
+    const { lat: eLat, lng: eLng } = epicenterRef.current;
+    const mag = magnitudeRef.current;
+    const userPos = userPositionRef.current;
 
     const map = L.map(mapRef.current, {
       zoomControl: false,
       attributionControl: false,
-    }).setView([epicenterLat, epicenterLng], 6);
+    }).setView([eLat, eLng], 6);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
@@ -96,7 +129,7 @@ export const SeismicWaveMap: React.FC<SeismicWaveMapProps> = ({
         <div class="relative flex items-center justify-center">
           <div class="absolute w-8 h-8 bg-destructive rounded-full animate-ping opacity-50"></div>
           <div class="relative w-6 h-6 bg-destructive rounded-full border-2 border-white flex items-center justify-center">
-            <span class="text-white text-xs font-bold">${magnitude.toFixed(1)}</span>
+            <span class="text-white text-xs font-bold">${mag.toFixed(1)}</span>
           </div>
         </div>
       `,
@@ -105,12 +138,12 @@ export const SeismicWaveMap: React.FC<SeismicWaveMapProps> = ({
       iconAnchor: [16, 16],
     });
 
-    L.marker([epicenterLat, epicenterLng], { icon: epicenterIcon })
+    L.marker([eLat, eLng], { icon: epicenterIcon })
       .addTo(map)
-      .bindPopup(`<strong>Epicentro</strong><br/>Magnitud: ${magnitude.toFixed(1)}`);
+      .bindPopup(`<strong>Epicentro</strong><br/>Magnitud: ${mag.toFixed(1)}`);
 
     // Add user marker if position available
-    if (userPosition) {
+    if (userPos) {
       const userIcon = L.divIcon({
         html: `
           <div class="w-4 h-4 bg-primary rounded-full border-2 border-white shadow-lg"></div>
@@ -120,20 +153,20 @@ export const SeismicWaveMap: React.FC<SeismicWaveMapProps> = ({
         iconAnchor: [8, 8],
       });
 
-      L.marker([userPosition.lat, userPosition.lng], { icon: userIcon })
+      L.marker([userPos.lat, userPos.lng], { icon: userIcon })
         .addTo(map)
         .bindPopup('<strong>Tu ubicación</strong>');
 
       // Fit bounds to show both epicenter and user
       const bounds = L.latLngBounds([
-        [epicenterLat, epicenterLng],
-        [userPosition.lat, userPosition.lng],
+        [eLat, eLng],
+        [userPos.lat, userPos.lng],
       ]);
       map.fitBounds(bounds.pad(0.3));
     }
 
     // Create P-wave circle (blue, faster)
-    pWaveCircleRef.current = L.circle([epicenterLat, epicenterLng], {
+    pWaveCircleRef.current = L.circle([eLat, eLng], {
       radius: 0,
       color: '#3b82f6',
       fillColor: '#3b82f6',
@@ -143,7 +176,7 @@ export const SeismicWaveMap: React.FC<SeismicWaveMapProps> = ({
     }).addTo(map);
 
     // Create S-wave circle (orange/red, slower but more destructive)
-    sWaveCircleRef.current = L.circle([epicenterLat, epicenterLng], {
+    sWaveCircleRef.current = L.circle([eLat, eLng], {
       radius: 0,
       color: '#f97316',
       fillColor: '#f97316',
@@ -156,27 +189,38 @@ export const SeismicWaveMap: React.FC<SeismicWaveMapProps> = ({
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
       }
       map.remove();
       mapInstanceRef.current = null;
+      isInitializedRef.current = false;
     };
-  }, [epicenterLat, epicenterLng, magnitude, userPosition]);
+  }, []); // Empty deps - initialize only once
 
-  // Animation loop for wave propagation
+  // Animation loop for wave propagation - with throttling
   useEffect(() => {
+    let isCancelled = false;
+
     const animate = () => {
+      if (isCancelled) return;
+
       const now = Date.now();
-      const elapsed = (now - earthquakeTime) / 1000; // seconds since earthquake
-      setElapsedSeconds(elapsed);
+      
+      // Throttle state updates to every 1000ms to reduce re-renders
+      if (now - lastUpdateRef.current < 1000) {
+        animationRef.current = requestAnimationFrame(animate);
+        return;
+      }
+      lastUpdateRef.current = now;
+
+      const quakeTime = earthquakeTimeRef.current;
+      const elapsed = (now - quakeTime) / 1000; // seconds since earthquake
 
       // Calculate wave radii based on elapsed time
       const pRadius = elapsed * P_WAVE_VELOCITY; // km
       const sRadius = elapsed * S_WAVE_VELOCITY; // km
 
-      setPWaveRadiusKm(pRadius);
-      setSWaveRadiusKm(sRadius);
-
-      // Update circles on map (convert km to meters)
+      // Update circles on map directly (no state update needed for this)
       if (pWaveCircleRef.current) {
         pWaveCircleRef.current.setRadius(pRadius * 1000);
       }
@@ -184,23 +228,35 @@ export const SeismicWaveMap: React.FC<SeismicWaveMapProps> = ({
         sWaveCircleRef.current.setRadius(sRadius * 1000);
       }
 
-      // Check if waves have reached user
-      if (userDistanceKm) {
-        if (pRadius >= userDistanceKm && !pWaveReached) {
-          setPWaveReached(true);
-        }
-        if (sRadius >= userDistanceKm && !sWaveReached) {
-          setSWaveReached(true);
-        }
+      // Check wave status relative to user
+      const distKm = userDistanceKmRef.current;
+      let pReached = false;
+      let sReached = false;
+      let sWarning = false;
+
+      if (distKm) {
+        pReached = pRadius >= distKm;
+        sReached = sRadius >= distKm;
+        
         // Warning when S-wave is about to reach (within 30 seconds)
-        const timeToSWave = (userDistanceKm - sRadius) / S_WAVE_VELOCITY;
-        if (timeToSWave > 0 && timeToSWave <= 30 && !sWaveWarning) {
-          setSWaveWarning(true);
+        if (!sReached) {
+          const timeToSWave = (distKm - sRadius) / S_WAVE_VELOCITY;
+          sWarning = timeToSWave > 0 && timeToSWave <= 30;
         }
       }
 
+      // Update state in a single batch
+      setWaveState({
+        elapsedSeconds: elapsed,
+        pWaveRadiusKm: pRadius,
+        sWaveRadiusKm: sRadius,
+        pWaveReached: pReached,
+        sWaveReached: sReached,
+        sWaveWarning: sWarning,
+      });
+
       // Continue animation for up to 30 minutes
-      if (elapsed < 1800) {
+      if (elapsed < 1800 && !isCancelled) {
         animationRef.current = requestAnimationFrame(animate);
       }
     };
@@ -208,22 +264,18 @@ export const SeismicWaveMap: React.FC<SeismicWaveMapProps> = ({
     animationRef.current = requestAnimationFrame(animate);
 
     return () => {
+      isCancelled = true;
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
       }
     };
-  }, [earthquakeTime, userDistanceKm, pWaveReached, sWaveReached, sWaveWarning]);
+  }, []); // Empty deps - runs once
 
-  // Format time
-  const formatTime = (seconds: number): string => {
-    if (seconds < 0) return '0s';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-  };
+  const { elapsedSeconds, pWaveRadiusKm, sWaveRadiusKm, pWaveReached, sWaveReached, sWaveWarning } = waveState;
 
   return (
-    <div className={cn("relative w-full h-full min-h-[400px] bg-background rounded-lg overflow-hidden", className)}>
+    <div className={cn("relative w-full h-full min-h-[350px] bg-background rounded-lg overflow-hidden", className)}>
       {/* Map container */}
       <div ref={mapRef} className="absolute inset-0 z-0" />
 
@@ -239,14 +291,14 @@ export const SeismicWaveMap: React.FC<SeismicWaveMapProps> = ({
         </Button>
       )}
 
-      {/* Wave status panel */}
-      <div className="absolute top-2 left-2 z-20 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg max-w-[200px]">
+      {/* Wave status panel - combined with legend */}
+      <div className="absolute top-2 left-2 z-20 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg max-w-[180px]">
         <div className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">
           <AlertTriangle className="w-3 h-3 text-warning" />
           Propagación de Ondas
         </div>
         
-        <div className="space-y-2 text-xs">
+        <div className="space-y-1.5 text-xs">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Tiempo:</span>
             <span className="font-mono font-bold">{formatTime(elapsedSeconds)}</span>
@@ -269,15 +321,27 @@ export const SeismicWaveMap: React.FC<SeismicWaveMapProps> = ({
             </div>
             <span className="font-mono">{sWaveRadiusKm.toFixed(0)} km</span>
           </div>
+
+          {/* Legend integrated */}
+          <div className="pt-1.5 mt-1.5 border-t border-border/50 space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-0.5 bg-blue-500 border-dashed" />
+              <span className="text-muted-foreground">Onda P (rápida)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-0.5 bg-orange-500" />
+              <span className="text-muted-foreground">Onda S (fuerte)</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* User distance and ETA panel */}
+      {/* User distance and ETA panel - positioned to avoid overlap */}
       {userDistanceKm && waveETAs && (
-        <div className="absolute bottom-2 left-2 right-2 z-20 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
+        <div className="absolute bottom-12 left-2 right-2 z-20 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-muted-foreground">Tu distancia al epicentro:</span>
-            <Badge variant="outline" className="font-mono">
+            <Badge variant="outline" className="font-mono text-xs">
               {userDistanceKm.toFixed(0)} km
             </Badge>
           </div>
@@ -345,18 +409,6 @@ export const SeismicWaveMap: React.FC<SeismicWaveMapProps> = ({
           )}
         </div>
       )}
-
-      {/* Legend */}
-      <div className="absolute bottom-2 right-2 z-20 bg-background/90 backdrop-blur-sm rounded-lg p-2 text-xs">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-3 h-0.5 bg-blue-500" style={{ borderStyle: 'dashed' }} />
-          <span className="text-muted-foreground">Onda P (rápida)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-0.5 bg-orange-500" />
-          <span className="text-muted-foreground">Onda S (fuerte)</span>
-        </div>
-      </div>
     </div>
   );
 };
