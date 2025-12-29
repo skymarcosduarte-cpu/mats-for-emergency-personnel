@@ -14,6 +14,7 @@ interface Profile {
   can_provide_medical_assistance: boolean;
   has_first_aid_kit: boolean;
   has_ambulance: boolean;
+  has_rescue_unit: boolean;
   blood_type: string | null;
   allergies: string | null;
   medical_conditions: string | null;
@@ -199,6 +200,7 @@ export function useAuth() {
     can_provide_medical_assistance?: boolean;
     has_first_aid_kit?: boolean;
     has_ambulance?: boolean;
+    has_rescue_unit?: boolean;
   }) => {
     if (!state.user) {
       return { error: new Error('Not authenticated') };
@@ -217,6 +219,7 @@ export function useAuth() {
         can_provide_medical_assistance: profileData.can_provide_medical_assistance ?? false,
         has_first_aid_kit: profileData.has_first_aid_kit ?? false,
         has_ambulance: profileData.has_ambulance ?? false,
+        has_rescue_unit: profileData.has_rescue_unit ?? false,
       });
 
     if (profileError) {
