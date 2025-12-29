@@ -185,7 +185,7 @@ export interface AppRelease {
 // USGS Earthquake data
 export interface USGSEarthquake {
   id: string;
-  source?: 'USGS' | 'SSN';
+  source?: 'USGS' | 'SSN' | 'EMSC';
   properties: {
     mag: number;
     place: string;
