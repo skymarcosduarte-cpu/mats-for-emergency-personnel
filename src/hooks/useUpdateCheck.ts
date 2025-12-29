@@ -1,9 +1,14 @@
 // Global update availability hook with Android-safe timeouts
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
+import { Sparkles } from 'lucide-react';
+import { checkForUpdates, isNewerVersionAvailable, APP_VERSION } from '@/lib/versionCheck';
 
 // Global state for update availability (shared across components)
 let globalUpdateAvailable = false;
+let globalServerUpdateAvailable = false;
+let globalLatestVersion: string | null = null;
+let globalReleaseNotes: string | null = null;
 const listeners = new Set<(available: boolean) => void>();
 
 const notifyListeners = (available: boolean) => {
@@ -33,19 +38,68 @@ const withTimeout = <T>(promise: Promise<T>, ms: number, errorMessage: string): 
 // Timeout constants
 const SW_READY_TIMEOUT = 5000; // 5 seconds to get service worker ready
 const UPDATE_CHECK_TIMEOUT = 8000; // 8 seconds for update check
+const SERVER_CHECK_INTERVAL = 10 * 60 * 1000; // 10 minutes
+
+// Check server for new version and show notification
+async function checkServerVersion(showToast = false): Promise<boolean> {
+  try {
+    const versionInfo = await checkForUpdates();
+    
+    if (versionInfo && isNewerVersionAvailable(APP_VERSION, versionInfo.latest)) {
+      globalServerUpdateAvailable = true;
+      globalLatestVersion = versionInfo.latest;
+      globalReleaseNotes = versionInfo.releaseNotes || null;
+      
+      // Show notification only if not already shown in this session
+      const notifiedVersion = sessionStorage.getItem('version-notified');
+      if (showToast && notifiedVersion !== versionInfo.latest) {
+        sessionStorage.setItem('version-notified', versionInfo.latest);
+        
+        toast.info(`Nueva versión ${versionInfo.latest} disponible`, {
+          description: versionInfo.releaseNotes || 'Actualiza para obtener las últimas mejoras',
+          duration: 15000,
+          action: {
+            label: 'Actualizar',
+            onClick: () => {
+              window.location.reload();
+            },
+          },
+        });
+      }
+      
+      notifyListeners(true);
+      return true;
+    }
+    
+    globalServerUpdateAvailable = false;
+    return false;
+  } catch (error) {
+    console.log('Server version check error:', error);
+    return false;
+  }
+}
 
 export function useUpdateCheck() {
   const [updateAvailable, setUpdateAvailable] = useState(globalUpdateAvailable);
+  const [serverUpdateAvailable, setServerUpdateAvailable] = useState(globalServerUpdateAvailable);
+  const [latestVersion, setLatestVersion] = useState<string | null>(globalLatestVersion);
+  const [releaseNotes, setReleaseNotes] = useState<string | null>(globalReleaseNotes);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [checkFailed, setCheckFailed] = useState(false);
   const intervalRef = useRef<number | null>(null);
+  const serverIntervalRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
 
   // Subscribe to global state changes
   useEffect(() => {
-    const listener = (available: boolean) => setUpdateAvailable(available);
+    const listener = (available: boolean) => {
+      setUpdateAvailable(available);
+      setServerUpdateAvailable(globalServerUpdateAvailable);
+      setLatestVersion(globalLatestVersion);
+      setReleaseNotes(globalReleaseNotes);
+    };
     listeners.add(listener);
     return () => {
       listeners.delete(listener);
@@ -85,9 +139,28 @@ export function useUpdateCheck() {
   useEffect(() => {
     isMountedRef.current = true;
 
+    // Check server version on mount (delayed to not block initial load)
+    const serverCheckTimer = setTimeout(() => {
+      if (isMountedRef.current) {
+        checkServerVersion(true);
+      }
+    }, 5000);
+
+    // Periodic server version checks
+    serverIntervalRef.current = window.setInterval(() => {
+      if (isMountedRef.current) {
+        checkServerVersion(true);
+      }
+    }, SERVER_CHECK_INTERVAL);
+
     if (!('serviceWorker' in navigator)) {
       setIsChecking(false);
-      return;
+      return () => {
+        clearTimeout(serverCheckTimer);
+        if (serverIntervalRef.current) {
+          clearInterval(serverIntervalRef.current);
+        }
+      };
     }
 
     const initServiceWorker = async () => {
@@ -156,8 +229,12 @@ export function useUpdateCheck() {
 
     return () => {
       isMountedRef.current = false;
+      clearTimeout(serverCheckTimer);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+      }
+      if (serverIntervalRef.current) {
+        clearInterval(serverIntervalRef.current);
       }
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
     };
@@ -191,6 +268,9 @@ export function useUpdateCheck() {
 
   // Manual refresh/retry for when check failed
   const retryCheck = useCallback(async () => {
+    // Also check server
+    await checkServerVersion(true);
+    
     if (!registration) {
       // Try to get registration again
       if ('serviceWorker' in navigator) {
@@ -219,7 +299,10 @@ export function useUpdateCheck() {
   }, [registration, performUpdateCheck]);
 
   return {
-    updateAvailable,
+    updateAvailable: updateAvailable || serverUpdateAvailable,
+    serverUpdateAvailable,
+    latestVersion,
+    releaseNotes,
     isChecking,
     checkFailed,
     applyUpdate,
@@ -230,17 +313,27 @@ export function useUpdateCheck() {
 
 // Simple hook just to check if update is available (for badge display)
 export function useUpdateAvailable() {
-  const [updateAvailable, setUpdateAvailable] = useState(globalUpdateAvailable);
+  const [updateAvailable, setUpdateAvailable] = useState(globalUpdateAvailable || globalServerUpdateAvailable);
 
   useEffect(() => {
-    const listener = (available: boolean) => setUpdateAvailable(available);
+    const listener = (available: boolean) => setUpdateAvailable(available || globalServerUpdateAvailable);
     listeners.add(listener);
     // Sync with current state
-    setUpdateAvailable(globalUpdateAvailable);
+    setUpdateAvailable(globalUpdateAvailable || globalServerUpdateAvailable);
     return () => {
       listeners.delete(listener);
     };
   }, []);
 
   return updateAvailable;
+}
+
+// Hook to get version info
+export function useVersionInfo() {
+  return {
+    currentVersion: APP_VERSION,
+    latestVersion: globalLatestVersion,
+    releaseNotes: globalReleaseNotes,
+    hasUpdate: globalServerUpdateAvailable,
+  };
 }
