@@ -646,6 +646,9 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
               <p className="text-xs text-muted-foreground leading-relaxed">
                 <strong className="text-foreground">Importante:</strong> M.A.T.S., sus desarrolladores y creadores, no se responsabilizan por el tipo, recursos, tiempo de respuesta ni efectividad de la respuesta a tus emergencias, así como tampoco por la disponibilidad de esta aplicación. Es responsabilidad de toda la comunidad el ofrecer el mejor apoyo disponible entre todos. Tampoco se responsabiliza a los usuarios que piden y ofrecen ayuda, todo es en un tenor voluntario y en la mejor disposición posible.
               </p>
+              <p className="text-xs text-muted-foreground leading-relaxed mt-3 font-medium">
+                Al aceptar el uso de esta app, aceptas la liberación de responsabilidad de cualquier miembro de esta comunidad, a los desarrolladores, creadores y usuarios de esta aplicación.
+              </p>
             </div>
           </div>
         ),
@@ -666,6 +669,7 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
   const [currentSection, setCurrentSection] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [showTableOfContents, setShowTableOfContents] = useState(false);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
 
   const section = TUTORIAL_SECTIONS[currentSection];
   const step = section.steps[currentStep];
@@ -872,16 +876,31 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
               {step.content}
             </div>
 
-            {/* Large "Entendido" button for final step */}
+            {/* Disclaimer acceptance checkbox and button for final step */}
             {isLastStep && (
-              <Button 
-                size="lg" 
-                className="w-full mb-6 text-lg py-6"
-                onClick={handleNext}
-              >
-                <Check className="w-5 h-5 mr-2" />
-                ¡Entendido!
-              </Button>
+              <div className="space-y-4 mb-6">
+                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={disclaimerAccepted}
+                    onChange={(e) => setDisclaimerAccepted(e.target.checked)}
+                    className="mt-0.5 w-5 h-5 rounded border-border text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm text-foreground">
+                    He leído y acepto los términos de uso y la liberación de responsabilidad descritos anteriormente.
+                  </span>
+                </label>
+                
+                <Button 
+                  size="lg" 
+                  className="w-full text-lg py-6"
+                  onClick={handleNext}
+                  disabled={!disclaimerAccepted}
+                >
+                  <Check className="w-5 h-5 mr-2" />
+                  ¡Entendido!
+                </Button>
+              </div>
             )}
 
             {/* Tip box */}
