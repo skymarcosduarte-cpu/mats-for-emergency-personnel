@@ -415,101 +415,111 @@ export function playCancelledAlert(): void {
  * Maximum volume, piercing alarm - this is the highest priority alert
  */
 export function playClave100Sound(): void {
-  const ctx = getAudioContext();
-  if (!ctx) return;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) {
+      console.warn('Clave100: No audio context available');
+      return;
+    }
 
-  if (ctx.state === 'suspended') {
-    ctx.resume();
-  }
+    // Resume audio context if suspended (user gesture required)
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(e => console.warn('Failed to resume audio context:', e));
+    }
 
-  const now = ctx.currentTime;
-  
-  // Create a compressor for maximum loudness
-  const compressor = ctx.createDynamicsCompressor();
-  compressor.threshold.value = -50;
-  compressor.knee.value = 40;
-  compressor.ratio.value = 12;
-  compressor.attack.value = 0;
-  compressor.release.value = 0.25;
-  compressor.connect(ctx.destination);
-  
-  // Intense continuous siren - European emergency style
-  const sirenDuration = 3; // 3 seconds of continuous alarm
-  
-  // Main siren oscillator with frequency sweep
-  const sirenOsc = ctx.createOscillator();
-  const sirenGain = ctx.createGain();
-  sirenOsc.connect(sirenGain);
-  sirenGain.connect(compressor);
-  sirenOsc.type = 'sawtooth'; // Harsh, attention-grabbing
-  sirenGain.gain.setValueAtTime(0.8, now);
-  
-  // Sweep frequency up and down like a real siren
-  sirenOsc.frequency.setValueAtTime(600, now);
-  for (let i = 0; i < 6; i++) {
-    const cycleStart = now + i * 0.5;
-    sirenOsc.frequency.linearRampToValueAtTime(1400, cycleStart + 0.25);
-    sirenOsc.frequency.linearRampToValueAtTime(600, cycleStart + 0.5);
+    const now = ctx.currentTime;
+    
+    // Create a compressor for maximum loudness
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.value = -50;
+    compressor.knee.value = 40;
+    compressor.ratio.value = 12;
+    compressor.attack.value = 0;
+    compressor.release.value = 0.25;
+    compressor.connect(ctx.destination);
+    
+    // Intense continuous siren - European emergency style
+    const sirenDuration = 3; // 3 seconds of continuous alarm
+    
+    // Main siren oscillator with frequency sweep
+    const sirenOsc = ctx.createOscillator();
+    const sirenGain = ctx.createGain();
+    sirenOsc.connect(sirenGain);
+    sirenGain.connect(compressor);
+    sirenOsc.type = 'sawtooth'; // Harsh, attention-grabbing
+    sirenGain.gain.setValueAtTime(0.8, now);
+    
+    // Sweep frequency up and down like a real siren
+    sirenOsc.frequency.setValueAtTime(600, now);
+    for (let i = 0; i < 6; i++) {
+      const cycleStart = now + i * 0.5;
+      sirenOsc.frequency.linearRampToValueAtTime(1400, cycleStart + 0.25);
+      sirenOsc.frequency.linearRampToValueAtTime(600, cycleStart + 0.5);
+    }
+    sirenOsc.start(now);
+    sirenOsc.stop(now + sirenDuration);
+    sirenGain.gain.setValueAtTime(0.8, now + sirenDuration - 0.1);
+    sirenGain.gain.linearRampToValueAtTime(0, now + sirenDuration);
+    
+    // Add a secondary piercing alarm layer
+    const alarmOsc = ctx.createOscillator();
+    const alarmGain = ctx.createGain();
+    alarmOsc.connect(alarmGain);
+    alarmGain.connect(compressor);
+    alarmOsc.type = 'square'; // Very piercing
+    alarmGain.gain.setValueAtTime(0.5, now);
+    
+    // Rapid alternating beeps
+    for (let i = 0; i < 15; i++) {
+      const beepStart = now + i * 0.2;
+      alarmOsc.frequency.setValueAtTime(i % 2 === 0 ? 1800 : 1200, beepStart);
+    }
+    alarmOsc.start(now);
+    alarmOsc.stop(now + sirenDuration);
+    alarmGain.gain.setValueAtTime(0.5, now + sirenDuration - 0.1);
+    alarmGain.gain.linearRampToValueAtTime(0, now + sirenDuration);
+    
+    // Add low frequency rumble for physical impact
+    const bassOsc = ctx.createOscillator();
+    const bassGain = ctx.createGain();
+    bassOsc.connect(bassGain);
+    bassGain.connect(compressor);
+    bassOsc.type = 'sine';
+    bassOsc.frequency.value = 80; // Deep bass
+    bassGain.gain.setValueAtTime(0.6, now);
+    bassOsc.start(now);
+    bassOsc.stop(now + sirenDuration);
+    bassGain.gain.setValueAtTime(0.6, now + sirenDuration - 0.1);
+    bassGain.gain.linearRampToValueAtTime(0, now + sirenDuration);
+    
+    // Final piercing warning beeps after siren - connect to destination directly
+    const warningTones = [
+      { freq: 2000, delay: sirenDuration + 0.1, duration: 0.15 },
+      { freq: 2000, delay: sirenDuration + 0.3, duration: 0.15 },
+      { freq: 2000, delay: sirenDuration + 0.5, duration: 0.15 },
+      { freq: 2400, delay: sirenDuration + 0.7, duration: 0.3 },
+    ];
+    
+    warningTones.forEach(({ freq, delay, duration }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination); // Connect directly to avoid timing issues
+      osc.frequency.value = freq;
+      osc.type = 'square';
+      const startTime = now + delay;
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.9, startTime + 0.01);
+      gain.gain.setValueAtTime(0.9, startTime + duration - 0.02);
+      gain.gain.linearRampToValueAtTime(0, startTime + duration);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    });
+    
+    console.log('Clave100: Sound playing');
+  } catch (e) {
+    console.error('Clave100: Error playing sound:', e);
   }
-  sirenOsc.start(now);
-  sirenOsc.stop(now + sirenDuration);
-  sirenGain.gain.setValueAtTime(0.8, now + sirenDuration - 0.1);
-  sirenGain.gain.linearRampToValueAtTime(0, now + sirenDuration);
-  
-  // Add a secondary piercing alarm layer
-  const alarmOsc = ctx.createOscillator();
-  const alarmGain = ctx.createGain();
-  alarmOsc.connect(alarmGain);
-  alarmGain.connect(compressor);
-  alarmOsc.type = 'square'; // Very piercing
-  alarmGain.gain.setValueAtTime(0.5, now);
-  
-  // Rapid alternating beeps
-  for (let i = 0; i < 15; i++) {
-    const beepStart = now + i * 0.2;
-    alarmOsc.frequency.setValueAtTime(i % 2 === 0 ? 1800 : 1200, beepStart);
-  }
-  alarmOsc.start(now);
-  alarmOsc.stop(now + sirenDuration);
-  alarmGain.gain.setValueAtTime(0.5, now + sirenDuration - 0.1);
-  alarmGain.gain.linearRampToValueAtTime(0, now + sirenDuration);
-  
-  // Add low frequency rumble for physical impact
-  const bassOsc = ctx.createOscillator();
-  const bassGain = ctx.createGain();
-  bassOsc.connect(bassGain);
-  bassGain.connect(compressor);
-  bassOsc.type = 'sine';
-  bassOsc.frequency.value = 80; // Deep bass
-  bassGain.gain.setValueAtTime(0.6, now);
-  bassOsc.start(now);
-  bassOsc.stop(now + sirenDuration);
-  bassGain.gain.setValueAtTime(0.6, now + sirenDuration - 0.1);
-  bassGain.gain.linearRampToValueAtTime(0, now + sirenDuration);
-  
-  // Final piercing warning beeps after siren
-  const warningTones = [
-    { freq: 2000, delay: sirenDuration + 0.1, duration: 0.15 },
-    { freq: 2000, delay: sirenDuration + 0.3, duration: 0.15 },
-    { freq: 2000, delay: sirenDuration + 0.5, duration: 0.15 },
-    { freq: 2400, delay: sirenDuration + 0.7, duration: 0.3 },
-  ];
-  
-  warningTones.forEach(({ freq, delay, duration }) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(compressor);
-    osc.frequency.value = freq;
-    osc.type = 'square';
-    const startTime = now + delay;
-    gain.gain.setValueAtTime(0, startTime);
-    gain.gain.linearRampToValueAtTime(0.9, startTime + 0.01);
-    gain.gain.setValueAtTime(0.9, startTime + duration - 0.02);
-    gain.gain.linearRampToValueAtTime(0, startTime + duration);
-    osc.start(startTime);
-    osc.stop(startTime + duration);
-  });
 }
 
 /**
@@ -517,9 +527,10 @@ export function playClave100Sound(): void {
  * Continuous, intense, impossible to ignore
  */
 export function triggerClave100Vibration(): void {
+  console.log('Clave100: Triggering vibration');
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
-      navigator.vibrate([
+      const result = navigator.vibrate([
         // Initial shock - very long continuous
         1000, 100,
         // Rapid intense bursts
@@ -536,9 +547,12 @@ export function triggerClave100Vibration(): void {
         // Quick finish
         150, 50, 150, 50, 150, 50, 150
       ]);
+      console.log('Clave100: Vibration result:', result);
     } catch (e) {
-      console.warn('Vibration not supported');
+      console.warn('Clave100: Vibration not supported', e);
     }
+  } else {
+    console.log('Clave100: Vibration API not available');
   }
 }
 
@@ -569,25 +583,50 @@ export function stopClave100Alert(): void {
  * Continuous sound and vibration until dismissed
  */
 export function playClave100Alert(): void {
+  console.log('🚨 Clave100Alert: STARTING MAXIMUM EMERGENCY ALERT');
+  
   // Stop any existing alert first
   stopClave100Alert();
   
-  // Play immediately
-  playClave100Sound();
-  triggerClave100Vibration();
+  // Play immediately - try multiple times to ensure it plays
+  try {
+    playClave100Sound();
+    triggerClave100Vibration();
+  } catch (e) {
+    console.error('Clave100Alert: Error on initial play:', e);
+  }
+  
+  // Retry after a short delay (helps with audio context issues)
+  setTimeout(() => {
+    try {
+      playClave100Sound();
+      triggerClave100Vibration();
+    } catch (e) {
+      console.error('Clave100Alert: Error on retry:', e);
+    }
+  }, 500);
   
   // Keep repeating sound every 4 seconds until stopped
   clave100SoundInterval = setInterval(() => {
-    playClave100Sound();
+    try {
+      playClave100Sound();
+    } catch (e) {
+      console.error('Clave100Alert: Error in sound interval:', e);
+    }
   }, 4000);
   
   // Keep repeating vibration every 6 seconds until stopped
   clave100VibrationInterval = setInterval(() => {
-    triggerClave100Vibration();
+    try {
+      triggerClave100Vibration();
+    } catch (e) {
+      console.error('Clave100Alert: Error in vibration interval:', e);
+    }
   }, 6000);
   
   // Auto-stop after 60 seconds as a safety measure
   setTimeout(() => {
+    console.log('Clave100Alert: Auto-stopping after 60 seconds');
     stopClave100Alert();
   }, 60000);
 }
