@@ -746,7 +746,7 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
                      currentStep === section.steps.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background flex flex-col">
+    <div className="fixed inset-0 z-[10000] bg-background flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-3">
@@ -936,7 +936,7 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[10001] bg-background/80 backdrop-blur-sm"
             onClick={() => setShowTableOfContents(false)}
           >
             <motion.div
