@@ -75,7 +75,7 @@
       ],
       "redFlags": [
         "No cuelgues si te piden seguir en línea.",
-        "No te expongas para "ver mejor"."
+        "No te expongas para “ver mejor”."
       ],
       "handover": "Repite lo mismo al primer respondiente que llegue."
     },
@@ -452,7 +452,7 @@
       "title": "Triage START (RPM)",
       "summary": "Clasificación rápida por respiración, perfusión y estado mental.",
       "doNow": [
-        ""Si puedes caminar…" → VERDE.",
+        "“Si puedes caminar…” → VERDE.",
         "Evalúa no deambulantes en ≤60 s.",
         "Etiqueta y continúa (no te detengas)."
       ],
@@ -512,7 +512,7 @@
       ],
       "redFlags": [
         "Requiere capacitación específica.",
-        "No retrasar evacuación por "perfeccionar" triage."
+        "No retrasar evacuación por “perfeccionar” triage."
       ],
       "handover": "Conteo pediátrico por categoría + necesidades de vía aérea/ventilación."
     },
@@ -553,7 +553,7 @@
         "Compresión firme sostenida."
       ],
       "steps": [
-        "Rellenar la cavidad hasta "llenar" el espacio.",
+        "Rellenar la cavidad hasta “llenar” el espacio.",
         "Mantener compresión continua varios minutos (según entrenamiento).",
         "Asegurar con vendaje compresivo si posible.",
         "Revisar y reempaquetar si reaparece."
@@ -633,7 +633,7 @@
       ],
       "redFlags": [
         "Shock + disnea: piensa en causas letales.",
-        "No "normalices" con un solo signo vital."
+        "No “normalices” con un solo signo vital."
       ],
       "handover": "Causa sospechada, signos seriales, medidas y respuesta."
     },
