@@ -41,6 +41,137 @@ L.Icon.Default.mergeOptions({
 });
 
 // Custom icons
+
+// Specialty emoji and color mapping
+const SPECIALTY_ICONS: Record<string, { emoji: string; color: string }> = {
+  'Bombero': { emoji: '🧑‍🚒', color: '#dc2626' },
+  'Rescatista urbano': { emoji: '🦺', color: '#f97316' },
+  'Paramédico': { emoji: '🩺', color: '#22c55e' },
+  'Técnico en Urgencias Médicas (TUM)': { emoji: '🚑', color: '#ef4444' },
+  'Enfermera/Enfermero': { emoji: '👨‍⚕️', color: '#14b8a6' },
+  'Médico': { emoji: '⚕️', color: '#22c55e' },
+  'Rescatista de alta montaña': { emoji: '🏔️', color: '#6366f1' },
+  'Rescatista acuático': { emoji: '🌊', color: '#0ea5e9' },
+  'Buzo': { emoji: '🤿', color: '#0284c7' },
+  'Radioaficionado': { emoji: '📻', color: '#8b5cf6' },
+  'Especialista en telecomunicaciones': { emoji: '📡', color: '#7c3aed' },
+  'Policía': { emoji: '👮', color: '#3b82f6' },
+  'Electricista': { emoji: '⚡', color: '#eab308' },
+  'Plomero': { emoji: '🔧', color: '#64748b' },
+  'Ingeniero civil': { emoji: '🏗️', color: '#78716c' },
+  'Psicólogo': { emoji: '🧠', color: '#ec4899' },
+  'Operador de maquinaria pesada': { emoji: '🚜', color: '#ca8a04' },
+  'Conductor de ambulancia': { emoji: '🚑', color: '#ef4444' },
+  'Cocinero/preparación de alimentos': { emoji: '🍳', color: '#f59e0b' },
+  'Coordinador de albergues': { emoji: '🏠', color: '#10b981' },
+  'Traductor': { emoji: '🌐', color: '#6366f1' },
+  'Veterinario': { emoji: '🐾', color: '#84cc16' },
+  'Prensa': { emoji: '📰', color: '#71717a' },
+  'Sacerdote': { emoji: '✝️', color: '#a855f7' },
+};
+
+// Get primary specialty info (first specialty in array)
+const getPrimarySpecialtyIcon = (specialties: string[] | null): { emoji: string; color: string } | null => {
+  if (!specialties || specialties.length === 0) return null;
+  return SPECIALTY_ICONS[specialties[0]] || null;
+};
+
+// Specialist icon with specialty emoji badge
+const createSpecialistIcon = (
+  primarySpecialty: { emoji: string; color: string },
+  isCurrentUser: boolean = false,
+  hasFirstAidKit: boolean = false,
+  updatedAgo?: string
+) => L.divIcon({
+  className: `mats-marker specialist-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
+  html: `
+    <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : (updatedAgo ? '48px' : '32px')};">
+      ${isCurrentUser ? `
+        <div style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 32px;
+          height: 32px;
+          background: rgba(251, 191, 36, 0.4);
+          border-radius: 50%;
+          animation: pulse-current-user 1.5s ease-out infinite;
+        "></div>
+      ` : ''}
+      <div style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 32px;
+        height: 32px;
+        background: ${primarySpecialty.color};
+        border: 2px solid ${isCurrentUser ? '#fbbf24' : '#fff'};
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : `0 2px 8px ${primarySpecialty.color}60`};
+        font-size: 16px;
+      ">${primarySpecialty.emoji}</div>
+      ${hasFirstAidKit ? `
+        <div style="
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          width: 16px;
+          height: 16px;
+          background: #22c55e;
+          border: 2px solid #fff;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        ">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="#fff">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+          </svg>
+        </div>
+      ` : ''}
+      ${isCurrentUser ? `
+        <div style="
+          position: absolute;
+          bottom: ${updatedAgo ? '16px' : '0'};
+          left: 50%;
+          transform: translateX(-50%);
+          background: #fbbf24;
+          color: #000;
+          font-size: 8px;
+          font-weight: 800;
+          padding: 1px 4px;
+          border-radius: 3px;
+          white-space: nowrap;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        ">TÚ</div>
+      ` : ''}
+      ${!isCurrentUser && updatedAgo ? `
+        <div style="
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.75);
+          color: #fff;
+          font-size: 8px;
+          font-weight: 600;
+          padding: 1px 4px;
+          border-radius: 3px;
+          white-space: nowrap;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        ">${updatedAgo}</div>
+      ` : ''}
+    </div>
+  `,
+  iconSize: [32, isCurrentUser ? 40 : (updatedAgo && !isCurrentUser ? 48 : 32)],
+  iconAnchor: [16, isCurrentUser ? 20 : (updatedAgo && !isCurrentUser ? 24 : 16)],
+  popupAnchor: [0, isCurrentUser ? -20 : (updatedAgo && !isCurrentUser ? -24 : -16)],
+});
+
 // Star icon for FAMILIAR users (5-pointed star)
 const createFamiliarIcon = (isCurrentUser: boolean = false, hasFirstAidKit: boolean = false, updatedAgo?: string) => L.divIcon({
   className: `mats-marker familiar-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
@@ -1491,7 +1622,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       }
     });
 
-    // Add/update markers with role-based icons, transit status, and name visibility
+    // Add/update markers with specialty-based icons, role-based icons, transit status, and name visibility
     activeLocations.forEach((loc) => {
       const key = `user-${loc.user_id}`;
       const existingMarker = markersRef.current.get(key);
@@ -1501,6 +1632,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const hasFirstAidKit = loc.has_first_aid_kit ?? false;
       const canProvideMedical = loc.can_provide_medical_assistance ?? false;
       const hasAmbulance = (loc as any).has_ambulance ?? false;
+      const userSpecialties = (loc as any).specialties as string[] | null;
+      const primarySpecialty = getPrimarySpecialtyIcon(userSpecialties);
       
       // Calculate time since last update FIRST (needed for icon badge)
       let updatedAgo = '';
@@ -1521,7 +1654,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         }
       }
       
-      // Priority: Transit > SOS Activo/EX-SOS > Familiar
+      // Priority: Transit > Specialty > SOS Activo/EX-SOS > Familiar
       let icon;
       let roleLabel;
       let bgColor;
@@ -1532,6 +1665,12 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         roleLabel = 'En tránsito';
         bgColor = '#f59e0b';
         badgeColor = '#f59e0b';
+      } else if (primarySpecialty) {
+        // Use specialty-based icon if user has a specialty
+        icon = createSpecialistIcon(primarySpecialty, isMe, hasFirstAidKit, isMe ? undefined : updatedAgo);
+        roleLabel = userSpecialties![0]; // First specialty as label
+        bgColor = primarySpecialty.color;
+        badgeColor = primarySpecialty.color;
       } else if (isSosActivo) {
         icon = createRescatistaIcon(isMe, hasFirstAidKit, isMe ? undefined : updatedAgo);
         roleLabel = loc.role === 'SOS_ACTIVO' ? 'SOS ACTIVO' : 'EX-SOS';
@@ -1558,8 +1697,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         ? `<div style="font-size: 10px; color: #22c55e; margin-top: 4px;">${medicalCapabilities.join(' • ')}</div>`
         : '';
       
-      // Specialties info
-      const userSpecialties = (loc as any).specialties as string[] | null;
+      // Specialties info (reuse userSpecialties from above)
       const specialtiesInfo = userSpecialties && userSpecialties.length > 0
         ? `<div style="font-size: 10px; color: #3b82f6; margin-top: 4px; max-width: 200px; word-wrap: break-word;">📋 ${userSpecialties.join(', ')}</div>`
         : '';
