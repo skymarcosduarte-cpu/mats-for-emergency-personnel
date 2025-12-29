@@ -716,7 +716,11 @@ export const CommunityScreen: React.FC = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona tipo" />
                 </SelectTrigger>
-                <SelectContent className="z-[9999] bg-popover border-border">
+                <SelectContent 
+                  className="z-[9999] bg-popover border-border max-h-[300px]"
+                  position="popper"
+                  sideOffset={4}
+                >
                   {EVENT_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value} className="cursor-pointer">
                       {type.label}
