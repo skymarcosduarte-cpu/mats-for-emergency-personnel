@@ -744,69 +744,81 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             </div>
           </div>
           
-          {/* Source Filter Buttons */}
-          <div className="flex flex-wrap gap-1.5">
-            <Badge 
-              variant={otrosSourceFilter === null ? "default" : "outline"} 
-              className={cn(
-                "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
-                otrosSourceFilter === null && "bg-primary text-primary-foreground"
-              )}
-              onClick={() => setOtrosSourceFilter(null)}
-            >
-              Todas
-            </Badge>
-            <Badge 
-              variant={otrosSourceFilter === 'GDACS' ? "default" : "outline"} 
-              className={cn(
-                "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
-                otrosSourceFilter === 'GDACS' && "bg-primary text-primary-foreground"
-              )}
-              onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'GDACS' ? null : 'GDACS')}
-            >
-              GDACS
-            </Badge>
-            <Badge 
-              variant={otrosSourceFilter === 'CONAGUA' ? "default" : "outline"} 
-              className={cn(
-                "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
-                otrosSourceFilter === 'CONAGUA' && "bg-success text-success-foreground"
-              )}
-              onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'CONAGUA' ? null : 'CONAGUA')}
-            >
-              CONAGUA
-            </Badge>
-            <Badge 
-              variant={otrosSourceFilter === 'NASA' ? "default" : "outline"} 
-              className={cn(
-                "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
-                otrosSourceFilter === 'NASA' && "bg-blue-500 text-white"
-              )}
-              onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'NASA' ? null : 'NASA')}
-            >
-              NASA
-            </Badge>
-            <Badge 
-              variant={otrosSourceFilter === 'ReliefWeb' ? "default" : "outline"} 
-              className={cn(
-                "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
-                otrosSourceFilter === 'ReliefWeb' && "bg-orange-500 text-white"
-              )}
-              onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'ReliefWeb' ? null : 'ReliefWeb')}
-            >
-              ReliefWeb
-            </Badge>
-            <Badge 
-              variant={otrosSourceFilter === 'AEMET' ? "default" : "outline"} 
-              className={cn(
-                "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
-                otrosSourceFilter === 'AEMET' && "bg-amber-500 text-white"
-              )}
-              onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'AEMET' ? null : 'AEMET')}
-            >
-              AEMET
-            </Badge>
-          </div>
+          {/* Source Filter Buttons with Counters */}
+          {(() => {
+            // Calculate counts per source
+            const gdacsCount = gdacsAlerts.filter(a => a.source === 'GDACS').length;
+            const conaguaCount = gdacsAlerts.filter(a => a.source === 'CONAGUA').length;
+            const nasaCount = gdacsAlerts.filter(a => a.source === 'NASA').length;
+            const reliefwebCount = gdacsAlerts.filter(a => a.source === 'ReliefWeb').length;
+            const aemetCount = aemetAlerts.length;
+            const totalCount = gdacsAlerts.length + aemetCount;
+            
+            return (
+              <div className="flex flex-wrap gap-1.5">
+                <Badge 
+                  variant={otrosSourceFilter === null ? "default" : "outline"} 
+                  className={cn(
+                    "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
+                    otrosSourceFilter === null && "bg-primary text-primary-foreground"
+                  )}
+                  onClick={() => setOtrosSourceFilter(null)}
+                >
+                  Todas {totalCount > 0 && `(${totalCount})`}
+                </Badge>
+                <Badge 
+                  variant={otrosSourceFilter === 'GDACS' ? "default" : "outline"} 
+                  className={cn(
+                    "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
+                    otrosSourceFilter === 'GDACS' && "bg-primary text-primary-foreground"
+                  )}
+                  onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'GDACS' ? null : 'GDACS')}
+                >
+                  GDACS {gdacsCount > 0 && `(${gdacsCount})`}
+                </Badge>
+                <Badge 
+                  variant={otrosSourceFilter === 'CONAGUA' ? "default" : "outline"} 
+                  className={cn(
+                    "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
+                    otrosSourceFilter === 'CONAGUA' && "bg-success text-success-foreground"
+                  )}
+                  onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'CONAGUA' ? null : 'CONAGUA')}
+                >
+                  CONAGUA {conaguaCount > 0 && `(${conaguaCount})`}
+                </Badge>
+                <Badge 
+                  variant={otrosSourceFilter === 'NASA' ? "default" : "outline"} 
+                  className={cn(
+                    "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
+                    otrosSourceFilter === 'NASA' && "bg-blue-500 text-white"
+                  )}
+                  onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'NASA' ? null : 'NASA')}
+                >
+                  NASA {nasaCount > 0 && `(${nasaCount})`}
+                </Badge>
+                <Badge 
+                  variant={otrosSourceFilter === 'ReliefWeb' ? "default" : "outline"} 
+                  className={cn(
+                    "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
+                    otrosSourceFilter === 'ReliefWeb' && "bg-orange-500 text-white"
+                  )}
+                  onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'ReliefWeb' ? null : 'ReliefWeb')}
+                >
+                  ReliefWeb {reliefwebCount > 0 && `(${reliefwebCount})`}
+                </Badge>
+                <Badge 
+                  variant={otrosSourceFilter === 'AEMET' ? "default" : "outline"} 
+                  className={cn(
+                    "text-[10px] px-2 py-0.5 cursor-pointer transition-colors",
+                    otrosSourceFilter === 'AEMET' && "bg-amber-500 text-white"
+                  )}
+                  onClick={() => setOtrosSourceFilter(otrosSourceFilter === 'AEMET' ? null : 'AEMET')}
+                >
+                  AEMET {aemetCount > 0 && `(${aemetCount})`}
+                </Badge>
+              </div>
+            );
+          })()}
 
           {gdacsLoading ? (
             <div className="flex items-center justify-center py-12">
