@@ -123,7 +123,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     isSupported: notifSupported,
     requestPermission: requestNotifPermission,
     showCycloneNotification,
-    showFireNotification 
+    showFireNotification,
+    showRedAlertNotification,
   } = usePushNotifications();
 
   // Callbacks for Mexico alerts notifications
@@ -154,7 +155,14 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     onNewFires: handleNewFires,
   });
 
-  // GDACS + AEMET international alerts
+  // Callback for new red alerts
+  const handleNewRedAlert = useCallback((alert: any) => {
+    console.log('[AlertsScreen] New RED alert:', alert.title);
+    showRedAlertNotification(alert);
+    playUrgentAlert();
+  }, [showRedAlertNotification]);
+
+  // GDACS + AEMET international alerts with red alert callback
   const {
     gdacsAlerts,
     aemetAlerts,
@@ -165,7 +173,9 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     getCategoryLabel,
     getAlertLevelColor,
     getAEMETLevelColor,
-  } = useGDACSAlerts();
+  } = useGDACSAlerts({
+    onNewRedAlert: handleNewRedAlert,
+  });
 
   // Auto-refresh all alerts every 2 minutes while on this screen
   useEffect(() => {

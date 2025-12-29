@@ -422,7 +422,11 @@ async function parseAEMETFeed(): Promise<AEMETAlert[]> {
   }
 }
 
-export function useGDACSAlerts() {
+interface UseGDACSAlertsOptions {
+  onNewRedAlert?: (alert: GDACSAlert) => void;
+}
+
+export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
   const [state, setState] = useState<GDACSAlertsState>({
     gdacsAlerts: [],
     aemetAlerts: [],
@@ -430,6 +434,9 @@ export function useGDACSAlerts() {
     error: null,
     lastChecked: null,
   });
+
+  // Track already notified red alerts to avoid duplicates
+  const notifiedRedAlertsRef = useRef<Set<string>>(new Set());
 
   const fetchAlerts = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
@@ -473,6 +480,20 @@ export function useGDACSAlerts() {
         return true;
       });
 
+      // Check for new red alerts and notify
+      if (options?.onNewRedAlert) {
+        const redAlerts = uniqueAlerts.filter(alert => alert.alertLevel === 'red');
+        for (const alert of redAlerts) {
+          // Create a stable key based on title (first 50 chars)
+          const alertKey = alert.title.toLowerCase().substring(0, 50);
+          if (!notifiedRedAlertsRef.current.has(alertKey)) {
+            notifiedRedAlertsRef.current.add(alertKey);
+            console.log('[Alerts] New RED alert detected:', alert.title);
+            options.onNewRedAlert(alert);
+          }
+        }
+      }
+
       // Sort by alert level (red > orange > green > undefined) then by date
       const levelOrder = { red: 0, orange: 1, green: 2 };
       uniqueAlerts.sort((a, b) => {
@@ -499,7 +520,7 @@ export function useGDACSAlerts() {
         error: 'Error al obtener alertas internacionales',
       }));
     }
-  }, []);
+  }, [options?.onNewRedAlert]);
 
   // Initial fetch and periodic refresh
   useEffect(() => {
