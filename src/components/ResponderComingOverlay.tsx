@@ -12,6 +12,9 @@ interface ResponderInfo {
   transport_mode: string | null;
   eta_minutes: number | null;
   distance_km: number;
+  has_ambulance?: boolean;
+  has_rescue_unit?: boolean;
+  can_provide_medical_assistance?: boolean;
 }
 
 interface ResponderComingOverlayProps {
@@ -29,6 +32,7 @@ const TRANSPORT_LABELS: Record<string, { label: string; emoji: string }> = {
   car: { label: 'En auto', emoji: '🚗' },
   public_transport: { label: 'Transporte público', emoji: '🚌' },
   ambulance: { label: 'En ambulancia', emoji: '🚑' },
+  rescue_unit: { label: 'En unidad de rescate', emoji: '🚒' },
 };
 
 export const ResponderComingOverlay: React.FC<ResponderComingOverlayProps> = ({
@@ -66,6 +70,33 @@ export const ResponderComingOverlay: React.FC<ResponderComingOverlayProps> = ({
     ? TRANSPORT_LABELS[responder.transport_mode] 
     : null;
 
+  // Determine special responder type for styling
+  const isAmbulance = responder.has_ambulance ?? false;
+  const isRescueUnit = responder.has_rescue_unit ?? false;
+  const isMedical = responder.can_provide_medical_assistance ?? false;
+  const isSpecialUnit = isAmbulance || isRescueUnit;
+
+  // Dynamic gradient based on responder type
+  const gradientClass = isAmbulance 
+    ? 'from-red-500 via-red-600 to-red-700'
+    : isRescueUnit
+      ? 'from-orange-500 via-orange-600 to-orange-700'
+      : isMedical
+        ? 'from-blue-500 via-blue-600 to-blue-700'
+        : 'from-green-500 via-emerald-500 to-teal-600';
+
+  // Dynamic title based on responder type
+  const titleText = isAmbulance 
+    ? '¡Ambulancia en camino!'
+    : isRescueUnit
+      ? '¡Unidad de rescate en camino!'
+      : isMedical
+        ? '¡Asistencia médica en camino!'
+        : '¡Ayuda en camino!';
+
+  // Dynamic icon based on responder type
+  const IconEmoji = isAmbulance ? '🚑' : isRescueUnit ? '🚒' : isMedical ? '👨‍⚕️' : null;
+
   const formatEta = (minutes: number | null) => {
     if (!minutes) return 'Calculando...';
     if (minutes < 1) return '< 1 min';
@@ -96,7 +127,7 @@ export const ResponderComingOverlay: React.FC<ResponderComingOverlayProps> = ({
               damping: 25,
               delay: 0.1 
             }}
-            className="relative w-full max-w-sm bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 rounded-3xl shadow-2xl overflow-hidden"
+            className={`relative w-full max-w-sm bg-gradient-to-br ${gradientClass} rounded-3xl shadow-2xl overflow-hidden`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Animated background rings */}
@@ -106,7 +137,7 @@ export const ResponderComingOverlay: React.FC<ResponderComingOverlayProps> = ({
                   scale: showPulse ? [1, 1.5, 1] : 1,
                   opacity: showPulse ? [0.3, 0, 0.3] : 0.3
                 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+                transition={{ duration: isSpecialUnit ? 1.5 : 2, repeat: Infinity, ease: "easeOut" }}
                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full border-4 border-white/30"
               />
               <motion.div
@@ -114,7 +145,7 @@ export const ResponderComingOverlay: React.FC<ResponderComingOverlayProps> = ({
                   scale: showPulse ? [1, 1.8, 1] : 1,
                   opacity: showPulse ? [0.2, 0, 0.2] : 0.2
                 }}
-                transition={{ duration: 2.5, repeat: Infinity, ease: "easeOut", delay: 0.3 }}
+                transition={{ duration: isSpecialUnit ? 1.8 : 2.5, repeat: Infinity, ease: "easeOut", delay: 0.3 }}
                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full border-4 border-white/20"
               />
             </div>
@@ -133,12 +164,16 @@ export const ResponderComingOverlay: React.FC<ResponderComingOverlayProps> = ({
               <motion.div
                 animate={{ 
                   scale: [1, 1.1, 1],
-                  rotate: [0, 5, -5, 0]
+                  rotate: isSpecialUnit ? [0, -5, 5, 0] : [0, 5, -5, 0]
                 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                transition={{ duration: isSpecialUnit ? 1.5 : 2, repeat: Infinity, ease: "easeInOut" }}
                 className="mx-auto w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4"
               >
-                <HeartHandshake className="w-10 h-10 text-white" />
+                {IconEmoji ? (
+                  <span className="text-4xl">{IconEmoji}</span>
+                ) : (
+                  <HeartHandshake className="w-10 h-10 text-white" />
+                )}
               </motion.div>
 
               {/* Title */}
@@ -146,9 +181,9 @@ export const ResponderComingOverlay: React.FC<ResponderComingOverlayProps> = ({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="text-2xl font-bold mb-2"
+                className={`font-bold mb-2 ${isSpecialUnit ? 'text-2xl uppercase tracking-wide' : 'text-2xl'}`}
               >
-                ¡Ayuda en camino!
+                {titleText}
               </motion.h2>
 
               {/* Responder name */}
