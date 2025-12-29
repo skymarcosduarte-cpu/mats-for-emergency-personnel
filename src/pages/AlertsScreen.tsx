@@ -49,6 +49,7 @@ import { playUrgentAlert } from '@/lib/alertSound';
 import { toast } from 'sonner';
 import { MyAlertsHistory } from '@/components/MyAlertsHistory';
 import { QuakeCheckinMap } from '@/components/QuakeCheckinMap';
+import { CycloneMap } from '@/components/CycloneMap';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 import { useRecentQuakeCheckins } from '@/hooks/useRecentQuakeCheckins';
 
@@ -607,9 +608,16 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               onClick={refreshWeather}
               disabled={weatherLoading}
             >
-              <RefreshCw className={cn('w-4 h-4', weatherLoading && 'animate-spin')} />
+            <RefreshCw className={cn('w-4 h-4', weatherLoading && 'animate-spin')} />
             </Button>
           </div>
+
+          {/* Cyclone Map */}
+          <CycloneMap 
+            alerts={weatherAlerts} 
+            userLat={position?.lat}
+            userLng={position?.lng}
+          />
 
           {weatherLoading ? (
             <div className="flex items-center justify-center py-12">
