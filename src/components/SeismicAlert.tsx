@@ -50,7 +50,7 @@ export function SeismicAlert({
   onDismiss,
   onReported,
 }: SeismicAlertProps) {
-  const [step, setStep] = useState<'checking' | 'already_reported' | 'community_map' | 'felt' | 'intensity' | 'status' | 'help'>('checking');
+  const [step, setStep] = useState<'checking' | 'already_reported' | 'community_map' | 'felt' | 'intensity' | 'status' | 'help' | 'success'>('checking');
   const [existingCheckin, setExistingCheckin] = useState<ExistingCheckin | null>(null);
   const [feltIt, setFeltIt] = useState<boolean | null>(null);
   const [intensity, setIntensity] = useState<QuakeIntensity>(4);
@@ -61,6 +61,8 @@ export function SeismicAlert({
   const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
   const [voiceDurationMs, setVoiceDurationMs] = useState<number>(0);
   const [isEditing, setIsEditing] = useState(false);
+  const [lastReportIntensity, setLastReportIntensity] = useState<number>(4);
+  const [lastReportStatus, setLastReportStatus] = useState<string>('OK');
   const { toast } = useToast();
 
   // Get epicenter coordinates
@@ -304,17 +306,12 @@ export function SeismicAlert({
         }
       }
 
-      toast({
-        title: isEditing ? "✅ Reporte actualizado" : (felt ? "✅ Reporte enviado" : "✅ Gracias por reportar"),
-        description: isEditing 
-          ? "Tu reporte ha sido actualizado exitosamente"
-          : (felt 
-              ? (reportStatus === 'OK' && reportIntensity === 4 
-                  ? "Todo bien - Gracias por reportar" 
-                  : `Intensidad ${reportIntensity}/10 - ${reportStatus}${mediaFiles.length > 0 ? ` • ${mediaFiles.length} foto(s)` : ''}${voiceBlob ? ' • Nota de voz' : ''}`)
-              : "No sentiste el sismo, tu ubicación ayuda a mapear el evento"),
-      });
-
+      // Store last report info for success screen
+      setLastReportIntensity(reportIntensity);
+      setLastReportStatus(reportStatus);
+      
+      // Show success screen instead of dismissing
+      setStep('success');
       onReported();
     } catch (error) {
       console.error('Error submitting report:', error);
@@ -488,6 +485,61 @@ export function SeismicAlert({
             >
               Cerrar
             </Button>
+          </div>
+        )}
+
+        {/* Step: Success - after submitting report */}
+        {step === 'success' && (
+          <div className="space-y-4">
+            {/* Success message */}
+            <div className="bg-safe/10 border border-safe/30 rounded-lg p-4 text-center">
+              <CheckCircle className="w-12 h-12 text-safe mx-auto mb-2" />
+              <p className="text-lg font-semibold text-safe">
+                {isEditing ? '¡Reporte actualizado!' : '¡Gracias por tu reporte!'}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Tu información ayuda a la comunidad
+              </p>
+            </div>
+
+            {/* Report summary */}
+            <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-medium text-foreground">Tu reporte:</p>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Intensidad:</span>
+                <span className="font-semibold text-primary">{lastReportIntensity}/10</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Estado:</span>
+                <span className={cn(
+                  "font-semibold",
+                  lastReportStatus === 'OK' && "text-safe",
+                  lastReportStatus === 'UNSURE' && "text-warning",
+                  lastReportStatus === 'DAMAGE' && "text-destructive"
+                )}>
+                  {getStatusLabel(lastReportStatus)}
+                </span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="space-y-3">
+              <Button
+                variant="outline"
+                onClick={() => setStep('community_map')}
+                className="w-full flex items-center gap-2 justify-center"
+              >
+                <Map className="w-4 h-4" />
+                Ver reportes de la comunidad
+              </Button>
+              <Button
+                variant="default"
+                onClick={onDismiss}
+                className="w-full"
+              >
+                Cerrar
+              </Button>
+            </div>
           </div>
         )}
 
