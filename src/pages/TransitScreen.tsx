@@ -2,7 +2,7 @@
 // Road + Flight transit tracking with incident reports
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users } from 'lucide-react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown } from 'lucide-react';
 import { GpsStatusBanner } from '@/components/GpsStatusBanner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +32,7 @@ import { useTripPositionHistory } from '@/hooks/useTripPositionHistory';
 import { useDynamicEta, formatEtaInfo } from '@/hooks/useDynamicEta';
 import { useRoadReports } from '@/hooks/useRealtime';
 import { useActiveTrips, type ActiveTrip } from '@/hooks/useActiveTrips';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { TransitType, ReportCategory, ReportSeverity, UserRole } from '@/types';
@@ -78,6 +79,8 @@ interface TransitTrip {
 export const TransitScreen: React.FC<TransitScreenProps> = ({
   userRole = 'RESCATISTA'
 }) => {
+  const isMobile = useIsMobile();
+
   const [activeTab, setActiveTab] = useState<'trips' | 'reports' | 'history'>('trips');
   const [showTripDialog, setShowTripDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
@@ -2008,7 +2011,6 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
             resetReportForm();
           }
         }}
-        modal={false}
       >
         <DialogContent className="sm:max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -2027,26 +2029,49 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
             <div>
               <Label>Categoría *</Label>
-              <Select
-                value={reportForm.category}
-                onValueChange={(v) => setReportForm({ ...reportForm, category: v as ReportCategory })}
-              >
-                <SelectTrigger className="relative z-[10100]">
-                  <SelectValue placeholder="Selecciona categoría" />
-                </SelectTrigger>
-                <SelectContent 
-                  position="popper" 
-                  side="bottom" 
-                  sideOffset={4}
-                  className="z-[10200] max-h-[200px]"
+              {isMobile ? (
+                <div className="relative">
+                  <select
+                    value={reportForm.category}
+                    onChange={(e) =>
+                      setReportForm({
+                        ...reportForm,
+                        category: e.target.value as ReportCategory,
+                      })
+                    }
+                    className={cn(
+                      "flex h-10 w-full appearance-none items-center justify-between rounded-md border border-input bg-background px-3 py-2 pr-10 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                      reportForm.category ? "text-foreground" : "text-muted-foreground",
+                    )}
+                  >
+                    <option value="" disabled>
+                      Selecciona categoría
+                    </option>
+                    {REPORT_CATEGORIES.map((cat) => (
+                      <option key={cat.value} value={cat.value}>
+                        {cat.emoji} {cat.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                </div>
+              ) : (
+                <Select
+                  value={reportForm.category}
+                  onValueChange={(v) => setReportForm({ ...reportForm, category: v as ReportCategory })}
                 >
-                  {REPORT_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.emoji} {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REPORT_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.emoji} {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div>
