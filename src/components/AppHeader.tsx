@@ -1,7 +1,7 @@
 import React, { useRef, useCallback, useState } from 'react';
 import { MatsLogo } from './MatsLogo';
 import { ActiveUsersIndicator } from './ActiveUsersIndicator';
-import { AlertTriangle, Phone, MessageCircle } from 'lucide-react';
+import { AlertTriangle, Phone, MessageCircle, Sun, SunDim } from 'lucide-react';
 import { playUrgentSound } from '@/lib/alertSound';
 import { toast } from 'sonner';
 import {
@@ -19,12 +19,18 @@ interface AppHeaderProps {
   onPanicClick: () => void;
   unreadMessageCount: number;
   onOpenMessages: () => void;
+  wakeLockStatus?: {
+    isSupported: boolean;
+    isActive: boolean;
+    error: string | null;
+  };
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   onPanicClick,
   unreadMessageCount,
   onOpenMessages,
+  wakeLockStatus,
 }) => {
   const lastActivatedAtRef = useRef(0);
   const suppressClickRef = useRef(false);
@@ -139,6 +145,29 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <MatsLogo size={36} showText className="min-w-0" />
           {/* Inline active users count */}
           <ActiveUsersIndicator compact showIcon={false} className="ml-1 flex-shrink-0" />
+          
+          {/* Wake Lock Status Chip */}
+          {wakeLockStatus && (
+            <div 
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                wakeLockStatus.isActive 
+                  ? 'bg-safe/20 text-safe border border-safe/30' 
+                  : wakeLockStatus.isSupported 
+                    ? 'bg-warning/20 text-warning border border-warning/30'
+                    : 'bg-muted text-muted-foreground border border-border'
+              }`}
+              title={wakeLockStatus.error || (wakeLockStatus.isActive ? 'Pantalla activa' : 'Pantalla puede apagarse')}
+            >
+              {wakeLockStatus.isActive ? (
+                <Sun className="w-3 h-3" />
+              ) : (
+                <SunDim className="w-3 h-3" />
+              )}
+              <span className="hidden xs:inline">
+                {wakeLockStatus.isActive ? 'ON' : 'OFF'}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

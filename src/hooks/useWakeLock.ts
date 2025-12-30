@@ -194,7 +194,7 @@ export function useWakeLock() {
  * @param shouldLock - Whether to keep wake lock active
  */
 export function useAutoWakeLock(shouldLock: boolean) {
-  const { isSupported, isActive, requestWakeLock, releaseWakeLock } = useWakeLock();
+  const { isSupported, isActive, error, requestWakeLock, releaseWakeLock } = useWakeLock();
 
   useEffect(() => {
     if (shouldLock && isSupported) {
@@ -204,5 +204,5 @@ export function useAutoWakeLock(shouldLock: boolean) {
     }
   }, [shouldLock, isSupported, isActive, requestWakeLock, releaseWakeLock]);
 
-  return { isSupported, isActive };
+  return { isSupported, isActive, error };
 }
