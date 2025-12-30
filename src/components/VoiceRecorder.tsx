@@ -39,6 +39,10 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   
   const recorderRef = useRef<ReturnType<typeof createAudioRecorder> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Use ref to avoid stale closure issues
+  const onRecordingCompleteRef = useRef(onRecordingComplete);
+  onRecordingCompleteRef.current = onRecordingComplete;
 
   // Check browser support
   const isSupported = supportsAudioRecording();
@@ -112,10 +116,10 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   // Confirm and send recording
   const confirmRecording = useCallback(() => {
     if (state.blob) {
-      onRecordingComplete(state.blob, state.duration);
+      onRecordingCompleteRef.current(state.blob, state.duration);
       setConfirmed(true);
     }
-  }, [state.blob, state.duration, onRecordingComplete]);
+  }, [state.blob, state.duration]);
 
   // Cleanup on unmount
   useEffect(() => {

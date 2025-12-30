@@ -30,6 +30,10 @@ export const MediaCapture: React.FC<MediaCaptureProps> = ({
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
+  // Use ref to avoid stale closure issues with onImagesSelected
+  const onImagesSelectedRef = useRef(onImagesSelected);
+  onImagesSelectedRef.current = onImagesSelected;
+
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget;
     const files = Array.from(input.files || []);
@@ -40,14 +44,6 @@ export const MediaCapture: React.FC<MediaCaptureProps> = ({
     if (invalidFiles.length > 0) {
       setError('Solo se permiten imágenes (JPG, PNG, WebP)');
       // Reset input so same file can be selected again
-      input.value = '';
-      return;
-    }
-
-    // Check total count
-    const totalCount = images.length + files.length;
-    if (totalCount > maxImages) {
-      setError(`Máximo ${maxImages} fotos permitidas`);
       input.value = '';
       return;
     }
@@ -63,9 +59,17 @@ export const MediaCapture: React.FC<MediaCaptureProps> = ({
       }
 
       if (results.length > 0) {
-        const newImages = [...images, ...results];
-        setImages(newImages);
-        onImagesSelected(newImages.map((r) => r.file));
+        setImages(prev => {
+          // Check total count
+          if (prev.length + results.length > maxImages) {
+            setError(`Máximo ${maxImages} fotos permitidas`);
+            return prev;
+          }
+          const newImages = [...prev, ...results];
+          // Use ref to call latest callback without causing re-renders
+          onImagesSelectedRef.current(newImages.map((r) => r.file));
+          return newImages;
+        });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al procesar imágenes');
@@ -74,13 +78,15 @@ export const MediaCapture: React.FC<MediaCaptureProps> = ({
       // Reset input so the same file can be selected again (iOS behavior)
       input.value = '';
     }
-  }, [images, maxImages, onImagesSelected]);
+  }, [maxImages]);
 
   const removeImage = useCallback((index: number) => {
-    const newImages = images.filter((_, i) => i !== index);
-    setImages(newImages);
-    onImagesSelected(newImages.map(r => r.file));
-  }, [images, onImagesSelected]);
+    setImages(prev => {
+      const newImages = prev.filter((_, i) => i !== index);
+      onImagesSelectedRef.current(newImages.map(r => r.file));
+      return newImages;
+    });
+  }, []);
 
   const openFilePicker = useCallback((source: 'camera' | 'gallery') => {
     if (source === 'camera') cameraInputRef.current?.click();
