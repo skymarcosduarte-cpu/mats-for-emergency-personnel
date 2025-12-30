@@ -480,6 +480,27 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
             }
             // Play positive sound
             playPositiveAlert();
+            
+            // Notify nearby users about resolution via push
+            try {
+              supabase.functions.invoke('notify-alert-resolved', {
+                body: {
+                  alertId: updated.id,
+                  alertType: 'help_request',
+                  alertKind: updated.kind,
+                  lat: updated.lat,
+                  lng: updated.lng,
+                  resolvedByUserId: updated.resolved_by,
+                  creatorUserId: updated.user_id,
+                }
+              }).then(res => {
+                console.log('[useHelpRequests] Notified nearby users about resolution:', res.data);
+              }).catch(err => {
+                console.error('[useHelpRequests] Error notifying resolution:', err);
+              });
+            } catch (e) {
+              console.error('[useHelpRequests] Error calling notify-alert-resolved:', e);
+            }
           } else {
             // Update the request in place
             setRequests(prev => prev.map(r => r.id === updated.id ? { ...r, ...updated } : r));
@@ -723,6 +744,7 @@ interface PanicEvent {
   lat: number;
   lng: number;
   resolved: boolean;
+  resolved_by: string | null;
   created_at: string;
   resolved_at: string | null;
   audio_url: string | null;
@@ -808,6 +830,27 @@ export function usePanicEvents() {
             }
             // Play positive sound
             playPositiveAlert();
+            
+            // Notify nearby users about resolution via push
+            try {
+              supabase.functions.invoke('notify-alert-resolved', {
+                body: {
+                  alertId: updated.id,
+                  alertType: 'panic',
+                  alertKind: updated.panic_type,
+                  lat: updated.lat,
+                  lng: updated.lng,
+                  resolvedByUserId: updated.resolved_by,
+                  creatorUserId: updated.user_id,
+                }
+              }).then(res => {
+                console.log('[usePanicEvents] Notified nearby users about resolution:', res.data);
+              }).catch(err => {
+                console.error('[usePanicEvents] Error notifying resolution:', err);
+              });
+            } catch (e) {
+              console.error('[usePanicEvents] Error calling notify-alert-resolved:', e);
+            }
           } else {
             // Update the event in place
             setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
