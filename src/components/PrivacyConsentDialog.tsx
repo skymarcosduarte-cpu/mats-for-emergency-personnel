@@ -1,7 +1,7 @@
 // Privacy Consent and Terms of Service Dialog for COMUNIDAD EX SOS
 // Users must accept before sharing location and medical info
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Shield, MapPin, HeartPulse, FileText, AlertTriangle } from 'lucide-react';
 import {
   Dialog,
@@ -30,12 +30,41 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [shareLocation, setShareLocation] = useState(true);
   const [shareMedicalInfo, setShareMedicalInfo] = useState(true);
+  
+  // Prevent double execution on iOS (touch + click)
+  const lastActionTimeRef = useRef<number>(0);
+  const DEBOUNCE_MS = 300;
 
-  const handleAccept = () => {
+  const shouldExecute = useCallback(() => {
+    const now = Date.now();
+    if (now - lastActionTimeRef.current < DEBOUNCE_MS) {
+      return false;
+    }
+    lastActionTimeRef.current = now;
+    return true;
+  }, []);
+
+  const handleAccept = useCallback(() => {
+    if (!shouldExecute()) return;
     if (acceptedTerms) {
       onAccept(shareLocation, shareMedicalInfo);
     }
-  };
+  }, [acceptedTerms, shareLocation, shareMedicalInfo, onAccept, shouldExecute]);
+
+  const handleLocationToggle = useCallback(() => {
+    if (!shouldExecute()) return;
+    setShareLocation(prev => !prev);
+  }, [shouldExecute]);
+
+  const handleMedicalToggle = useCallback(() => {
+    if (!shouldExecute()) return;
+    setShareMedicalInfo(prev => !prev);
+  }, [shouldExecute]);
+
+  const handleTermsToggle = useCallback(() => {
+    if (!shouldExecute()) return;
+    setAcceptedTerms(prev => !prev);
+  }, [shouldExecute]);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onDecline()}>
@@ -151,17 +180,18 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
 
         {/* Consent Options */}
         <div className="space-y-3 pt-4 border-t border-border">
-          <div 
+          <button 
+            type="button"
             className={cn(
-              "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+              "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors w-full text-left",
               shareLocation ? "bg-primary/10 border border-primary/30" : "bg-muted/50 border border-border"
             )}
-            onClick={() => setShareLocation(!shareLocation)}
+            onClick={handleLocationToggle}
           >
             <Checkbox 
               checked={shareLocation} 
-              onCheckedChange={(checked) => setShareLocation(checked === true)}
-              className="mt-0.5"
+              className="mt-0.5 pointer-events-none"
+              tabIndex={-1}
             />
             <div>
               <p className="font-medium text-sm text-foreground flex items-center gap-2">
@@ -172,19 +202,20 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
                 Otros miembros podrán ver tu ubicación en el mapa
               </p>
             </div>
-          </div>
+          </button>
 
-          <div 
+          <button 
+            type="button"
             className={cn(
-              "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+              "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors w-full text-left",
               shareMedicalInfo ? "bg-safe/10 border border-safe/30" : "bg-muted/50 border border-border"
             )}
-            onClick={() => setShareMedicalInfo(!shareMedicalInfo)}
+            onClick={handleMedicalToggle}
           >
             <Checkbox 
               checked={shareMedicalInfo} 
-              onCheckedChange={(checked) => setShareMedicalInfo(checked === true)}
-              className="mt-0.5"
+              className="mt-0.5 pointer-events-none"
+              tabIndex={-1}
             />
             <div>
               <p className="font-medium text-sm text-foreground flex items-center gap-2">
@@ -195,19 +226,20 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
                 Visible solo cuando solicites ayuda de emergencia
               </p>
             </div>
-          </div>
+          </button>
 
-          <div 
+          <button 
+            type="button"
             className={cn(
-              "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+              "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors w-full text-left",
               acceptedTerms ? "bg-mats-green/10 border border-mats-green/30" : "bg-muted/50 border border-border"
             )}
-            onClick={() => setAcceptedTerms(!acceptedTerms)}
+            onClick={handleTermsToggle}
           >
             <Checkbox 
               checked={acceptedTerms} 
-              onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-              className="mt-0.5"
+              className="mt-0.5 pointer-events-none"
+              tabIndex={-1}
             />
             <div>
               <p className="font-medium text-sm text-foreground">
@@ -217,11 +249,12 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
                 He leído y entiendo que la información que comparto es voluntaria
               </p>
             </div>
-          </div>
+          </button>
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button
+            type="button"
             variant="outline"
             onClick={onDecline}
             className="w-full sm:w-auto"
@@ -229,6 +262,7 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
             Cancelar
           </Button>
           <Button
+            type="button"
             onClick={handleAccept}
             disabled={!acceptedTerms}
             className="w-full sm:w-auto"
