@@ -38,10 +38,14 @@ export function useActiveTrips() {
   const [trips, setTrips] = useState<ActiveTrip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
 
-  const fetchActiveTrips = useCallback(async () => {
+  const fetchActiveTrips = useCallback(async (isBackground = false) => {
     try {
-      setLoading(true);
+      // Only show loading on initial fetch, not background refreshes
+      if (!isBackground) {
+        setLoading(true);
+      }
       setError(null);
 
       // Fetch active trips (RLS allows viewing trips with status='ACTIVE')
@@ -145,8 +149,14 @@ export function useActiveTrips() {
       setError('Error al cargar viajes activos');
     } finally {
       setLoading(false);
+      setInitialFetchDone(true);
     }
   }, []);
+
+  // Wrapper for button onClick handlers
+  const refresh = useCallback(() => {
+    fetchActiveTrips(false);
+  }, [fetchActiveTrips]);
 
   // Initial fetch
   useEffect(() => {
@@ -158,7 +168,7 @@ export function useActiveTrips() {
     return new Set(trips.map(t => t.user_id));
   }, [trips]);
 
-  // Subscribe to realtime updates for trips
+  // Subscribe to realtime updates for trips (background refresh, no loading spinner)
   useEffect(() => {
     const tripsChannel = supabase
       .channel('active_trips_changes')
@@ -170,7 +180,7 @@ export function useActiveTrips() {
           table: 'transit_trips',
         },
         () => {
-          fetchActiveTrips();
+          fetchActiveTrips(true); // Background refresh
         }
       )
       .subscribe();
@@ -242,6 +252,6 @@ export function useActiveTrips() {
     trips,
     loading,
     error,
-    refresh: fetchActiveTrips,
+    refresh,
   };
 }

@@ -233,10 +233,17 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   }, []);
 
   // Fetch user's trips
-  const fetchMyTrips = async () => {
+  const fetchMyTrips = useCallback(async (showLoading = true) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setLoadingTrips(false);
+        return;
+      }
+
+      if (showLoading && myTrips.length === 0) {
+        setLoadingTrips(true);
+      }
 
       const { data, error } = await supabase
         .from('transit_trips')
@@ -251,12 +258,15 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     } finally {
       setLoadingTrips(false);
     }
-  };
+  }, [myTrips.length]);
 
   // Load trips on mount + keep in sync across devices
   useEffect(() => {
-    fetchMyTrips();
+    fetchMyTrips(true);
+  }, []);
 
+  // Realtime subscription for trip changes
+  useEffect(() => {
     if (!currentUserId) return;
 
     const channel = supabase
@@ -271,7 +281,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
           if (changedUserId === currentUserId) {
             console.log('[TransitScreen] transit_trips changed for current user; refetching');
-            fetchMyTrips();
+            fetchMyTrips(false); // Background refresh without loading spinner
           }
         }
       )
@@ -280,7 +290,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUserId]);
+  }, [currentUserId, fetchMyTrips]);
 
   // Handle report verification (upvote)
   const handleVerifyReport = async (reportId: string) => {
