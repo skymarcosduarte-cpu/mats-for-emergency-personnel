@@ -311,14 +311,15 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
         content: (
           <div className="space-y-4">
             <p>
-              La app detecta <strong>sismos cercanos a tu ubicación</strong> automáticamente usando datos oficiales del USGS.
+              La app detecta <strong>sismos cercanos a tu ubicación</strong> automáticamente usando datos oficiales del USGS, SSN y EMSC.
             </p>
             <div className="bg-warning/10 border border-warning/30 rounded-lg p-4">
               <p className="font-medium text-warning mb-2">Cuando hay un sismo cercano:</p>
               <ol className="text-sm space-y-2 list-decimal list-inside">
-                <li>Recibes una <strong>notificación inmediata</strong></li>
-                <li>Se muestra magnitud, distancia y ubicación</li>
-                <li>Puedes reportar <strong>"Todo bien"</strong> o <strong>"Necesito ayuda"</strong></li>
+                <li>Recibes una <strong>notificación inmediata</strong> con sonido y vibración</li>
+                <li>Se muestra magnitud, distancia y ubicación del epicentro</li>
+                <li>Se te pregunta: <strong>"¿Sentiste el sismo?"</strong></li>
+                <li>Reportas tu estado y la intensidad percibida</li>
               </ol>
             </div>
             <p className="text-sm">
@@ -327,6 +328,77 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
           </div>
         ),
         tip: 'Reportar que estás bien ayuda a tu comunidad a saber que no necesitas ayuda',
+      },
+      {
+        title: '📊 Reportar Estado tras un Sismo',
+        content: (
+          <div className="space-y-4">
+            <div className="bg-safe/10 border border-safe/30 rounded-lg p-4 text-center">
+              <p className="font-medium text-safe text-lg mb-2">¡Tu reporte es vital!</p>
+              <p className="text-sm">Cada reporte ayuda a la comunidad a entender la situación en tiempo real</p>
+            </div>
+            <p>
+              Cuando sientas o percibas un sismo, la app te guiará para reportar:
+            </p>
+            <div className="space-y-2">
+              <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                <span className="text-xl">📏</span>
+                <div>
+                  <p className="font-medium">Intensidad percibida (1-10)</p>
+                  <p className="text-xs text-muted-foreground">¿Qué tan fuerte lo sentiste en tu ubicación?</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                <span className="text-xl">✅</span>
+                <div>
+                  <p className="font-medium">Tu estado personal</p>
+                  <p className="text-xs text-muted-foreground">¿Estás bien? ¿Hay daños? ¿Necesitas ayuda?</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                <span className="text-xl">📍</span>
+                <div>
+                  <p className="font-medium">Tu ubicación</p>
+                  <p className="text-xs text-muted-foreground">Se registra automáticamente para el mapa de reportes</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ),
+        important: true,
+      },
+      {
+        title: '🗺️ Mapa de Reportes de la Comunidad',
+        content: (
+          <div className="space-y-4">
+            <p>
+              Después de reportar, puedes ver un <strong>mapa en tiempo real</strong> con los reportes de toda la comunidad.
+            </p>
+            <div className="bg-primary/10 rounded-lg p-4 space-y-3">
+              <p className="font-medium text-primary">El mapa te muestra:</p>
+              <div className="grid grid-cols-3 gap-2 text-xs text-center">
+                <div className="bg-safe/20 rounded p-2">
+                  <span className="text-lg">✓</span>
+                  <p className="mt-1">Todo bien</p>
+                </div>
+                <div className="bg-warning/20 rounded p-2">
+                  <span className="text-lg">?</span>
+                  <p className="mt-1">No seguro</p>
+                </div>
+                <div className="bg-destructive/20 rounded p-2">
+                  <span className="text-lg">⚠</span>
+                  <p className="mt-1">Daños</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-muted rounded-lg p-3">
+              <p className="text-sm">
+                <strong>Solo puedes hacer UN reporte por sismo.</strong> Si necesitas cambiar tu información, usa el botón <strong>"Editar"</strong>.
+              </p>
+            </div>
+          </div>
+        ),
+        tip: 'Al completar tu reporte verás una celebración con confetti - ¡gracias por ayudar!',
       },
       {
         title: 'Tipos de Alertas',
@@ -764,6 +836,69 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
               <p className="text-sm text-muted-foreground mt-1">
                 Juntos nos cuidamos. Juntos somos más fuertes.
               </p>
+            </div>
+          </div>
+        ),
+      },
+      {
+        title: '🔒 Comunidad Exclusiva',
+        content: (
+          <div className="space-y-4">
+            <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 text-center">
+              <Lock className="w-10 h-10 text-warning mx-auto mb-2" />
+              <p className="font-bold text-warning text-lg">Comunidad Cerrada</p>
+            </div>
+            <p className="text-center">
+              <strong>M.A.T.S.</strong> es una aplicación <strong>exclusiva y cerrada</strong> para:
+            </p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                <Shield className="w-5 h-5 text-mats-green flex-shrink-0" />
+                <p className="text-sm"><strong>Miembros activos</strong> de la comunidad SOS de todo el mundo</p>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                <Users className="w-5 h-5 text-primary flex-shrink-0" />
+                <p className="text-sm"><strong>Ex-miembros</strong> de brigadas de rescate y emergencias</p>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                <Heart className="w-5 h-5 text-panic flex-shrink-0" />
+                <p className="text-sm"><strong>Familiares directos</strong> de los miembros de la comunidad</p>
+              </div>
+            </div>
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
+              <p className="text-sm text-center">
+                <strong>El acceso es solo por invitación.</strong><br/>
+                No compartir códigos de acceso con personas fuera de nuestra red de confianza.
+              </p>
+            </div>
+          </div>
+        ),
+        important: true,
+      },
+      {
+        title: '💪 Tu Compromiso con la Comunidad',
+        content: (
+          <div className="space-y-4">
+            <p className="text-center font-medium">
+              Como miembro de M.A.T.S., te comprometes a:
+            </p>
+            <div className="space-y-2">
+              <div className="flex items-start gap-3 p-3 bg-safe/10 rounded-lg border border-safe/30">
+                <Check className="w-5 h-5 text-safe mt-0.5 flex-shrink-0" />
+                <p className="text-sm"><strong>Reportar tu estado</strong> después de sismos o emergencias para mantener informada a la comunidad</p>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-safe/10 rounded-lg border border-safe/30">
+                <Check className="w-5 h-5 text-safe mt-0.5 flex-shrink-0" />
+                <p className="text-sm"><strong>Responder cuando puedas</strong> a las alertas de otros miembros cercanos</p>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-safe/10 rounded-lg border border-safe/30">
+                <Check className="w-5 h-5 text-safe mt-0.5 flex-shrink-0" />
+                <p className="text-sm"><strong>Mantener la confidencialidad</strong> de la información de otros miembros</p>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-safe/10 rounded-lg border border-safe/30">
+                <Check className="w-5 h-5 text-safe mt-0.5 flex-shrink-0" />
+                <p className="text-sm"><strong>Usar las alertas responsablemente</strong> - solo en emergencias reales</p>
+              </div>
             </div>
             
             {/* Disclaimer */}
