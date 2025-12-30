@@ -2,7 +2,7 @@
 // Shows alert when earthquake is detected near user's location
 
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, MapPin, ThermometerSun, CheckCircle, AlertCircle, HelpCircle, Camera, Mic, Edit, Trash2 } from 'lucide-react';
+import { AlertTriangle, MapPin, ThermometerSun, CheckCircle, AlertCircle, HelpCircle, Camera, Mic, Edit, Trash2, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MediaCapture } from '@/components/MediaCapture';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { QuakeCheckinMap } from '@/components/QuakeCheckinMap';
 
 interface ExistingCheckin {
   id: string;
@@ -49,7 +50,7 @@ export function SeismicAlert({
   onDismiss,
   onReported,
 }: SeismicAlertProps) {
-  const [step, setStep] = useState<'checking' | 'already_reported' | 'felt' | 'intensity' | 'status' | 'help'>('checking');
+  const [step, setStep] = useState<'checking' | 'already_reported' | 'community_map' | 'felt' | 'intensity' | 'status' | 'help'>('checking');
   const [existingCheckin, setExistingCheckin] = useState<ExistingCheckin | null>(null);
   const [feltIt, setFeltIt] = useState<boolean | null>(null);
   const [intensity, setIntensity] = useState<QuakeIntensity>(4);
@@ -61,6 +62,9 @@ export function SeismicAlert({
   const [voiceDurationMs, setVoiceDurationMs] = useState<number>(0);
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
+
+  // Get epicenter coordinates
+  const [epicenterLng, epicenterLat] = earthquake.geometry.coordinates;
 
   // Check if user already reported this earthquake
   useEffect(() => {
@@ -423,7 +427,7 @@ export function SeismicAlert({
             {/* Actions */}
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground text-center">
-                ¿Necesitas modificar tu reporte?
+                ¿Qué deseas hacer?
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <Button
@@ -436,14 +440,54 @@ export function SeismicAlert({
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={onDismiss}
+                  onClick={() => setStep('community_map')}
                   className="flex items-center gap-2"
                 >
-                  <CheckCircle className="w-4 h-4" />
-                  Cerrar
+                  <Map className="w-4 h-4" />
+                  Ver mapa
                 </Button>
               </div>
+              <Button
+                variant="ghost"
+                onClick={onDismiss}
+                className="w-full flex items-center gap-2 justify-center"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Cerrar
+              </Button>
             </div>
+          </div>
+        )}
+
+        {/* Step: Community Map */}
+        {step === 'community_map' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground">Reportes de la comunidad</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStep('already_reported')}
+                className="h-8"
+              >
+                ← Volver
+              </Button>
+            </div>
+            
+            <QuakeCheckinMap
+              eventId={earthquake.id}
+              epicenterLat={epicenterLat}
+              epicenterLng={epicenterLng}
+              magnitude={earthquake.properties.mag}
+            />
+            
+            <Button
+              variant="outline"
+              onClick={onDismiss}
+              className="w-full"
+            >
+              Cerrar
+            </Button>
           </div>
         )}
 
