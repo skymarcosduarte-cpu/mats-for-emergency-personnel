@@ -184,7 +184,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   
   // Keep screen awake ALWAYS while app is open (user requirement)
   // This prevents screen from turning off due to inactivity
-  useAutoWakeLock(true);
+  const wakeLockStatus = useAutoWakeLock(true);
   
   // Listen for responders to user's own alerts and track their location
   const { respondersToMyAlerts, newResponderAlert: newAlertResponder, dismissNewResponderAlert: dismissAlertResponder } = useMyAlertResponders();
@@ -469,6 +469,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
           setMessagingUserName(null);
           setMessagingOpen(true);
         }}
+        wakeLockStatus={wakeLockStatus}
       />
       <QuakeDamageBanner />
       <ActiveAlertBanner 
