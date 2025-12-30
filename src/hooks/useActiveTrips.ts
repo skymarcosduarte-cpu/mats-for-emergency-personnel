@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateDistance } from '@/hooks/useLocation';
+import { getCachedCommunityTrips, cacheCommunityTrips } from '@/lib/offlineDataCache';
 
 export interface ActiveTrip {
   id: string;
@@ -44,7 +45,13 @@ export function useActiveTrips() {
     try {
       // Only show loading on initial fetch, not background refreshes
       if (!isBackground) {
-        setLoading(true);
+        // Try to load from cache first for instant display
+        const cached = await getCachedCommunityTrips<ActiveTrip>();
+        if (cached.isCached && cached.data.length > 0) {
+          setTrips(cached.data);
+          setLoading(false);
+          console.log('[useActiveTrips] Loaded from cache:', cached.data.length, 'trips');
+        }
       }
       setError(null);
 
@@ -144,6 +151,10 @@ export function useActiveTrips() {
       });
 
       setTrips(tripsWithDetails);
+      
+      // Cache the trips for offline/instant loading
+      await cacheCommunityTrips(tripsWithDetails);
+      console.log('[useActiveTrips] Cached', tripsWithDetails.length, 'trips');
     } catch (err) {
       console.error('[useActiveTrips] Error fetching trips:', err);
       setError('Error al cargar viajes activos');

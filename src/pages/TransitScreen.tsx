@@ -38,6 +38,7 @@ import { toast } from 'sonner';
 import type { TransitType, ReportCategory, ReportSeverity, UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 import { dateTimeLocalToISOString } from '@/lib/datetimeLocal';
+import { getCachedMyTrips, cacheMyTrips } from '@/lib/offlineDataCache';
 
 const REPORT_CATEGORIES: { value: ReportCategory; label: string; emoji: string }[] = [
   { value: 'BLOCKADE', label: 'Bloqueo', emoji: '🚧' },
@@ -241,8 +242,16 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         return;
       }
 
+      // Load from cache first for instant display
       if (showLoading && myTrips.length === 0) {
-        setLoadingTrips(true);
+        const cached = await getCachedMyTrips<TransitTrip>();
+        if (cached.isCached && cached.data.length > 0) {
+          setMyTrips(cached.data);
+          setLoadingTrips(false);
+          console.log('[TransitScreen] Loaded trips from cache:', cached.data.length);
+        } else {
+          setLoadingTrips(true);
+        }
       }
 
       const { data, error } = await supabase
@@ -252,7 +261,12 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMyTrips(data as TransitTrip[]);
+      
+      const trips = data as TransitTrip[];
+      setMyTrips(trips);
+      
+      // Cache trips for offline/instant loading
+      await cacheMyTrips(trips);
     } catch (error) {
       console.error('Error fetching trips:', error);
     } finally {
