@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.check-delayed-trips]
 verify_jwt = false
+
+[functions.notify-alert-resolved]
+verify_jwt = false
