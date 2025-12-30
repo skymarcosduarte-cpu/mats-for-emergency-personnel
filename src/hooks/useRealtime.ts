@@ -474,6 +474,10 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
               description: 'La alerta ha sido atendida exitosamente',
               duration: 4000,
             });
+            // Haptic feedback - success vibration pattern
+            if ('vibrate' in navigator) {
+              navigator.vibrate([100, 50, 100]);
+            }
             // Play positive sound
             playPositiveAlert();
           } else {
@@ -798,6 +802,10 @@ export function usePanicEvents() {
               description: 'La emergencia ha sido atendida exitosamente',
               duration: 4000,
             });
+            // Haptic feedback - success vibration pattern
+            if ('vibrate' in navigator) {
+              navigator.vibrate([100, 50, 100]);
+            }
             // Play positive sound
             playPositiveAlert();
           } else {
