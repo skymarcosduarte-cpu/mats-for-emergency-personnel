@@ -249,25 +249,29 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     }
 
     try {
+      // Upsert to avoid duplicate error: 1 reporte por usuario por sismo
       const { error } = await supabase
         .from('quake_checkins')
-        .insert({
-          user_id: user.id,
-          usgs_event_id: quake.id,
-          intensity: 4,
-          damage_report: 'OK',
-          lat: position.lat,
-          lng: position.lng,
-        });
+        .upsert(
+          {
+            user_id: user.id,
+            usgs_event_id: quake.id,
+            intensity: 4,
+            damage_report: 'OK',
+            lat: position.lat,
+            lng: position.lng,
+          },
+          { onConflict: 'user_id,usgs_event_id' }
+        );
 
       if (error) throw error;
 
-      toast.success('¡Todo bien!', {
-        description: 'Reporte enviado - Gracias por reportar',
+      toast.success('Reporte guardado', {
+        description: 'Solo se permite 1 reporte por sismo (se actualizó tu reporte).',
       });
     } catch (error) {
       console.error('Error submitting quick checkin:', error);
-      toast.error('Error al enviar reporte');
+      toast.error('No se pudo guardar el reporte');
     }
   };
 
