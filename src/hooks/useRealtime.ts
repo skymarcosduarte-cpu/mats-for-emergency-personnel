@@ -455,7 +455,17 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'help_requests' },
-        () => fetchRequests()
+        (payload) => {
+          const updated = payload.new as HelpRequest;
+          console.log('[useHelpRequests] UPDATE received:', updated.id, 'resolved:', updated.resolved);
+          if (updated.resolved) {
+            // Immediately remove from active requests when resolved
+            setRequests(prev => prev.filter(r => r.id !== updated.id));
+          } else {
+            // Update the request in place
+            setRequests(prev => prev.map(r => r.id === updated.id ? { ...r, ...updated } : r));
+          }
+        }
       )
       // Also listen to panic_events for unified display
       .on(
@@ -491,7 +501,35 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'panic_events' },
-        () => fetchRequests()
+        (payload) => {
+          const pe = payload.new as any;
+          console.log('[useHelpRequests] panic UPDATE received:', pe.id, 'resolved:', pe.resolved);
+          if (pe.resolved) {
+            // Immediately remove from active requests when resolved
+            setRequests(prev => prev.filter(r => r.id !== pe.id));
+          } else {
+            // Update the request in place with mapped format
+            const mappedRequest: HelpRequest = {
+              id: pe.id,
+              user_id: pe.user_id,
+              kind: pe.panic_type,
+              quake_event_id: null,
+              lat: pe.lat,
+              lng: pe.lng,
+              message: pe.message,
+              resolved: pe.resolved || false,
+              created_at: pe.created_at,
+              resolved_at: pe.resolved_at,
+              resolved_by: pe.resolved_by,
+              responding_by: pe.responding_by,
+              responding_started_at: pe.responding_started_at,
+              audio_url: pe.audio_url,
+              audio_duration_ms: pe.audio_duration_ms,
+              arrived_at: pe.arrived_at,
+            };
+            setRequests(prev => prev.map(r => r.id === pe.id ? mappedRequest : r));
+          }
+        }
       )
       .subscribe();
 
@@ -715,8 +753,36 @@ export function usePanicEvents() {
       .channel('panic_events_changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'panic_events' },
-        () => fetchEvents()
+        { event: 'INSERT', schema: 'public', table: 'panic_events' },
+        (payload) => {
+          const newEvent = payload.new as PanicEvent;
+          if (!newEvent.resolved) {
+            setEvents(prev => [newEvent, ...prev].slice(0, 50));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'panic_events' },
+        (payload) => {
+          const updated = payload.new as PanicEvent;
+          console.log('[usePanicEvents] UPDATE received:', updated.id, 'resolved:', updated.resolved);
+          if (updated.resolved) {
+            // Immediately remove from state when resolved
+            setEvents(prev => prev.filter(e => e.id !== updated.id));
+          } else {
+            // Update the event in place
+            setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'panic_events' },
+        (payload) => {
+          const deleted = payload.old as { id: string };
+          setEvents(prev => prev.filter(e => e.id !== deleted.id));
+        }
       )
       .subscribe();
 
