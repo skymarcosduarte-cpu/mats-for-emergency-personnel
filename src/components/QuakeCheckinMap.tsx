@@ -40,19 +40,28 @@ export const QuakeCheckinMap: React.FC<QuakeCheckinMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const epicenterMarkerRef = useRef<L.Marker | null>(null);
+  const initializedRef = useRef(false);
   const [selectedCheckin, setSelectedCheckin] = useState<QuakeCheckin | null>(null);
 
   const { checkins, stats, loading, error, refresh } = useQuakeCheckins(eventId);
 
-  // Initialize map
+  // Initialize map only once
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (!mapContainerRef.current || initializedRef.current) return;
+
+    // Mark as initialized immediately to prevent double initialization
+    initializedRef.current = true;
 
     const map = L.map(mapContainerRef.current, {
       center: [epicenterLat, epicenterLng],
       zoom: 8,
       zoomControl: true,
       attributionControl: false,
+      // Prevent scroll zoom from moving map erratically
+      scrollWheelZoom: true,
+      dragging: true,
+      touchZoom: true,
     });
 
     mapRef.current = map;
@@ -80,17 +89,32 @@ export const QuakeCheckinMap: React.FC<QuakeCheckinMapProps> = ({
       iconAnchor: [20, 20],
     });
 
-    L.marker([epicenterLat, epicenterLng], { icon: epicenterIcon })
+    epicenterMarkerRef.current = L.marker([epicenterLat, epicenterLng], { icon: epicenterIcon })
       .addTo(map)
       .bindTooltip('Epicentro', { permanent: false, direction: 'top' });
+
+    // Invalidate size after a small delay to ensure container is ready
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
 
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
+        initializedRef.current = false;
+        epicenterMarkerRef.current = null;
       }
     };
-  }, [epicenterLat, epicenterLng, magnitude]);
+  }, []); // Empty dependency - only initialize once
+
+  // Update epicenter position if it changes (without reinitializing map)
+  useEffect(() => {
+    if (!mapRef.current || !epicenterMarkerRef.current) return;
+    
+    epicenterMarkerRef.current.setLatLng([epicenterLat, epicenterLng]);
+    mapRef.current.setView([epicenterLat, epicenterLng], mapRef.current.getZoom());
+  }, [epicenterLat, epicenterLng]);
 
   // Update markers when checkins change
   useEffect(() => {

@@ -264,6 +264,28 @@ export function SeismicAlert({
 
         if (checkinError) {
           console.error('Error submitting checkin:', checkinError);
+          // Handle unique constraint violation - user already reported
+          if (checkinError.code === '23505' || checkinError.message?.includes('unique') || checkinError.message?.includes('duplicate')) {
+            toast({
+              title: "Ya reportaste este sismo",
+              description: "Solo puedes hacer un reporte por sismo. Puedes editar tu reporte existente.",
+            });
+            // Refresh to get the existing checkin
+            const { data: existingData } = await supabase
+              .from('quake_checkins')
+              .select('id, intensity, damage_report, created_at')
+              .eq('user_id', user.id)
+              .eq('usgs_event_id', earthquake.id)
+              .maybeSingle();
+            
+            if (existingData) {
+              setExistingCheckin(existingData);
+              setIntensity(existingData.intensity as QuakeIntensity);
+              setStatus(existingData.damage_report as QuakeDamage);
+              setStep('already_reported');
+            }
+            return;
+          }
           throw checkinError;
         }
         checkinId = checkinData.id;
