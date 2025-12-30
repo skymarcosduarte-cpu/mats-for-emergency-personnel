@@ -613,8 +613,17 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     }
   };
 
+  // Ref to prevent double submission
+  const isSubmittingReportRef = useRef(false);
+
   // Handle report submission
   const handleReportSubmit = async () => {
+    // Prevent double submission
+    if (isSubmittingReportRef.current) {
+      console.log('[TransitScreen] Report submission already in progress, ignoring');
+      return;
+    }
+
     if (!position) {
       toast.error('Se requiere ubicación GPS');
       return;
@@ -625,6 +634,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       return;
     }
 
+    isSubmittingReportRef.current = true;
     setSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -730,6 +740,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       console.error('Error submitting report:', error);
       toast.error('Error al enviar reporte');
     } finally {
+      isSubmittingReportRef.current = false;
       setSubmitting(false);
     }
   };
