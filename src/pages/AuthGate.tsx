@@ -558,7 +558,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                       <label
                         key={spec}
                         className={cn(
-                          "flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all text-sm",
+                          "flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all text-sm min-w-0 overflow-hidden",
                           isSelected
                             ? "border-primary bg-primary/10 text-primary"
                             : "border-border hover:border-primary/50"
@@ -580,9 +580,9 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                               });
                             }
                           }}
-                          className="w-4 h-4 rounded accent-primary"
+                          className="w-4 h-4 rounded accent-primary flex-shrink-0"
                         />
-                        <span>{spec}</span>
+                        <span className="break-words leading-tight">{spec}</span>
                       </label>
                     );
                   })}
