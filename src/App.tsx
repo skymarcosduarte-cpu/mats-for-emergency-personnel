@@ -182,10 +182,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   // Real-time panic alerts from other users
   const { recentAlerts, unreadCount, latestEmergencyAlert, dismissLatestAlert } = usePanicAlerts();
   
-  // Keep screen awake during active emergency situations
-  // Wake lock activates when there's a nearby quake, active emergency alert, or disaster mode
-  const shouldKeepScreenAwake = !!latestEmergencyAlert || disasterMode || panicOpen;
-  useAutoWakeLock(shouldKeepScreenAwake);
+  // Keep screen awake ALWAYS while app is open (user requirement)
+  // This prevents screen from turning off due to inactivity
+  useAutoWakeLock(true);
   
   // Listen for responders to user's own alerts and track their location
   const { respondersToMyAlerts, newResponderAlert: newAlertResponder, dismissNewResponderAlert: dismissAlertResponder } = useMyAlertResponders();
