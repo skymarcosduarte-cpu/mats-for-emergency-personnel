@@ -2008,6 +2008,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
             resetReportForm();
           }
         }}
+        modal={false}
       >
         <DialogContent className="sm:max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -2030,10 +2031,15 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                 value={reportForm.category}
                 onValueChange={(v) => setReportForm({ ...reportForm, category: v as ReportCategory })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="relative z-[10100]">
                   <SelectValue placeholder="Selecciona categoría" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent 
+                  position="popper" 
+                  side="bottom" 
+                  sideOffset={4}
+                  className="z-[10200] max-h-[200px]"
+                >
                   {REPORT_CATEGORIES.map((cat) => (
                     <SelectItem key={cat.value} value={cat.value}>
                       {cat.emoji} {cat.label}
