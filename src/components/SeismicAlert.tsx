@@ -2,7 +2,7 @@
 // Shows alert when earthquake is detected near user's location
 
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, MapPin, ThermometerSun, CheckCircle, AlertCircle, HelpCircle, Camera, Mic } from 'lucide-react';
+import { AlertTriangle, MapPin, ThermometerSun, CheckCircle, AlertCircle, HelpCircle, Camera, Mic, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -25,6 +25,13 @@ import { useToast } from '@/hooks/use-toast';
 import { MediaCapture } from '@/components/MediaCapture';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 
+interface ExistingCheckin {
+  id: string;
+  intensity: number;
+  damage_report: string;
+  created_at: string;
+}
+
 interface SeismicAlertProps {
   earthquake: USGSEarthquake;
   distanceKm: number;
@@ -42,7 +49,8 @@ export function SeismicAlert({
   onDismiss,
   onReported,
 }: SeismicAlertProps) {
-  const [step, setStep] = useState<'felt' | 'intensity' | 'status' | 'help'>('felt');
+  const [step, setStep] = useState<'checking' | 'already_reported' | 'felt' | 'intensity' | 'status' | 'help'>('checking');
+  const [existingCheckin, setExistingCheckin] = useState<ExistingCheckin | null>(null);
   const [feltIt, setFeltIt] = useState<boolean | null>(null);
   const [intensity, setIntensity] = useState<QuakeIntensity>(4);
   const [status, setStatus] = useState<QuakeDamage>('OK');
@@ -51,14 +59,55 @@ export function SeismicAlert({
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
   const [voiceDurationMs, setVoiceDurationMs] = useState<number>(0);
+  const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
+
+  // Check if user already reported this earthquake
+  useEffect(() => {
+    const checkExistingReport = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setStep('felt');
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('quake_checkins')
+          .select('id, intensity, damage_report, created_at')
+          .eq('user_id', user.id)
+          .eq('usgs_event_id', earthquake.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error checking existing report:', error);
+          setStep('felt');
+          return;
+        }
+
+        if (data) {
+          setExistingCheckin(data);
+          setIntensity(data.intensity as QuakeIntensity);
+          setStatus(data.damage_report as QuakeDamage);
+          setStep('already_reported');
+        } else {
+          setStep('felt');
+        }
+      } catch (err) {
+        console.error('Error checking existing report:', err);
+        setStep('felt');
+      }
+    };
+
+    checkExistingReport();
+  }, [earthquake.id]);
 
   // Play alert sound and vibration when component mounts (if enabled)
   useEffect(() => {
-    if (areEarthquakeSoundsEnabled()) {
+    if (areEarthquakeSoundsEnabled() && step === 'felt') {
       playAlertWithVibration();
     }
-  }, []);
+  }, [step]);
 
   const mag = earthquake.properties.mag;
   const place = earthquake.properties.place;
@@ -115,23 +164,45 @@ export function SeismicAlert({
         return;
       }
 
-      // Insert quake checkin
-      const { data: checkinData, error: checkinError } = await supabase
-        .from('quake_checkins')
-        .insert({
-          user_id: user.id,
-          usgs_event_id: earthquake.id,
-          intensity: reportIntensity,
-          damage_report: reportStatus,
-          lat: position.lat,
-          lng: position.lng,
-        })
-        .select()
-        .single();
+      let checkinId: string;
 
-      if (checkinError) {
-        console.error('Error submitting checkin:', checkinError);
-        throw checkinError;
+      if (isEditing && existingCheckin) {
+        // Update existing checkin
+        const { error: updateError } = await supabase
+          .from('quake_checkins')
+          .update({
+            intensity: reportIntensity,
+            damage_report: reportStatus,
+            lat: position.lat,
+            lng: position.lng,
+          })
+          .eq('id', existingCheckin.id);
+
+        if (updateError) {
+          console.error('Error updating checkin:', updateError);
+          throw updateError;
+        }
+        checkinId = existingCheckin.id;
+      } else {
+        // Insert new quake checkin
+        const { data: checkinData, error: checkinError } = await supabase
+          .from('quake_checkins')
+          .insert({
+            user_id: user.id,
+            usgs_event_id: earthquake.id,
+            intensity: reportIntensity,
+            damage_report: reportStatus,
+            lat: position.lat,
+            lng: position.lng,
+          })
+          .select()
+          .single();
+
+        if (checkinError) {
+          console.error('Error submitting checkin:', checkinError);
+          throw checkinError;
+        }
+        checkinId = checkinData.id;
       }
 
       let helpRequestId: string | null = null;
@@ -175,13 +246,12 @@ export function SeismicAlert({
             console.log('Nearby users notified about quake damage');
           } catch (notifyError) {
             console.error('Error notifying nearby users:', notifyError);
-            // Don't fail the report if notification fails
           }
         }
       }
 
       // Upload media files if present
-      const reportId = helpRequestId || checkinData.id;
+      const reportId = helpRequestId || checkinId;
       const reportType = helpRequestId ? 'help_request' : 'quake_checkin';
 
       // Upload images
@@ -231,12 +301,14 @@ export function SeismicAlert({
       }
 
       toast({
-        title: felt ? "Reporte enviado" : "Gracias por reportar",
-        description: felt 
-          ? (reportStatus === 'OK' && reportIntensity === 4 
-              ? "Todo bien - Gracias por reportar" 
-              : `Intensidad ${reportIntensity}/10 - ${reportStatus}${mediaFiles.length > 0 ? ` • ${mediaFiles.length} foto(s)` : ''}${voiceBlob ? ' • Nota de voz' : ''}`)
-          : "No sentiste el sismo, tu ubicación ayuda a mapear el evento",
+        title: isEditing ? "✅ Reporte actualizado" : (felt ? "✅ Reporte enviado" : "✅ Gracias por reportar"),
+        description: isEditing 
+          ? "Tu reporte ha sido actualizado exitosamente"
+          : (felt 
+              ? (reportStatus === 'OK' && reportIntensity === 4 
+                  ? "Todo bien - Gracias por reportar" 
+                  : `Intensidad ${reportIntensity}/10 - ${reportStatus}${mediaFiles.length > 0 ? ` • ${mediaFiles.length} foto(s)` : ''}${voiceBlob ? ' • Nota de voz' : ''}`)
+              : "No sentiste el sismo, tu ubicación ayuda a mapear el evento"),
       });
 
       onReported();
@@ -252,8 +324,38 @@ export function SeismicAlert({
     }
   };
 
+  const handleDeleteReport = async () => {
+    if (!existingCheckin) return;
+    
+    setSubmitting(true);
+    try {
+      // Note: quake_checkins doesn't allow DELETE per RLS, so we'll just close and show message
+      toast({
+        title: "ℹ️ Información",
+        description: "Los reportes de sismos no se pueden eliminar para mantener la integridad de los datos. Puedes editar tu reporte si necesitas cambiar la información.",
+      });
+      onDismiss();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEditReport = () => {
+    setIsEditing(true);
+    setStep('intensity');
+  };
+
   const handleHelpSubmit = () => {
     submitReport(true, intensity, status);
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'OK': return 'Todo bien';
+      case 'UNSURE': return 'No estoy seguro';
+      case 'DAMAGE': return 'Daños reportados';
+      default: return status;
+    }
   };
 
   return (
@@ -277,6 +379,73 @@ export function SeismicAlert({
           </div>
           <p className="text-sm text-foreground">{place}</p>
         </div>
+
+        {/* Step: Checking existing report */}
+        {step === 'checking' && (
+          <div className="flex flex-col items-center justify-center py-8 space-y-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-muted-foreground text-sm">Verificando reportes anteriores...</p>
+          </div>
+        )}
+
+        {/* Step: Already reported */}
+        {step === 'already_reported' && existingCheckin && (
+          <div className="space-y-4">
+            {/* Thank you message */}
+            <div className="bg-safe/10 border border-safe/30 rounded-lg p-4 text-center">
+              <CheckCircle className="w-12 h-12 text-safe mx-auto mb-2" />
+              <p className="text-lg font-semibold text-safe">¡Gracias por tu reporte!</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Ya reportaste este sismo
+              </p>
+            </div>
+
+            {/* Current report summary */}
+            <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-medium text-foreground">Tu reporte actual:</p>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Intensidad:</span>
+                <span className="font-semibold text-primary">{existingCheckin.intensity}/10</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Estado:</span>
+                <span className={cn(
+                  "font-semibold",
+                  existingCheckin.damage_report === 'OK' && "text-safe",
+                  existingCheckin.damage_report === 'UNSURE' && "text-warning",
+                  existingCheckin.damage_report === 'DAMAGE' && "text-destructive"
+                )}>
+                  {getStatusLabel(existingCheckin.damage_report)}
+                </span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground text-center">
+                ¿Necesitas modificar tu reporte?
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handleEditReport}
+                  className="flex items-center gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Editar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={onDismiss}
+                  className="flex items-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Cerrar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Step: Did you feel it? */}
         {step === 'felt' && (
