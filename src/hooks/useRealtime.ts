@@ -461,6 +461,21 @@ export function useHelpRequests(userPosition?: { lat: number; lng: number } | nu
           if (updated.resolved) {
             // Immediately remove from active requests when resolved
             setRequests(prev => prev.filter(r => r.id !== updated.id));
+            // Show success toast with green check
+            const kindLabels: Record<string, string> = {
+              'medical': 'Ayuda Médica',
+              'supplies': 'Suministros',
+              'transport': 'Transporte',
+              'shelter': 'Refugio',
+              'other': 'Ayuda General',
+            };
+            const label = kindLabels[updated.kind] || 'Solicitud de ayuda';
+            toast.success(`✅ ${label} resuelta`, {
+              description: 'La alerta ha sido atendida exitosamente',
+              duration: 4000,
+            });
+            // Play positive sound
+            playPositiveAlert();
           } else {
             // Update the request in place
             setRequests(prev => prev.map(r => r.id === updated.id ? { ...r, ...updated } : r));
@@ -770,6 +785,21 @@ export function usePanicEvents() {
           if (updated.resolved) {
             // Immediately remove from state when resolved
             setEvents(prev => prev.filter(e => e.id !== updated.id));
+            // Show success toast with green check
+            const panicLabels: Record<string, string> = {
+              'AMBULANCIA_PROPIA': 'Ambulancia',
+              'AMBULANCIA_TERCERO': 'Ambulancia Tercero',
+              'PATRULLA': 'Patrulla',
+              'MECANICO': 'Mecánico',
+              'PROTECCION_CIVIL': 'Protección Civil',
+            };
+            const label = panicLabels[updated.panic_type] || 'Alerta SOS';
+            toast.success(`✅ ${label} resuelta`, {
+              description: 'La emergencia ha sido atendida exitosamente',
+              duration: 4000,
+            });
+            // Play positive sound
+            playPositiveAlert();
           } else {
             // Update the event in place
             setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
