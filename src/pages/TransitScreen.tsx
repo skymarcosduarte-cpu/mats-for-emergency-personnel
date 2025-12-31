@@ -334,18 +334,37 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const handleDeleteReport = async (reportId: string) => {
     setDeletingReport(reportId);
     try {
-      const { error } = await supabase
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error('No autenticado');
+
+      const { data, error } = await supabase
         .from('road_reports')
         .update({ is_active: false })
-        .eq('id', reportId);
+        .eq('id', reportId)
+        .eq('user_id', user.id)
+        .select('id');
 
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        toast.error('No se pudo eliminar el reporte', {
+          description: 'No se encontró el reporte o no te pertenece.',
+        });
+        return;
+      }
 
       toast.success('Reporte eliminado');
       refetchReports();
     } catch (error) {
+      const msg = getErrMsg(error);
       console.error('Error deleting report:', error);
-      toast.error('Error al eliminar reporte');
+      toast.error('Error al eliminar reporte', {
+        description: msg,
+      });
     } finally {
       setDeletingReport(null);
     }
@@ -395,7 +414,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   };
 
   // Small helper to surface actionable errors (especially on mobile)
-  const getErrMsg = (err: unknown) => {
+  function getErrMsg(err: unknown) {
     if (typeof err === 'string') return err;
     if (err && typeof err === 'object') {
       const anyErr = err as any;
@@ -408,7 +427,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       );
     }
     return 'Error desconocido';
-  };
+  }
 
   // Handle trip submission
   const handleTripSubmit = async () => {
