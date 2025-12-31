@@ -12,7 +12,35 @@ serve(async (req) => {
   }
 
   try {
-    const { receiverId, senderName, messagePreview } = await req.json();
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Validate JWT and get authenticated user
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.error('[send-message-push] No authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create client with user's auth context to validate JWT
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      console.error('[send-message-push] Invalid authentication:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { receiverId, senderName, messagePreview, senderId } = await req.json();
 
     if (!receiverId || !senderName) {
       return new Response(
@@ -21,8 +49,22 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    // Permission validation: senderId (if provided) must match authenticated user
+    // This ensures users can only send push notifications for their own messages
+    if (senderId && senderId !== user.id) {
+      console.error('[send-message-push] Permission denied: cannot send push as another user', {
+        userId: user.id,
+        senderId
+      });
+      return new Response(
+        JSON.stringify({ error: 'Permission denied: cannot send push notifications as another user' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`[send-message-push] Sending push to ${receiverId} from ${user.id}`);
+
+    // Use service role for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get push subscriptions for the receiver
@@ -55,7 +97,7 @@ serve(async (req) => {
       tag: `message-${receiverId}`,
       data: {
         type: 'internal_message',
-        senderId: receiverId,
+        senderId: user.id,
       }
     });
 
@@ -104,7 +146,7 @@ serve(async (req) => {
   } catch (error: unknown) {
     console.error('Error in send-message-push:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
