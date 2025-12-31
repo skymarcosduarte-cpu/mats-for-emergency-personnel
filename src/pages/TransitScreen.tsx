@@ -32,6 +32,7 @@ import { useTripPositionHistory } from '@/hooks/useTripPositionHistory';
 import { useDynamicEta, formatEtaInfo } from '@/hooks/useDynamicEta';
 import { useRoadReports } from '@/hooks/useRealtime';
 import { useActiveTrips, type ActiveTrip } from '@/hooks/useActiveTrips';
+import { useCommunityTripsHistory, type CommunityTripHistory } from '@/hooks/useCommunityTripsHistory';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -90,9 +91,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const [myTrips, setMyTrips] = useState<TransitTrip[]>([]);
   const [loadingTrips, setLoadingTrips] = useState(true);
   
-  // History filters
-  const [historyStatusFilter, setHistoryStatusFilter] = useState<'ALL' | 'ARRIVED' | 'CANCELLED'>('ALL');
-  const [historyDateFilter, setHistoryDateFilter] = useState<'ALL' | 'WEEK' | 'MONTH' | 'YEAR'>('ALL');
+  // History filters - Updated for community trips
+  const [historyStatusFilter, setHistoryStatusFilter] = useState<'ALL' | 'ACTIVE' | 'DELAYED' | 'ARRIVED'>('ALL');
   
   // Trip form state
   const [tripForm, setTripForm] = useState({
@@ -148,6 +148,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const { position, getCurrentPosition, startWatching, stopWatching, watching, loading: locationLoading, error: locationError } = useLocation({ autoWatch: false });
   const { reports, refetch: refetchReports } = useRoadReports();
   const { trips: communityTrips, loading: communityTripsLoading } = useActiveTrips();
+  const { trips: communityTripsHistory, loading: communityHistoryLoading, lastCleared } = useCommunityTripsHistory();
   
   // Get the first active IN_PROGRESS trip for position recording
   const activeInProgressTrip = useMemo(() => {
@@ -1448,59 +1449,59 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           })()}
         </TabsContent>
 
-        {/* History Tab */}
+        {/* History Tab - Community trips from last 8 hours */}
         <TabsContent value="history" className="space-y-3 mt-4">
+          {/* Info banner */}
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-sm">
+            <div className="flex items-center gap-2 text-primary font-medium">
+              <History className="w-4 h-4" />
+              Actividad de viajes de la comunidad
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Muestra viajes activos, atrasados y concluidos de las últimas 8 horas.
+              El historial se limpia automáticamente cada 8 horas.
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Última limpieza: {lastCleared.toLocaleString('es-MX', { 
+                day: 'numeric', 
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </p>
+          </div>
+
           {/* Filters */}
           <div className="flex flex-wrap gap-2 pb-2 border-b border-border">
-            <Select value={historyStatusFilter} onValueChange={(v) => setHistoryStatusFilter(v as 'ALL' | 'ARRIVED' | 'CANCELLED')}>
+            <Select value={historyStatusFilter} onValueChange={(v) => setHistoryStatusFilter(v as 'ALL' | 'ACTIVE' | 'DELAYED' | 'ARRIVED')}>
               <SelectTrigger className="w-[140px] h-8 text-xs">
                 <Filter className="w-3 h-3 mr-1" />
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Todos</SelectItem>
-                <SelectItem value="ARRIVED">Completados</SelectItem>
-                <SelectItem value="CANCELLED">Cancelados</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={historyDateFilter} onValueChange={(v) => setHistoryDateFilter(v as 'ALL' | 'WEEK' | 'MONTH' | 'YEAR')}>
-              <SelectTrigger className="w-[140px] h-8 text-xs">
-                <Calendar className="w-3 h-3 mr-1" />
-                <SelectValue placeholder="Fecha" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Todo el tiempo</SelectItem>
-                <SelectItem value="WEEK">Última semana</SelectItem>
-                <SelectItem value="MONTH">Último mes</SelectItem>
-                <SelectItem value="YEAR">Último año</SelectItem>
+                <SelectItem value="ACTIVE">Activos</SelectItem>
+                <SelectItem value="DELAYED">Atrasados</SelectItem>
+                <SelectItem value="ARRIVED">Concluidos</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {(() => {
-            const now = new Date();
-            const filteredHistory = myTrips.filter(trip => {
-              // Filter by status
-              if (trip.status === 'ACTIVE') return false;
-              if (historyStatusFilter !== 'ALL' && trip.status !== historyStatusFilter) return false;
-              
-              // Filter by date
-              if (historyDateFilter !== 'ALL') {
-                const tripDate = new Date(trip.arrived_at || trip.created_at);
-                const diffDays = (now.getTime() - tripDate.getTime()) / (1000 * 60 * 60 * 24);
-                if (historyDateFilter === 'WEEK' && diffDays > 7) return false;
-                if (historyDateFilter === 'MONTH' && diffDays > 30) return false;
-                if (historyDateFilter === 'YEAR' && diffDays > 365) return false;
-              }
-              
+            // Filter community trips based on selected filter
+            const filteredHistory = communityTripsHistory.filter(trip => {
+              if (historyStatusFilter === 'ALL') return true;
+              if (historyStatusFilter === 'ACTIVE') return trip.status === 'ACTIVE' && !trip.is_delayed;
+              if (historyStatusFilter === 'DELAYED') return trip.is_delayed;
+              if (historyStatusFilter === 'ARRIVED') return trip.status === 'ARRIVED';
               return true;
             });
 
-            if (loadingTrips) {
+            if (communityHistoryLoading) {
               return (
                 <div className="text-center py-12 text-muted-foreground">
                   <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin" />
-                  <p>Cargando historial...</p>
+                  <p>Cargando historial de la comunidad...</p>
                 </div>
               );
             }
@@ -1509,15 +1510,37 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               return (
                 <div className="text-center py-12 text-muted-foreground">
                   <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>No hay viajes en el historial</p>
-                  <p className="text-xs mt-1">Los viajes completados o cancelados aparecerán aquí</p>
+                  <p>No hay viajes recientes de la comunidad</p>
+                  <p className="text-xs mt-1">Los viajes de las últimas 8 horas aparecerán aquí</p>
                 </div>
               );
             }
 
             return filteredHistory.map((trip) => {
+              const isActive = trip.status === 'ACTIVE';
+              const isDelayed = trip.is_delayed;
               const isCompleted = trip.status === 'ARRIVED';
-              const tripDate = new Date(trip.arrived_at || trip.created_at);
+              const tripDate = trip.arrived_at ? new Date(trip.arrived_at) : new Date(trip.created_at);
+              const etaDate = new Date(trip.eta);
+              
+              // Determine status color and icon
+              let statusColor = 'bg-muted';
+              let statusText = 'CANCELADO';
+              let StatusIcon = XCircle;
+              
+              if (isDelayed) {
+                statusColor = 'bg-warning';
+                statusText = 'ATRASADO';
+                StatusIcon = Clock;
+              } else if (isActive) {
+                statusColor = 'bg-primary';
+                statusText = 'EN RUTA';
+                StatusIcon = Navigation;
+              } else if (isCompleted) {
+                statusColor = 'bg-safe';
+                statusText = 'CONCLUIDO';
+                StatusIcon = CheckCircle;
+              }
               
               return (
                 <Card key={trip.id} className="bg-card border-border">
@@ -1525,38 +1548,49 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                     <div className="flex items-start gap-3">
                       <div className={cn(
                         'w-10 h-10 rounded-lg flex items-center justify-center',
-                        isCompleted ? 'bg-safe' : 'bg-muted',
+                        statusColor,
                         'text-white'
                       )}>
-                        {isCompleted ? (
-                          <CheckCircle className="w-5 h-5" />
-                        ) : (
-                          <XCircle className="w-5 h-5" />
-                        )}
+                        <StatusIcon className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-medium text-foreground">
                             {trip.origin} → {trip.destination}
                           </h3>
                           <span className={cn(
                             "text-xs px-2 py-0.5 rounded",
-                            isCompleted ? "bg-safe/20 text-safe" : "bg-muted text-muted-foreground"
+                            isDelayed ? "bg-warning/20 text-warning" :
+                            isActive ? "bg-primary/20 text-primary" :
+                            isCompleted ? "bg-safe/20 text-safe" : 
+                            "bg-muted text-muted-foreground"
                           )}>
-                            {isCompleted ? 'COMPLETADO' : 'CANCELADO'}
+                            {statusText}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                        
+                        {/* User nickname */}
+                        {trip.nickname && (
+                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                            <Users className="w-3 h-3" />
+                            <span>{trip.nickname}</span>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
                           {trip.transit_type === 'ROAD' ? (
                             <Car className="w-3 h-3" />
                           ) : (
                             <Plane className="w-3 h-3" />
                           )}
-                          <span>{tripDate.toLocaleDateString('es-MX', { 
-                            day: 'numeric', 
-                            month: 'short',
-                            year: 'numeric'
-                          })}</span>
+                          <span>
+                            {isActive ? 'Iniciado' : isCompleted ? 'Llegó' : 'Creado'}: {tripDate.toLocaleString('es-MX', { 
+                              day: 'numeric', 
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
                           {trip.plates && (
                             <>
                               <span>•</span>
@@ -1571,62 +1605,24 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                           )}
                         </div>
                         
-                        {/* Show trip photos in history */}
-                        {(trip.vehicle_photo_url || trip.boarding_pass_url) && (
-                          <div className="mt-2 flex gap-2">
-                            {trip.vehicle_photo_url && (
-                              <a 
-                                href={trip.vehicle_photo_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="block"
-                              >
-                                <img 
-                                  src={trip.vehicle_photo_url} 
-                                  alt="Foto del vehículo" 
-                                  className="w-14 h-14 object-cover rounded-lg border border-border hover:opacity-80 transition-opacity"
-                                />
-                              </a>
-                            )}
-                            {trip.boarding_pass_url && (
-                              <a 
-                                href={trip.boarding_pass_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="block"
-                              >
-                                <img 
-                                  src={trip.boarding_pass_url} 
-                                  alt="Pase de abordar" 
-                                  className="w-14 h-14 object-cover rounded-lg border border-border hover:opacity-80 transition-opacity"
-                                />
-                              </a>
-                            )}
+                        {/* ETA info for active/delayed trips */}
+                        {isActive && (
+                          <div className={cn(
+                            "flex items-center gap-1 mt-2 text-xs",
+                            isDelayed ? "text-warning" : "text-muted-foreground"
+                          )}>
+                            <Clock className="w-3 h-3" />
+                            <span>
+                              ETA: {etaDate.toLocaleString('es-MX', {
+                                day: 'numeric',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                              {isDelayed && ' (retrasado)'}
+                            </span>
                           </div>
                         )}
-                        <div className="flex justify-end mt-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={async () => {
-                              if (!confirm('¿Eliminar este viaje del historial?')) return;
-                              try {
-                                await supabase
-                                  .from('transit_trips')
-                                  .delete()
-                                  .eq('id', trip.id);
-                                toast.success('Viaje eliminado');
-                                fetchMyTrips();
-                              } catch (e) {
-                                toast.error('Error al eliminar viaje');
-                              }
-                            }}
-                          >
-                            <Trash2 className="w-3 h-3 mr-1" />
-                            Eliminar
-                          </Button>
-                        </div>
                       </div>
                     </div>
                   </CardContent>
