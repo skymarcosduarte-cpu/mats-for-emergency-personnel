@@ -71,12 +71,11 @@ const PANIC_OPTIONS: PanicOption[] = [
   },
 ];
 
-// Emergency services quick-dial numbers (Mexico)
+// Emergency services quick-dial numbers (International)
 const EMERGENCY_NUMBERS = [
-  { name: 'Emergencias', number: '911', icon: <Phone className="w-5 h-5" />, color: 'bg-red-500' },
-  { name: 'Cruz Roja', number: '065', icon: <Cross className="w-5 h-5" />, color: 'bg-red-600' },
-  { name: 'Bomberos', number: '068', icon: <AlertTriangle className="w-5 h-5" />, color: 'bg-orange-500' },
-  { name: 'Policía', number: '060', icon: <Shield className="w-5 h-5" />, color: 'bg-blue-600' },
+  { name: '911', number: '911', icon: <Phone className="w-5 h-5" />, color: 'bg-red-500', region: 'América' },
+  { name: '112', number: '112', icon: <Phone className="w-5 h-5" />, color: 'bg-blue-600', region: 'Europa' },
+  { name: '999', number: '999', icon: <Phone className="w-5 h-5" />, color: 'bg-green-600', region: 'UK' },
 ];
 
 interface PanicButtonProps {
@@ -757,21 +756,21 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         <p className="text-xs text-muted-foreground mb-3 text-center font-medium">
           Llamar a Servicios de Emergencia
         </p>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-3">
           {EMERGENCY_NUMBERS.map((service) => (
             <a
               key={service.number}
               href={`tel:${service.number}`}
-              className={`flex flex-col items-center gap-1 p-3 rounded-lg ${service.color} text-white hover:opacity-90 transition-opacity touch-manipulation active:scale-95`}
+              className={`flex flex-col items-center gap-1 p-4 rounded-lg ${service.color} text-white hover:opacity-90 transition-opacity touch-manipulation active:scale-95`}
               style={{ WebkitTapHighlightColor: 'transparent' }}
               onClick={() => {
                 vibrate([100, 50, 100]);
-                toast.info(`Llamando a ${service.name}...`);
+                toast.info(`Llamando a ${service.number}...`);
               }}
             >
               {service.icon}
-              <span className="text-xs font-bold">{service.number}</span>
-              <span className="text-[10px] opacity-80 truncate w-full text-center">{service.name}</span>
+              <span className="text-lg font-bold">{service.number}</span>
+              <span className="text-[10px] opacity-80">{service.region}</span>
             </a>
           ))}
         </div>
