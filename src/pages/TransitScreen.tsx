@@ -47,6 +47,13 @@ const REPORT_CATEGORIES: { value: ReportCategory; label: string; emoji: string }
   { value: 'ACCIDENT', label: 'Accidente', emoji: '🚨' },
   { value: 'PROTEST', label: 'Manifestación', emoji: '✊' },
   { value: 'HAZARD', label: 'Peligro', emoji: '⚠️' },
+  { value: 'ROAD_REPAIR', label: 'Tramo en Reparación', emoji: '🔧' },
+  { value: 'HEAVY_TRAFFIC', label: 'Tráfico Pesado', emoji: '🚛' },
+  { value: 'STOPPED_TRAFFIC', label: 'Tráfico Detenido', emoji: '🛑' },
+  { value: 'TOLL_CLOSED', label: 'Caseta Tomada Cerrada', emoji: '⛔' },
+  { value: 'TOLL_OPEN', label: 'Caseta Tomada Abierta', emoji: '🟢' },
+  { value: 'FOG', label: 'Neblina', emoji: '🌫️' },
+  { value: 'HAIL_SNOW', label: 'Granizo / Nieve', emoji: '❄️' },
   { value: 'OTHER', label: 'Otro', emoji: '📍' },
 ];
 

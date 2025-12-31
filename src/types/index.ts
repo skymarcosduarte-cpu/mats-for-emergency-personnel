@@ -20,6 +20,13 @@ export type ReportCategory =
   | 'ACCIDENT' 
   | 'PROTEST' 
   | 'HAZARD' 
+  | 'ROAD_REPAIR'
+  | 'HEAVY_TRAFFIC'
+  | 'STOPPED_TRAFFIC'
+  | 'TOLL_CLOSED'
+  | 'TOLL_OPEN'
+  | 'FOG'
+  | 'HAIL_SNOW'
   | 'OTHER';
 
 export type ReportSeverity = 1 | 2 | 3 | 4;
