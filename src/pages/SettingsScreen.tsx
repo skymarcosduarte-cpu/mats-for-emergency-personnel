@@ -35,7 +35,8 @@ import {
   FileText,
   Database,
   FileDown,
-  GraduationCap
+  GraduationCap,
+  Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,6 +64,7 @@ import { MatsLogo } from '@/components/MatsLogo';
 import { EmergencyContactsManager } from '@/components/EmergencyContactsManager';
 import { AppFooter } from '@/components/AppFooter';
 import { ConnectionStatusIndicator } from '@/components/ConnectionStatusIndicator';
+import { AdminPanel } from '@/components/AdminPanel';
 import { APP_VERSION, BUILD_TIME, getFullVersionString } from '@/lib/versionCheck';
 import { useAuth } from '@/hooks/useAuth';
 import { UpdateButton, InstallButton } from '@/components/UpdatePrompt';
@@ -161,6 +163,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   );
   const [savingSpecialties, setSavingSpecialties] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const handleRequestPermission = async () => {
     setRequestingPermission(true);
@@ -553,6 +556,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </div>
           </CardContent>
         </Card>
+
+        {/* Admin Panel - Only for SOS_ACTIVO */}
+        {role === 'SOS_ACTIVO' && (
+          <Card className="bg-card border-border border-primary/30">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Panel de Administración</p>
+                    <p className="text-xs text-muted-foreground">
+                      Ver usuarios registrados y códigos de invitación
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAdminPanel(true)}
+                  className="border-primary/30 text-primary hover:bg-primary/10"
+                >
+                  Abrir
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Connection Status */}
         <Card className="bg-card border-border">
@@ -2251,6 +2283,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           onClose={() => setShowTutorial(false)}
         />
       )}
+
+      {/* Admin Panel */}
+      <AdminPanel
+        open={showAdminPanel}
+        onClose={() => setShowAdminPanel(false)}
+      />
     </div>
   );
 };
