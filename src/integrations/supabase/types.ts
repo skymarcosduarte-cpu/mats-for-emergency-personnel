@@ -1130,6 +1130,7 @@ export type Database = {
         Args: { min_contacts?: number }
         Returns: boolean
       }
+      validate_invite_code: { Args: { invite_code: string }; Returns: boolean }
       verify_report: { Args: { report_id: string }; Returns: boolean }
     }
     Enums: {

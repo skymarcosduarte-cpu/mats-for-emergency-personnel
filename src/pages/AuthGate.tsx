@@ -215,40 +215,24 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     setError(null);
 
     try {
-      // Check if invite exists and is valid
-      const { data: invite, error: inviteError } = await supabase
-        .from('invites')
-        .select('*')
-        .eq('code', inviteCode.toUpperCase())
-        .maybeSingle();
+      // Validate invite code without requiring an authenticated session
+      const { data: isValid, error: validateError } = await supabase
+        .rpc('validate_invite_code', { invite_code: inviteCode.toUpperCase() });
 
-      if (inviteError || !invite) {
-        setError('Código de invitación no encontrado');
+      if (validateError) {
+        console.error('[AuthGate] validate_invite_code error:', validateError);
+        setError('No se pudo validar el código. Intenta de nuevo.');
         setLoading(false);
         return;
       }
 
-      if (invite.used_count >= invite.max_uses) {
-        setError('Este código ha alcanzado su límite de usuarios');
-        setLoading(false);
-        return;
-      }
-
-      if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-        setError('Este código ha expirado');
-        setLoading(false);
-        return;
-      }
-
-      // Use the invite code atomically (increment counter)
-      const { data: useResult } = await supabase.rpc('use_invite_code', { invite_code: inviteCode.toUpperCase() });
-      
-      if (!useResult) {
-        setError('No se pudo usar el código de invitación');
+      if (!isValid) {
+        setError('Código de invitación inválido, expirado o sin cupo');
         setLoading(false);
         return;
       }
     } catch (err) {
+      console.error('[AuthGate] validate invite unexpected error:', err);
       setError('Error al validar código');
       setLoading(false);
       return;
@@ -353,11 +337,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         })
         .eq('id', user?.id);
 
-      if (inviteCode) {
-        await supabase.rpc('use_invite_code', {
-          invite_code: inviteCode.toUpperCase()
-        });
-      }
+       if (inviteCode) {
+         const { data: useResult, error: useError } = await supabase.rpc('use_invite_code', {
+           invite_code: inviteCode.toUpperCase(),
+         });
+
+         if (useError || !useResult) {
+           console.error('[AuthGate] use_invite_code error:', useError);
+           setError('Tu código de invitación ya fue usado o no es válido');
+           return;
+         }
+       }
 
       onAuthComplete?.();
     } catch (err) {
