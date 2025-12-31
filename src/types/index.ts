@@ -7,7 +7,8 @@ export type PanicType =
   | 'AMBULANCIA_TERCERO' 
   | 'PATRULLA' 
   | 'MECANICO' 
-  | 'PROTECCION_CIVIL';
+  | 'PROTECCION_CIVIL'
+  | 'BOMBEROS';
 
 export type StatusType = 'OK' | 'NEED_HELP' | 'UNKNOWN';
 
