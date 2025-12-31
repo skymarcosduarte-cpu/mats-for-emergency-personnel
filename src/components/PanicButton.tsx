@@ -40,8 +40,14 @@ const PANIC_OPTIONS: PanicOption[] = [
     description: 'Ambulancia para otra persona',
   },
   {
+    type: 'BOMBEROS',
+    label: 'Bomberos',
+    icon: <Flame className="w-6 h-6" />,
+    description: 'Incendio o rescate',
+  },
+  {
     type: 'PATRULLA',
-    label: 'Patrulla',
+    label: 'Policía',
     icon: <Shield className="w-6 h-6" />,
     description: 'Necesito apoyo policial',
   },
@@ -56,12 +62,6 @@ const PANIC_OPTIONS: PanicOption[] = [
     label: 'Protección Civil',
     icon: <HardHat className="w-6 h-6" />,
     description: 'Emergencia general',
-  },
-  {
-    type: 'BOMBEROS',
-    label: 'Bomberos',
-    icon: <Flame className="w-6 h-6" />,
-    description: 'Incendio o rescate',
   },
   {
     type: 'GRUA',
