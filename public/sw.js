@@ -54,10 +54,11 @@ self.addEventListener('push', (event) => {
   let data = {
     title: 'MATS',
     body: 'Tienes una nueva notificación',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/icon-192-v2.png',
+    badge: '/icon-192-v2.png',
     alertType: 'GENERAL',
   };
+
 
   try {
     if (event.data) {
