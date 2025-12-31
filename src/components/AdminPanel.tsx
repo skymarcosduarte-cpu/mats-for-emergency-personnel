@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Users, Shield, Ticket, Calendar, Search, RefreshCw, X } from 'lucide-react';
+import { Users, Shield, Ticket, Calendar, Search, RefreshCw, X, Plus, Copy, Check, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -20,8 +21,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
-import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AdminUser {
   user_id: string;
@@ -46,12 +49,19 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [invites, setInvites] = useState<InviteStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'users' | 'invites'>('users');
+  
+  // Create invite form state
+  const [showCreateInvite, setShowCreateInvite] = useState(false);
+  const [newCodeName, setNewCodeName] = useState('');
+  const [newCodeMaxUses, setNewCodeMaxUses] = useState<string>('10');
+  const [creatingCode, setCreatingCode] = useState(false);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const isAdmin = role === 'SOS_ACTIVO';
 
@@ -118,6 +128,86 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
     }
   };
 
+  // Generate random code
+  const generateRandomCode = (): string => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid confusing chars like 0/O, 1/I
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
+
+  // Create new invite code
+  const handleCreateInvite = async () => {
+    if (!user?.id) return;
+
+    setCreatingCode(true);
+    try {
+      // Generate code: use custom name or random
+      const codeBase = newCodeName.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || generateRandomCode();
+      const code = codeBase.length > 20 ? codeBase.slice(0, 20) : codeBase;
+      
+      // Parse max uses
+      const maxUses = newCodeMaxUses.trim() === '' || newCodeMaxUses === '0' 
+        ? null 
+        : parseInt(newCodeMaxUses, 10);
+
+      if (maxUses !== null && (isNaN(maxUses) || maxUses < 1)) {
+        toast.error('El límite de usos debe ser un número positivo o vacío para ilimitado');
+        setCreatingCode(false);
+        return;
+      }
+
+      // Check if code already exists
+      const { data: existing } = await supabase
+        .from('invites')
+        .select('code')
+        .eq('code', code)
+        .maybeSingle();
+
+      if (existing) {
+        toast.error('Este código ya existe. Usa otro nombre.');
+        setCreatingCode(false);
+        return;
+      }
+
+      // Create the invite
+      const { error } = await supabase
+        .from('invites')
+        .insert({
+          code,
+          max_uses: maxUses,
+          created_by: user.id,
+        });
+
+      if (error) {
+        console.error('Error creating invite:', error);
+        toast.error('Error al crear código: ' + error.message);
+      } else {
+        toast.success(`Código ${code} creado exitosamente`);
+        setShowCreateInvite(false);
+        setNewCodeName('');
+        setNewCodeMaxUses('10');
+        fetchData(); // Refresh list
+      }
+    } finally {
+      setCreatingCode(false);
+    }
+  };
+
+  // Copy code to clipboard
+  const handleCopyCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      toast.success('Código copiado');
+      setTimeout(() => setCopiedCode(null), 2000);
+    } catch (err) {
+      toast.error('Error al copiar');
+    }
+  };
+
   if (!isAdmin) {
     return (
       <Dialog open={open} onOpenChange={() => onClose()}>
@@ -134,92 +224,159 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
   }
 
   return (
-    <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" />
-            Panel de Administración
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={() => onClose()}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" />
+              Panel de Administración
+            </DialogTitle>
+          </DialogHeader>
 
-        {/* Stats summary */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
-            <Users className="w-5 h-5 mx-auto mb-1 text-primary" />
-            <div className="text-2xl font-bold">{users.length}</div>
-            <div className="text-xs text-muted-foreground">Usuarios</div>
-          </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
-            <Ticket className="w-5 h-5 mx-auto mb-1 text-amber-500" />
-            <div className="text-2xl font-bold">{invites.length}</div>
-            <div className="text-xs text-muted-foreground">Códigos</div>
-          </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
-            <Calendar className="w-5 h-5 mx-auto mb-1 text-emerald-500" />
-            <div className="text-2xl font-bold">
-              {users.filter(u => {
-                if (!u.registered_at) return false;
-                const date = new Date(u.registered_at);
-                const now = new Date();
-                return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-              }).length}
+          {/* Stats summary */}
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <Users className="w-5 h-5 mx-auto mb-1 text-primary" />
+              <div className="text-2xl font-bold">{users.length}</div>
+              <div className="text-xs text-muted-foreground">Usuarios</div>
             </div>
-            <div className="text-xs text-muted-foreground">Este mes</div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 border-b border-border pb-2">
-          <Button
-            variant={activeTab === 'users' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setActiveTab('users')}
-          >
-            <Users className="w-4 h-4 mr-1" />
-            Usuarios
-          </Button>
-          <Button
-            variant={activeTab === 'invites' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setActiveTab('invites')}
-          >
-            <Ticket className="w-4 h-4 mr-1" />
-            Códigos
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={fetchData}
-            className="ml-auto"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-
-        {activeTab === 'users' && (
-          <>
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nombre, teléfono o código..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <Ticket className="w-5 h-5 mx-auto mb-1 text-amber-500" />
+              <div className="text-2xl font-bold">{invites.length}</div>
+              <div className="text-xs text-muted-foreground">Códigos</div>
             </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <Calendar className="w-5 h-5 mx-auto mb-1 text-emerald-500" />
+              <div className="text-2xl font-bold">
+                {users.filter(u => {
+                  if (!u.registered_at) return false;
+                  const date = new Date(u.registered_at);
+                  const now = new Date();
+                  return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+                }).length}
+              </div>
+              <div className="text-xs text-muted-foreground">Este mes</div>
+            </div>
+          </div>
 
-            {/* Users table */}
-            <div className="flex-1 overflow-auto">
+          {/* Tabs */}
+          <div className="flex gap-2 border-b border-border pb-2">
+            <Button
+              variant={activeTab === 'users' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('users')}
+            >
+              <Users className="w-4 h-4 mr-1" />
+              Usuarios
+            </Button>
+            <Button
+              variant={activeTab === 'invites' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('invites')}
+            >
+              <Ticket className="w-4 h-4 mr-1" />
+              Códigos
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchData}
+              className="ml-auto"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+
+          {activeTab === 'users' && (
+            <>
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nombre, teléfono o código..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Users table */}
+              <div className="flex-1 overflow-auto">
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead>Apodo</TableHead>
+                        <TableHead>Código Usado</TableHead>
+                        <TableHead>Rol</TableHead>
+                        <TableHead>Registro</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                            {searchQuery ? 'No se encontraron usuarios' : 'No hay usuarios registrados'}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredUsers.map((user) => (
+                          <TableRow key={user.user_id}>
+                            <TableCell className="font-medium">
+                              {user.full_name || <span className="text-muted-foreground italic">Sin nombre</span>}
+                            </TableCell>
+                            <TableCell>{user.nickname || '-'}</TableCell>
+                            <TableCell>
+                              {user.invite_code_used ? (
+                                <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
+                                  {user.invite_code_used}
+                                </code>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell>{getRoleBadge(user.role)}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {user.registered_at
+                                ? format(new Date(user.registered_at), 'dd MMM yyyy', { locale: es })
+                                : '-'}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </>
+          )}
+
+          {activeTab === 'invites' && (
+            <div className="flex-1 overflow-auto flex flex-col gap-4">
+              {/* Create new code button */}
+              <Button
+                onClick={() => setShowCreateInvite(true)}
+                className="w-full"
+                variant="outline"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Crear Nuevo Código
+              </Button>
+
               {loading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -228,41 +385,55 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Apodo</TableHead>
-                      <TableHead>Código Usado</TableHead>
-                      <TableHead>Rol</TableHead>
-                      <TableHead>Registro</TableHead>
+                      <TableHead>Código</TableHead>
+                      <TableHead>Usos</TableHead>
+                      <TableHead>Límite</TableHead>
+                      <TableHead>Creado</TableHead>
+                      <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredUsers.length === 0 ? (
+                    {invites.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                          {searchQuery ? 'No se encontraron usuarios' : 'No hay usuarios registrados'}
+                          No hay códigos de invitación
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredUsers.map((user) => (
-                        <TableRow key={user.user_id}>
-                          <TableCell className="font-medium">
-                            {user.full_name || <span className="text-muted-foreground italic">Sin nombre</span>}
-                          </TableCell>
-                          <TableCell>{user.nickname || '-'}</TableCell>
+                      invites.map((invite) => (
+                        <TableRow key={invite.code}>
                           <TableCell>
-                            {user.invite_code_used ? (
-                              <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
-                                {user.invite_code_used}
-                              </code>
+                            <code className="bg-muted px-2 py-1 rounded font-mono">
+                              {invite.code}
+                            </code>
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-medium">{invite.used_count}</span>
+                          </TableCell>
+                          <TableCell>
+                            {invite.max_uses !== null ? (
+                              <Badge variant={invite.used_count >= invite.max_uses ? 'destructive' : 'outline'}>
+                                {invite.max_uses}
+                              </Badge>
                             ) : (
-                              <span className="text-muted-foreground">-</span>
+                              <Badge variant="secondary">∞</Badge>
                             )}
                           </TableCell>
-                          <TableCell>{getRoleBadge(user.role)}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {user.registered_at
-                              ? format(new Date(user.registered_at), 'dd MMM yyyy', { locale: es })
-                              : '-'}
+                            {format(new Date(invite.created_at), 'dd MMM yyyy', { locale: es })}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopyCode(invite.code)}
+                            >
+                              {copiedCode === invite.code ? (
+                                <Check className="w-4 h-4 text-emerald-500" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -271,64 +442,77 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
                 </Table>
               )}
             </div>
-          </>
-        )}
+          )}
+        </DialogContent>
+      </Dialog>
 
-        {activeTab === 'invites' && (
-          <div className="flex-1 overflow-auto">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Código</TableHead>
-                    <TableHead>Usos</TableHead>
-                    <TableHead>Límite</TableHead>
-                    <TableHead>Creado</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invites.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                        No hay códigos de invitación
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    invites.map((invite) => (
-                      <TableRow key={invite.code}>
-                        <TableCell>
-                          <code className="bg-muted px-2 py-1 rounded font-mono">
-                            {invite.code}
-                          </code>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">{invite.used_count}</span>
-                        </TableCell>
-                        <TableCell>
-                          {invite.max_uses !== null ? (
-                            <Badge variant={invite.used_count >= invite.max_uses ? 'destructive' : 'outline'}>
-                              {invite.max_uses}
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary">∞</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(invite.created_at), 'dd MMM yyyy', { locale: es })}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            )}
+      {/* Create Invite Dialog */}
+      <Dialog open={showCreateInvite} onOpenChange={setShowCreateInvite}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Ticket className="w-5 h-5 text-primary" />
+              Crear Código de Invitación
+            </DialogTitle>
+            <DialogDescription>
+              Crea un nuevo código para invitar usuarios a la comunidad.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="code-name">Nombre del código (opcional)</Label>
+              <Input
+                id="code-name"
+                placeholder="Ej: MATS2025, EVENTO, etc."
+                value={newCodeName}
+                onChange={(e) => setNewCodeName(e.target.value.toUpperCase())}
+                maxLength={20}
+                className="font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                Deja vacío para generar un código aleatorio. Solo letras y números.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="max-uses">Límite de usos</Label>
+              <Input
+                id="max-uses"
+                type="number"
+                placeholder="10"
+                value={newCodeMaxUses}
+                onChange={(e) => setNewCodeMaxUses(e.target.value)}
+                min={0}
+              />
+              <p className="text-xs text-muted-foreground">
+                Deja en 0 o vacío para usos ilimitados.
+              </p>
+            </div>
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateInvite(false)}
+              disabled={creatingCode}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCreateInvite}
+              disabled={creatingCode}
+            >
+              {creatingCode ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4 mr-2" />
+              )}
+              Crear Código
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
