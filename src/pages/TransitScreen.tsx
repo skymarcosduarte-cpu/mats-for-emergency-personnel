@@ -61,28 +61,43 @@ const REPORT_CATEGORIES: { value: ReportCategory; label: string; emoji: string }
 // Voice Dictation Button Component for hands-free description input
 const VoiceDictationButton: React.FC<{
   onTranscript: (text: string) => void;
-}> = ({ onTranscript }) => {
+  onInterimTranscript?: (text: string) => void;
+}> = ({ onTranscript, onInterimTranscript }) => {
   const { isListening, isSupported, startListening, stopListening, transcript } = useVoiceSearch({
     onResult: onTranscript,
     language: 'es-MX',
   });
 
+  // Update parent with interim transcript for real-time preview
+  React.useEffect(() => {
+    if (isListening && transcript && onInterimTranscript) {
+      onInterimTranscript(transcript);
+    }
+  }, [transcript, isListening, onInterimTranscript]);
+
   if (!isSupported) return null;
 
   return (
-    <button
-      type="button"
-      onClick={isListening ? stopListening : startListening}
-      className={cn(
-        'absolute right-2 top-2 p-2 rounded-full transition-all',
-        isListening
-          ? 'bg-destructive text-destructive-foreground animate-pulse'
-          : 'bg-primary/20 text-primary hover:bg-primary/30'
+    <div className="absolute right-2 top-2 flex flex-col items-end gap-1">
+      <button
+        type="button"
+        onClick={isListening ? stopListening : startListening}
+        className={cn(
+          'p-2 rounded-full transition-all',
+          isListening
+            ? 'bg-destructive text-destructive-foreground animate-pulse'
+            : 'bg-primary/20 text-primary hover:bg-primary/30'
+        )}
+        title={isListening ? 'Detener dictado' : 'Dictar con voz'}
+      >
+        {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+      </button>
+      {isListening && transcript && (
+        <div className="bg-primary/90 text-primary-foreground text-xs px-2 py-1 rounded max-w-[200px] truncate animate-pulse">
+          🎤 {transcript}
+        </div>
       )}
-      title={isListening ? 'Detener dictado' : 'Dictar con voz'}
-    >
-      {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-    </button>
+    </div>
   );
 };
 
