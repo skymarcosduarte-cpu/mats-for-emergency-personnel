@@ -2,7 +2,7 @@
 // Road + Flight transit tracking with incident reports
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown } from 'lucide-react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge } from 'lucide-react';
 import { GpsStatusBanner } from '@/components/GpsStatusBanner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +27,7 @@ import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { TripLocationPicker } from '@/components/TripLocationPicker';
 import TripRouteMap from '@/components/TripRouteMap';
 import MapErrorBoundary from '@/components/MapErrorBoundary';
+import CommunityTripsMap from '@/components/CommunityTripsMap';
 import { useLocation, getGoogleMapsLink, calculateDistance, formatDistance } from '@/hooks/useLocation';
 import { useTripPositionHistory } from '@/hooks/useTripPositionHistory';
 import { useDynamicEta, formatEtaInfo } from '@/hooks/useDynamicEta';
@@ -83,7 +84,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 }) => {
   const isMobile = useIsMobile();
 
-  const [activeTab, setActiveTab] = useState<'trips' | 'reports' | 'history'>('trips');
+  const [activeTab, setActiveTab] = useState<'trips' | 'reports' | 'history' | 'map'>('trips');
   const [showTripDialog, setShowTripDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [transitType, setTransitType] = useState<TransitType>('ROAD');
@@ -838,9 +839,13 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trips' | 'reports' | 'history')} className="p-4">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trips' | 'reports' | 'history' | 'map')} className="p-4">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="trips">Activos</TabsTrigger>
+          <TabsTrigger value="map" className="gap-1">
+            <MapPin className="w-3.5 h-3.5" />
+            Mapa
+          </TabsTrigger>
           <TabsTrigger value="history" className="gap-1">
             <History className="w-3.5 h-3.5" />
             Historial
@@ -1447,6 +1452,22 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               </div>
             );
           })()}
+        </TabsContent>
+
+        {/* Real-time Community Trips Map */}
+        <TabsContent value="map" className="mt-4 -mx-4">
+          <div className="h-[calc(100vh-280px)] min-h-[400px]">
+            <MapErrorBoundary>
+              <CommunityTripsMap 
+                trips={communityTrips}
+                loading={communityTripsLoading}
+                onRefresh={() => {
+                  // Trigger a refresh of community trips
+                  // The hook already handles this via realtime subscriptions
+                }}
+              />
+            </MapErrorBoundary>
+          </div>
         </TabsContent>
 
         {/* History Tab - Community trips from last 8 hours */}
