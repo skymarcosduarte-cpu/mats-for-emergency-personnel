@@ -1386,29 +1386,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <QrCode className="w-5 h-5" />
-              Invitar Miembro
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Genera un código de invitación para agregar nuevos miembros a la comunidad.
-            </p>
-            <Button
-              onClick={() => {
-                setShowInviteDialog(true);
-                if (!inviteCode) generateInviteCode();
-              }}
-              className="w-full"
-            >
-              <QrCode className="w-4 h-4 mr-2" />
-              Generar Invitación
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Invite Member section removed - invitations now managed centrally */}
 
         {/* Emergency Contacts Section */}
         <EmergencyContactsManager />
@@ -1475,73 +1453,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         <AppFooter />
       </div>
 
-      {/* Invite Dialog */}
-      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
-        <DialogContent className="sm:max-w-sm bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <QrCode className="w-5 h-5" />
-              Código de Invitación
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {generating ? (
-              <div className="flex items-center justify-center py-8">
-                <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <>
-                {/* QR Code */}
-                {qrDataUrl && (
-                  <div className="flex justify-center">
-                    <img 
-                      src={qrDataUrl} 
-                      alt="QR Code de invitación" 
-                      className="rounded-lg"
-                    />
-                  </div>
-                )}
-
-                {/* Code Display */}
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={inviteCode}
-                    readOnly
-                    className="font-mono text-center text-lg"
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={copyInviteCode}
-                  >
-                    {copied ? (
-                      <Check className="w-4 h-4 text-safe" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
-
-                <p className="text-xs text-center text-muted-foreground">
-                  Comparte este código o QR con el nuevo miembro. 
-                  Lo necesitará para registrarse.
-                </p>
-
-                {/* Regenerate Button */}
-                <Button
-                  variant="outline"
-                  onClick={generateInviteCode}
-                  className="w-full"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Generar Nuevo Código
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Invite Dialog removed - invitations now managed centrally */}
 
       {/* Role Change Dialog */}
       <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
