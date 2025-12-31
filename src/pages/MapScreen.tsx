@@ -2355,6 +2355,13 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           'ACCIDENT': 'Accidente',
           'PROTEST': 'Manifestación',
           'HAZARD': 'Peligro',
+          'ROAD_REPAIR': 'Tramo en Reparación',
+          'HEAVY_TRAFFIC': 'Tráfico Pesado',
+          'STOPPED_TRAFFIC': 'Tráfico Detenido',
+          'TOLL_CLOSED': 'Caseta Tomada Cerrada',
+          'TOLL_OPEN': 'Caseta Tomada Abierta',
+          'FOG': 'Neblina',
+          'HAIL_SNOW': 'Granizo / Nieve',
           'OTHER': 'Otro',
         };
         const categoryLabel = categoryLabels[report.category] || report.category;
