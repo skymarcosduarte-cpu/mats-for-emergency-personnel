@@ -458,16 +458,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
               <TabsContent value="signup" className="space-y-4 mt-4">
                 <div>
-                  <Label>Código de invitación (opcional)</Label>
+                  <Label>Código de invitación *</Label>
                   <Input
                     value={inviteCode}
                     onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                    placeholder="EXS-XXXXXX"
+                    placeholder="Ingresa tu código de invitación"
                     className="font-mono"
                     maxLength={20}
+                    required
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Durante la beta abierta, el código es opcional
+                    Se requiere código de invitación para registrarse
                   </p>
                 </div>
 
