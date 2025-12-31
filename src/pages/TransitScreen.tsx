@@ -2,7 +2,7 @@
 // Road + Flight transit tracking with incident reports
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge } from 'lucide-react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge, Mic, MicOff } from 'lucide-react';
 import { GpsStatusBanner } from '@/components/GpsStatusBanner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +34,7 @@ import { useDynamicEta, formatEtaInfo } from '@/hooks/useDynamicEta';
 import { useRoadReports } from '@/hooks/useRealtime';
 import { useActiveTrips, type ActiveTrip } from '@/hooks/useActiveTrips';
 import { useCommunityTripsHistory, type CommunityTripHistory } from '@/hooks/useCommunityTripsHistory';
+import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -56,6 +57,34 @@ const REPORT_CATEGORIES: { value: ReportCategory; label: string; emoji: string }
   { value: 'HAIL_SNOW', label: 'Granizo / Nieve', emoji: '❄️' },
   { value: 'OTHER', label: 'Otro', emoji: '📍' },
 ];
+
+// Voice Dictation Button Component for hands-free description input
+const VoiceDictationButton: React.FC<{
+  onTranscript: (text: string) => void;
+}> = ({ onTranscript }) => {
+  const { isListening, isSupported, startListening, stopListening, transcript } = useVoiceSearch({
+    onResult: onTranscript,
+    language: 'es-MX',
+  });
+
+  if (!isSupported) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={isListening ? stopListening : startListening}
+      className={cn(
+        'absolute right-2 top-2 p-2 rounded-full transition-all',
+        isListening
+          ? 'bg-destructive text-destructive-foreground animate-pulse'
+          : 'bg-primary/20 text-primary hover:bg-primary/30'
+      )}
+      title={isListening ? 'Detener dictado' : 'Dictar con voz'}
+    >
+      {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+    </button>
+  );
+};
 
 interface TransitScreenProps {
   userRole?: UserRole;
@@ -128,11 +157,10 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const [vehiclePhoto, setVehiclePhoto] = useState<File[]>([]);
   const [boardingPassPhoto, setBoardingPassPhoto] = useState<File[]>([]);
 
-  // Report form state
+  // Report form state - title is auto-generated from category
   const [reportForm, setReportForm] = useState({
     category: '' as ReportCategory | '',
     severity: 2 as ReportSeverity,
-    title: '',
     description: '',
   });
   const [reportImages, setReportImages] = useState<File[]>([]);
@@ -382,7 +410,6 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     setReportForm({
       category: report.category as ReportCategory,
       severity: report.severity as ReportSeverity,
-      title: report.title,
       description: report.description || '',
     });
     setEditingReport(report.id);
@@ -393,6 +420,10 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const handleUpdateReport = async () => {
     if (!editingReport) return;
 
+    // Get title from category
+    const categoryInfo = REPORT_CATEGORIES.find(c => c.value === reportForm.category);
+    const title = categoryInfo ? `${categoryInfo.emoji} ${categoryInfo.label}` : 'Reporte';
+
     setSubmitting(true);
     try {
       const { error } = await supabase
@@ -400,7 +431,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         .update({
           category: reportForm.category,
           severity: reportForm.severity,
-          title: reportForm.title,
+          title: title,
           description: reportForm.description || null,
         })
         .eq('id', editingReport);
@@ -657,10 +688,14 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       return;
     }
 
-    if (!reportForm.category || !reportForm.title) {
-      toast.error('Completa los campos requeridos');
+    if (!reportForm.category) {
+      toast.error('Selecciona una categoría');
       return;
     }
+
+    // Auto-generate title from category
+    const categoryInfo = REPORT_CATEGORIES.find(c => c.value === reportForm.category);
+    const title = categoryInfo ? `${categoryInfo.emoji} ${categoryInfo.label}` : 'Reporte';
 
     isSubmittingReportRef.current = true;
     setSubmitting(true);
@@ -675,7 +710,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           user_id: user.id,
           category: reportForm.category,
           severity: reportForm.severity,
-          title: reportForm.title,
+          title: title,
           description: reportForm.description || null,
           lat: position.lat,
           lng: position.lng,
@@ -746,7 +781,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
             reportId: reportData.id,
             lat: position.lat,
             lng: position.lng,
-            title: reportForm.title,
+            title: title,
             category: reportForm.category,
             creatorId: user.id,
             radiusMeters: 5000, // 5km radius
@@ -801,7 +836,6 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     setReportForm({
       category: '',
       severity: 2,
-      title: '',
       description: '',
     });
     setReportImages([]);
@@ -2173,22 +2207,24 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
             </div>
 
             <div>
-              <Label>Título *</Label>
-              <Input
-                value={reportForm.title}
-                onChange={(e) => setReportForm({ ...reportForm, title: e.target.value })}
-                placeholder="Ej: Bloqueo en Av. Principal"
-              />
-            </div>
-
-            <div>
-              <Label>Descripción (opcional)</Label>
-              <textarea
-                value={reportForm.description}
-                onChange={(e) => setReportForm({ ...reportForm, description: e.target.value })}
-                placeholder="Detalles adicionales..."
-                className="w-full h-20 px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground resize-none"
-              />
+              <Label className="flex items-center gap-2">
+                Descripción
+                <span className="text-xs text-muted-foreground">(dicta mientras conduces)</span>
+              </Label>
+              <div className="relative">
+                <textarea
+                  value={reportForm.description}
+                  onChange={(e) => setReportForm({ ...reportForm, description: e.target.value })}
+                  placeholder="Describe la situación con tu voz o escribe..."
+                  className="w-full h-24 px-3 py-2 pr-12 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground resize-none"
+                />
+                <VoiceDictationButton
+                  onTranscript={(text) => setReportForm(prev => ({
+                    ...prev,
+                    description: prev.description ? `${prev.description} ${text}` : text
+                  }))}
+                />
+              </div>
             </div>
 
             {!editingReport && (
