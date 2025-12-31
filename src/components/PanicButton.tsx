@@ -2,7 +2,7 @@
 // With voice recording, additional context, and remote location support
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users, MapPin, Phone, Cross, Mic, MicOff, ChevronLeft, Send, MessageSquare, Navigation, Map } from 'lucide-react';
+import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users, MapPin, Phone, Cross, Mic, MicOff, ChevronLeft, Send, MessageSquare, Navigation, Map, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -56,6 +56,12 @@ const PANIC_OPTIONS: PanicOption[] = [
     label: 'Protección Civil',
     icon: <HardHat className="w-6 h-6" />,
     description: 'Emergencia general',
+  },
+  {
+    type: 'BOMBEROS',
+    label: 'Bomberos',
+    icon: <Flame className="w-6 h-6" />,
+    description: 'Incendio o rescate',
   },
 ];
 
@@ -119,8 +125,12 @@ const EMERGENCY_TYPE_VOICE_COMMANDS: { keywords: string[]; type: PanicType }[] =
     type: 'MECANICO' 
   },
   { 
-    keywords: ['protección civil', 'proteccion civil', 'emergencia general', 'incendio', 'inundación', 'derrumbe', 'gas', 'fuga'],
+    keywords: ['protección civil', 'proteccion civil', 'emergencia general', 'inundación', 'derrumbe', 'gas', 'fuga'],
     type: 'PROTECCION_CIVIL' 
+  },
+  { 
+    keywords: ['bomberos', 'incendio', 'fuego', 'se quema', 'llamas', 'humo', 'rescate'],
+    type: 'BOMBEROS' 
   },
 ];
 
