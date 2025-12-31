@@ -10,6 +10,12 @@ interface ImageZoomViewerProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const getDistance = (touch1: React.Touch, touch2: React.Touch) => {
+  const dx = touch1.clientX - touch2.clientX;
+  const dy = touch1.clientY - touch2.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+};
+
 export const ImageZoomViewer: React.FC<ImageZoomViewerProps> = ({
   src,
   alt,
@@ -19,8 +25,11 @@ export const ImageZoomViewer: React.FC<ImageZoomViewerProps> = ({
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [isPinching, setIsPinching] = useState(false);
   const lastPosition = useRef({ x: 0, y: 0 });
   const startDrag = useRef({ x: 0, y: 0 });
+  const initialPinchDistance = useRef(0);
+  const initialPinchScale = useRef(1);
 
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.5, 4));
@@ -46,7 +55,14 @@ export const ImageZoomViewer: React.FC<ImageZoomViewerProps> = ({
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (scale > 1 && e.touches.length === 1) {
+    if (e.touches.length === 2) {
+      // Pinch gesture start
+      setIsPinching(true);
+      setIsDragging(false);
+      initialPinchDistance.current = getDistance(e.touches[0], e.touches[1]);
+      initialPinchScale.current = scale;
+    } else if (e.touches.length === 1 && scale > 1 && !isPinching) {
+      // Single finger drag (only when zoomed)
       setIsDragging(true);
       startDrag.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       lastPosition.current = { ...position };
@@ -54,7 +70,20 @@ export const ImageZoomViewer: React.FC<ImageZoomViewerProps> = ({
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (isDragging && scale > 1 && e.touches.length === 1) {
+    if (e.touches.length === 2 && isPinching) {
+      // Pinch gesture move
+      const currentDistance = getDistance(e.touches[0], e.touches[1]);
+      const scaleChange = currentDistance / initialPinchDistance.current;
+      const newScale = Math.min(Math.max(initialPinchScale.current * scaleChange, 1), 4);
+      
+      setScale(newScale);
+      
+      // Reset position if zooming back to 1
+      if (newScale === 1) {
+        setPosition({ x: 0, y: 0 });
+      }
+    } else if (isDragging && scale > 1 && e.touches.length === 1) {
+      // Single finger drag
       const deltaX = e.touches[0].clientX - startDrag.current.x;
       const deltaY = e.touches[0].clientY - startDrag.current.y;
       
@@ -67,6 +96,7 @@ export const ImageZoomViewer: React.FC<ImageZoomViewerProps> = ({
 
   const handleTouchEnd = () => {
     setIsDragging(false);
+    setIsPinching(false);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -164,7 +194,7 @@ export const ImageZoomViewer: React.FC<ImageZoomViewerProps> = ({
 
         {/* Hint */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center text-sm text-muted-foreground bg-background/60 backdrop-blur-sm px-4 py-2 rounded-full">
-          Doble tap para {scale > 1 ? 'restablecer' : 'zoom'} • Arrastra para mover
+          Pellizca para zoom • Doble tap para {scale > 1 ? 'restablecer' : 'ampliar'} • Arrastra para mover
         </div>
       </DialogContent>
     </Dialog>
