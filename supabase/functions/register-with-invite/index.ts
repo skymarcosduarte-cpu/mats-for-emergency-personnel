@@ -154,12 +154,19 @@ serve(async (req) => {
 
     console.log('[register-with-invite] User created successfully:', authData.user.id);
 
-    // Step 5: Generate a session for the new user so they can log in immediately
-    // Using signInWithPassword since we just created the user
-    const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email: email.trim().toLowerCase(),
-    });
+    // Step 5: Update profile with the invite code used (profile is created by trigger)
+    // Wait a moment for the trigger to create the profile
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ invite_code_used: normalizedCode })
+      .eq('id', authData.user.id);
+
+    if (updateError) {
+      console.log('[register-with-invite] Could not update profile with invite code:', updateError);
+      // Non-critical error, continue
+    }
 
     // Return success - frontend will handle login
     return new Response(

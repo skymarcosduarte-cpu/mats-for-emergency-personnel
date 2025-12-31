@@ -542,6 +542,7 @@ export type Database = {
           has_k9_unit: boolean | null
           has_rescue_unit: boolean | null
           id: string
+          invite_code_used: string | null
           medical_conditions: string | null
           nickname: string
           phone: string
@@ -568,6 +569,7 @@ export type Database = {
           has_k9_unit?: boolean | null
           has_rescue_unit?: boolean | null
           id: string
+          invite_code_used?: string | null
           medical_conditions?: string | null
           nickname: string
           phone: string
@@ -594,6 +596,7 @@ export type Database = {
           has_k9_unit?: boolean | null
           has_rescue_unit?: boolean | null
           id?: string
+          invite_code_used?: string | null
           medical_conditions?: string | null
           nickname?: string
           phone?: string
@@ -1011,6 +1014,18 @@ export type Database = {
       }
     }
     Views: {
+      admin_users_view: {
+        Row: {
+          full_name: string | null
+          invite_code_used: string | null
+          nickname: string | null
+          phone: string | null
+          registered_at: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       medical_providers: {
         Row: {
           can_provide_medical_assistance: boolean | null
@@ -1103,6 +1118,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_ex_sos: { Args: { _user_id: string }; Returns: boolean }
       is_rescatista: { Args: { _user_id: string }; Returns: boolean }
       is_sos_activo: { Args: { _user_id: string }; Returns: boolean }
