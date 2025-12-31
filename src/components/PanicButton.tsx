@@ -1,8 +1,8 @@
 // Panic Button FAB Component for COMUNIDAD SOS
 // With voice recording, additional context, and remote location support
 
-import React, { useRef, useState, useCallback } from 'react';
-import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users, MapPin, Phone, Cross, Mic, ChevronLeft, Send, MessageSquare, Navigation, Map } from 'lucide-react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { AlertTriangle, X, Ambulance, Shield, Wrench, HardHat, Users, MapPin, Phone, Cross, Mic, MicOff, ChevronLeft, Send, MessageSquare, Navigation, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { LocationPickerMap } from '@/components/LocationPickerMap';
 import type { PanicType, UserRole } from '@/types';
 import { useLocation } from '@/hooks/useLocation';
+import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -81,6 +82,95 @@ const vibrate = (pattern: number | number[]) => {
       // Ignore errors
     }
   }
+};
+
+// Voice Dictation Textarea Component for hands-free description input in emergencies
+const VoiceDictationTextarea: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  maxLength?: number;
+}> = ({ value, onChange, placeholder, maxLength = 500 }) => {
+  const [interimText, setInterimText] = useState('');
+  
+  const handleTranscript = useCallback((text: string) => {
+    onChange(value ? `${value} ${text}` : text);
+    setInterimText('');
+  }, [value, onChange]);
+
+  const { isListening, isSupported, startListening, stopListening, transcript } = useVoiceSearch({
+    onResult: handleTranscript,
+    language: 'es-MX',
+  });
+
+  // Update interim text while listening
+  useEffect(() => {
+    if (isListening && transcript) {
+      setInterimText(transcript);
+    } else {
+      setInterimText('');
+    }
+  }, [transcript, isListening]);
+
+  return (
+    <div className="space-y-2">
+      <label className="flex items-center justify-between text-sm font-medium text-foreground">
+        <span className="flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-muted-foreground" />
+          Descripción
+        </span>
+        {isSupported && (
+          <button
+            type="button"
+            onClick={isListening ? stopListening : startListening}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all',
+              isListening
+                ? 'bg-destructive text-destructive-foreground animate-pulse'
+                : 'bg-panic/20 text-panic hover:bg-panic/30'
+            )}
+          >
+            {isListening ? (
+              <>
+                <MicOff className="w-4 h-4" />
+                Detener
+              </>
+            ) : (
+              <>
+                <Mic className="w-4 h-4" />
+                Dictar
+              </>
+            )}
+          </button>
+        )}
+      </label>
+      
+      {/* Real-time transcription preview */}
+      {isListening && interimText && (
+        <div className="bg-panic/10 border border-panic/30 rounded-lg p-3 animate-pulse">
+          <p className="text-xs text-panic font-medium mb-1">🎤 Escuchando...</p>
+          <p className="text-sm text-foreground">{interimText}</p>
+        </div>
+      )}
+      
+      <Textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="min-h-[80px] resize-none"
+        maxLength={maxLength}
+      />
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        {isSupported && (
+          <span className="flex items-center gap-1">
+            <Mic className="w-3 h-3" />
+            Dicta tu mensaje mientras tienes las manos ocupadas
+          </span>
+        )}
+        <span>{value.length}/{maxLength}</span>
+      </div>
+    </div>
+  );
 };
 
 type Step = 'select-type' | 'add-context';
@@ -615,23 +705,13 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
           </div>
         </div>
 
-        {/* Text message */}
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <MessageSquare className="w-4 h-4 text-muted-foreground" />
-            Descripción escrita
-          </label>
-          <Textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Describe qué está pasando, ubicación exacta, número de personas afectadas..."
-            className="min-h-[80px] resize-none"
-            maxLength={500}
-          />
-          <p className="text-xs text-muted-foreground text-right">
-            {message.length}/500
-          </p>
-        </div>
+        {/* Text message with voice dictation */}
+        <VoiceDictationTextarea
+          value={message}
+          onChange={setMessage}
+          placeholder="Describe qué está pasando, ubicación exacta, número de personas afectadas..."
+          maxLength={500}
+        />
 
         {/* Send with context */}
         {(message.trim() || audioBlob) && (
