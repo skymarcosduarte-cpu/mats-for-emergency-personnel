@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { getCachedAuthSession, cacheAuthSession, clearAuthSessionCache } from '@/lib/offlineDataCache';
 
 interface Profile {
   id: string;
@@ -49,6 +50,29 @@ export function useAuth() {
     loading: true,
     error: null,
   });
+
+  // Load cached auth immediately on mount (sync from localStorage for instant display)
+  useEffect(() => {
+    const loadCachedAuth = async () => {
+      try {
+        const cached = await getCachedAuthSession();
+        if (cached && cached.profile) {
+          console.log('[useAuth] Loaded from cache instantly - bypassing loading state');
+          setState(prev => ({
+            ...prev,
+            profile: cached.profile as Profile,
+            role: cached.role as 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR' | null,
+            // If we have cached profile, we can skip the loading state
+            // The session will be validated in background
+            loading: false,
+          }));
+        }
+      } catch (e) {
+        console.error('[useAuth] Cache load error:', e);
+      }
+    };
+    loadCachedAuth();
+  }, []);
 
   // Fetch user profile
   const fetchProfile = useCallback(async (userId: string) => {
@@ -113,9 +137,14 @@ export function useAuth() {
               fetchRole(session.user.id),
             ]);
             setState(prev => ({ ...prev, profile, role }));
+            // Cache for instant load next time
+            if (profile) {
+              cacheAuthSession(session.user.id, profile, role);
+            }
           }, 0);
         } else {
           setState(prev => ({ ...prev, profile: null, role: null }));
+          clearAuthSessionCache();
         }
       }
     );
@@ -135,6 +164,10 @@ export function useAuth() {
           fetchRole(session.user.id),
         ]);
         setState(prev => ({ ...prev, profile, role }));
+        // Cache for instant load next time
+        if (profile) {
+          cacheAuthSession(session.user.id, profile, role);
+        }
       }
     });
 
@@ -319,6 +352,7 @@ export function useAuth() {
 
   // Sign out
   const signOut = async () => {
+    await clearAuthSessionCache();
     await supabase.auth.signOut();
     setState({
       user: null,
