@@ -199,48 +199,59 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       return;
     }
 
-    // Skip invite code validation during open beta
-    // Invite code is optional - if provided, validate it
-    if (inviteCode.trim()) {
-      // Accept EXS-XXXXXX format or any alphanumeric code for flexibility
-      if (!inviteCode.match(/^(EXS-[A-Z0-9]{6}|[A-Z0-9-]{4,20})$/i)) {
-        setError('Código de invitación inválido');
-        return;
-      }
+    // REGISTRO CERRADO - Código de invitación OBLIGATORIO
+    if (!inviteCode.trim()) {
+      setError('Se requiere un código de invitación para registrarse');
+      return;
+    }
 
-      setLoading(true);
-      setError(null);
+    // Accept EXS-XXXXXX format or any alphanumeric code for flexibility
+    if (!inviteCode.match(/^(EXS-[A-Z0-9]{6}|[A-Z0-9-]{4,20})$/i)) {
+      setError('Código de invitación inválido');
+      return;
+    }
 
-      try {
-        // Check if invite exists and is valid
-        const { data: invite, error: inviteError } = await supabase
-          .from('invites')
-          .select('*')
-          .eq('code', inviteCode.toUpperCase())
-          .maybeSingle();
+    setLoading(true);
+    setError(null);
 
-        if (inviteError || !invite) {
-          setError('Código de invitación no encontrado');
-          setLoading(false);
-          return;
-        }
+    try {
+      // Check if invite exists and is valid
+      const { data: invite, error: inviteError } = await supabase
+        .from('invites')
+        .select('*')
+        .eq('code', inviteCode.toUpperCase())
+        .maybeSingle();
 
-        if (invite.used_count >= invite.max_uses) {
-          setError('Este código ya fue usado');
-          setLoading(false);
-          return;
-        }
-
-        if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-          setError('Este código ha expirado');
-          setLoading(false);
-          return;
-        }
-      } catch (err) {
-        setError('Error al validar código');
+      if (inviteError || !invite) {
+        setError('Código de invitación no encontrado');
         setLoading(false);
         return;
       }
+
+      if (invite.used_count >= invite.max_uses) {
+        setError('Este código ha alcanzado su límite de usuarios');
+        setLoading(false);
+        return;
+      }
+
+      if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+        setError('Este código ha expirado');
+        setLoading(false);
+        return;
+      }
+
+      // Use the invite code atomically (increment counter)
+      const { data: useResult } = await supabase.rpc('use_invite_code', { invite_code: inviteCode.toUpperCase() });
+      
+      if (!useResult) {
+        setError('No se pudo usar el código de invitación');
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      setError('Error al validar código');
+      setLoading(false);
+      return;
     }
 
     setLoading(true);
