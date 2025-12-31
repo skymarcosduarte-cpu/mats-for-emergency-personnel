@@ -33,10 +33,10 @@ export const MatsLogo: React.FC<MatsLogoProps> = ({
 
       {showText && (
         <div className="flex flex-col min-w-0">
-          <span className="text-base sm:text-lg font-bold tracking-wider text-foreground truncate leading-none">
+          <span className="text-lg sm:text-xl font-bold tracking-wider text-foreground truncate leading-none">
             M.A.T.S.
           </span>
-          <span className="text-[10px] sm:text-xs text-muted-foreground truncate">
+          <span className="text-xs sm:text-sm text-muted-foreground truncate">
             COMUNIDAD SOS
           </span>
         </div>
