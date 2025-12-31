@@ -84,31 +84,93 @@ const vibrate = (pattern: number | number[]) => {
   }
 };
 
+// Voice command patterns for hands-free alert submission
+const SEND_ALERT_COMMANDS = [
+  'enviar alerta',
+  'enviar la alerta',
+  'enviar ahora',
+  'enviar',
+  'mandar alerta',
+  'mandar la alerta',
+  'confirmar',
+  'confirmar alerta',
+  'sos',
+  'auxilio',
+  'ayuda ya',
+];
+
+// Check if text contains a send command
+const containsSendCommand = (text: string): boolean => {
+  const normalizedText = text.toLowerCase().trim();
+  return SEND_ALERT_COMMANDS.some(cmd => normalizedText.includes(cmd));
+};
+
+// Remove the command from the text to keep only the description
+const removeCommandFromText = (text: string): string => {
+  let cleanText = text;
+  SEND_ALERT_COMMANDS.forEach(cmd => {
+    const regex = new RegExp(cmd, 'gi');
+    cleanText = cleanText.replace(regex, '').trim();
+  });
+  // Clean up extra spaces
+  return cleanText.replace(/\s+/g, ' ').trim();
+};
+
 // Voice Dictation Textarea Component for hands-free description input in emergencies
 const VoiceDictationTextarea: React.FC<{
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   maxLength?: number;
-}> = ({ value, onChange, placeholder, maxLength = 500 }) => {
+  onSendCommand?: () => void;
+}> = ({ value, onChange, placeholder, maxLength = 500, onSendCommand }) => {
   const [interimText, setInterimText] = useState('');
+  const [commandDetected, setCommandDetected] = useState(false);
   
   const handleTranscript = useCallback((text: string) => {
+    // Check for send command
+    if (containsSendCommand(text)) {
+      setCommandDetected(true);
+      vibrate([200, 100, 200]); // Distinct vibration pattern
+      
+      // Clean the text and add to description (without the command)
+      const cleanText = removeCommandFromText(text);
+      if (cleanText) {
+        onChange(value ? `${value} ${cleanText}` : cleanText);
+      }
+      
+      setInterimText('');
+      
+      // Trigger send after a short delay for feedback
+      setTimeout(() => {
+        onSendCommand?.();
+        setCommandDetected(false);
+      }, 500);
+      return;
+    }
+    
     onChange(value ? `${value} ${text}` : text);
     setInterimText('');
-  }, [value, onChange]);
+  }, [value, onChange, onSendCommand]);
 
   const { isListening, isSupported, startListening, stopListening, transcript } = useVoiceSearch({
     onResult: handleTranscript,
     language: 'es-MX',
   });
 
-  // Update interim text while listening
+  // Update interim text while listening and check for command in real-time
   useEffect(() => {
     if (isListening && transcript) {
       setInterimText(transcript);
+      // Check for command in interim text
+      if (containsSendCommand(transcript)) {
+        setCommandDetected(true);
+      } else {
+        setCommandDetected(false);
+      }
     } else {
       setInterimText('');
+      setCommandDetected(false);
     }
   }, [transcript, isListening]);
 
@@ -145,11 +207,26 @@ const VoiceDictationTextarea: React.FC<{
         )}
       </label>
       
-      {/* Real-time transcription preview */}
+      {/* Real-time transcription preview with command detection */}
       {isListening && interimText && (
-        <div className="bg-panic/10 border border-panic/30 rounded-lg p-3 animate-pulse">
-          <p className="text-xs text-panic font-medium mb-1">🎤 Escuchando...</p>
+        <div className={cn(
+          "border rounded-lg p-3 animate-pulse transition-colors",
+          commandDetected 
+            ? "bg-green-500/20 border-green-500/50" 
+            : "bg-panic/10 border-panic/30"
+        )}>
+          <p className={cn(
+            "text-xs font-medium mb-1",
+            commandDetected ? "text-green-600" : "text-panic"
+          )}>
+            {commandDetected ? '✅ Comando detectado: Enviando alerta...' : '🎤 Escuchando...'}
+          </p>
           <p className="text-sm text-foreground">{interimText}</p>
+          {commandDetected && (
+            <p className="text-xs text-green-600 mt-2 font-semibold animate-pulse">
+              ¡Enviando alerta automáticamente!
+            </p>
+          )}
         </div>
       )}
       
@@ -160,14 +237,19 @@ const VoiceDictationTextarea: React.FC<{
         className="min-h-[80px] resize-none"
         maxLength={maxLength}
       />
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <div className="flex flex-col gap-1 text-xs text-muted-foreground">
         {isSupported && (
-          <span className="flex items-center gap-1">
-            <Mic className="w-3 h-3" />
-            Dicta tu mensaje mientras tienes las manos ocupadas
-          </span>
+          <>
+            <span className="flex items-center gap-1">
+              <Mic className="w-3 h-3" />
+              Dicta tu mensaje mientras tienes las manos ocupadas
+            </span>
+            <span className="flex items-center gap-1 text-panic/80 font-medium">
+              💡 Di "Enviar alerta" para enviar sin tocar la pantalla
+            </span>
+          </>
         )}
-        <span>{value.length}/{maxLength}</span>
+        <span className="text-right">{value.length}/{maxLength}</span>
       </div>
     </div>
   );
@@ -705,12 +787,13 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
           </div>
         </div>
 
-        {/* Text message with voice dictation */}
+        {/* Text message with voice dictation and send command support */}
         <VoiceDictationTextarea
           value={message}
           onChange={setMessage}
           placeholder="Describe qué está pasando, ubicación exacta, número de personas afectadas..."
           maxLength={500}
+          onSendCommand={handleSendNow}
         />
 
         {/* Send with context */}
