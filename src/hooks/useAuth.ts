@@ -326,28 +326,58 @@ export function useAuth() {
       return { error: new Error('Not authenticated') };
     }
 
-    // Delete profile first (will cascade to user_roles via trigger or we handle it)
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', state.user.id);
+    try {
+      // Delete from profiles_public first (no cascade, manual cleanup)
+      await supabase
+        .from('profiles_public')
+        .delete()
+        .eq('user_id', state.user.id);
 
-    if (profileError) {
-      return { error: new Error(profileError.message) };
+      // Delete user locations
+      await supabase
+        .from('user_locations')
+        .delete()
+        .eq('user_id', state.user.id);
+
+      // Delete user roles
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', state.user.id);
+
+      // Delete emergency contacts
+      await supabase
+        .from('emergency_contacts')
+        .delete()
+        .eq('user_id', state.user.id);
+
+      // Delete profile last
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', state.user.id);
+
+      if (profileError) {
+        console.error('Error deleting profile:', profileError);
+        return { error: new Error(profileError.message) };
+      }
+
+      // Sign out the user
+      await supabase.auth.signOut();
+      setState({
+        user: null,
+        session: null,
+        profile: null,
+        role: null,
+        loading: false,
+        error: null,
+      });
+
+      return { error: null };
+    } catch (err) {
+      console.error('Error during account deletion:', err);
+      return { error: new Error('Error al eliminar la cuenta') };
     }
-
-    // Sign out the user
-    await supabase.auth.signOut();
-    setState({
-      user: null,
-      session: null,
-      profile: null,
-      role: null,
-      loading: false,
-      error: null,
-    });
-
-    return { error: null };
   };
 
   // Sign out
