@@ -57,7 +57,34 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Validate JWT and get authenticated user
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.error('[notify-responder-coming] No authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create client with user's auth context to validate JWT
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      console.error('[notify-responder-coming] Invalid authentication:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use service role for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { 
@@ -74,11 +101,38 @@ serve(async (req) => {
       responderLng,
     } = await req.json();
 
+    // Permission validation: responderUserId must match authenticated user
+    // Exception: 'cancelled' events are triggered by alert creator
+    if (eventType === 'cancelled') {
+      if (creatorUserId !== user.id) {
+        console.error('[notify-responder-coming] Permission denied: only creator can cancel', {
+          userId: user.id,
+          creatorUserId
+        });
+        return new Response(
+          JSON.stringify({ error: 'Permission denied: only alert creator can cancel' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      if (responderUserId !== user.id) {
+        console.error('[notify-responder-coming] Permission denied: cannot act as another user', {
+          userId: user.id,
+          responderUserId
+        });
+        return new Response(
+          JSON.stringify({ error: 'Permission denied: cannot send notifications as another user' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     console.log(`[notify-responder-coming] ${eventType} for ${alertType} ${alertId}`, {
       responderUserId,
       responderCount,
       estimatedEtaMinutes,
-      transportMode
+      transportMode,
+      authenticatedUser: user.id
     });
 
     // For cancelled events, notify multiple responders
@@ -330,9 +384,8 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in notify-responder-coming:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

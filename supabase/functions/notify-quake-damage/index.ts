@@ -13,7 +13,34 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Validate JWT and get authenticated user
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.error('[notify-quake-damage] No authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create client with user's auth context to validate JWT
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      console.error('[notify-quake-damage] Invalid authentication:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use service role for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { 
@@ -26,9 +53,22 @@ serve(async (req) => {
       creatorId,
     } = await req.json();
 
+    // Permission validation: creatorId must match authenticated user
+    if (creatorId !== user.id) {
+      console.error('[notify-quake-damage] Permission denied: cannot send notifications as another user', {
+        userId: user.id,
+        creatorId
+      });
+      return new Response(
+        JSON.stringify({ error: 'Permission denied: cannot send damage notifications as another user' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log(`[notify-quake-damage] ALERTA MÁXIMA PRIORIDAD - Daño por sismo reportado`);
     console.log(`[notify-quake-damage] Ubicación: ${lat}, ${lng}`);
     console.log(`[notify-quake-damage] Magnitud: ${magnitude}, Intensidad: ${intensity}, Estado: ${damageReport}`);
+    console.log(`[notify-quake-damage] Authenticated user: ${user.id}`);
 
     // For earthquake damage reports, we notify ALL users regardless of distance
     // This is a maximum priority alert
@@ -131,9 +171,8 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[notify-quake-damage] Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

@@ -13,7 +13,34 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Validate JWT and get authenticated user
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.error('[notify-trip-update] No authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create client with user's auth context to validate JWT
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      console.error('[notify-trip-update] Invalid authentication:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use service role for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { 
@@ -31,11 +58,24 @@ serve(async (req) => {
       destinationLng,
     } = await req.json();
 
+    // Permission validation: tripUserId must match authenticated user
+    if (tripUserId !== user.id) {
+      console.error('[notify-trip-update] Permission denied: cannot send notifications for another user\'s trip', {
+        userId: user.id,
+        tripUserId
+      });
+      return new Response(
+        JSON.stringify({ error: 'Permission denied: cannot send notifications for another user\'s trip' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log(`[notify-trip-update] Processing ${eventType} for trip ${tripId}`, {
       tripUserId,
       origin,
       destination,
-      overdueMinutes
+      overdueMinutes,
+      authenticatedUser: user.id
     });
 
     // Get user's profile info
@@ -186,9 +226,8 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[notify-trip-update] Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

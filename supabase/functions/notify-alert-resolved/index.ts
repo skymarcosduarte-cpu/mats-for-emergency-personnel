@@ -23,7 +23,34 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Validate JWT and get authenticated user
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.error('[notify-alert-resolved] No authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create client with user's auth context to validate JWT
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      console.error('[notify-alert-resolved] Invalid authentication:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use service role for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { 
@@ -37,7 +64,22 @@ serve(async (req) => {
       radiusMeters = 10000 // 10km radius
     } = await req.json();
 
-    console.log(`[notify-alert-resolved] Alert ${alertId} (${alertType}/${alertKind}) resolved at ${lat}, ${lng}`);
+    // Permission validation: caller must be either the resolver or the creator
+    if (resolvedByUserId !== user.id && creatorUserId !== user.id) {
+      console.error('[notify-alert-resolved] Permission denied: caller is neither resolver nor creator', {
+        userId: user.id,
+        resolvedByUserId,
+        creatorUserId
+      });
+      return new Response(
+        JSON.stringify({ error: 'Permission denied: only resolver or creator can send resolution notifications' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`[notify-alert-resolved] Alert ${alertId} (${alertType}/${alertKind}) resolved at ${lat}, ${lng}`, {
+      authenticatedUser: user.id
+    });
 
     // Get resolver's name
     let resolverName = 'la comunidad';
@@ -103,10 +145,10 @@ serve(async (req) => {
 
     // Send push notifications via Supabase Realtime broadcast
     let pushSent = 0;
-    for (const user of usersToNotify) {
+    for (const u of usersToNotify) {
       try {
         // Broadcast to user's notification channel
-        const channel = supabase.channel(`user-notifications:${user.user_id}`);
+        const channel = supabase.channel(`user-notifications:${u.user_id}`);
         await channel.send({
           type: 'broadcast',
           event: 'notification',
@@ -118,14 +160,14 @@ serve(async (req) => {
               alertId,
               alertType,
               alertKind,
-              distanceMeters: user.distance_meters
+              distanceMeters: u.distance_meters
             }
           }
         });
         await supabase.removeChannel(channel);
         pushSent++;
       } catch (e) {
-        console.error(`Error broadcasting to user ${user.user_id}:`, e);
+        console.error(`Error broadcasting to user ${u.user_id}:`, e);
       }
     }
 
@@ -143,9 +185,8 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in notify-alert-resolved:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

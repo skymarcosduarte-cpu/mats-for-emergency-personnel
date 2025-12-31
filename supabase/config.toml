@@ -4,19 +4,19 @@ project_id = "vpanwarxvueuylfnipmd"
 verify_jwt = true
 
 [functions.notify-responder-coming]
-verify_jwt = false
+verify_jwt = true
 
 [functions.notify-quake-damage]
-verify_jwt = false
+verify_jwt = true
 
 [functions.notify-trip-update]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-message-push]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-delayed-trips]
 verify_jwt = false
 
 [functions.notify-alert-resolved]
-verify_jwt = false
+verify_jwt = true
