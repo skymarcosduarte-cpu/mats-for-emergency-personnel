@@ -100,6 +100,41 @@ const SEND_ALERT_COMMANDS = [
   'ayuda ya',
 ];
 
+// Voice command patterns for selecting emergency type
+const EMERGENCY_TYPE_VOICE_COMMANDS: { keywords: string[]; type: PanicType }[] = [
+  { 
+    keywords: ['ambulancia para mí', 'ambulancia propia', 'necesito ambulancia', 'ambulancia yo', 'estoy herido', 'me siento mal'],
+    type: 'AMBULANCIA_PROPIA' 
+  },
+  { 
+    keywords: ['ambulancia tercero', 'ambulancia para otro', 'otra persona', 'alguien herido', 'hay un herido', 'persona herida'],
+    type: 'AMBULANCIA_TERCERO' 
+  },
+  { 
+    keywords: ['patrulla', 'policía', 'policia', 'asalto', 'robo', 'delincuente', 'ladrón', 'seguridad'],
+    type: 'PATRULLA' 
+  },
+  { 
+    keywords: ['mecánico', 'mecanico', 'falla mecánica', 'ponchadura', 'llanta', 'carro descompuesto', 'auto varado', 'no arranca'],
+    type: 'MECANICO' 
+  },
+  { 
+    keywords: ['protección civil', 'proteccion civil', 'emergencia general', 'incendio', 'inundación', 'derrumbe', 'gas', 'fuga'],
+    type: 'PROTECCION_CIVIL' 
+  },
+];
+
+// Find matching emergency type from voice input
+const findEmergencyTypeFromVoice = (text: string): PanicType | null => {
+  const normalizedText = text.toLowerCase().trim();
+  for (const cmd of EMERGENCY_TYPE_VOICE_COMMANDS) {
+    if (cmd.keywords.some(keyword => normalizedText.includes(keyword))) {
+      return cmd.type;
+    }
+  }
+  return null;
+};
+
 // Check if text contains a send command
 const containsSendCommand = (text: string): boolean => {
   const normalizedText = text.toLowerCase().trim();
@@ -287,6 +322,11 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   const [isUploadingAudio, setIsUploadingAudio] = useState(false);
   const [gpsTimeout, setGpsTimeout] = useState(false);
   
+  // Voice type selection state
+  const [isListeningForType, setIsListeningForType] = useState(false);
+  const [typeVoiceTranscript, setTypeVoiceTranscript] = useState('');
+  const [typeDetected, setTypeDetected] = useState(false);
+  
   // Remote location support
   const [useRemoteLocation, setUseRemoteLocation] = useState(false);
   const [remoteLat, setRemoteLat] = useState<string>('');
@@ -339,6 +379,68 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
     setStep('add-context');
     vibrate([100]);
   };
+
+  // Handle voice-based type selection
+  const handleVoiceTypeResult = useCallback((transcript: string) => {
+    setTypeVoiceTranscript(transcript);
+    const detectedType = findEmergencyTypeFromVoice(transcript);
+    
+    if (detectedType) {
+      const option = PANIC_OPTIONS.find(opt => opt.type === detectedType);
+      if (option) {
+        setTypeDetected(true);
+        vibrate([200, 100, 200]);
+        playPositiveSound();
+        
+        // Voice confirmation
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(`Seleccionando ${option.label}`);
+          utterance.lang = 'es-MX';
+          utterance.rate = 1.2;
+          window.speechSynthesis.speak(utterance);
+        }
+        
+        // Auto-select after brief delay for feedback
+        setTimeout(() => {
+          handleTypeSelect(option);
+          setTypeDetected(false);
+          setTypeVoiceTranscript('');
+          setIsListeningForType(false);
+        }, 800);
+      }
+    }
+  }, []);
+
+  // Voice search hook for type selection
+  const { 
+    isListening: isVoiceListeningForType, 
+    isSupported: isVoiceSupported,
+    startListening: startTypeVoiceListening,
+    stopListening: stopTypeVoiceListening,
+    transcript: currentTypeTranscript
+  } = useVoiceSearch({
+    onResult: handleVoiceTypeResult,
+    language: 'es-MX'
+  });
+
+  // Sync listening state
+  useEffect(() => {
+    setIsListeningForType(isVoiceListeningForType);
+    if (isVoiceListeningForType && currentTypeTranscript) {
+      setTypeVoiceTranscript(currentTypeTranscript);
+    }
+  }, [isVoiceListeningForType, currentTypeTranscript]);
+
+  const toggleTypeVoiceListening = useCallback(() => {
+    if (isVoiceListeningForType) {
+      stopTypeVoiceListening();
+      setIsListeningForType(false);
+    } else {
+      setTypeVoiceTranscript('');
+      setTypeDetected(false);
+      startTypeVoiceListening();
+    }
+  }, [isVoiceListeningForType, startTypeVoiceListening, stopTypeVoiceListening]);
 
   // Go back to type selection
   const handleBack = () => {
@@ -539,6 +641,71 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
           Selecciona tipo de emergencia
         </h2>
       </header>
+
+      {/* Voice dictation for type selection */}
+      {isVoiceSupported && (
+        <div className="mx-4 mt-3 p-3 rounded-lg bg-panic/5 border border-panic/20 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Mic className={cn("w-5 h-5", isListeningForType ? "text-panic animate-pulse" : "text-muted-foreground")} />
+              <span className="text-sm font-medium text-foreground">Dictado de voz</span>
+            </div>
+            <button
+              type="button"
+              onClick={toggleTypeVoiceListening}
+              className={cn(
+                'flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all',
+                isListeningForType
+                  ? 'bg-destructive text-destructive-foreground animate-pulse'
+                  : 'bg-panic text-white hover:bg-panic/90'
+              )}
+            >
+              {isListeningForType ? (
+                <>
+                  <MicOff className="w-4 h-4" />
+                  Detener
+                </>
+              ) : (
+                <>
+                  <Mic className="w-4 h-4" />
+                  Dictar tipo
+                </>
+              )}
+            </button>
+          </div>
+          
+          {/* Listening feedback */}
+          {isListeningForType && (
+            <div className={cn(
+              "p-3 rounded-lg animate-pulse transition-colors",
+              typeDetected 
+                ? "bg-green-500/20 border border-green-500/50" 
+                : "bg-panic/10 border border-panic/30"
+            )}>
+              <p className={cn(
+                "text-xs font-medium mb-1",
+                typeDetected ? "text-green-600" : "text-panic"
+              )}>
+                {typeDetected ? '✅ Tipo detectado' : '🎤 Escuchando... Di el tipo de emergencia'}
+              </p>
+              {typeVoiceTranscript && (
+                <p className="text-sm text-foreground">"{typeVoiceTranscript}"</p>
+              )}
+              {typeDetected && (
+                <p className="text-xs text-green-600 mt-1 font-semibold">
+                  ¡Seleccionando automáticamente!
+                </p>
+              )}
+            </div>
+          )}
+          
+          {!isListeningForType && (
+            <p className="text-xs text-muted-foreground">
+              💡 Di: "ambulancia", "patrulla", "mecánico", "protección civil"
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-3 py-4 px-4 sm:px-0">
         {PANIC_OPTIONS.map((option) => (
