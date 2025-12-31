@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, X, ImagePlus, Calendar, Tag, DollarSign, Loader2, ChevronLeft, ChevronRight, Search, MessageCircle, Filter, Pencil, Trash2, User, Bell } from 'lucide-react';
+import { Plus, X, ImagePlus, Calendar, Tag, DollarSign, Loader2, ChevronLeft, ChevronRight, Search, MessageCircle, Filter, Pencil, Trash2, User, Bell, ZoomIn } from 'lucide-react';
 import { createNotification } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format, addDays, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { ImageZoomViewer } from '@/components/ImageZoomViewer';
 import type { UserRole } from '@/types';
 
 interface SellerProfile {
@@ -82,6 +83,7 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
   const [editingListing, setEditingListing] = useState<MarketListing | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState<MarketListing | null>(null);
+  const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
   const { toast } = useToast();
 
   // Search & Filter state
@@ -801,12 +803,22 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                       <CarouselContent>
                         {selectedListing.images.map((image, index) => (
                           <CarouselItem key={index}>
-                            <div className="w-full bg-black flex items-center justify-center" style={{ minHeight: '200px', maxHeight: '400px' }}>
+                            <div 
+                              className="w-full bg-black flex items-center justify-center cursor-zoom-in relative group" 
+                              style={{ minHeight: '200px', maxHeight: '400px' }}
+                              onClick={() => setZoomImage({ 
+                                src: image, 
+                                alt: `${selectedListing.title} - Imagen ${index + 1}` 
+                              })}
+                            >
                               <img
                                 src={image}
                                 alt={`${selectedListing.title} - Imagen ${index + 1}`}
                                 className="max-w-full max-h-[400px] object-contain"
                               />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
                             </div>
                           </CarouselItem>
                         ))}
@@ -819,12 +831,18 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                       )}
                     </Carousel>
                     
-                    {/* Image counter */}
-                    {selectedListing.images.length > 1 && (
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-sm">
-                        {selectedListing.images.length} fotos
+                    {/* Image counter & zoom hint */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                      {selectedListing.images.length > 1 && (
+                        <div className="bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-sm">
+                          {selectedListing.images.length} fotos
+                        </div>
+                      )}
+                      <div className="bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                        <ZoomIn className="w-3 h-3" />
+                        Toca para zoom
                       </div>
-                    )}
+                    </div>
                   </div>
                 ) : (
                   <div className="aspect-video bg-muted flex items-center justify-center">
@@ -970,6 +988,14 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Image Zoom Viewer */}
+        <ImageZoomViewer
+          src={zoomImage?.src || ''}
+          alt={zoomImage?.alt || ''}
+          open={!!zoomImage}
+          onOpenChange={(open) => !open && setZoomImage(null)}
+        />
       </div>
     </div>
   );
