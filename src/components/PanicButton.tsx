@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { requestNotificationPermission } from '@/hooks/useInternalMessages';
+import { playPositiveSound } from '@/lib/alertSound';
 
 interface PanicOption {
   type: PanicType;
@@ -133,6 +134,18 @@ const VoiceDictationTextarea: React.FC<{
       setCommandDetected(true);
       vibrate([200, 100, 200]); // Distinct vibration pattern
       
+      // Play auditory confirmation for visually impaired users
+      playPositiveSound();
+      
+      // Use speech synthesis for voice confirmation
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance('Enviando alerta');
+        utterance.lang = 'es-MX';
+        utterance.rate = 1.2;
+        utterance.volume = 1;
+        window.speechSynthesis.speak(utterance);
+      }
+      
       // Clean the text and add to description (without the command)
       const cleanText = removeCommandFromText(text);
       if (cleanText) {
@@ -145,7 +158,7 @@ const VoiceDictationTextarea: React.FC<{
       setTimeout(() => {
         onSendCommand?.();
         setCommandDetected(false);
-      }, 500);
+      }, 800);
       return;
     }
     
