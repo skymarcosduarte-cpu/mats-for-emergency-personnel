@@ -62,6 +62,7 @@ import { useWebPushSubscription } from '@/hooks/useWebPushSubscription';
 import { useBackgroundConnection } from '@/hooks/useBackgroundConnection';
 import { useAutoWakeLock } from '@/hooks/useWakeLock';
 import { useBackgroundLocation } from '@/hooks/useBackgroundLocation';
+import { usePrefetch } from '@/hooks/usePrefetch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { UserRole, USGSEarthquake, PanicType } from '@/types';
@@ -176,6 +177,8 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   const [alertRefreshTrigger, setAlertRefreshTrigger] = useState(0);
   const { user } = useAuth();
   
+  // Prefetch critical data in parallel as soon as user is authenticated
+  usePrefetch(user?.id);
   // Test mode for simulating panic alerts
   const { testAlert, simulatePanicAlert, clearTestAlert } = useTestMode();
   

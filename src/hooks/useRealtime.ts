@@ -6,6 +6,7 @@ import { calculateDistance } from '@/hooks/useLocation';
 import { playSubtleAlert, playUrgentAlert, playPositiveAlert } from '@/lib/alertSound';
 import { areHelpSoundsEnabled } from '@/hooks/useAlertSettings';
 import { toast } from 'sonner';
+import { getCachedUserLocations, cacheUserLocations } from '@/lib/offlineDataCache';
 
 interface UserLocation {
   user_id: string;
@@ -82,10 +83,27 @@ interface AppState {
 // Hook for user locations with real-time updates (includes role info)
 export function useUserLocations() {
   const [locations, setLocations] = useState<UserLocation[]>([]);
+  const [initialLoaded, setInitialLoaded] = useState(false);
   const lastFetchRef = useRef<number>(0);
   const DEBOUNCE_MS = 500; // Debounce rapid updates
 
-  const fetchLocations = useCallback(async () => {
+  // Load from cache immediately on mount
+  useEffect(() => {
+    const loadCached = async () => {
+      try {
+        const cached = await getCachedUserLocations<UserLocation>();
+        if (cached.isCached && cached.data.length > 0) {
+          console.log('[useUserLocations] Loaded from cache:', cached.data.length);
+          setLocations(cached.data);
+        }
+      } catch (e) {
+        console.error('[useUserLocations] Cache load error:', e);
+      }
+    };
+    loadCached();
+  }, []);
+
+  const fetchLocations = useCallback(async (isBackground = false) => {
     // Debounce rapid fetches
     const now = Date.now();
     if (now - lastFetchRef.current < DEBOUNCE_MS) {
@@ -101,6 +119,9 @@ export function useUserLocations() {
     if (!error && data) {
       console.log('[useUserLocations] Fetched locations with roles:', data.length);
       setLocations(data as UserLocation[]);
+      setInitialLoaded(true);
+      // Cache for instant load next time
+      cacheUserLocations(data as UserLocation[]);
     } else if (error) {
       console.error('[useUserLocations] Error fetching locations:', error);
     }
@@ -194,7 +215,7 @@ export function useUserLocations() {
     };
   }, [fetchLocations]);
 
-  return { locations, refetch: fetchLocations };
+  return { locations, refetch: fetchLocations, initialLoaded };
 }
 
 // Hook for help requests with distance-based alert sounds
