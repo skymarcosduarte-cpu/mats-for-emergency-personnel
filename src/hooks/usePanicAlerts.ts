@@ -36,6 +36,7 @@ const PANIC_TYPE_LABELS: Record<string, { label: string; emoji: string }> = {
   'MECANICO': { label: 'Mecánico', emoji: '🔧' },
   'PROTECCION_CIVIL': { label: 'Protección Civil', emoji: '🆘' },
   'BOMBEROS': { label: 'Bomberos', emoji: '🚒' },
+  'GRUA': { label: 'Grúa', emoji: '🚚' },
 };
 
 const HELP_KIND_LABELS: Record<string, { label: string; emoji: string }> = {
@@ -51,6 +52,7 @@ const HELP_KIND_LABELS: Record<string, { label: string; emoji: string }> = {
   'MECANICO': { label: 'Mecánico', emoji: '🔧' },
   'PROTECCION_CIVIL': { label: 'Protección Civil', emoji: '🆘' },
   'BOMBEROS': { label: 'Bomberos', emoji: '🚒' },
+  'GRUA': { label: 'Grúa', emoji: '🚚' },
 };
 
 export interface EmergencyAlertData {
