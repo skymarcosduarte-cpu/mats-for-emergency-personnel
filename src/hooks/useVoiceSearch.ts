@@ -81,8 +81,14 @@ export function useVoiceSearch({
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
+  // Heuristics / debug
+  const startAtRef = useRef<number>(0);
+  const hadFinalRef = useRef<boolean>(false);
+  const stopRequestedRef = useRef<boolean>(false);
+  const lastErrorRef = useRef<string | null>(null);
+
   // Check if Web Speech API is supported
-  const isSupported = typeof window !== 'undefined' && 
+  const isSupported = typeof window !== 'undefined' &&
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
   useEffect(() => {
@@ -97,6 +103,12 @@ export function useVoiceSearch({
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
+      console.log('[useVoiceSearch] onstart');
+      startAtRef.current = Date.now();
+      hadFinalRef.current = false;
+      stopRequestedRef.current = false;
+      lastErrorRef.current = null;
+
       setIsListening(true);
       setError(null);
       setTranscript('');
@@ -111,13 +123,16 @@ export function useVoiceSearch({
 
       // If result is final, send it
       if (result.isFinal) {
+        console.log('[useVoiceSearch] final result');
+        hadFinalRef.current = true;
         onResult(transcriptText);
         setIsListening(false);
       }
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('Speech recognition error:', event.error, event.message);
+      console.error('[useVoiceSearch] error:', event.error, event.message);
+      lastErrorRef.current = event.error;
       setIsListening(false);
 
       switch (event.error) {
@@ -142,8 +157,13 @@ export function useVoiceSearch({
           toast.error('No se detectó micrófono. Verifica que tu dispositivo tenga micrófono habilitado.');
           break;
         case 'aborted':
-          // User aborted, no need to show error
+          // If user pressed stop, don't show an error
+          if (stopRequestedRef.current) {
+            setError(null);
+            break;
+          }
           setError(null);
+          toast.error('No se pudo iniciar el dictado. Intenta de nuevo.');
           break;
         case 'service-not-allowed':
           setError('Servicio no disponible');
@@ -156,7 +176,25 @@ export function useVoiceSearch({
     };
 
     recognition.onend = () => {
+      const elapsedMs = startAtRef.current ? Date.now() - startAtRef.current : null;
+      console.log('[useVoiceSearch] onend', {
+        elapsedMs,
+        hadFinal: hadFinalRef.current,
+        stopRequested: stopRequestedRef.current,
+        lastError: lastErrorRef.current,
+      });
+
       setIsListening(false);
+
+      // If user stopped it or we already have an error, don't add extra noise.
+      if (stopRequestedRef.current || lastErrorRef.current) return;
+
+      // Heuristic: double-beep + immediate end means SpeechRecognition failed silently.
+      if (elapsedMs !== null && elapsedMs < 700 && !hadFinalRef.current) {
+        toast.error('No se pudo iniciar el dictado. Revisa permisos de micrófono y conexión a internet.', {
+          duration: 5000,
+        });
+      }
     };
 
     recognitionRef.current = recognition;
@@ -172,37 +210,36 @@ export function useVoiceSearch({
       return;
     }
 
-    // Check if already listening to prevent double-start freeze on iOS
-    if (isListening) {
-      console.warn('Already listening, ignoring start request');
+    if (!recognitionRef.current) {
+      toast.error('Dictado no disponible en este momento');
       return;
     }
 
+    // Avoid double-start
+    if (isListening) {
+      console.warn('[useVoiceSearch] Already listening, ignoring start request');
+      return;
+    }
+
+    stopRequestedRef.current = false;
+    lastErrorRef.current = null;
+    hadFinalRef.current = false;
+    startAtRef.current = Date.now();
+
     setError(null);
     setTranscript('');
-    
+
     try {
-      // Abort any existing recognition first (prevents iOS freeze)
-      recognitionRef.current?.abort();
-      
-      // Small delay to ensure previous session is fully stopped on iOS
-      setTimeout(() => {
-        try {
-          recognitionRef.current?.start();
-        } catch (err) {
-          console.warn('Recognition start error:', err);
-          setIsListening(false);
-          toast.error('No se pudo iniciar el reconocimiento de voz');
-        }
-      }, 100);
+      recognitionRef.current.start();
     } catch (err) {
-      // Recognition might already be running
-      console.warn('Recognition abort error:', err);
+      console.warn('[useVoiceSearch] Recognition start error:', err);
       setIsListening(false);
+      toast.error('No se pudo iniciar el reconocimiento de voz');
     }
   }, [isSupported, isListening]);
 
   const stopListening = useCallback(() => {
+    stopRequestedRef.current = true;
     recognitionRef.current?.stop();
     setIsListening(false);
   }, []);
