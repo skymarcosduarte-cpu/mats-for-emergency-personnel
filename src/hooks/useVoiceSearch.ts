@@ -117,29 +117,41 @@ export function useVoiceSearch({
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('Speech recognition error:', event.error);
+      console.error('Speech recognition error:', event.error, event.message);
       setIsListening(false);
 
       switch (event.error) {
         case 'not-allowed':
           setError('Permiso de micrófono denegado');
-          toast.error('Permite acceso al micrófono para usar búsqueda por voz');
+          toast.error('Permite acceso al micrófono en la configuración de tu navegador', {
+            duration: 5000,
+          });
           break;
         case 'no-speech':
           setError('No se detectó voz');
-          toast.error('No se detectó voz. Intenta de nuevo.');
+          toast.error('No se detectó voz. Habla más cerca del micrófono e intenta de nuevo.');
           break;
         case 'network':
           setError('Error de red');
-          toast.error('Error de conexión. La búsqueda por voz requiere internet.');
+          toast.error('Se requiere conexión a internet para el dictado de voz. Verifica tu conexión.', {
+            duration: 5000,
+          });
           break;
         case 'audio-capture':
           setError('No se encontró micrófono');
-          toast.error('No se detectó micrófono disponible');
+          toast.error('No se detectó micrófono. Verifica que tu dispositivo tenga micrófono habilitado.');
+          break;
+        case 'aborted':
+          // User aborted, no need to show error
+          setError(null);
+          break;
+        case 'service-not-allowed':
+          setError('Servicio no disponible');
+          toast.error('El servicio de voz no está disponible. Intenta de nuevo más tarde.');
           break;
         default:
-          setError('Error de reconocimiento');
-          toast.error('Error al reconocer voz. Intenta de nuevo.');
+          setError(`Error: ${event.error}`);
+          toast.error(`Error de reconocimiento de voz: ${event.error}. Intenta de nuevo.`);
       }
     };
 
