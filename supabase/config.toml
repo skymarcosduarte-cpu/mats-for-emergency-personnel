@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.notify-alert-resolved]
 verify_jwt = true
+
+[functions.register-with-invite]
+verify_jwt = false

@@ -187,7 +187,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     }
   };
 
-  // Handle signup
+  // Handle signup - 100% server-side registration
   const handleSignup = async () => {
     if (!email.trim() || !password.trim()) {
       setError('Ingresa email y contraseña');
@@ -215,42 +215,42 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     setError(null);
 
     try {
-      // Validate invite code without requiring an authenticated session
-      const { data: isValid, error: validateError } = await supabase
-        .rpc('validate_invite_code', { invite_code: inviteCode.toUpperCase() });
-
-      if (validateError) {
-        console.error('[AuthGate] validate_invite_code error:', validateError);
-        setError('No se pudo validar el código. Intenta de nuevo.');
-        setLoading(false);
-        return;
-      }
-
-      if (!isValid) {
-        setError('Código de invitación inválido, expirado o sin cupo');
-        setLoading(false);
-        return;
-      }
-    } catch (err) {
-      console.error('[AuthGate] validate invite unexpected error:', err);
-      setError('Error al validar código');
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { error: signUpError } = await signUp(email, password);
-      if (signUpError) {
-        if (signUpError.message.includes('already registered')) {
-          setError('Este email ya está registrado. Intenta iniciar sesión.');
-        } else {
-          setError(signUpError.message);
+      // Call server-side registration endpoint that validates invite AND creates user
+      const response = await supabase.functions.invoke('register-with-invite', {
+        body: {
+          email: email.trim().toLowerCase(),
+          password,
+          inviteCode: inviteCode.trim().toUpperCase(),
         }
+      });
+
+      if (response.error) {
+        console.error('[AuthGate] register-with-invite error:', response.error);
+        setError('Error de conexión. Intenta de nuevo.');
+        setLoading(false);
+        return;
       }
+
+      const result = response.data;
+
+      if (!result.success) {
+        setError(result.error || 'Error al crear cuenta');
+        setLoading(false);
+        return;
+      }
+
+      // User created successfully on the server, now sign them in
+      console.log('[AuthGate] User created, signing in...');
+      const { error: signInError } = await signIn(email.trim().toLowerCase(), password, rememberMe);
+      
+      if (signInError) {
+        // User was created but sign-in failed - they can try logging in manually
+        setError('Cuenta creada. Ahora inicia sesión con tus credenciales.');
+        setAuthTab('login');
+      }
+      // If sign-in succeeded, the auth state listener will handle the rest
     } catch (err) {
+      console.error('[AuthGate] Unexpected signup error:', err);
       setError('Error al crear cuenta');
     } finally {
       setLoading(false);
@@ -337,17 +337,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         })
         .eq('id', user?.id);
 
-       if (inviteCode) {
-         const { data: useResult, error: useError } = await supabase.rpc('use_invite_code', {
-           invite_code: inviteCode.toUpperCase(),
-         });
-
-         if (useError || !useResult) {
-           console.error('[AuthGate] use_invite_code error:', useError);
-           setError('Tu código de invitación ya fue usado o no es válido');
-           return;
-         }
-       }
+      // Invite code is already consumed by the server-side registration endpoint
+      // No need to call use_invite_code again here
 
       onAuthComplete?.();
     } catch (err) {
