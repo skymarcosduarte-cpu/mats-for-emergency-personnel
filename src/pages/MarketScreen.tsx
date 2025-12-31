@@ -500,7 +500,7 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" side="bottom" className="z-[10200]">
                         {FORM_CATEGORIES.map((cat) => (
                           <SelectItem key={cat.value} value={cat.value}>
                             {cat.label}
@@ -801,11 +801,11 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                       <CarouselContent>
                         {selectedListing.images.map((image, index) => (
                           <CarouselItem key={index}>
-                            <div className="aspect-video">
+                            <div className="w-full bg-black flex items-center justify-center" style={{ minHeight: '200px', maxHeight: '400px' }}>
                               <img
                                 src={image}
                                 alt={`${selectedListing.title} - Imagen ${index + 1}`}
-                                className="w-full h-full object-cover"
+                                className="max-w-full max-h-[400px] object-contain"
                               />
                             </div>
                           </CarouselItem>
