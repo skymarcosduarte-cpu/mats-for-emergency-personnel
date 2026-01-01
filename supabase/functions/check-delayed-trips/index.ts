@@ -34,6 +34,30 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Verify the caller is authenticated
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.warn('[check-delayed-trips] Missing authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate the JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.warn('[check-delayed-trips] Invalid token:', authError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`[check-delayed-trips] Authenticated user: ${user.id}`);
+
     console.log('[check-delayed-trips] Starting delayed trips check...');
 
     // Find active trips where ETA has passed by more than DELAY_THRESHOLD_MINUTES
