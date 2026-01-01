@@ -1392,7 +1392,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     activeResponse: activePanicResponse
   } = usePanicResponse();
   const { pois, loading: poisLoading, fetchPOIs } = usePOIs();
-  const { hasMinimumContacts, loading: contactsLoading } = useEmergencyContactsDB();
+  const { hasMinimumContacts, initialized: contactsInitialized } = useEmergencyContactsDB();
   
   const isRescatista = role === 'SOS_ACTIVO' || role === 'EX_SOS';
   const currentUserId = user?.id;
@@ -3099,8 +3099,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         className="absolute top-2 left-2 right-2 z-[998]"
       />
 
-      {/* No emergency contacts warning banner - only show after loading completes */}
-      {!contactsLoading && !hasMinimumContacts && (
+      {/* No emergency contacts warning banner - only show after initialization completes */}
+      {contactsInitialized && !hasMinimumContacts && (
         <button
           onClick={onNavigateToSettings}
           className="absolute top-14 left-2 right-2 z-[999] bg-destructive/95 text-destructive-foreground p-3 rounded-lg shadow-lg border border-destructive/50 flex items-center gap-2 hover:bg-destructive transition-colors cursor-pointer text-left"

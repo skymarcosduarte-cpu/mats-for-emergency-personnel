@@ -24,13 +24,20 @@ export const MIN_EMERGENCY_CONTACTS = 1;
 export function useEmergencyContactsDB() {
   const [contacts, setContacts] = useState<EmergencyContactDB[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch contacts
   const fetchContacts = useCallback(async () => {
     try {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setContacts([]);
+        setLoading(false);
+        setInitialized(true);
+        return;
+      }
 
       const { data, error: fetchError } = await supabase
         .from('emergency_contacts')
@@ -41,9 +48,11 @@ export function useEmergencyContactsDB() {
       if (fetchError) throw fetchError;
       
       setContacts((data || []) as EmergencyContactDB[]);
+      setInitialized(true);
     } catch (err) {
       console.error('Error fetching contacts:', err);
       setError('Error al cargar contactos');
+      setInitialized(true);
     } finally {
       setLoading(false);
     }
@@ -168,8 +177,8 @@ export function useEmergencyContactsDB() {
     }));
   };
 
-  // Check if user has minimum contacts
-  const hasMinimumContacts = contacts.length >= MIN_EMERGENCY_CONTACTS;
+  // Check if user has minimum contacts - only valid after initialization
+  const hasMinimumContacts = initialized && contacts.length >= MIN_EMERGENCY_CONTACTS;
 
   // Get primary contact
   const primaryContact = contacts.find(c => c.is_primary) || contacts[0];
@@ -177,6 +186,7 @@ export function useEmergencyContactsDB() {
   return {
     contacts,
     loading,
+    initialized,
     error,
     addContact,
     updateContact,
