@@ -228,7 +228,7 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
                 <SelectTrigger id="category">
                   <SelectValue placeholder="Selecciona una categoría" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" className="z-[10200]">
                   {FEEDBACK_CATEGORIES.map((cat) => (
                     <SelectItem key={cat.value} value={cat.value}>
                       {cat.label}
