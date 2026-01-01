@@ -230,9 +230,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[check-delayed-trips] Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    // SECURITY: Don't expose internal error details to clients
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

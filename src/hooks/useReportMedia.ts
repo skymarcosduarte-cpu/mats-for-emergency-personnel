@@ -50,17 +50,22 @@ export function useReportMedia({ reportId, reportType }: UseReportMediaOptions) 
           return;
         }
 
-        // Generate public URLs for each media item
+        // Generate signed URLs for each media item (bucket is now private for security)
         const mediaWithUrls = await Promise.all(
           (data || []).map(async (item) => {
-            const { data: urlData } = supabase.storage
+            // Use signed URL that expires in 1 hour (3600 seconds)
+            const { data: urlData, error: urlError } = await supabase.storage
               .from('reports_media')
-              .getPublicUrl(item.storage_path);
+              .createSignedUrl(item.storage_path, 3600);
+
+            if (urlError) {
+              console.warn('[useReportMedia] Error creating signed URL:', urlError.message);
+            }
 
             return {
               ...item,
               media_type: item.media_type as 'image' | 'audio',
-              publicUrl: urlData?.publicUrl || undefined,
+              publicUrl: urlData?.signedUrl || undefined,
             };
           })
         );

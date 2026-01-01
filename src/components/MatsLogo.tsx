@@ -1,5 +1,5 @@
 // M.A.T.S. Logo Component
-import React from 'react';
+import React, { forwardRef, memo } from 'react';
 import matsLogo from '@/assets/mats-logo.png';
 
 interface MatsLogoProps {
@@ -8,16 +8,16 @@ interface MatsLogoProps {
   showText?: boolean;
 }
 
-export const MatsLogo: React.FC<MatsLogoProps> = ({ 
+export const MatsLogo = memo(forwardRef<HTMLDivElement, MatsLogoProps>(({ 
   size = 48, 
   className = '',
   showText = false 
-}) => {
+}, ref) => {
   // Responsive size classes based on size prop
   const sizeClass = size <= 32 ? 'rounded-md' : size <= 64 ? 'rounded-lg' : 'rounded-xl';
   
   return (
-    <div className={`flex items-center gap-2 min-w-0 ${className}`}>
+    <div ref={ref} className={`flex items-center gap-2 min-w-0 ${className}`}>
       <img
         src={matsLogo}
         alt="M.A.T.S. Logo"
@@ -43,10 +43,12 @@ export const MatsLogo: React.FC<MatsLogoProps> = ({
       )}
     </div>
   );
-};
+}));
+
+MatsLogo.displayName = 'MatsLogo';
 
 // Simplified marker icon for map - uses the same logo
-export const MatsMarkerIcon = ({ size = 32 }: { size?: number }) => (
+export const MatsMarkerIcon = memo(({ size = 32 }: { size?: number }) => (
   <img
     src={matsLogo}
     alt="M.A.T.S."
@@ -56,6 +58,8 @@ export const MatsMarkerIcon = ({ size = 32 }: { size?: number }) => (
     style={{ maxWidth: size, maxHeight: size }}
     loading="lazy"
   />
-);
+));
+
+MatsMarkerIcon.displayName = 'MatsMarkerIcon';
 
 export default MatsLogo;
