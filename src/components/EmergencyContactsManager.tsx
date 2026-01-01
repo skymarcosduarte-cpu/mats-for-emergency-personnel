@@ -2,7 +2,7 @@
 // Manage emergency contacts in database for WhatsApp integration
 
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Trash2, MessageCircle, Edit2, Check, X, Phone, Users, Star, Mail, AlertCircle, Loader2 } from 'lucide-react';
+import { UserPlus, Trash2, MessageCircle, Edit2, Check, X, Phone, Users, Star, Mail, AlertCircle, Loader2, Contact } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,23 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from '@/hooks/useLocation';
+
+// Type for Contact Picker API
+interface ContactPickerContact {
+  name?: string[];
+  email?: string[];
+  tel?: string[];
+}
+
+declare global {
+  interface ContactsManager {
+    select(properties: string[], options?: { multiple?: boolean }): Promise<ContactPickerContact[]>;
+    getProperties(): Promise<string[]>;
+  }
+  interface Navigator {
+    contacts?: ContactsManager;
+  }
+}
 
 interface EmergencyContactsManagerProps {
   className?: string;
@@ -54,6 +71,52 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
 
   const resetForm = () => {
     setFormData({ name: '', phone: '', email: '', whatsapp: '', relationship: '' });
+  };
+
+  // Check if Contact Picker API is available
+  const isContactPickerSupported = 'contacts' in navigator && 'ContactsManager' in window;
+
+  const handleImportFromContacts = async () => {
+    if (!navigator.contacts) {
+      toast({ 
+        title: 'No disponible', 
+        description: 'Tu navegador no soporta importar contactos. Usa Chrome en Android o la app nativa.', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    try {
+      const properties = ['name', 'tel', 'email'];
+      const contacts = await navigator.contacts.select(properties, { multiple: false });
+      
+      if (contacts && contacts.length > 0) {
+        const contact = contacts[0];
+        const name = contact.name?.[0] || '';
+        const phone = contact.tel?.[0] || '';
+        const email = contact.email?.[0] || '';
+        
+        setFormData({
+          name,
+          phone,
+          email,
+          whatsapp: phone,
+          relationship: '',
+        });
+        
+        setShowAddDialog(true);
+        toast({ title: 'Contacto importado', description: `${name} ha sido cargado. Revisa los datos y guarda.` });
+      }
+    } catch (err: any) {
+      if (err.name !== 'InvalidStateError' && err.name !== 'NotAllowedError') {
+        console.error('Error importing contact:', err);
+        toast({ 
+          title: 'Error', 
+          description: 'No se pudo importar el contacto', 
+          variant: 'destructive' 
+        });
+      }
+    }
   };
 
   const handleAddSubmit = async () => {
@@ -176,14 +239,24 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
               </span>
             </div>
             {canAddMore && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowAddDialog(true)}
-              >
-                <UserPlus className="w-4 h-4 mr-1" />
-                Agregar
-              </Button>
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleImportFromContacts}
+                  title="Importar desde agenda"
+                >
+                  <Contact className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowAddDialog(true)}
+                >
+                  <UserPlus className="w-4 h-4 mr-1" />
+                  Agregar
+                </Button>
+              </div>
             )}
           </CardTitle>
         </CardHeader>
@@ -204,15 +277,24 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
             <div className="text-center py-6 text-muted-foreground">
               <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No hay contactos agregados</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3"
-                onClick={() => setShowAddDialog(true)}
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Agregar contacto
-              </Button>
+              <div className="flex gap-2 justify-center mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleImportFromContacts}
+                >
+                  <Contact className="w-4 h-4 mr-2" />
+                  Importar
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddDialog(true)}
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Manual
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
@@ -373,6 +455,24 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
           </DialogHeader>
           
           <div className="space-y-4 py-4">
+            {/* Import from contacts button */}
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleImportFromContacts}
+            >
+              <Contact className="w-4 h-4 mr-2" />
+              Importar desde agenda
+            </Button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">o ingresa manualmente</span>
+              </div>
+            </div>
             <div>
               <Label>Nombre *</Label>
               <Input
