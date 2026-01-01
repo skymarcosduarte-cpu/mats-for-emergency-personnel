@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { HelpCircle, X, GraduationCap, MessageSquarePlus, Send, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { HelpCircle, X, GraduationCap, MessageSquarePlus, Send, Loader2, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,6 +17,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { addToQueue } from '@/lib/feedbackQueue';
+import { useFeedbackQueue } from '@/hooks/useFeedbackQueue';
 
 const withTimeout = <T,>(promise: PromiseLike<T>, ms: number): Promise<T> => {
   return new Promise<T>((resolve, reject) => {
@@ -58,6 +60,24 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
   const [showTutorial, setShowTutorial] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
+  // Process offline queue when connection is restored
+  useFeedbackQueue();
+  
+  // Track online status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
   
   const [feedbackForm, setFeedbackForm] = useState({
     category: '',
@@ -100,6 +120,46 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
 
     const values = parsed.data;
 
+    // If offline, queue for later
+    if (!navigator.onLine) {
+      try {
+        // Get user ID if available (might be cached)
+        let userId: string | null = null;
+        try {
+          const { data } = await supabase.auth.getUser();
+          userId = data?.user?.id ?? null;
+        } catch {
+          // Ignore - we'll send without user ID
+        }
+
+        await addToQueue({
+          category: values.category,
+          name: values.name,
+          email: values.email.toLowerCase(),
+          message: values.message,
+          userId,
+        });
+
+        toast({
+          title: 'Guardado para enviar después',
+          description: 'Tu feedback se enviará automáticamente cuando recuperes conexión.',
+        });
+
+        handleCloseFeedback();
+      } catch (err) {
+        console.error('Error queueing feedback:', err);
+        toast({
+          title: 'Error al guardar',
+          description: 'No pudimos guardar tu feedback. Intenta de nuevo.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    // Online - send immediately
     try {
       const {
         data: { user },
@@ -131,13 +191,37 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
       const isTimeout = String(error?.message || '').includes('timeout');
       console.error('Error submitting feedback:', error);
 
-      toast({
-        title: isTimeout ? 'Tiempo de espera' : 'Error al enviar',
-        description: isTimeout
-          ? 'Parece que la conexión está lenta. Intenta de nuevo.'
-          : 'No pudimos enviar tu feedback. Intenta de nuevo.',
-        variant: 'destructive',
-      });
+      // If send failed, offer to queue
+      try {
+        let userId: string | null = null;
+        try {
+          const { data } = await supabase.auth.getUser();
+          userId = data?.user?.id ?? null;
+        } catch {
+          // Ignore
+        }
+
+        await addToQueue({
+          category: values.category,
+          name: values.name,
+          email: values.email.toLowerCase(),
+          message: values.message,
+          userId,
+        });
+
+        toast({
+          title: isTimeout ? 'Conexión lenta' : 'Error al enviar',
+          description: 'Tu feedback se enviará automáticamente cuando mejore la conexión.',
+        });
+
+        handleCloseFeedback();
+      } catch (queueErr) {
+        toast({
+          title: isTimeout ? 'Tiempo de espera' : 'Error al enviar',
+          description: 'No pudimos enviar tu feedback. Intenta de nuevo.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
