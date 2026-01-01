@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Loader2, Eye, EyeOff, UserPlus, LogIn, Mail } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -324,10 +325,19 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         if (signInError) {
           // User was created but sign-in failed - they can try logging in manually
           console.log('[AuthGate] Sign-in after registration failed:', signInError);
-          setError('¡Cuenta creada! Ahora inicia sesión con tus credenciales.');
+          toast({
+            title: '¡Cuenta creada!',
+            description: 'Ahora inicia sesión con tus credenciales.',
+          });
           setAuthTab('login');
           // Clear password for security when switching to login tab
           setPassword('');
+        } else {
+          // Sign-in succeeded, show success toast
+          toast({
+            title: '¡Bienvenido/a!',
+            description: 'Tu cuenta ha sido creada exitosamente.',
+          });
         }
         // If sign-in succeeded, the auth state listener will handle navigation
         
@@ -470,6 +480,10 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       await refetchProfile();
 
       console.log('[AuthGate] Registration complete!');
+      toast({
+        title: '¡Registro completado!',
+        description: 'Tu perfil ha sido creado exitosamente. ¡Bienvenido/a a la comunidad!',
+      });
       setShowPrivacyConsent(false);
       onAuthComplete?.();
     } catch (err) {
