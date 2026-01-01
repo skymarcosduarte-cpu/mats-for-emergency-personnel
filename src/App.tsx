@@ -481,12 +481,6 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
         showActiveUsersInline={activeTab !== 'map'}
       />
 
-      {/* Active/Registered users counter on the map (avoid header overlap) */}
-      {activeTab === 'map' && (
-        <div className="fixed left-4 top-[calc(var(--app-header-height)+12px)] z-[1200]">
-          <ActiveUsersIndicator compact showIcon={false} />
-        </div>
-      )}
 
       <QuakeDamageBanner />
       <ActiveAlertBanner 
