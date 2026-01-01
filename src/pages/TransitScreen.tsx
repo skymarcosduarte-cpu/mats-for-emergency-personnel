@@ -391,21 +391,14 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       if (userError) throw userError;
       if (!user) throw new Error('No autenticado');
 
-      const { data, error } = await supabase
+      // First update to mark as inactive
+      const { error } = await supabase
         .from('road_reports')
         .update({ is_active: false })
         .eq('id', reportId)
-        .eq('user_id', user.id)
-        .select('id');
+        .eq('user_id', user.id);
 
       if (error) throw error;
-
-      if (!data || data.length === 0) {
-        toast.error('No se pudo eliminar el reporte', {
-          description: 'No se encontró el reporte o no te pertenece.',
-        });
-        return;
-      }
 
       toast.success('Reporte eliminado');
       refetchReports();
