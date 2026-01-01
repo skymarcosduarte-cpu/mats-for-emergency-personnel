@@ -73,6 +73,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [showRecoverySuggestion, setShowRecoverySuggestion] = useState(false);
   
   // Auth form state
   const [email, setEmail] = useState('');
@@ -196,15 +198,27 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         let errorMessage = 'Error al iniciar sesión. Intenta de nuevo.';
         let errorTitle = 'Error de inicio de sesión';
         
-        if (signInError.message.includes('Invalid login credentials')) {
+        const isCredentialError = signInError.message.includes('Invalid login credentials');
+        
+        if (isCredentialError) {
           errorMessage = 'Email o contraseña incorrectos. Verifica tus datos.';
           errorTitle = 'Credenciales inválidas';
+          
+          // Track failed attempts for credential errors
+          const newAttempts = loginAttempts + 1;
+          setLoginAttempts(newAttempts);
+          
+          // Show recovery suggestion after 2 failed attempts
+          if (newAttempts >= 2) {
+            setShowRecoverySuggestion(true);
+          }
         } else if (signInError.message.includes('Email not confirmed')) {
           errorMessage = 'Tu email no ha sido confirmado. Revisa tu bandeja de entrada.';
           errorTitle = 'Email no confirmado';
         } else if (signInError.message.includes('rate limit')) {
           errorMessage = 'Demasiados intentos. Espera unos minutos antes de intentar de nuevo.';
           errorTitle = 'Límite de intentos';
+          setShowRecoverySuggestion(true);
         }
         
         setError(errorMessage);
@@ -213,6 +227,10 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           description: errorMessage,
           variant: 'destructive',
         });
+      } else {
+        // Reset attempts on successful login
+        setLoginAttempts(0);
+        setShowRecoverySuggestion(false);
       }
     } catch (err) {
       console.error('[AuthGate] Login error:', err);
@@ -637,6 +655,29 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
+
+                {showRecoverySuggestion && (
+                  <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg space-y-2">
+                    <p className="text-sm text-warning-foreground">
+                      <span className="font-medium">¿Problemas para ingresar?</span>
+                      {' '}Te recomendamos recuperar tu contraseña.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-warning text-warning hover:bg-warning/20"
+                      onClick={() => {
+                        setShowForgotPassword(true);
+                        setForgotPasswordEmail(email);
+                        setForgotPasswordSuccess(false);
+                        setError(null);
+                      }}
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Recuperar contraseña
+                    </Button>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="signup" className="space-y-4 mt-4">
