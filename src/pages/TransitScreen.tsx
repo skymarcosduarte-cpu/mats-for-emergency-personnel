@@ -391,10 +391,10 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       if (userError) throw userError;
       if (!user) throw new Error('No autenticado');
 
-      // First update to mark as inactive
+      // Delete report (hard delete)
       const { error } = await supabase
         .from('road_reports')
-        .update({ is_active: false })
+        .delete()
         .eq('id', reportId)
         .eq('user_id', user.id);
 
