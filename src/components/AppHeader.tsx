@@ -1,6 +1,5 @@
 import React, { useRef, useCallback, useState } from 'react';
 import { MatsLogo } from './MatsLogo';
-import { ActiveUsersIndicator } from './ActiveUsersIndicator';
 import { AlertTriangle, Phone, MessageCircle, Sun, SunDim } from 'lucide-react';
 import { playUrgentSound } from '@/lib/alertSound';
 import { toast } from 'sonner';
@@ -24,7 +23,6 @@ interface AppHeaderProps {
     isActive: boolean;
     error: string | null;
   };
-  showActiveUsersInline?: boolean;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -32,7 +30,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   unreadMessageCount,
   onOpenMessages,
   wakeLockStatus,
-  showActiveUsersInline = true,
 }) => {
   const lastActivatedAtRef = useRef(0);
   const suppressClickRef = useRef(false);
@@ -145,10 +142,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       <header className="app-header fixed top-0 left-0 right-0 z-[100]">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <MatsLogo size={36} showText className="min-w-0" />
-          {/* Inline active users count */}
-          {showActiveUsersInline && (
-            <ActiveUsersIndicator compact showIcon={false} className="ml-1 flex-shrink-0" />
-          )}
 
           {/* Wake Lock Status Chip */}
           {wakeLockStatus && (
