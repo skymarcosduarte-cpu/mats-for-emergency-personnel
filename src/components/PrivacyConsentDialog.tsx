@@ -1,8 +1,8 @@
 // Privacy Consent and Terms of Service Dialog for COMUNIDAD EX SOS
 // Users must accept before sharing location and medical info
 
-import React, { useState, useRef, useCallback } from 'react';
-import { Shield, MapPin, HeartPulse, FileText, AlertTriangle } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Shield, MapPin, HeartPulse, FileText, AlertTriangle, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -30,41 +30,40 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [shareLocation, setShareLocation] = useState(true);
   const [shareMedicalInfo, setShareMedicalInfo] = useState(true);
-  
-  // Prevent double execution on iOS (touch + click)
-  const lastActionTimeRef = useRef<number>(0);
-  const DEBOUNCE_MS = 300;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const shouldExecute = useCallback(() => {
-    const now = Date.now();
-    if (now - lastActionTimeRef.current < DEBOUNCE_MS) {
-      return false;
+  // Reset state when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      setAcceptedTerms(false);
+      setShareLocation(true);
+      setShareMedicalInfo(true);
+      setIsSubmitting(false);
     }
-    lastActionTimeRef.current = now;
-    return true;
-  }, []);
+  }, [open]);
 
   const handleAccept = useCallback(() => {
-    if (!shouldExecute()) return;
+    if (isSubmitting) return;
     if (acceptedTerms) {
-      onAccept(shareLocation, shareMedicalInfo);
+      setIsSubmitting(true);
+      // Small delay to show loading state
+      setTimeout(() => {
+        onAccept(shareLocation, shareMedicalInfo);
+      }, 100);
     }
-  }, [acceptedTerms, shareLocation, shareMedicalInfo, onAccept, shouldExecute]);
+  }, [acceptedTerms, shareLocation, shareMedicalInfo, onAccept, isSubmitting]);
 
   const handleLocationToggle = useCallback(() => {
-    if (!shouldExecute()) return;
     setShareLocation(prev => !prev);
-  }, [shouldExecute]);
+  }, []);
 
   const handleMedicalToggle = useCallback(() => {
-    if (!shouldExecute()) return;
     setShareMedicalInfo(prev => !prev);
-  }, [shouldExecute]);
+  }, []);
 
   const handleTermsToggle = useCallback(() => {
-    if (!shouldExecute()) return;
     setAcceptedTerms(prev => !prev);
-  }, [shouldExecute]);
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onDecline()}>
@@ -264,10 +263,17 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
           <Button
             type="button"
             onClick={handleAccept}
-            disabled={!acceptedTerms}
+            disabled={!acceptedTerms || isSubmitting}
             className="w-full sm:w-auto"
           >
-            Aceptar y Continuar
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Procesando...
+              </>
+            ) : (
+              'Aceptar y Continuar'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
