@@ -140,44 +140,51 @@ export const SpecialtyFilter: React.FC<SpecialtyFilterProps> = ({
           )}
 
           {/* Specialties list */}
-          <ScrollArea className="max-h-[40vh]">
-            <div className="p-2 space-y-1">
-              {displaySpecialties.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">
-                  No hay especialistas activos
-                </p>
-              ) : (
-                displaySpecialties.map(specialty => {
-                  const isSelected = selectedSpecialties.includes(specialty);
-                  const count = specialistCounts[specialty] || 0;
-                  
-                  return (
-                    <button
-                      key={specialty}
-                      onClick={() => toggleSpecialty(specialty)}
-                      className={cn(
-                        "flex items-center justify-between w-full px-2 py-1.5 rounded-md text-xs transition-colors text-left",
-                        isSelected 
-                          ? "bg-primary/20 text-primary border border-primary/30" 
-                          : "hover:bg-accent/50 text-foreground"
-                      )}
-                    >
-                      <span className="truncate flex-1 mr-2">{specialty}</span>
-                      {count > 0 && (
-                        <Badge 
-                          variant={isSelected ? "default" : "secondary"} 
-                          className="text-[10px] px-1.5 py-0 h-4 flex-shrink-0"
-                        >
-                          {count}
-                        </Badge>
-                      )}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </ScrollArea>
+          <div
+            className="h-[40vh] max-h-[420px] overscroll-contain"
+            style={{ touchAction: 'pan-y' }}
+            onWheel={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
+            <ScrollArea className="h-full">
+              <div className="p-2 space-y-1">
+                {displaySpecialties.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">
+                    No hay especialistas activos
+                  </p>
+                ) : (
+                  displaySpecialties.map(specialty => {
+                    const isSelected = selectedSpecialties.includes(specialty);
+                    const count = specialistCounts[specialty] || 0;
 
+                    return (
+                      <button
+                        key={specialty}
+                        onClick={() => toggleSpecialty(specialty)}
+                        className={cn(
+                          "flex items-center justify-between w-full px-2 py-1.5 rounded-md text-xs transition-colors text-left",
+                          isSelected
+                            ? "bg-primary/20 text-primary border border-primary/30"
+                            : "hover:bg-accent/50 text-foreground"
+                        )}
+                      >
+                        <span className="truncate flex-1 mr-2">{specialty}</span>
+                        {count > 0 && (
+                          <Badge
+                            variant={isSelected ? "default" : "secondary"}
+                            className="text-[10px] px-1.5 py-0 h-4 flex-shrink-0"
+                          >
+                            {count}
+                          </Badge>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </ScrollArea>
+          </div>
           {/* Footer hint */}
           <div className="px-2.5 py-1.5 border-t border-border">
             <p className="text-[10px] text-muted-foreground text-center">

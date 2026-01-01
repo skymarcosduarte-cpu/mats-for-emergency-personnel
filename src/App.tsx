@@ -8,6 +8,7 @@ import { BottomNavigation, type TabId } from '@/components/BottomNavigation';
 import { MatsLogo } from '@/components/MatsLogo';
 import { PanicButton } from '@/components/PanicButton';
 import { AppHeader } from '@/components/AppHeader';
+import { ActiveUsersIndicator } from '@/components/ActiveUsersIndicator';
 import { AuthGate } from '@/pages/AuthGate';
 import { MapScreen } from '@/pages/MapScreen';
 import { TransitScreen } from '@/pages/TransitScreen';
@@ -477,7 +478,16 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
           setMessagingOpen(true);
         }}
         wakeLockStatus={wakeLockStatus}
+        showActiveUsersInline={activeTab !== 'map'}
       />
+
+      {/* Active/Registered users counter on the map (avoid header overlap) */}
+      {activeTab === 'map' && (
+        <div className="fixed left-4 top-[calc(var(--app-header-height)+12px)] z-[1200]">
+          <ActiveUsersIndicator compact showIcon={false} />
+        </div>
+      )}
+
       <QuakeDamageBanner />
       <ActiveAlertBanner 
         testAlert={testAlert} 
