@@ -193,19 +193,36 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     try {
       const { error: signInError } = await signIn(email.trim().toLowerCase(), password, rememberMe);
       if (signInError) {
+        let errorMessage = 'Error al iniciar sesión. Intenta de nuevo.';
+        let errorTitle = 'Error de inicio de sesión';
+        
         if (signInError.message.includes('Invalid login credentials')) {
-          setError('Email o contraseña incorrectos. Verifica tus datos.');
+          errorMessage = 'Email o contraseña incorrectos. Verifica tus datos.';
+          errorTitle = 'Credenciales inválidas';
         } else if (signInError.message.includes('Email not confirmed')) {
-          setError('Tu email no ha sido confirmado. Revisa tu bandeja de entrada.');
+          errorMessage = 'Tu email no ha sido confirmado. Revisa tu bandeja de entrada.';
+          errorTitle = 'Email no confirmado';
         } else if (signInError.message.includes('rate limit')) {
-          setError('Demasiados intentos. Espera unos minutos.');
-        } else {
-          setError('Error al iniciar sesión. Intenta de nuevo.');
+          errorMessage = 'Demasiados intentos. Espera unos minutos antes de intentar de nuevo.';
+          errorTitle = 'Límite de intentos';
         }
+        
+        setError(errorMessage);
+        toast({
+          title: errorTitle,
+          description: errorMessage,
+          variant: 'destructive',
+        });
       }
     } catch (err) {
       console.error('[AuthGate] Login error:', err);
-      setError('Error de conexión. Verifica tu internet e intenta de nuevo.');
+      const errorMessage = 'Error de conexión. Verifica tu internet e intenta de nuevo.';
+      setError(errorMessage);
+      toast({
+        title: 'Error de conexión',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -290,12 +307,24 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           const serverMessage = response.error?.message || '';
           if (serverMessage.includes('email ya está registrado') || 
               serverMessage.includes('ya registrado')) {
-            setError('Este email ya está registrado. Intenta iniciar sesión o recuperar tu contraseña.');
+            const errorMessage = 'Este email ya está registrado. Intenta iniciar sesión o recuperar tu contraseña.';
+            setError(errorMessage);
+            toast({
+              title: 'Email ya registrado',
+              description: errorMessage,
+              variant: 'destructive',
+            });
             setLoading(false);
             return;
           }
           
-          setError('Error de conexión. Verifica tu internet e intenta de nuevo.');
+          const connectionError = 'Error de conexión. Verifica tu internet e intenta de nuevo.';
+          setError(connectionError);
+          toast({
+            title: 'Error de conexión',
+            description: connectionError,
+            variant: 'destructive',
+          });
           setLoading(false);
           return;
         }
@@ -309,6 +338,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           
           // Show the specific error message from the server
           setError(errorMsg);
+          toast({
+            title: 'Error de registro',
+            description: errorMsg,
+            variant: 'destructive',
+          });
           setLoading(false);
           return;
         }
