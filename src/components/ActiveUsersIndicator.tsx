@@ -134,8 +134,8 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-2xl font-bold text-safe">{activeCount}</span>
             <div className="flex flex-col leading-tight">
-              <span className="text-xs font-medium text-foreground">usuarios</span>
-              <span className="text-xs text-muted-foreground">en línea</span>
+              <span className="text-xs font-medium text-foreground">miembros</span>
+              <span className="text-xs text-muted-foreground">conectados</span>
             </div>
           </div>
 
@@ -155,7 +155,7 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
                   <div className="w-3 h-3 rounded-full bg-safe" />
                   <div className="absolute inset-0 w-3 h-3 rounded-full bg-safe animate-ping opacity-75" />
                 </div>
-                {activeCount} usuarios en línea
+                {activeCount} miembros conectados
               </SheetTitle>
               <div className="flex gap-3 text-xs text-muted-foreground flex-wrap pt-2">
                 <span className="flex items-center gap-1">
@@ -298,7 +298,7 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
         'font-medium text-foreground',
         compact ? 'text-xs' : 'text-sm'
       )}>
-        {activeCount} {!compact && (activeCount === 1 ? 'activo' : 'activos')}
+        {activeCount} {!compact && (activeCount === 1 ? 'conectado' : 'conectados')}
       </span>
     </button>
   );
