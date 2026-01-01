@@ -101,7 +101,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     shareMedicalInfo: true,
   });
 
-  const { signUp, signIn, createProfile, user, isProfileComplete } = useAuth();
+  const { signUp, signIn, createProfile, user, isProfileComplete, refetchProfile } = useAuth();
 
   // Check if user needs to complete profile
   useEffect(() => {
@@ -379,24 +379,52 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
   // Handle privacy consent and complete profile creation
   const handlePrivacyAccept = async (shareLocation: boolean, shareMedicalInfo: boolean) => {
-    setShowPrivacyConsent(false);
-    setPrivacySettings({ shareLocation, shareMedicalInfo });
+    console.log('[AuthGate] Privacy accepted, creating profile...');
     
+    // Keep dialog open until we're done, just disable interaction
     setLoading(true);
     setError(null);
+    setPrivacySettings({ shareLocation, shareMedicalInfo });
 
     try {
-      const { data: existingProfile } = await supabase
+      // Check if profile already exists (edge case: user refreshed mid-registration)
+      const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('id')
         .eq('id', user?.id)
         .maybeSingle();
 
+      if (checkError) {
+        console.error('[AuthGate] Error checking existing profile:', checkError);
+      }
+
       if (existingProfile) {
+        console.log('[AuthGate] Profile already exists, updating privacy settings and completing...');
+        // Profile exists - just update privacy settings
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            share_location: shareLocation,
+            share_medical_info: shareMedicalInfo,
+            privacy_consent_at: new Date().toISOString(),
+            terms_accepted_at: new Date().toISOString(),
+          })
+          .eq('id', user?.id);
+
+        if (updateError) {
+          console.error('[AuthGate] Error updating privacy settings:', updateError);
+        }
+
+        // Force refetch profile to update auth state
+        await refetchProfile();
+        
+        // Close dialog and complete
+        setShowPrivacyConsent(false);
         onAuthComplete?.();
         return;
       }
 
+      console.log('[AuthGate] Creating new profile...');
       const nickname = profileForm.nickname.trim() || profileForm.fullName.split(' ')[0];
       
       const { error: profileError } = await createProfile({
@@ -414,12 +442,15 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       });
 
       if (profileError) {
+        console.error('[AuthGate] Profile creation error:', profileError);
+        setShowPrivacyConsent(false);
         setError(translateError(profileError.message));
         return;
       }
 
+      console.log('[AuthGate] Profile created, updating privacy settings...');
       // Update privacy settings
-      await supabase
+      const { error: privacyError } = await supabase
         .from('profiles')
         .update({
           share_location: shareLocation,
@@ -429,11 +460,21 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         })
         .eq('id', user?.id);
 
-      // Invite code is already consumed by the server-side registration endpoint
-      // No need to call use_invite_code again here
+      if (privacyError) {
+        console.error('[AuthGate] Privacy settings update error:', privacyError);
+        // Non-critical, continue
+      }
 
+      // Force refetch profile to update auth state before completing
+      console.log('[AuthGate] Refetching profile to update auth state...');
+      await refetchProfile();
+
+      console.log('[AuthGate] Registration complete!');
+      setShowPrivacyConsent(false);
       onAuthComplete?.();
     } catch (err) {
+      console.error('[AuthGate] Unexpected error during profile creation:', err);
+      setShowPrivacyConsent(false);
       setError('Error al crear perfil. Intenta de nuevo.');
     } finally {
       setLoading(false);

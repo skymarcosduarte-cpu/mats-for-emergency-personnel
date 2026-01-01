@@ -394,6 +394,21 @@ export function useAuth() {
     });
   };
 
+  // Manual refetch of profile (useful after profile creation)
+  const refetchProfile = useCallback(async () => {
+    if (!state.user) return;
+    console.log('[useAuth] Manually refetching profile...');
+    const [profile, role] = await Promise.all([
+      fetchProfile(state.user.id),
+      fetchRole(state.user.id),
+    ]);
+    setState(prev => ({ ...prev, profile, role }));
+    if (profile) {
+      cacheAuthSession(state.user.id, profile, role);
+    }
+    console.log('[useAuth] Profile refetched:', !!profile);
+  }, [state.user, fetchProfile, fetchRole]);
+
   return {
     ...state,
     isAuthenticated: !!state.user,
@@ -405,5 +420,6 @@ export function useAuth() {
     updateRole,
     deleteAccount,
     signOut,
+    refetchProfile,
   };
 }
