@@ -78,6 +78,7 @@ import { useUserDataExport } from '@/hooks/useUserDataExport';
 import { Badge } from '@/components/ui/badge';
 import { ComprehensiveTutorial } from '@/components/ComprehensiveTutorial';
 import QRCode from 'qrcode';
+import { toast } from 'sonner';
 
 interface SettingsScreenProps {
   onLogout?: () => void;
@@ -173,12 +174,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   // Test notification
   const handleTestNotification = () => {
+    // First, play a sound so user always gets feedback
+    playSubtleAlert();
+
+    // Check if notifications are supported
+    if (!isSupported) {
+      toast.info('Tu navegador no soporta notificaciones nativas', {
+        description: 'Recibirás alertas visuales y sonoras dentro de la app.',
+      });
+      return;
+    }
+
+    // Check permission status
+    if (permission !== 'granted') {
+      toast.warning('Permisos de notificación no concedidos', {
+        description: 'Activa las notificaciones arriba para recibir alertas.',
+        action: {
+          label: 'Activar',
+          onClick: handleRequestPermission,
+        },
+      });
+      return;
+    }
+
     const testQuake = {
       id: 'test-123',
       type: 'Feature' as const,
       properties: {
         mag: 5.2,
-        place: '10km NE of Test City (PRUEBA)',
+        place: '10km NE de Ciudad de Prueba (TEST)',
         time: Date.now(),
         updated: Date.now(),
         tz: null,
@@ -202,14 +226,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         gap: null,
         magType: 'ml',
         type: 'earthquake',
-        title: 'M 5.2 - 10km NE of Test City'
+        title: 'M 5.2 - 10km NE de Ciudad de Prueba'
       },
       geometry: {
         type: 'Point' as const,
         coordinates: [-99.1332, 19.4326, 10] as [number, number, number]
       }
     };
-    showEarthquakeNotification(testQuake, 15);
+
+    const sent = showEarthquakeNotification(testQuake, 15);
+    if (sent) {
+      toast.success('Notificación de prueba enviada', {
+        description: 'Deberías verla en tu dispositivo.',
+      });
+    } else {
+      toast.error('No se pudo enviar la notificación', {
+        description: 'Revisa los permisos del navegador.',
+      });
+    }
   };
 
   // Medical assistance state
