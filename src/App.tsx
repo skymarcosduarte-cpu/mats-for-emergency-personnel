@@ -63,6 +63,7 @@ import { useBackgroundConnection } from '@/hooks/useBackgroundConnection';
 import { useAutoWakeLock } from '@/hooks/useWakeLock';
 import { useBackgroundLocation } from '@/hooks/useBackgroundLocation';
 import { usePrefetch } from '@/hooks/usePrefetch';
+import { useIOSKeyboardFix } from '@/hooks/useIOSKeyboardFix';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { UserRole, USGSEarthquake, PanicType } from '@/types';
@@ -176,6 +177,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   const [isSavingAlert, setIsSavingAlert] = useState(false);
   const [alertRefreshTrigger, setAlertRefreshTrigger] = useState(0);
   const { user } = useAuth();
+  
+  // iOS keyboard fix - prevents footer from moving when keyboard opens
+  useIOSKeyboardFix();
   
   // Prefetch critical data in parallel as soon as user is authenticated
   usePrefetch(user?.id);
