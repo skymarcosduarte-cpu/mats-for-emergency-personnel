@@ -112,15 +112,21 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     }
   }, [user, isProfileComplete, onAuthComplete]);
 
-  // Email validation helper
+  // Email validation helper with detailed feedback
   const isValidEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    return emailRegex.test(email.trim());
   };
 
-  const forgotPasswordEmailError = forgotPasswordEmail.trim() && !isValidEmail(forgotPasswordEmail)
-    ? 'Ingresa un email válido (ej: usuario@dominio.com)'
-    : null;
+  const getEmailError = (emailValue: string): string | null => {
+    if (!emailValue.trim()) return null;
+    if (!emailValue.includes('@')) return 'El email debe contener @';
+    if (!isValidEmail(emailValue)) return 'Formato de email inválido (ej: usuario@dominio.com)';
+    return null;
+  };
+
+  const emailError = getEmailError(email);
+  const forgotPasswordEmailError = getEmailError(forgotPasswordEmail);
 
   // Handle forgot password
   const handleForgotPassword = async () => {
@@ -161,36 +167,79 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     }
   };
 
-  // Handle login
+  // Handle login with improved validation
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      setError('Ingresa email y contraseña');
+    // Clear previous errors
+    setError(null);
+
+    if (!email.trim()) {
+      setError('Ingresa tu email');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError('Formato de email inválido');
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Ingresa tu contraseña');
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
-      const { error: signInError } = await signIn(email, password, rememberMe);
+      const { error: signInError } = await signIn(email.trim().toLowerCase(), password, rememberMe);
       if (signInError) {
         if (signInError.message.includes('Invalid login credentials')) {
-          setError('Email o contraseña incorrectos');
+          setError('Email o contraseña incorrectos. Verifica tus datos.');
+        } else if (signInError.message.includes('Email not confirmed')) {
+          setError('Tu email no ha sido confirmado. Revisa tu bandeja de entrada.');
+        } else if (signInError.message.includes('rate limit')) {
+          setError('Demasiados intentos. Espera unos minutos.');
         } else {
-          setError(signInError.message);
+          setError('Error al iniciar sesión. Intenta de nuevo.');
         }
       }
     } catch (err) {
-      setError('Error al iniciar sesión');
+      console.error('[AuthGate] Login error:', err);
+      setError('Error de conexión. Verifica tu internet e intenta de nuevo.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle signup - 100% server-side registration
+  // Handle signup - 100% server-side registration with improved error handling
   const handleSignup = async () => {
-    if (!email.trim() || !password.trim()) {
-      setError('Ingresa email y contraseña');
+    // Clear previous errors
+    setError(null);
+
+    // Validate invite code first (most common user issue)
+    if (!inviteCode.trim()) {
+      setError('Se requiere un código de invitación para registrarse');
+      return;
+    }
+
+    // Accept EXS-XXXXXX format or any alphanumeric code for flexibility
+    const trimmedCode = inviteCode.trim().toUpperCase();
+    if (!trimmedCode.match(/^(EXS-[A-Z0-9]{6}|[A-Z0-9-]{4,20})$/)) {
+      setError('Formato de código inválido. Verifica que lo hayas escrito correctamente.');
+      return;
+    }
+
+    if (!email.trim()) {
+      setError('Ingresa tu email');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError('Formato de email inválido (ej: usuario@dominio.com)');
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Ingresa una contraseña');
       return;
     }
 
@@ -199,62 +248,92 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       return;
     }
 
-    // REGISTRO CERRADO - Código de invitación OBLIGATORIO
-    if (!inviteCode.trim()) {
-      setError('Se requiere un código de invitación para registrarse');
-      return;
-    }
-
-    // Accept EXS-XXXXXX format or any alphanumeric code for flexibility
-    if (!inviteCode.match(/^(EXS-[A-Z0-9]{6}|[A-Z0-9-]{4,20})$/i)) {
-      setError('Código de invitación inválido');
-      return;
-    }
-
     setLoading(true);
-    setError(null);
 
-    try {
-      // Call server-side registration endpoint that validates invite AND creates user
-      const response = await supabase.functions.invoke('register-with-invite', {
-        body: {
-          email: email.trim().toLowerCase(),
-          password,
-          inviteCode: inviteCode.trim().toUpperCase(),
+    // Retry logic for transient network errors
+    const maxRetries = 2;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`[AuthGate] Retry attempt ${attempt}/${maxRetries}`);
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
-      });
 
-      if (response.error) {
-        console.error('[AuthGate] register-with-invite error:', response.error);
-        setError('Error de conexión. Intenta de nuevo.');
+        // Call server-side registration endpoint
+        const response = await supabase.functions.invoke('register-with-invite', {
+          body: {
+            email: email.trim().toLowerCase(),
+            password,
+            inviteCode: trimmedCode,
+          }
+        });
+
+        // Network error from fetch
+        if (response.error) {
+          console.error('[AuthGate] Network error:', response.error);
+          lastError = response.error;
+          
+          // Only retry on network/timeout errors
+          if (response.error.message?.includes('network') || 
+              response.error.message?.includes('timeout') ||
+              response.error.message?.includes('fetch')) {
+            if (attempt < maxRetries) continue;
+          }
+          
+          setError('Error de conexión. Verifica tu internet e intenta de nuevo.');
+          setLoading(false);
+          return;
+        }
+
+        const result = response.data;
+
+        // Server returned an error
+        if (!result || !result.success) {
+          const errorMsg = result?.error || 'Error desconocido al crear cuenta';
+          console.log('[AuthGate] Server error:', errorMsg);
+          setError(errorMsg);
+          setLoading(false);
+          return;
+        }
+
+        // Success! Now sign in the user
+        console.log('[AuthGate] User created successfully, signing in...');
+        
+        const { error: signInError } = await signIn(
+          email.trim().toLowerCase(), 
+          password, 
+          rememberMe
+        );
+        
+        if (signInError) {
+          // User was created but sign-in failed - they can try logging in manually
+          console.log('[AuthGate] Sign-in after registration failed:', signInError);
+          setError('¡Cuenta creada! Ahora inicia sesión con tus credenciales.');
+          setAuthTab('login');
+          // Clear password for security when switching to login tab
+          setPassword('');
+        }
+        // If sign-in succeeded, the auth state listener will handle navigation
+        
         setLoading(false);
-        return;
+        return; // Exit retry loop on success
+        
+      } catch (err) {
+        console.error('[AuthGate] Unexpected signup error:', err);
+        lastError = err as Error;
+        
+        // Only retry on unexpected errors that might be transient
+        if (attempt < maxRetries) continue;
       }
-
-      const result = response.data;
-
-      if (!result.success) {
-        setError(result.error || 'Error al crear cuenta');
-        setLoading(false);
-        return;
-      }
-
-      // User created successfully on the server, now sign them in
-      console.log('[AuthGate] User created, signing in...');
-      const { error: signInError } = await signIn(email.trim().toLowerCase(), password, rememberMe);
-      
-      if (signInError) {
-        // User was created but sign-in failed - they can try logging in manually
-        setError('Cuenta creada. Ahora inicia sesión con tus credenciales.');
-        setAuthTab('login');
-      }
-      // If sign-in succeeded, the auth state listener will handle the rest
-    } catch (err) {
-      console.error('[AuthGate] Unexpected signup error:', err);
-      setError('Error al crear cuenta');
-    } finally {
-      setLoading(false);
     }
+
+    // All retries failed
+    console.error('[AuthGate] All signup attempts failed:', lastError);
+    setError('Error de conexión. Por favor verifica tu internet e intenta de nuevo.');
+    setLoading(false);
   };
 
   // Translate common database errors to Spanish
@@ -380,9 +459,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                   <Input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setError(null);
+                    }}
                     placeholder="tu@email.com"
+                    className={emailError ? 'border-destructive' : ''}
+                    autoComplete="email"
                   />
+                  {emailError && (
+                    <p className="text-xs text-destructive mt-1">{emailError}</p>
+                  )}
                 </div>
 
                 <div>
@@ -391,8 +478,12 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                     <Input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setError(null);
+                      }}
                       placeholder="••••••••"
+                      autoComplete="current-password"
                     />
                     <button
                       type="button"
@@ -419,8 +510,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                 </div>
 
                 <Button onClick={handleLogin} disabled={loading} className="w-full">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <LogIn className="w-4 h-4 mr-2" />}
-                  Iniciar Sesión
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Iniciando sesión...
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4 mr-2" />
+                      Iniciar Sesión
+                    </>
+                  )}
                 </Button>
 
                 <button
@@ -442,14 +542,24 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                   <Label>Código de invitación *</Label>
                   <Input
                     value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                    placeholder="Ingresa tu código de invitación"
-                    className="font-mono"
+                    onChange={(e) => {
+                      setInviteCode(e.target.value.toUpperCase());
+                      setError(null);
+                    }}
+                    placeholder="EXS-XXXXXX"
+                    className={cn(
+                      "font-mono",
+                      inviteCode.trim() && !inviteCode.match(/^(EXS-[A-Z0-9]{6}|[A-Z0-9-]{4,20})$/) 
+                        ? 'border-warning' 
+                        : inviteCode.trim() 
+                          ? 'border-safe' 
+                          : ''
+                    )}
                     maxLength={20}
                     required
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Se requiere código de invitación para registrarse
+                    Solicita tu código a un miembro de la comunidad
                   </p>
                 </div>
 
@@ -458,9 +568,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                   <Input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setError(null);
+                    }}
                     placeholder="tu@email.com"
+                    className={emailError ? 'border-destructive' : ''}
+                    autoComplete="email"
                   />
+                  {emailError && (
+                    <p className="text-xs text-destructive mt-1">{emailError}</p>
+                  )}
                 </div>
 
                 <div>
@@ -469,8 +587,13 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                     <Input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setError(null);
+                      }}
                       placeholder="Mínimo 6 caracteres"
+                      className={password && password.length < 6 ? 'border-warning' : ''}
+                      autoComplete="new-password"
                     />
                     <button
                       type="button"
@@ -480,11 +603,28 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  {password && password.length < 6 && (
+                    <p className="text-xs text-warning mt-1">
+                      {6 - password.length} caracteres más requeridos
+                    </p>
+                  )}
+                  {password && password.length >= 6 && (
+                    <p className="text-xs text-safe mt-1">✓ Contraseña válida</p>
+                  )}
                 </div>
 
                 <Button onClick={handleSignup} disabled={loading} className="w-full">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
-                  Crear Cuenta
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Creando cuenta...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Crear Cuenta
+                    </>
+                  )}
                 </Button>
               </TabsContent>
             </Tabs>
