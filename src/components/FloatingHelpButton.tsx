@@ -67,9 +67,7 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
     setFeedbackForm({ category: '', name: '', email: '', message: '' });
   };
 
-  const handleSubmitFeedback = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const submitFeedback = async () => {
     if (!feedbackForm.category || !feedbackForm.name || !feedbackForm.email || !feedbackForm.message) {
       toast({
         title: "Campos requeridos",
@@ -93,17 +91,17 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
     setIsSubmitting(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { error } = await supabase
-        .from('user_feedback')
-        .insert({
-          user_id: user?.id || null,
-          category: feedbackForm.category,
-          name: feedbackForm.name.trim(),
-          email: feedbackForm.email.trim().toLowerCase(),
-          message: feedbackForm.message.trim(),
-        });
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const { error } = await supabase.from("user_feedback").insert({
+        user_id: user?.id ?? null,
+        category: feedbackForm.category,
+        name: feedbackForm.name.trim(),
+        email: feedbackForm.email.trim().toLowerCase(),
+        message: feedbackForm.message.trim(),
+      });
 
       if (error) throw error;
 
@@ -114,7 +112,7 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
 
       handleCloseFeedback();
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      console.error("Error submitting feedback:", error);
       toast({
         title: "Error al enviar",
         description: "No pudimos enviar tu feedback. Intenta de nuevo.",
@@ -123,6 +121,11 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmitFeedback = (e: React.FormEvent) => {
+    e.preventDefault();
+    void submitFeedback();
   };
 
   return (
@@ -282,7 +285,14 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                onClick={(e) => {
+                  e.preventDefault();
+                  void submitFeedback();
+                }}
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
