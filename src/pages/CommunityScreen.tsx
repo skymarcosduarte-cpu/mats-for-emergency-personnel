@@ -492,7 +492,9 @@ export const CommunityScreen: React.FC = () => {
                           <img 
                             src={event.image_url} 
                             alt="Imagen del evento" 
-                            className="mt-3 rounded-lg border border-border max-h-48 w-auto object-cover"
+                            loading="lazy"
+                            decoding="async"
+                            className="mt-3 w-full max-h-48 rounded-lg border border-border object-cover"
                           />
                         )}
                         <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
