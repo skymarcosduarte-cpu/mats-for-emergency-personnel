@@ -1,8 +1,8 @@
 // Active Users Indicator Component
 // Shows the count of online users who can receive alerts in real-time
 
-import React, { useState } from 'react';
-import { Users, Radio, Clock, MessageCircle, Stethoscope, Cross, Ambulance } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Radio, Clock, MessageCircle, Stethoscope, Cross, Ambulance, UsersRound } from 'lucide-react';
 import { useUserLocations } from '@/hooks/useRealtime';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { InternalMessaging } from '@/components/InternalMessaging';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ActiveUsersIndicatorProps {
   className?: string;
@@ -29,6 +30,18 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [messageUserId, setMessageUserId] = useState<string | null>(null);
   const [messageUserName, setMessageUserName] = useState<string | null>(null);
+  const [registeredCount, setRegisteredCount] = useState<number | null>(null);
+
+  // Fetch total registered members count
+  useEffect(() => {
+    const fetchRegisteredCount = async () => {
+      const { data, error } = await supabase.rpc('get_beta_user_count');
+      if (!error && data !== null) {
+        setRegisteredCount(data);
+      }
+    };
+    fetchRegisteredCount();
+  }, []);
   
   // Filter out stale locations (older than 10 minutes)
   const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
@@ -130,19 +143,27 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
             </div>
           </div>
           
-          {/* Count with larger text */}
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-safe">{activeCount}</span>
-            <div className="flex flex-col leading-tight">
-              <span className="text-xs font-medium text-foreground">miembros</span>
-              <span className="text-xs text-muted-foreground">conectados</span>
+          {/* Registered members count */}
+          {registeredCount !== null && (
+            <div className="flex items-center gap-1.5 border-r border-border/50 pr-3">
+              <UsersRound className="w-4 h-4 text-primary" />
+              <div className="flex flex-col leading-tight">
+                <span className="text-lg font-bold text-primary">{registeredCount}</span>
+                <span className="text-[10px] text-muted-foreground">registrados</span>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Pulsing dot */}
-          <div className="relative ml-1">
-            <div className="w-3 h-3 rounded-full bg-safe" />
-            <div className="absolute inset-0 w-3 h-3 rounded-full bg-safe animate-ping opacity-60" />
+          {/* Connected count */}
+          <div className="flex items-center gap-1.5">
+            <div className="relative">
+              <div className="w-2.5 h-2.5 rounded-full bg-safe" />
+              <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-safe animate-ping opacity-60" />
+            </div>
+            <div className="flex flex-col leading-tight">
+              <span className="text-lg font-bold text-safe">{activeCount}</span>
+              <span className="text-[10px] text-muted-foreground">conectados</span>
+            </div>
           </div>
         </button>
 
@@ -155,7 +176,12 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
                   <div className="w-3 h-3 rounded-full bg-safe" />
                   <div className="absolute inset-0 w-3 h-3 rounded-full bg-safe animate-ping opacity-75" />
                 </div>
-                {activeCount} miembros conectados
+                <span>{activeCount} conectados</span>
+                {registeredCount !== null && (
+                  <span className="text-muted-foreground font-normal">
+                    de {registeredCount} miembros
+                  </span>
+                )}
               </SheetTitle>
               <div className="flex gap-3 text-xs text-muted-foreground flex-wrap pt-2">
                 <span className="flex items-center gap-1">
