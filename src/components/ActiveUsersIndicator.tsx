@@ -312,6 +312,16 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
         className
       )}
     >
+      {/* Registered count */}
+      {registeredCount !== null && !compact && (
+        <>
+          <UsersRound className="w-4 h-4 text-primary" />
+          <span className="font-medium text-primary text-sm">{registeredCount}</span>
+          <span className="text-muted-foreground text-xs">registrados</span>
+          <span className="text-muted-foreground/50">|</span>
+        </>
+      )}
+
       {/* Pulsing green indicator */}
       <div className="relative">
         <div className="w-2.5 h-2.5 rounded-full bg-safe" />
