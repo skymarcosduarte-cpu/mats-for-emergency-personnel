@@ -615,18 +615,23 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="remember-me"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked === true)}
-                  />
-                  <label
-                    htmlFor="remember-me"
-                    className="text-sm text-muted-foreground cursor-pointer select-none"
-                  >
-                    Mantener sesión iniciada
-                  </label>
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
+                    <label
+                      htmlFor="remember-me"
+                      className="text-sm text-muted-foreground cursor-pointer select-none"
+                    >
+                      Mantener sesión iniciada
+                    </label>
+                  </div>
+                  <p className="text-xs text-muted-foreground/80 pl-6">
+                    💡 Marca esta opción para no tener que ingresar tu contraseña cada vez que visites la app
+                  </p>
                 </div>
 
                 <Button onClick={handleLogin} disabled={loading} className="w-full">
