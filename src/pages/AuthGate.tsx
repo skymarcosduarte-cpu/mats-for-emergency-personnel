@@ -271,16 +271,27 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           }
         });
 
-        // Network error from fetch
+        // Check for network-level errors (fetch failed, timeout, etc.)
         if (response.error) {
-          console.error('[AuthGate] Network error:', response.error);
+          console.error('[AuthGate] Network/fetch error:', response.error);
           lastError = response.error;
           
           // Only retry on network/timeout errors
           if (response.error.message?.includes('network') || 
               response.error.message?.includes('timeout') ||
-              response.error.message?.includes('fetch')) {
+              response.error.message?.includes('fetch') ||
+              response.error.message?.includes('Failed to fetch')) {
             if (attempt < maxRetries) continue;
+          }
+          
+          // Check if the error contains the actual response from the server
+          // supabase.functions.invoke puts server error responses in response.error for non-2xx status
+          const serverMessage = response.error?.message || '';
+          if (serverMessage.includes('email ya está registrado') || 
+              serverMessage.includes('ya registrado')) {
+            setError('Este email ya está registrado. Intenta iniciar sesión o recuperar tu contraseña.');
+            setLoading(false);
+            return;
           }
           
           setError('Error de conexión. Verifica tu internet e intenta de nuevo.');
@@ -290,10 +301,12 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
         const result = response.data;
 
-        // Server returned an error
+        // Server returned an error in the body (for 400 responses that still return JSON)
         if (!result || !result.success) {
           const errorMsg = result?.error || 'Error desconocido al crear cuenta';
           console.log('[AuthGate] Server error:', errorMsg);
+          
+          // Show the specific error message from the server
           setError(errorMsg);
           setLoading(false);
           return;
