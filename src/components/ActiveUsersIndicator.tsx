@@ -313,11 +313,15 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
       )}
     >
       {/* Registered count */}
-      {registeredCount !== null && !compact && (
+      {registeredCount !== null && (
         <>
-          <UsersRound className="w-4 h-4 text-primary" />
-          <span className="font-medium text-primary text-sm">{registeredCount}</span>
-          <span className="text-muted-foreground text-xs">registrados</span>
+          <UsersRound className={cn('text-primary', compact ? 'w-3.5 h-3.5' : 'w-4 h-4')} />
+          <span className={cn('font-medium text-primary', compact ? 'text-xs' : 'text-sm')}>
+            {registeredCount}
+          </span>
+          <span className={cn('text-muted-foreground', compact ? 'text-[10px]' : 'text-xs')}>
+            {compact ? 'reg' : 'registrados'}
+          </span>
           <span className="text-muted-foreground/50">|</span>
         </>
       )}
@@ -327,14 +331,14 @@ export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
         <div className="w-2.5 h-2.5 rounded-full bg-safe" />
         <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-safe animate-ping opacity-75" />
       </div>
-      
+
       {showIcon && <Users className="w-4 h-4 text-muted-foreground" />}
-      
-      <span className={cn(
-        'font-medium text-foreground',
-        compact ? 'text-xs' : 'text-sm'
-      )}>
+
+      <span
+        className={cn('font-medium text-foreground', compact ? 'text-xs' : 'text-sm')}
+      >
         {activeCount} {!compact && (activeCount === 1 ? 'conectado' : 'conectados')}
+        {compact && (activeCount === 1 ? ' con' : ' con')}
       </span>
     </button>
   );
