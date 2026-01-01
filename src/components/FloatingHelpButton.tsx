@@ -16,6 +16,31 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { z } from 'zod';
+
+const withTimeout = <T,>(promise: PromiseLike<T>, ms: number): Promise<T> => {
+  return new Promise<T>((resolve, reject) => {
+    const t = window.setTimeout(() => reject(new Error('timeout')), ms);
+
+    promise.then(
+      (value) => {
+        window.clearTimeout(t);
+        resolve(value);
+      },
+      (err) => {
+        window.clearTimeout(t);
+        reject(err);
+      }
+    );
+  });
+};
+
+const feedbackSchema = z.object({
+  category: z.string().trim().min(1).max(50),
+  name: z.string().trim().min(1).max(100),
+  email: z.string().trim().email().max(255),
+  message: z.string().trim().min(1).max(2000),
+});
 
 interface FloatingHelpButtonProps {
   className?: string;
@@ -61,55 +86,57 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
   };
 
   const submitFeedback = async () => {
-    if (!feedbackForm.category || !feedbackForm.name || !feedbackForm.email || !feedbackForm.message) {
+    const parsed = feedbackSchema.safeParse(feedbackForm);
+    if (!parsed.success) {
       toast({
-        title: "Campos requeridos",
-        description: "Por favor completa todos los campos.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(feedbackForm.email)) {
-      toast({
-        title: "Email inválido",
-        description: "Por favor ingresa un email válido.",
-        variant: "destructive",
+        title: 'Campos inválidos',
+        description: parsed.error.issues[0]?.message ?? 'Revisa los datos e intenta de nuevo.',
+        variant: 'destructive',
       });
       return;
     }
 
     setIsSubmitting(true);
 
+    const values = parsed.data;
+
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+        error: userError,
+      } = await withTimeout(supabase.auth.getUser(), 8000);
 
-      const { error } = await supabase.from("user_feedback").insert({
-        user_id: user?.id ?? null,
-        category: feedbackForm.category,
-        name: feedbackForm.name.trim(),
-        email: feedbackForm.email.trim().toLowerCase(),
-        message: feedbackForm.message.trim(),
-      });
+      if (userError) throw userError;
+
+      const { error } = await withTimeout(
+        (supabase.from('user_feedback').insert({
+          user_id: user?.id ?? null,
+          category: values.category,
+          name: values.name,
+          email: values.email.toLowerCase(),
+          message: values.message,
+        }) as unknown as PromiseLike<{ error: unknown }>),
+        12000
+      );
 
       if (error) throw error;
 
       toast({
-        title: "¡Gracias por tu feedback!",
-        description: "Hemos recibido tu mensaje y lo revisaremos pronto.",
+        title: '¡Gracias por tu feedback!',
+        description: 'Hemos recibido tu mensaje y lo revisaremos pronto.',
       });
 
       handleCloseFeedback();
-    } catch (error) {
-      console.error("Error submitting feedback:", error);
+    } catch (error: any) {
+      const isTimeout = String(error?.message || '').includes('timeout');
+      console.error('Error submitting feedback:', error);
+
       toast({
-        title: "Error al enviar",
-        description: "No pudimos enviar tu feedback. Intenta de nuevo.",
-        variant: "destructive",
+        title: isTimeout ? 'Tiempo de espera' : 'Error al enviar',
+        description: isTimeout
+          ? 'Parece que la conexión está lenta. Intenta de nuevo.'
+          : 'No pudimos enviar tu feedback. Intenta de nuevo.',
+        variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
