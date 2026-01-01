@@ -1,7 +1,7 @@
 // Settings Screen for COMUNIDAD EX SOS
 // Invitations, Version, Logout
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
   User, 
   QrCode, 
@@ -132,6 +132,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordFlow, setPasswordFlow] = useState<'change' | 'recovery'>('change');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -277,6 +278,38 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       setSelectedSpecialties(Array.isArray(profile.specialty) ? profile.specialty : []);
     }
   }, [profile]);
+
+  // If user arrived via password recovery link, open password dialog automatically
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    if (!hash) return;
+
+    const params = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+    const type = params.get('type');
+
+    if (type === 'recovery') {
+      setPasswordFlow('recovery');
+      setShowPasswordDialog(true);
+
+      toast.info('Restablece tu contraseña', {
+        description: 'Crea una nueva contraseña para que ya puedas iniciar sesión normalmente.',
+      });
+
+      // Remove tokens from URL after the auth client has time to read them
+      window.setTimeout(() => {
+        try {
+          window.history.replaceState(
+            null,
+            document.title,
+            window.location.pathname + window.location.search
+          );
+        } catch {
+          // ignore
+        }
+      }, 1200);
+    }
+  }, []);
+
 
   // Handle specialty toggle
   const handleSpecialtyToggle = (specialty: string) => {
@@ -444,12 +477,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   // Handle password change
   const handlePasswordChange = async () => {
     setPasswordError('');
-    
+
     if (newPassword.length < 6) {
       setPasswordError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
-    
+
     if (newPassword !== confirmPassword) {
       setPasswordError('Las contraseñas no coinciden');
       return;
@@ -458,7 +491,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     setChangingPassword(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
-      
+
       if (error) {
         console.error('Error changing password:', error);
         setPasswordError(error.message);
@@ -466,7 +499,29 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         setShowPasswordDialog(false);
         setNewPassword('');
         setConfirmPassword('');
-        alert('Contraseña actualizada correctamente');
+
+        if (passwordFlow === 'recovery') {
+          toast.success('Contraseña establecida', {
+            description: 'Ya puedes iniciar sesión con tu nueva contraseña.',
+          });
+        } else {
+          toast.success('Contraseña actualizada correctamente');
+        }
+
+        setPasswordFlow('change');
+
+        // Clean URL hash if still present (recovery links include tokens)
+        if (window.location.hash) {
+          try {
+            window.history.replaceState(
+              null,
+              document.title,
+              window.location.pathname + window.location.search
+            );
+          } catch {
+            // ignore
+          }
+        }
       }
     } finally {
       setChangingPassword(false);
@@ -691,7 +746,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowPasswordDialog(true)}
+                  onClick={() => {
+                    setPasswordFlow('change');
+                    setShowPasswordDialog(true);
+                  }}
                 >
                   Cambiar
                 </Button>
@@ -1675,6 +1733,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       <Dialog open={showPasswordDialog} onOpenChange={(open) => {
         setShowPasswordDialog(open);
         if (!open) {
+          setPasswordFlow('change');
           setNewPassword('');
           setConfirmPassword('');
           setPasswordError('');
@@ -1686,10 +1745,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <KeyRound className="w-5 h-5" />
-              Cambiar Contraseña
+              {passwordFlow === 'recovery' ? 'Establecer nueva contraseña' : 'Cambiar Contraseña'}
             </DialogTitle>
             <DialogDescription>
-              Ingresa tu nueva contraseña. Debe tener al menos 6 caracteres.
+              {passwordFlow === 'recovery'
+                ? 'Por seguridad, define una nueva contraseña para tu cuenta (mínimo 6 caracteres).'
+                : 'Ingresa tu nueva contraseña. Debe tener al menos 6 caracteres.'}
             </DialogDescription>
           </DialogHeader>
 

@@ -1090,7 +1090,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           <DialogHeader>
             <DialogTitle>Recuperar contraseña</DialogTitle>
             <DialogDescription>
-              Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.
+              Ingresa tu email y te enviaremos un enlace. Al abrirlo, podrás definir una nueva contraseña en Configuración.
             </DialogDescription>
           </DialogHeader>
           
@@ -1102,7 +1102,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                   <span className="font-medium">¡Email enviado!</span>
                 </div>
                 <p className="mt-2 text-muted-foreground">
-                  Revisa tu bandeja de entrada (y spam) para el enlace de recuperación.
+                  Revisa tu bandeja de entrada (y spam). Al abrir el enlace, te llevaremos a Configuración para crear tu nueva contraseña.
                 </p>
               </div>
               <Button 
