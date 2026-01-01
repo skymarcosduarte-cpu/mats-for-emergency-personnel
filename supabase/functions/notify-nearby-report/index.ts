@@ -13,12 +13,48 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // SECURITY: Validate authentication
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.error('[notify-nearby-report] Missing authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create authenticated client to verify user
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      console.error('[notify-nearby-report] Invalid authentication:', authError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const { reportId, lat, lng, title, category, creatorId, radiusMeters = 5000 } = await req.json();
 
-    console.log(`Notifying users within ${radiusMeters}m of report at ${lat}, ${lng}`);
+    // SECURITY: Verify the creatorId matches the authenticated user
+    if (creatorId !== user.id) {
+      console.error('[notify-nearby-report] Creator ID mismatch - potential spoofing attempt');
+      return new Response(
+        JSON.stringify({ error: 'Permission denied' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use service role for database operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    console.log(`[notify-nearby-report] User ${user.id} notifying users within ${radiusMeters}m of report at ${lat}, ${lng}`);
 
     // Get users within radius using existing database function
     const { data: nearbyUsers, error: usersError } = await supabase
@@ -29,11 +65,11 @@ serve(async (req) => {
       });
 
     if (usersError) {
-      console.error('Error getting nearby users:', usersError);
+      console.error('[notify-nearby-report] Error getting nearby users:', usersError);
       throw usersError;
     }
 
-    console.log(`Found ${nearbyUsers?.length || 0} users within radius`);
+    console.log(`[notify-nearby-report] Found ${nearbyUsers?.length || 0} users within radius`);
 
     // Filter out the creator and create notifications
     const usersToNotify = (nearbyUsers || []).filter(
@@ -41,7 +77,7 @@ serve(async (req) => {
     );
 
     if (usersToNotify.length === 0) {
-      console.log('No users to notify');
+      console.log('[notify-nearby-report] No users to notify');
       return new Response(
         JSON.stringify({ success: true, notified: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -73,11 +109,11 @@ serve(async (req) => {
       .insert(notifications);
 
     if (insertError) {
-      console.error('Error inserting notifications:', insertError);
+      console.error('[notify-nearby-report] Error inserting notifications:', insertError);
       throw insertError;
     }
 
-    console.log(`Successfully notified ${notifications.length} users`);
+    console.log(`[notify-nearby-report] Successfully notified ${notifications.length} users`);
 
     return new Response(
       JSON.stringify({ success: true, notified: notifications.length }),
@@ -85,10 +121,10 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in notify-nearby-report:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[notify-nearby-report] Error:', error);
+    // SECURITY: Don't expose internal error details
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
