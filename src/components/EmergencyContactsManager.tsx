@@ -57,8 +57,8 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
   };
 
   const handleAddSubmit = async () => {
-    if (!formData.name || !formData.phone || !formData.email) {
-      toast({ title: 'Error', description: 'Nombre, teléfono y email son requeridos', variant: 'destructive' });
+    if (!formData.name || !formData.phone) {
+      toast({ title: 'Error', description: 'Nombre y teléfono son requeridos', variant: 'destructive' });
       return;
     }
     
@@ -76,8 +76,8 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
   };
 
   const handleEditSubmit = async (id: string) => {
-    if (!formData.name || !formData.phone || !formData.email) {
-      toast({ title: 'Error', description: 'Nombre, teléfono y email son requeridos', variant: 'destructive' });
+    if (!formData.name || !formData.phone) {
+      toast({ title: 'Error', description: 'Nombre y teléfono son requeridos', variant: 'destructive' });
       return;
     }
     
@@ -192,7 +192,7 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
           {!hasMinimumContacts && (
             <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
               <AlertCircle className="w-5 h-5 shrink-0" />
-              <span>Se requiere al menos {MIN_EMERGENCY_CONTACTS} contacto de emergencia con email, teléfono y WhatsApp para poder usar el botón SOS.</span>
+              <span>Se requiere al menos {MIN_EMERGENCY_CONTACTS} contacto de emergencia para poder usar el botón SOS.</span>
             </div>
           )}
 
@@ -242,7 +242,7 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
                       <Input
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="Email *"
+                        placeholder="Email (opcional)"
                         type="email"
                         className="h-8"
                       />
@@ -394,7 +394,7 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
               </p>
             </div>
             <div>
-              <Label>Email *</Label>
+              <Label>Email (opcional)</Label>
               <Input
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -434,7 +434,7 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
               </Button>
               <Button
                 onClick={handleAddSubmit}
-                disabled={!formData.name || !formData.phone || !formData.email || submitting}
+                disabled={!formData.name || !formData.phone || submitting}
                 className="flex-1"
               >
                 {submitting ? (
