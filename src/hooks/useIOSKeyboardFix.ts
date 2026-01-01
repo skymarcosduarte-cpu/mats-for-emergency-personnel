@@ -51,18 +51,28 @@ export const useIOSKeyboardFix = () => {
     if (window.visualViewport) {
       const handleViewportResize = () => {
         const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
-        if (bottomNav) {
-          // Calculate the offset from the visual viewport
-          const viewportHeight = window.visualViewport?.height || window.innerHeight;
-          const windowHeight = window.innerHeight;
-          const keyboardHeight = windowHeight - viewportHeight;
-          
-          if (keyboardHeight > 100) {
-            // Keyboard is likely open
-            document.body.classList.add('keyboard-open');
-          } else {
-            document.body.classList.remove('keyboard-open');
-          }
+        if (!bottomNav) return;
+
+        // Calculate the offset from the visual viewport
+        const viewportHeight = window.visualViewport?.height || window.innerHeight;
+        const windowHeight = window.innerHeight;
+        const keyboardHeight = windowHeight - viewportHeight;
+
+        const activeElement = document.activeElement as HTMLElement | null;
+        const isEditable =
+          !!activeElement &&
+          (activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.tagName === 'SELECT' ||
+            activeElement.isContentEditable);
+
+        // Only treat a viewport resize as “keyboard open” when an input is focused.
+        // This prevents false positives from Safari UI (address bar) resize events
+        // that can happen while scrolling (often noticed around images).
+        if (isEditable && keyboardHeight > 120) {
+          document.body.classList.add('keyboard-open');
+        } else {
+          document.body.classList.remove('keyboard-open');
         }
       };
 
