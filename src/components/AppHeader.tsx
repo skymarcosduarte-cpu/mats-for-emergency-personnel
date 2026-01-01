@@ -24,6 +24,7 @@ interface AppHeaderProps {
     isActive: boolean;
     error: string | null;
   };
+  showActiveUsersInline?: boolean;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -31,6 +32,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   unreadMessageCount,
   onOpenMessages,
   wakeLockStatus,
+  showActiveUsersInline = true,
 }) => {
   const lastActivatedAtRef = useRef(0);
   const suppressClickRef = useRef(false);
@@ -144,15 +146,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <MatsLogo size={36} showText className="min-w-0" />
           {/* Inline active users count */}
-          <ActiveUsersIndicator compact showIcon={false} className="ml-1 flex-shrink-0" />
-          
+          {showActiveUsersInline && (
+            <ActiveUsersIndicator compact showIcon={false} className="ml-1 flex-shrink-0" />
+          )}
+
           {/* Wake Lock Status Chip */}
           {wakeLockStatus && (
-            <div 
+            <div
               className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
-                wakeLockStatus.isActive 
-                  ? 'bg-safe/20 text-safe border border-safe/30' 
-                  : wakeLockStatus.isSupported 
+                wakeLockStatus.isActive
+                  ? 'bg-safe/20 text-safe border border-safe/30'
+                  : wakeLockStatus.isSupported
                     ? 'bg-warning/20 text-warning border border-warning/30'
                     : 'bg-muted text-muted-foreground border border-border'
               }`}
@@ -163,9 +167,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               ) : (
                 <SunDim className="w-3 h-3" />
               )}
-              <span className="hidden xs:inline">
-                {wakeLockStatus.isActive ? 'ON' : 'OFF'}
-              </span>
+              <span className="hidden xs:inline">{wakeLockStatus.isActive ? 'ON' : 'OFF'}</span>
             </div>
           )}
         </div>
