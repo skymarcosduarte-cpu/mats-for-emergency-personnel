@@ -221,6 +221,9 @@
     @apply bg-card/95 backdrop-blur-xl border-t border-border;
     padding-bottom: env(safe-area-inset-bottom, 0);
     z-index: 9999;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
   }
 
   /* App Header */

@@ -14,13 +14,6 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -224,21 +217,28 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
           <form onSubmit={handleSubmitFeedback} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="category">Categoría</Label>
-              <Select
+              <select
+                id="category"
+                name="category"
                 value={feedbackForm.category}
-                onValueChange={(value) => setFeedbackForm(prev => ({ ...prev, category: value }))}
+                onChange={(e) =>
+                  setFeedbackForm((prev) => ({ ...prev, category: e.target.value }))
+                }
+                className={cn(
+                  "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
+                  "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                )}
+                required
               >
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Selecciona una categoría" />
-                </SelectTrigger>
-                <SelectContent position="popper" className="z-[10200]">
-                  {FEEDBACK_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="" disabled>
+                  Selecciona una categoría
+                </option>
+                {FEEDBACK_CATEGORIES.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
