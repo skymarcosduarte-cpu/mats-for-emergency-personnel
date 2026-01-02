@@ -4,8 +4,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn
 } from 'lucide-react';
+import { ImageZoomViewer } from '@/components/ImageZoomViewer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -102,6 +103,9 @@ export const CommunityScreen: React.FC = () => {
   
   // Traveler location dialog state
   const [viewingTravelerId, setViewingTravelerId] = useState<string | null>(null);
+  
+  // Image zoom state for community events
+  const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
 
   // Fetch route history when a trip is selected
   const fetchRouteHistory = useCallback(async (tripId: string) => {
@@ -489,13 +493,21 @@ export const CommunityScreen: React.FC = () => {
                           <p className="text-sm text-muted-foreground mt-1">{event.message}</p>
                         )}
                         {event.image_url && (
-                          <img 
-                            src={event.image_url} 
-                            alt="Imagen del evento" 
-                            loading="lazy"
-                            decoding="async"
-                            className="mt-3 w-full max-h-48 rounded-lg border border-border object-cover"
-                          />
+                          <div 
+                            className="mt-3 relative cursor-pointer group"
+                            onClick={() => setZoomImage({ src: event.image_url!, alt: event.title })}
+                          >
+                            <img 
+                              src={event.image_url} 
+                              alt="Imagen del evento" 
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full rounded-lg border border-border object-contain max-h-80"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center">
+                              <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                            </div>
+                          </div>
                         )}
                         <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
@@ -1166,6 +1178,14 @@ export const CommunityScreen: React.FC = () => {
             window.location.href = `/?chat=${viewingTravelerId}`;
           }
         }}
+      />
+
+      {/* Image Zoom Viewer for Community Events */}
+      <ImageZoomViewer
+        src={zoomImage?.src || ''}
+        alt={zoomImage?.alt || ''}
+        open={!!zoomImage}
+        onOpenChange={(open) => !open && setZoomImage(null)}
       />
     </div>
   );
