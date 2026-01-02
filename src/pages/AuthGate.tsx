@@ -77,6 +77,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [showRecoverySuggestion, setShowRecoverySuggestion] = useState(false);
   
+  // Magic Link state
+  const [loginMethod, setLoginMethod] = useState<'magic-link' | 'password'>('magic-link');
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
+  
   // Auth form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -184,6 +189,53 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       setError('Error al enviar el email de recuperación');
     } finally {
       setForgotPasswordLoading(false);
+    }
+  };
+
+  // Handle Magic Link login
+  const handleMagicLink = async () => {
+    setError(null);
+
+    if (!email.trim()) {
+      setError('Ingresa tu email');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError('Formato de email inválido');
+      return;
+    }
+
+    setMagicLinkLoading(true);
+
+    try {
+      const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+        email: email.trim().toLowerCase(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (magicLinkError) {
+        if (magicLinkError.message.includes('rate limit')) {
+          setError('Demasiados intentos. Espera unos minutos.');
+        } else if (magicLinkError.message.includes('not found') || magicLinkError.message.includes('not registered')) {
+          setError('Este email no está registrado. ¿Quieres registrarte?');
+        } else {
+          setError('Error al enviar el enlace. Intenta de nuevo.');
+        }
+      } else {
+        setMagicLinkSent(true);
+        toast({
+          title: '¡Enlace enviado!',
+          description: 'Revisa tu correo y haz clic en el enlace para iniciar sesión.',
+        });
+      }
+    } catch (err) {
+      console.error('[AuthGate] Magic link error:', err);
+      setError('Error de conexión. Verifica tu internet.');
+    } finally {
+      setMagicLinkLoading(false);
     }
   };
 
@@ -624,121 +676,208 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
               </TabsList>
 
               <TabsContent value="login" className="space-y-4 mt-4">
-                <div>
-                  <Label>Email</Label>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setError(null);
-                    }}
-                    placeholder="tu@email.com"
-                    className={emailError ? 'border-destructive' : ''}
-                    autoComplete="email"
-                  />
-                  {emailError && (
-                    <p className="text-xs text-destructive mt-1">{emailError}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label>Contraseña</Label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setError(null);
-                      }}
-                      onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
-                      onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
-                      placeholder="••••••••"
-                      autoComplete="current-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                {/* Magic Link Success State */}
+                {magicLinkSent ? (
+                  <div className="space-y-4 text-center py-4">
+                    <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                      <Mail className="w-8 h-8 text-primary" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-lg">¡Revisa tu correo!</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Enviamos un enlace a <strong>{email}</strong>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Haz clic en el enlace del correo para iniciar sesión automáticamente.
+                      </p>
+                    </div>
+                    <div className="pt-2 space-y-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setMagicLinkSent(false);
+                          handleMagicLink();
+                        }}
+                        disabled={magicLinkLoading}
+                      >
+                        {magicLinkLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        ) : null}
+                        Reenviar enlace
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMagicLinkSent(false);
+                          setEmail('');
+                        }}
+                        className="block w-full text-xs text-muted-foreground hover:text-primary"
+                      >
+                        Usar otro email
+                      </button>
+                    </div>
                   </div>
-                  {capsLockOn && !showPassword && (
-                    <p className="text-xs text-warning mt-1 flex items-center gap-1">
-                      ⬆️ Bloq Mayús activado
-                    </p>
-                  )}
-                </div>
+                ) : (
+                  <>
+                    <div>
+                      <Label>Email</Label>
+                      <Input
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setError(null);
+                        }}
+                        placeholder="tu@email.com"
+                        className={emailError ? 'border-destructive' : ''}
+                        autoComplete="email"
+                      />
+                      {emailError && (
+                        <p className="text-xs text-destructive mt-1">{emailError}</p>
+                      )}
+                    </div>
 
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="remember-me"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked === true)}
-                    />
-                    <label
-                      htmlFor="remember-me"
-                      className="text-sm text-muted-foreground cursor-pointer select-none"
-                    >
-                      Mantener sesión iniciada
-                    </label>
-                  </div>
-                  <p className="text-xs text-muted-foreground/80 pl-6">
-                    💡 Marca esta opción para no tener que ingresar tu contraseña cada vez que visites la app
-                  </p>
-                </div>
+                    {/* Magic Link Method (Default) */}
+                    {loginMethod === 'magic-link' && (
+                      <>
+                        <Button 
+                          onClick={handleMagicLink} 
+                          disabled={magicLinkLoading || !email.trim()} 
+                          className="w-full"
+                        >
+                          {magicLinkLoading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              Enviando enlace...
+                            </>
+                          ) : (
+                            <>
+                              <Mail className="w-4 h-4 mr-2" />
+                              Enviar enlace al correo
+                            </>
+                          )}
+                        </Button>
+                        <p className="text-xs text-center text-muted-foreground">
+                          Te enviaremos un enlace seguro. Solo haz clic para entrar.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setLoginMethod('password')}
+                          className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          Prefiero usar contraseña
+                        </button>
+                      </>
+                    )}
 
-                <Button onClick={handleLogin} disabled={loading} className="w-full">
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Iniciando sesión...
-                    </>
-                  ) : (
-                    <>
-                      <LogIn className="w-4 h-4 mr-2" />
-                      Iniciar Sesión
-                    </>
-                  )}
-                </Button>
+                    {/* Password Method */}
+                    {loginMethod === 'password' && (
+                      <>
+                        <div>
+                          <Label>Contraseña</Label>
+                          <div className="relative">
+                            <Input
+                              type={showPassword ? 'text' : 'password'}
+                              value={password}
+                              onChange={(e) => {
+                                setPassword(e.target.value);
+                                setError(null);
+                              }}
+                              onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
+                              onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
+                              placeholder="••••••••"
+                              autoComplete="current-password"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                            >
+                              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                          {capsLockOn && !showPassword && (
+                            <p className="text-xs text-warning mt-1 flex items-center gap-1">
+                              ⬆️ Bloq Mayús activado
+                            </p>
+                          )}
+                        </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForgotPassword(true);
-                    setForgotPasswordEmail(email);
-                    setForgotPasswordSuccess(false);
-                    setError(null);
-                  }}
-                  className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  ¿Olvidaste tu contraseña?
-                </button>
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="remember-me"
+                              checked={rememberMe}
+                              onCheckedChange={(checked) => setRememberMe(checked === true)}
+                            />
+                            <label
+                              htmlFor="remember-me"
+                              className="text-sm text-muted-foreground cursor-pointer select-none"
+                            >
+                              Mantener sesión iniciada
+                            </label>
+                          </div>
+                          <p className="text-xs text-muted-foreground/80 pl-6">
+                            💡 Marca esta opción para no tener que ingresar tu contraseña cada vez que visites la app
+                          </p>
+                        </div>
 
-                {showRecoverySuggestion && (
-                  <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg space-y-2">
-                    <p className="text-sm text-warning-foreground">
-                      <span className="font-medium">¿Problemas para ingresar?</span>
-                      {' '}Te recomendamos recuperar tu contraseña.
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full border-warning text-warning hover:bg-warning/20"
-                      onClick={() => {
-                        setShowForgotPassword(true);
-                        setForgotPasswordEmail(email);
-                        setForgotPasswordSuccess(false);
-                        setError(null);
-                      }}
-                    >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Recuperar contraseña
-                    </Button>
-                  </div>
+                        <Button onClick={handleLogin} disabled={loading} className="w-full">
+                          {loading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              Iniciando sesión...
+                            </>
+                          ) : (
+                            <>
+                              <LogIn className="w-4 h-4 mr-2" />
+                              Iniciar Sesión
+                            </>
+                          )}
+                        </Button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowForgotPassword(true);
+                            setForgotPasswordEmail(email);
+                            setForgotPasswordSuccess(false);
+                            setError(null);
+                          }}
+                          className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          ¿Olvidaste tu contraseña?
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setLoginMethod('magic-link')}
+                          className="w-full text-center text-sm text-primary hover:underline transition-colors"
+                        >
+                          ← Volver a enlace por correo
+                        </button>
+
+                        {showRecoverySuggestion && (
+                          <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg space-y-2">
+                            <p className="text-sm text-warning-foreground">
+                              <span className="font-medium">¿Problemas para ingresar?</span>
+                              {' '}Usa el enlace por correo, es más fácil.
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full border-warning text-warning hover:bg-warning/20"
+                              onClick={() => setLoginMethod('magic-link')}
+                            >
+                              <Mail className="w-4 h-4 mr-2" />
+                              Usar enlace por correo
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </>
                 )}
               </TabsContent>
 
