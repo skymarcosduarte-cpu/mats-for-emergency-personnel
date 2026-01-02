@@ -21,6 +21,7 @@ export interface CommunityEvent {
   title: string;
   message: string | null;
   image_url: string | null;
+  image_urls: string[] | null;
   target_user_id: string | null;
   is_active: boolean;
   expires_at: string | null;
@@ -108,6 +109,7 @@ export function useCommunityEvents() {
     title: string;
     message?: string;
     image_url?: string;
+    image_urls?: string[];
     target_user_id?: string;
     expires_at?: string;
   }) => {
@@ -122,6 +124,7 @@ export function useCommunityEvents() {
         title: event.title,
         message: event.message || null,
         image_url: event.image_url || null,
+        image_urls: event.image_urls || null,
         target_user_id: event.target_user_id || null,
         expires_at: event.expires_at || null,
       })

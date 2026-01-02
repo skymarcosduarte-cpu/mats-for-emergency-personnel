@@ -4,9 +4,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight
 } from 'lucide-react';
-import { ImageZoomViewer } from '@/components/ImageZoomViewer';
+import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -93,8 +93,8 @@ export const CommunityScreen: React.FC = () => {
     title: '',
     message: '',
   });
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   
   // Birthday greeting state
   const [greetingTarget, setGreetingTarget] = useState<NearbyBirthday | null>(null);
@@ -104,8 +104,8 @@ export const CommunityScreen: React.FC = () => {
   // Traveler location dialog state
   const [viewingTravelerId, setViewingTravelerId] = useState<string | null>(null);
   
-  // Image zoom state for community events
-  const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
+  // Image zoom state for community events with gallery support
+  const [zoomImages, setZoomImages] = useState<{ images: string[]; index: number } | null>(null);
 
   // Fetch route history when a trip is selected
   const fetchRouteHistory = useCallback(async (tripId: string) => {
@@ -199,28 +199,46 @@ export const CommunityScreen: React.FC = () => {
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    // Limit to 5 images
+    if (selectedImages.length + files.length > 5) {
+      toast.error('Máximo 5 imágenes por publicación');
+      return;
+    }
+    
+    const validFiles: File[] = [];
+    const newPreviews: string[] = [];
+    
+    for (const file of files) {
       // Validate file type and size
       if (!file.type.startsWith('image/')) {
         toast.error('Solo se permiten imágenes');
-        return;
+        continue;
       }
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('La imagen debe ser menor a 5MB');
-        return;
+        toast.error('Cada imagen debe ser menor a 5MB');
+        continue;
       }
-      setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file));
+      validFiles.push(file);
+      newPreviews.push(URL.createObjectURL(file));
     }
+    
+    setSelectedImages(prev => [...prev, ...validFiles]);
+    setImagePreviews(prev => [...prev, ...newPreviews]);
   };
 
-  const handleRemoveImage = () => {
-    setSelectedImage(null);
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-      setImagePreview(null);
-    }
+  const handleRemoveImage = (index: number) => {
+    URL.revokeObjectURL(imagePreviews[index]);
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleClearImages = () => {
+    imagePreviews.forEach(url => URL.revokeObjectURL(url));
+    setSelectedImages([]);
+    setImagePreviews([]);
   };
 
   const handleSubmit = async () => {
@@ -231,24 +249,26 @@ export const CommunityScreen: React.FC = () => {
 
     setSubmitting(true);
     try {
-      let imageUrl: string | undefined;
+      let imageUrls: string[] = [];
       
-      // Upload image if selected
-      if (selectedImage) {
-        imageUrl = await uploadImage(selectedImage);
+      // Upload all images
+      for (const file of selectedImages) {
+        const url = await uploadImage(file);
+        imageUrls.push(url);
       }
 
       await createEvent({
         event_type: formData.event_type,
         title: formData.title,
         message: formData.message || undefined,
-        image_url: imageUrl,
+        image_url: imageUrls[0], // Keep first image for backwards compatibility
+        image_urls: imageUrls.length > 0 ? imageUrls : undefined,
       });
       
       toast.success('Evento publicado');
       setShowNewDialog(false);
       setFormData({ event_type: '', title: '', message: '' });
-      handleRemoveImage();
+      handleClearImages();
     } catch (err) {
       console.error('Error creating event:', err);
       toast.error('Error al publicar');
@@ -492,23 +512,68 @@ export const CommunityScreen: React.FC = () => {
                         {event.message && (
                           <p className="text-sm text-muted-foreground mt-1">{event.message}</p>
                         )}
-                        {event.image_url && (
-                          <div 
-                            className="mt-3 relative cursor-pointer group"
-                            onClick={() => setZoomImage({ src: event.image_url!, alt: event.title })}
-                          >
-                            <img 
-                              src={event.image_url} 
-                              alt="Imagen del evento" 
-                              loading="lazy"
-                              decoding="async"
-                              className="w-full rounded-lg border border-border object-contain max-h-80"
-                            />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center">
-                              <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                        {/* Image Gallery - support multiple images */}
+                        {(() => {
+                          const images = (event as any).image_urls?.length > 0 
+                            ? (event as any).image_urls 
+                            : event.image_url 
+                              ? [event.image_url] 
+                              : [];
+                          if (images.length === 0) return null;
+                          
+                          return (
+                            <div className="mt-3 space-y-2">
+                              {/* Main image */}
+                              <div 
+                                className="relative cursor-pointer group"
+                                onClick={() => setZoomImages({ images, index: 0 })}
+                              >
+                                <img 
+                                  src={images[0]} 
+                                  alt="Imagen del evento" 
+                                  loading="lazy"
+                                  decoding="async"
+                                  className="w-full rounded-lg border border-border object-contain max-h-80"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center">
+                                  <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                                </div>
+                                {images.length > 1 && (
+                                  <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/60 rounded-full text-white text-xs">
+                                    +{images.length - 1}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Thumbnail strip for multiple images */}
+                              {images.length > 1 && (
+                                <div className="flex gap-2 overflow-x-auto pb-1">
+                                  {images.slice(1, 4).map((img: string, idx: number) => (
+                                    <button
+                                      key={idx}
+                                      onClick={() => setZoomImages({ images, index: idx + 1 })}
+                                      className="w-16 h-16 rounded-md overflow-hidden flex-shrink-0 border border-border hover:border-primary transition-colors"
+                                    >
+                                      <img 
+                                        src={img} 
+                                        alt={`Imagen ${idx + 2}`}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </button>
+                                  ))}
+                                  {images.length > 4 && (
+                                    <button
+                                      onClick={() => setZoomImages({ images, index: 4 })}
+                                      className="w-16 h-16 rounded-md flex-shrink-0 border border-border bg-muted flex items-center justify-center text-sm text-muted-foreground hover:border-primary transition-colors"
+                                    >
+                                      +{images.length - 4}
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                         <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
@@ -832,36 +897,48 @@ export const CommunityScreen: React.FC = () => {
               />
             </div>
 
-            {/* Image Upload */}
+            {/* Image Upload - Multiple */}
             <div>
-              <Label>Imagen (opcional)</Label>
-              {imagePreview ? (
-                <div className="relative mt-2">
-                  <img 
-                    src={imagePreview} 
-                    alt="Preview" 
-                    className="w-full h-32 object-cover rounded-lg border border-border"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-7 w-7"
-                    onClick={handleRemoveImage}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+              <Label>Imágenes (opcional, máx. 5)</Label>
+              
+              {/* Selected images preview */}
+              {imagePreviews.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {imagePreviews.map((preview, idx) => (
+                    <div key={idx} className="relative">
+                      <img 
+                        src={preview} 
+                        alt={`Preview ${idx + 1}`}
+                        className="w-full h-20 object-cover rounded-lg border border-border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-1 -right-1 h-5 w-5"
+                        onClick={() => handleRemoveImage(idx)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <label className="flex items-center justify-center gap-2 w-full h-20 mt-2 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors">
+              )}
+              
+              {/* Add more images button */}
+              {imagePreviews.length < 5 && (
+                <label className="flex items-center justify-center gap-2 w-full h-16 mt-2 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors">
                   <input
                     type="file"
                     accept="image/*"
+                    multiple
                     className="hidden"
                     onChange={handleImageSelect}
                   />
                   <ImagePlus className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Agregar imagen</span>
+                  <span className="text-sm text-muted-foreground">
+                    {imagePreviews.length === 0 ? 'Agregar imágenes' : 'Agregar más'}
+                  </span>
                 </label>
               )}
             </div>
@@ -1180,12 +1257,12 @@ export const CommunityScreen: React.FC = () => {
         }}
       />
 
-      {/* Image Zoom Viewer for Community Events */}
-      <ImageZoomViewer
-        src={zoomImage?.src || ''}
-        alt={zoomImage?.alt || ''}
-        open={!!zoomImage}
-        onOpenChange={(open) => !open && setZoomImage(null)}
+      {/* Image Gallery Viewer for Community Events */}
+      <ImageGalleryViewer
+        images={zoomImages?.images || []}
+        initialIndex={zoomImages?.index || 0}
+        open={!!zoomImages}
+        onOpenChange={(open) => !open && setZoomImages(null)}
       />
     </div>
   );
