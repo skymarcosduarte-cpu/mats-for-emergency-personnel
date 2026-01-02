@@ -649,6 +649,16 @@ export function SeismicAlert({
                 <span>Sí, lo sentí</span>
               </Button>
             </div>
+            
+            {/* Confirm received button */}
+            <Button
+              variant="ghost"
+              onClick={onDismiss}
+              className="w-full flex items-center gap-2 justify-center text-muted-foreground hover:text-foreground"
+            >
+              <CheckCircle className="w-4 h-4" />
+              Confirmar Recibido
+            </Button>
           </div>
         )}
 
