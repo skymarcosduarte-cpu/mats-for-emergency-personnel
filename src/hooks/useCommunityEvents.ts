@@ -12,6 +12,7 @@ export type CommunityEventType =
   | 'VISIT'
   | 'CELEBRATION'
   | 'RECOMMENDATION'
+  | 'NEWS'
   | 'OTHER';
 
 export interface CommunityEvent {
@@ -175,6 +176,7 @@ export function useCommunityEvents() {
       'VISIT': '👋 Visita',
       'CELEBRATION': '🎉 Hoy se Celebra',
       'RECOMMENDATION': '💡 Recomendación',
+      'NEWS': '📰 Noticia Relevante',
       'OTHER': '📝 Otro',
     };
     return labels[type] || type;
@@ -190,6 +192,7 @@ export function useCommunityEvents() {
       'VISIT': 'bg-safe/10 text-safe border-safe/30',
       'CELEBRATION': 'bg-amber-500/10 text-amber-500 border-amber-500/30',
       'RECOMMENDATION': 'bg-purple-500/10 text-purple-500 border-purple-500/30',
+      'NEWS': 'bg-cyan-500/10 text-cyan-500 border-cyan-500/30',
       'OTHER': 'bg-accent/10 text-accent-foreground border-accent/30',
     };
     return colors[type] || 'bg-muted text-muted-foreground';
