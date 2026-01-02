@@ -64,8 +64,8 @@ export function useAlertSettings() {
   }, [saveSettings]);
 
   const setEarthquakeRadiusKm = useCallback((radius: number) => {
-    // Clamp between 15 and 160 km
-    const clampedRadius = Math.max(15, Math.min(160, radius));
+    // Clamp between 20 and 400 km
+    const clampedRadius = Math.max(20, Math.min(400, radius));
     saveSettings({ earthquakeRadiusKm: clampedRadius });
   }, [saveSettings]);
 
