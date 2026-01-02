@@ -274,7 +274,7 @@ export const useInternalMessagesStore = () => {
         return prev;
       });
 
-      // Send broadcast notification (fire and forget) - wrapped in setTimeout to prevent blocking
+      // Send push notification via edge function (fire and forget) 
       setTimeout(async () => {
         try {
           const { data: profileData } = await supabase
@@ -284,6 +284,8 @@ export const useInternalMessagesStore = () => {
             .single();
           
           const senderName = profileData?.nickname || profileData?.full_name || 'Usuario';
+          
+          // First, send broadcast for in-app notification
           const notificationChannel = supabase.channel(`user-notifications:${receiverId}`);
           await notificationChannel.send({
             type: 'broadcast',
@@ -291,8 +293,21 @@ export const useInternalMessagesStore = () => {
             payload: { senderName, messagePreview: displayMessage.substring(0, 100), senderId: user.id }
           });
           supabase.removeChannel(notificationChannel);
-        } catch {
+          
+          // Then, send real Web Push via edge function (for background delivery)
+          const isClave100 = displayMessage.includes('🚨 CLAVE 100') || displayMessage.includes('CLAVE 100 - EMERGENCIA');
+          await supabase.functions.invoke('send-message-push', {
+            body: {
+              receiverId,
+              senderName,
+              messagePreview: displayMessage.substring(0, 100),
+              senderId: user.id,
+              alertType: isClave100 ? 'PANIC' : 'MESSAGE'
+            }
+          });
+        } catch (e) {
           // Ignore errors for background notification
+          console.warn('[InternalMessages] Push notification failed:', e);
         }
       }, 0);
 

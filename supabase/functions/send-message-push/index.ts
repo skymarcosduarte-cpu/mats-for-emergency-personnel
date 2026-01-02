@@ -40,7 +40,7 @@ serve(async (req) => {
       );
     }
 
-    const { receiverId, senderName, messagePreview, senderId } = await req.json();
+    const { receiverId, senderName, messagePreview, senderId, alertType } = await req.json();
 
     if (!receiverId || !senderName) {
       return new Response(
@@ -50,7 +50,6 @@ serve(async (req) => {
     }
 
     // Permission validation: senderId (if provided) must match authenticated user
-    // This ensures users can only send push notifications for their own messages
     if (senderId && senderId !== user.id) {
       console.error('[send-message-push] Permission denied: cannot send push as another user', {
         userId: user.id,
@@ -89,31 +88,35 @@ serve(async (req) => {
       );
     }
 
-    const payload = JSON.stringify({
+    const pushPayload = {
       title: `💬 Mensaje de ${senderName}`,
       body: messagePreview || 'Tienes un nuevo mensaje',
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      tag: `message-${receiverId}`,
+      tag: `message-${Date.now()}`,
+      alertType: alertType || 'MESSAGE',
       data: {
         type: 'internal_message',
         senderId: user.id,
+        alertType: alertType || 'MESSAGE',
       }
-    });
+    };
 
-    // Send push notification using Web Push protocol
+    // Send push notifications (simple JSON POST - works with many browsers)
     const results = await Promise.all(
       subscriptions.map(async (sub) => {
         try {
-          // Use simple fetch to the push endpoint
           const response = await fetch(sub.endpoint, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'TTL': '86400',
+              'Urgency': alertType === 'SEISMIC' || alertType === 'PANIC' ? 'high' : 'normal',
             },
-            body: payload,
+            body: JSON.stringify(pushPayload),
           });
+
+          console.log(`[send-message-push] Push response for ${sub.id}:`, response.status);
 
           if (!response.ok) {
             // If subscription is invalid, remove it
@@ -136,7 +139,7 @@ serve(async (req) => {
     );
 
     const successCount = results.filter(r => r.success).length;
-    console.log(`Sent ${successCount}/${subscriptions.length} push notifications`);
+    console.log(`[send-message-push] Sent ${successCount}/${subscriptions.length} push notifications`);
 
     return new Response(
       JSON.stringify({ success: true, sent: successCount, total: subscriptions.length }),
