@@ -2,7 +2,7 @@
 // Shows alert when earthquake is detected near user's location
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, MapPin, ThermometerSun, CheckCircle, AlertCircle, HelpCircle, Camera, Mic, Edit, Trash2, Map } from 'lucide-react';
+import { AlertTriangle, MapPin, ThermometerSun, CheckCircle, AlertCircle, HelpCircle, Camera, Mic, Edit, Trash2, Map, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -64,6 +64,7 @@ export function SeismicAlert({
   const [isEditing, setIsEditing] = useState(false);
   const [lastReportIntensity, setLastReportIntensity] = useState<number>(4);
   const [lastReportStatus, setLastReportStatus] = useState<string>('OK');
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const { toast } = useToast();
 
   // Get epicenter coordinates
@@ -769,6 +770,48 @@ export function SeismicAlert({
                 </Label>
               </div>
             </RadioGroup>
+
+            {/* Optional voice message section */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
+                className="w-full flex items-center justify-between p-3 text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <Mic className="w-4 h-4" />
+                  Agregar nota de voz (opcional)
+                </span>
+                {showVoiceRecorder ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
+              
+              {showVoiceRecorder && (
+                <div className="p-3 border-t border-border bg-muted/20">
+                  <VoiceRecorder
+                    onRecordingComplete={(blob, durationMs) => {
+                      setVoiceBlob(blob);
+                      setVoiceDurationMs(durationMs);
+                    }}
+                    onClear={() => {
+                      setVoiceBlob(null);
+                      setVoiceDurationMs(0);
+                    }}
+                    maxDurationMs={30000}
+                  />
+                </div>
+              )}
+              
+              {voiceBlob && !showVoiceRecorder && (
+                <div className="px-3 pb-3 flex items-center gap-2 text-xs text-safe">
+                  <Mic className="w-3 h-3" />
+                  <span>Nota de voz grabada</span>
+                </div>
+              )}
+            </div>
 
             <Button
               className="w-full"
