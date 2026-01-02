@@ -1,17 +1,15 @@
 // Earthquake History Hook for COMUNIDAD SOS
 // Fetches and caches earthquake data from USGS and SSN (Mexico) with distance calculations
-// SSN earthquakes ≥6.0 trigger alerts to all community members regardless of distance
+// SSN earthquakes above user-configured threshold trigger alerts to all community members regardless of distance
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { USGSEarthquake, GeoPosition } from '@/types';
 import { calculateDistance } from '@/hooks/useLocation';
 import { cacheEarthquakes, getCachedEarthquakes, isEarthquakeCacheFresh, updateLastSync } from '@/lib/offlineDataCache';
+import { getSsnNationalAlertMagnitude } from '@/hooks/useAlertSettings';
 
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
 const SSN_FEED_URL = 'http://www.ssn.unam.mx/rss/ultimos-sismos.xml';
-
-// Minimum magnitude for SSN earthquakes to trigger national alert
-const SSN_NATIONAL_ALERT_MIN_MAGNITUDE = 6.0;
 
 // Multiple CORS proxies for fallback (some may be blocked on Android)
 const CORS_PROXIES = [
@@ -239,9 +237,10 @@ export function useEarthquakeHistory(
           // Merge both sources
           quakes = [...usgsQuakes, ...ssnQuakes];
           
-          // Check for major SSN earthquakes (≥6.0) to trigger national alert
+          // Check for major SSN earthquakes above user's configured threshold to trigger national alert
+          const ssnAlertThreshold = getSsnNationalAlertMagnitude();
           const majorSSNQuakes = ssnQuakes.filter(
-            q => q.properties.mag >= SSN_NATIONAL_ALERT_MIN_MAGNITUDE
+            q => q.properties.mag >= ssnAlertThreshold
           );
           
           // Alert for new major SSN quakes
