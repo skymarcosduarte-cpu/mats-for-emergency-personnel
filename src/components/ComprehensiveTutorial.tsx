@@ -788,6 +788,78 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
     ],
   },
   {
+    id: 'marketplace',
+    title: 'Marketplace',
+    icon: <ShoppingBag className="w-6 h-6" />,
+    color: 'text-accent',
+    steps: [
+      {
+        title: '🛒 Marketplace Comunitario',
+        content: (
+          <div className="space-y-4">
+            <p>
+              El <strong>Marketplace</strong> es un espacio para que la comunidad ofrezca y encuentre <strong>productos y servicios</strong> entre sus miembros.
+            </p>
+            <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
+              <p className="font-medium text-accent mb-2">¿Qué puedes hacer?</p>
+              <ul className="text-sm space-y-2 list-disc list-inside">
+                <li><strong>Publicar</strong> productos o servicios que ofreces</li>
+                <li><strong>Buscar</strong> lo que necesitas en la comunidad</li>
+                <li><strong>Contactar</strong> directamente a vendedores</li>
+                <li><strong>Filtrar</strong> por categoría y precio</li>
+              </ul>
+            </div>
+          </div>
+        ),
+        tip: 'Fortalece la economía local comprando y vendiendo dentro de la comunidad',
+      },
+      {
+        title: 'Categorías Disponibles',
+        content: (
+          <div className="space-y-4">
+            <p>
+              Organiza tus publicaciones y búsquedas por <strong>categoría</strong>:
+            </p>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="bg-muted rounded p-2 text-center">🛠️ Servicios</div>
+              <div className="bg-muted rounded p-2 text-center">📦 Productos</div>
+              <div className="bg-muted rounded p-2 text-center">🏠 Hogar</div>
+              <div className="bg-muted rounded p-2 text-center">🚗 Vehículos</div>
+              <div className="bg-muted rounded p-2 text-center">👔 Ropa</div>
+              <div className="bg-muted rounded p-2 text-center">📱 Tecnología</div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Cada publicación tiene una <strong>vigencia</strong> que defines al publicar.
+            </p>
+          </div>
+        ),
+      },
+      {
+        title: 'Cómo Publicar',
+        content: (
+          <div className="space-y-4">
+            <div className="bg-muted rounded-lg p-4">
+              <p className="font-medium mb-2">Para crear una publicación:</p>
+              <ol className="text-sm space-y-2 list-decimal list-inside">
+                <li>Ve a la sección <strong>Marketplace</strong></li>
+                <li>Presiona el botón <strong>"Publicar"</strong></li>
+                <li>Agrega título, descripción y categoría</li>
+                <li>Define el precio (opcional) y vigencia</li>
+                <li>Sube hasta 5 fotos de tu producto</li>
+              </ol>
+            </div>
+            <div className="bg-primary/10 rounded-lg p-3">
+              <p className="text-sm font-medium text-primary">
+                💡 Los interesados te contactarán por el chat interno de M.A.T.S.
+              </p>
+            </div>
+          </div>
+        ),
+        tip: 'Puedes editar o eliminar tus publicaciones en cualquier momento desde "Mis publicaciones"',
+      },
+    ],
+  },
+  {
     id: 'finish',
     title: '¡Listo!',
     icon: <Check className="w-6 h-6" />,
