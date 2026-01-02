@@ -88,6 +88,7 @@ interface AlertsPanelProps {
   currentUserId?: string;
   onResolveHelpRequest?: (requestId: string) => Promise<boolean>;
   onResolvePanicEvent?: (eventId: string) => Promise<boolean>;
+  onDeletePanicEvent?: (eventId: string) => Promise<boolean>;
   activeResponders?: ActiveResponder[];
   userPosition?: GeoPosition | null;
   onRespondToRequest?: (requestId: string, alertType: 'panic' | 'help', alertLat: number, alertLng: number, transportMode?: string, estimatedEtaMinutes?: number) => Promise<boolean>;
@@ -118,6 +119,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
   currentUserId,
   onResolveHelpRequest,
   onResolvePanicEvent,
+  onDeletePanicEvent,
   activeResponders = [],
   userPosition,
   onRespondToRequest,
@@ -173,10 +175,14 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
       let success = false;
       
       if (confirmDeleteType === 'panic') {
-        if (!onResolvePanicEvent) {
-          console.error('[AlertsPanel] onResolvePanicEvent not provided');
-        } else {
+        // Use deleteEvent for actual deletion (owner action)
+        if (onDeletePanicEvent) {
+          success = await onDeletePanicEvent(confirmDeleteId);
+        } else if (onResolvePanicEvent) {
+          // Fallback to resolve if delete not available
           success = await onResolvePanicEvent(confirmDeleteId);
+        } else {
+          console.error('[AlertsPanel] No delete/resolve handler for panic');
         }
       } else if (confirmDeleteType === 'help') {
         if (!onResolveHelpRequest) {
@@ -223,10 +229,13 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
       let success = false;
       
       if (type === 'panic') {
-        if (!onResolvePanicEvent) {
-          console.error('[AlertsPanel] onResolvePanicEvent not provided for swipe');
-        } else {
+        // Use deleteEvent for actual deletion (owner swipe action)
+        if (onDeletePanicEvent) {
+          success = await onDeletePanicEvent(id);
+        } else if (onResolvePanicEvent) {
           success = await onResolvePanicEvent(id);
+        } else {
+          console.error('[AlertsPanel] No delete/resolve handler for panic swipe');
         }
       } else if (type === 'help') {
         if (!onResolveHelpRequest) {
@@ -293,7 +302,10 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
       let success = false;
       
       if (selectedAlertType === 'panic') {
-        if (onResolvePanicEvent) {
+        // Use deleteEvent for actual deletion from modal
+        if (onDeletePanicEvent) {
+          success = await onDeletePanicEvent(selectedAlert.id);
+        } else if (onResolvePanicEvent) {
           success = await onResolvePanicEvent(selectedAlert.id);
         }
       } else {
