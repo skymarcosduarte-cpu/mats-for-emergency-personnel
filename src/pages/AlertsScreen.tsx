@@ -101,6 +101,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   
   // Source filter for "Otros" tab
   const [otrosSourceFilter, setOtrosSourceFilter] = useState<string | null>(null);
+  // Source filter for earthquakes tab
+  const [earthquakeSourceFilter, setEarthquakeSourceFilter] = useState<'ALL' | 'USGS' | 'SSN'>('ALL');
   // Messaging state
   const [messagingOpen, setMessagingOpen] = useState(false);
   const [messagingUserId, setMessagingUserId] = useState<string | null>(null);
@@ -530,24 +532,62 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
 
         {/* Earthquakes Tab */}
         <TabsContent value="earthquakes" className="space-y-3 mt-4">
-          {/* Offline/Cache status indicator */}
-          <div className={cn(
-            "flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs",
-            isOffline ? "bg-warning/10 text-warning" : "bg-muted/50 text-muted-foreground"
-          )}>
+          {/* Source filter and status */}
+          <div className="flex flex-col gap-2">
+            {/* Filter buttons */}
             <div className="flex items-center gap-2">
-              {isOffline && <WifiOff className="w-4 h-4" />}
-              <span>
-                {isOffline ? 'Sin conexión - ' : ''}
-                {lastUpdated && `Actualizado: ${lastUpdated.toLocaleTimeString()}`}
-              </span>
+              <span className="text-xs text-muted-foreground">Fuente:</span>
+              <div className="flex gap-1">
+                <Button
+                  variant={earthquakeSourceFilter === 'ALL' ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-7 text-xs px-2"
+                  onClick={() => setEarthquakeSourceFilter('ALL')}
+                >
+                  Todas
+                </Button>
+                <Button
+                  variant={earthquakeSourceFilter === 'USGS' ? 'default' : 'outline'}
+                  size="sm"
+                  className={cn(
+                    "h-7 text-xs px-2",
+                    earthquakeSourceFilter === 'USGS' ? "" : "border-primary text-primary hover:bg-primary/10"
+                  )}
+                  onClick={() => setEarthquakeSourceFilter('USGS')}
+                >
+                  USGS
+                </Button>
+                <Button
+                  variant={earthquakeSourceFilter === 'SSN' ? 'default' : 'outline'}
+                  size="sm"
+                  className={cn(
+                    "h-7 text-xs px-2",
+                    earthquakeSourceFilter === 'SSN' ? "" : "border-success text-success hover:bg-success/10"
+                  )}
+                  onClick={() => setEarthquakeSourceFilter('SSN')}
+                >
+                  SSN
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-primary text-primary">USGS</Badge>
-              <span className="text-muted-foreground">+</span>
-              <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-success text-success">SSN</Badge>
-              <span className="text-muted-foreground">+</span>
-              <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-amber-500 text-amber-500">EMSC</Badge>
+            
+            {/* Offline/Cache status indicator */}
+            <div className={cn(
+              "flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs",
+              isOffline ? "bg-warning/10 text-warning" : "bg-muted/50 text-muted-foreground"
+            )}>
+              <div className="flex items-center gap-2">
+                {isOffline && <WifiOff className="w-4 h-4" />}
+                <span>
+                  {isOffline ? 'Sin conexión - ' : ''}
+                  {lastUpdated && `Actualizado: ${lastUpdated.toLocaleTimeString()}`}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-primary text-primary">USGS</Badge>
+                <span className="text-muted-foreground">+</span>
+                <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-success text-success">SSN</Badge>
+              </div>
             </div>
           </div>
 
@@ -555,13 +595,15 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
-          ) : earthquakes.length === 0 ? (
+          ) : earthquakes.filter(q => earthquakeSourceFilter === 'ALL' || q.source === earthquakeSourceFilter).length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No hay sismos recientes</p>
+              <p>No hay sismos recientes{earthquakeSourceFilter !== 'ALL' ? ` de ${earthquakeSourceFilter}` : ''}</p>
             </div>
           ) : (
-            earthquakes.map((quake) => (
+            earthquakes
+              .filter(q => earthquakeSourceFilter === 'ALL' || q.source === earthquakeSourceFilter)
+              .map((quake) => (
               <Card 
                 key={quake.id} 
                 className="bg-card border-border hover:border-primary/30 transition-colors cursor-pointer"
@@ -584,11 +626,9 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                           "text-[10px] px-1.5 py-0 h-4",
                           quake.source === 'SSN' 
                             ? "border-success text-success" 
-                            : quake.source === 'EMSC'
-                            ? "border-amber-500 text-amber-500"
                             : "border-primary text-primary"
                         )}>
-                          {quake.source === 'SSN' ? 'SSN' : quake.source === 'EMSC' ? 'EMSC' : 'USGS'}
+                          {quake.source === 'SSN' ? 'SSN' : 'USGS'}
                         </Badge>
                       </div>
                       <div className="text-sm text-foreground font-medium">
