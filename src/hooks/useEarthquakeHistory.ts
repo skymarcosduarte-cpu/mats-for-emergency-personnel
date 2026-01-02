@@ -1,5 +1,5 @@
 // Earthquake History Hook for COMUNIDAD SOS
-// Fetches and caches earthquake data from USGS, SSN (Mexico), and EMSC (Europe) with distance calculations
+// Fetches and caches earthquake data from USGS and SSN (Mexico) with distance calculations
 
 import { useState, useEffect, useCallback } from 'react';
 import type { USGSEarthquake, GeoPosition } from '@/types';
@@ -8,7 +8,6 @@ import { cacheEarthquakes, getCachedEarthquakes, isEarthquakeCacheFresh, updateL
 
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
 const SSN_FEED_URL = 'http://www.ssn.unam.mx/rss/ultimos-sismos.xml';
-const EMSC_FEED_URL = 'https://www.seismicportal.eu/fdsnws/event/1/query?format=json&limit=50&minmag=3.0&orderby=time';
 
 // Multiple CORS proxies for fallback (some may be blocked on Android)
 const CORS_PROXIES = [
@@ -140,72 +139,6 @@ async function parseSSNFeed(): Promise<USGSEarthquake[]> {
   }
 }
 
-// Parse EMSC JSON feed and convert to USGSEarthquake format
-async function parseEMSCFeed(): Promise<USGSEarthquake[]> {
-  try {
-    console.log('[EMSC] Fetching EMSC feed...');
-    // EMSC API supports CORS, try direct fetch first
-    let response: Response;
-    try {
-      response = await fetch(EMSC_FEED_URL, {
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
-    } catch {
-      // If direct fetch fails, try with CORS proxy
-      console.log('[EMSC] Direct fetch failed, trying CORS proxy...');
-      response = await fetchWithCorsProxy(EMSC_FEED_URL);
-    }
-    
-    if (!response.ok) {
-      throw new Error(`EMSC returned ${response.status}`);
-    }
-    
-    const data = await response.json();
-    const features = data.features || [];
-    const earthquakes: USGSEarthquake[] = [];
-    
-    features.forEach((feature: any, index: number) => {
-      try {
-        const props = feature.properties || {};
-        const coords = feature.geometry?.coordinates || [0, 0, 10];
-        
-        const mag = props.mag || 0;
-        const place = props.flynn_region || props.source_catalog || 'Unknown Location';
-        const time = new Date(props.time).getTime();
-        const depth = coords[2] || 10;
-        
-        earthquakes.push({
-          id: `emsc-${feature.id || index}-${time}`,
-          source: 'EMSC',
-          properties: {
-            mag,
-            place,
-            time,
-            updated: time,
-            url: `https://www.seismicportal.eu/eventdetails.html?unid=${feature.id}`,
-            title: `M ${mag} - ${place}`,
-            alert: null,
-            tsunami: props.tsunami ? 1 : 0,
-            depth,
-          },
-          geometry: {
-            coordinates: [coords[0], coords[1], depth],
-          },
-        });
-      } catch (e) {
-        console.warn('Error parsing EMSC earthquake item:', e);
-      }
-    });
-    
-    console.log('[EMSC] Parsed earthquakes:', earthquakes.length);
-    return earthquakes;
-  } catch (error) {
-    console.error('[EMSC] Error fetching EMSC feed:', error);
-    return [];
-  }
-}
 
 export function useEarthquakeHistory(userPosition: GeoPosition | null) {
   const [earthquakes, setEarthquakes] = useState<EarthquakeWithDistance[]>([]);
@@ -268,8 +201,8 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
             setLastUpdated(new Date(cached.cachedAt));
           }
         } else {
-          // Fetch fresh data from all three sources in parallel
-          const [usgsQuakes, ssnQuakes, emscQuakes] = await Promise.all([
+          // Fetch fresh data from both sources in parallel
+          const [usgsQuakes, ssnQuakes] = await Promise.all([
             fetchFromUSGS().catch(err => {
               console.warn('Error fetching USGS:', err);
               return [] as USGSEarthquake[];
@@ -278,14 +211,10 @@ export function useEarthquakeHistory(userPosition: GeoPosition | null) {
               console.warn('Error fetching SSN:', err);
               return [] as USGSEarthquake[];
             }),
-            parseEMSCFeed().catch(err => {
-              console.warn('Error fetching EMSC:', err);
-              return [] as USGSEarthquake[];
-            }),
           ]);
           
-          // Merge all sources (prioritize regional data)
-          quakes = [...usgsQuakes, ...ssnQuakes, ...emscQuakes];
+          // Merge both sources
+          quakes = [...usgsQuakes, ...ssnQuakes];
           
           await cacheEarthquakes(quakes);
           await updateLastSync();
