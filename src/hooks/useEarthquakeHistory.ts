@@ -124,36 +124,48 @@ async function parseSSNFeed(): Promise<USGSEarthquake[]> {
     const items = xml.querySelectorAll('item');
     const earthquakes: USGSEarthquake[] = [];
     
-    items.forEach((item, index) => {
+    items.forEach((item) => {
       try {
         const title = item.querySelector('title')?.textContent || '';
         const description = item.querySelector('description')?.textContent || '';
-        const lat = parseFloat(item.getElementsByTagNameNS('http://www.w3.org/2003/01/geo/wgs84_pos#', 'lat')[0]?.textContent || '0');
-        const lng = parseFloat(item.getElementsByTagNameNS('http://www.w3.org/2003/01/geo/wgs84_pos#', 'long')[0]?.textContent || '0');
-        
+        const guid = item.querySelector('guid')?.textContent?.trim() || '';
+
+        const lat = parseFloat(
+          item.getElementsByTagNameNS('http://www.w3.org/2003/01/geo/wgs84_pos#', 'lat')[0]?.textContent || '0'
+        );
+        const lng = parseFloat(
+          item.getElementsByTagNameNS('http://www.w3.org/2003/01/geo/wgs84_pos#', 'long')[0]?.textContent || '0'
+        );
+
         // Parse magnitude from title (e.g., "3.1, 14 km al SUROESTE de ZIHUATANEJO, GRO")
         const magMatch = title.match(/^([\d.]+)/);
         const mag = magMatch ? parseFloat(magMatch[1]) : 0;
-        
+
         // Parse date and depth from description
         const dateMatch = description.match(/Fecha:(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/);
         const depthMatch = description.match(/Profundidad:\s*([\d.]+)\s*km/);
-        
+
         let timestamp = Date.now();
         if (dateMatch) {
           // SSN uses Mexico City time (UTC-6)
           const mexicoTime = new Date(dateMatch[1].replace(' ', 'T') + '-06:00');
           timestamp = mexicoTime.getTime();
         }
-        
+
         const depth = depthMatch ? parseFloat(depthMatch[1]) : 10;
-        
+
         // Clean up place name
         const placeMatch = title.match(/,\s*(.+)/);
         const place = placeMatch ? placeMatch[1].trim() : title;
-        
+
+        // Create a STABLE id so the same SSN quake doesn't re-alert on every refresh/app open.
+        // NOTE: The previous implementation used the RSS item index, which changes as the feed updates.
+        const stableId = guid
+          ? `ssn-${guid}`
+          : `ssn-${timestamp}-${mag.toFixed(1)}-${lat.toFixed(3)}-${lng.toFixed(3)}`;
+
         earthquakes.push({
-          id: `ssn-${timestamp}-${index}`,
+          id: stableId,
           source: 'SSN',
           properties: {
             mag,
@@ -287,12 +299,17 @@ export function useEarthquakeHistory(
           
           // Alert for new major SSN quakes - only if not already acknowledged
           for (const quake of majorSSNQuakes) {
-            if (!alertedMajorQuakesRef.current.has(quake.id)) {
+            // Backward-compat: older versions used `ssn-${timestamp}-${index}` which changes over time.
+            // If we already acknowledged any quake with the same timestamp prefix, treat it as acknowledged.
+            const legacyTimestampPrefix = `ssn-${quake.properties.time}-`;
+            const legacyAcked = Array.from(alertedMajorQuakesRef.current).some((id) => id.startsWith(legacyTimestampPrefix));
+
+            if (!alertedMajorQuakesRef.current.has(quake.id) && !legacyAcked) {
               console.log(`[SSN] 🚨 MAJOR EARTHQUAKE DETECTED: M${quake.properties.mag} - ${quake.properties.place}`);
               alertedMajorQuakesRef.current.add(quake.id);
               // Persist to storage immediately so it won't trigger again after refresh
               saveAcknowledgedMajorSSNQuake(quake.id);
-              
+
               if (onMajorSSNQuakeRef.current) {
                 onMajorSSNQuakeRef.current(quake);
               }
