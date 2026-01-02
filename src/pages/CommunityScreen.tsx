@@ -49,6 +49,7 @@ const EVENT_TYPES: { value: CommunityEventType; label: string }[] = [
   { value: 'VISIT', label: '👋 Visita' },
   { value: 'CELEBRATION', label: '🎉 Hoy se Celebra' },
   { value: 'RECOMMENDATION', label: '💡 Recomendación' },
+  { value: 'NEWS', label: '📰 Noticia Relevante' },
   { value: 'OTHER', label: '📝 Otro' },
 ];
 
