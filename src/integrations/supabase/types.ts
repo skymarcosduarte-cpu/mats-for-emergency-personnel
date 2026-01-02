@@ -96,6 +96,7 @@ export type Database = {
           expires_at: string | null
           id: string
           image_url: string | null
+          image_urls: string[] | null
           is_active: boolean
           message: string | null
           target_user_id: string | null
@@ -109,6 +110,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           image_url?: string | null
+          image_urls?: string[] | null
           is_active?: boolean
           message?: string | null
           target_user_id?: string | null
@@ -122,6 +124,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           image_url?: string | null
+          image_urls?: string[] | null
           is_active?: boolean
           message?: string | null
           target_user_id?: string | null
