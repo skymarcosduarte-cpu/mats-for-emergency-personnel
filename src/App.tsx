@@ -362,7 +362,10 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     }
   }, [webPushSupported, permission, isSubscribed, subscribeToPush]);
   
-  // Callback for when earthquake is detected nearby
+  // Location - declared first so it can be used in callbacks
+  const { position } = useLocation();
+  
+  // Callback for when earthquake is detected nearby (USGS - only notification, no report dialog)
   const handleEarthquakeDetected = useCallback((earthquake: USGSEarthquake, distanceKm: number) => {
     // Show push notification (works even in background tabs)
     showEarthquakeNotification(earthquake, distanceKm);
@@ -370,7 +373,11 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     recordEarthquakeAlert(earthquake.id);
   }, [showEarthquakeNotification, recordEarthquakeAlert]);
   
+  // State to hold major SSN quake for the SeismicAlert dialog (only SSN ≥6.0)
+  const [majorSSNQuake, setMajorSSNQuake] = useState<{ earthquake: USGSEarthquake; distanceKm: number } | null>(null);
+  
   // Callback for major SSN earthquakes (≥6.0) - alerts everyone regardless of distance
+  // ONLY these earthquakes will trigger the SeismicAlert report dialog
   const handleMajorSSNQuake = useCallback((earthquake: USGSEarthquake) => {
     console.log(`[App] 🚨 Major SSN earthquake alert: M${earthquake.properties.mag}`);
     // Show special notification for major quakes
@@ -384,17 +391,26 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     });
     // Record for status check-in timer
     recordEarthquakeAlert(earthquake.id);
-  }, [showMajorSSNQuakeNotification, recordEarthquakeAlert]);
-  
-  // Location and earthquake detection
-  const { position } = useLocation();
+    
+    // Calculate distance from epicenter to user position (if available)
+    let calculatedDistance = 0;
+    if (position) {
+      const [lng, lat] = earthquake.geometry.coordinates;
+      const { calculateDistance } = require('@/hooks/useLocation');
+      calculatedDistance = calculateDistance(position.lat, position.lng, lat, lng);
+    }
+    
+    // Set for the SeismicAlert dialog - ONLY SSN quakes ≥6.0 trigger report dialog
+    setMajorSSNQuake({ earthquake, distanceKm: calculatedDistance });
+  }, [showMajorSSNQuakeNotification, recordEarthquakeAlert, position]);
   
   // Monitor earthquake history for major SSN quakes
   useEarthquakeHistory(position, {
     onMajorSSNQuake: handleMajorSSNQuake,
   });
   
-  const { nearbyQuake, distanceKm, dismissAlert, markAsReported } = useEarthquakeDetection(
+  // USGS earthquake detection by distance - only for notifications (no report dialog)
+  const { dismissAlert: dismissUSGSAlert } = useEarthquakeDetection(
     position,
     handleEarthquakeDetected
   );
@@ -542,15 +558,15 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <InstallPrompt />
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS'} disasterMode={disasterMode} messageCount={unreadMessageCount} />
       
-      {/* Seismic Alert Dialog */}
-      {nearbyQuake && position && distanceKm !== null && (
+      {/* Seismic Alert Dialog - ONLY for SSN earthquakes ≥6.0 */}
+      {majorSSNQuake && position && (
         <SeismicAlert
-          earthquake={nearbyQuake}
-          distanceKm={distanceKm}
+          earthquake={majorSSNQuake.earthquake}
+          distanceKm={majorSSNQuake.distanceKm}
           position={position}
           userRole={userRole}
-          onDismiss={dismissAlert}
-          onReported={markAsReported}
+          onDismiss={() => setMajorSSNQuake(null)}
+          onReported={() => setMajorSSNQuake(null)}
         />
       )}
 
