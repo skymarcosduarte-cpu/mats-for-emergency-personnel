@@ -139,6 +139,15 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       hadOuterWhitespace: value !== trimmed,
     };
   };
+
+  // Detect if user is pasting a recovery token instead of their password
+  // Recovery tokens typically look like: xxxxx-xxxxxx-xxxxxx (groups of 5-6 chars with dashes)
+  const looksLikeRecoveryToken = (value: string): boolean => {
+    const trimmed = value.trim().toLowerCase();
+    // Match patterns like: saqdop-xekvl0-cotcyq (typical supabase recovery token format)
+    const recoveryTokenPattern = /^[a-z0-9]{5,6}-[a-z0-9]{5,6}-[a-z0-9]{5,6}$/;
+    return recoveryTokenPattern.test(trimmed);
+  };
   // Handle forgot password
   const handleForgotPassword = async () => {
     if (!forgotPasswordEmail.trim()) {
@@ -224,16 +233,23 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         const isCredentialError = signInError.message.includes('Invalid login credentials');
 
         if (isCredentialError) {
-          errorMessage = 'Email o contraseña incorrectos. Verifica tus datos.';
-          errorTitle = 'Credenciales inválidas';
-
-          // Track failed attempts for credential errors
-          const newAttempts = loginAttempts + 1;
-          setLoginAttempts(newAttempts);
-
-          // Show recovery suggestion after 2 failed attempts
-          if (newAttempts >= 2) {
+          // Check if user might be pasting a recovery token as password
+          if (looksLikeRecoveryToken(sanitizedPassword)) {
+            errorMessage = 'Parece que pegaste un código del correo de recuperación. Ese código NO es tu contraseña. Haz clic en el ENLACE del correo para restablecer tu contraseña.';
+            errorTitle = '¿Usaste el enlace del correo?';
             setShowRecoverySuggestion(true);
+          } else {
+            errorMessage = 'Email o contraseña incorrectos. Verifica tus datos.';
+            errorTitle = 'Credenciales inválidas';
+
+            // Track failed attempts for credential errors
+            const newAttempts = loginAttempts + 1;
+            setLoginAttempts(newAttempts);
+
+            // Show recovery suggestion after 2 failed attempts
+            if (newAttempts >= 2) {
+              setShowRecoverySuggestion(true);
+            }
           }
         } else if (signInError.message.includes('Email not confirmed')) {
           errorMessage = 'Tu email no ha sido confirmado. Revisa tu bandeja de entrada.';
