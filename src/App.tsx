@@ -43,6 +43,7 @@ import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { useAppState } from '@/hooks/useRealtime';
 import { useLocation } from '@/hooks/useLocation';
 import { useEarthquakeDetection } from '@/hooks/useEarthquakeDetection';
+import { useEarthquakeHistory } from '@/hooks/useEarthquakeHistory';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useStatusCheckin } from '@/hooks/useStatusCheckin';
 import { useAuth } from '@/hooks/useAuth';
@@ -319,7 +320,12 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   }, [user, isBackgroundTracking, startBackgroundTracking]);
 
   // Push notifications (browser)
-  const { showEarthquakeNotification, requestPermission, permission } = usePushNotifications();
+  const { 
+    showEarthquakeNotification, 
+    showMajorSSNQuakeNotification,
+    requestPermission, 
+    permission 
+  } = usePushNotifications();
   
   // Web Push subscription for background notifications
   const { isSupported: webPushSupported, isSubscribed, subscribe: subscribeToPush } = useWebPushSubscription();
@@ -356,7 +362,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     }
   }, [webPushSupported, permission, isSubscribed, subscribeToPush]);
   
-  // Callback for when earthquake is detected
+  // Callback for when earthquake is detected nearby
   const handleEarthquakeDetected = useCallback((earthquake: USGSEarthquake, distanceKm: number) => {
     // Show push notification (works even in background tabs)
     showEarthquakeNotification(earthquake, distanceKm);
@@ -364,8 +370,30 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     recordEarthquakeAlert(earthquake.id);
   }, [showEarthquakeNotification, recordEarthquakeAlert]);
   
+  // Callback for major SSN earthquakes (≥6.0) - alerts everyone regardless of distance
+  const handleMajorSSNQuake = useCallback((earthquake: USGSEarthquake) => {
+    console.log(`[App] 🚨 Major SSN earthquake alert: M${earthquake.properties.mag}`);
+    // Show special notification for major quakes
+    showMajorSSNQuakeNotification(earthquake);
+    // Play urgent alert sound
+    import('@/lib/alertSound').then(({ playUrgentAlert }) => playUrgentAlert());
+    // Show toast notification as well
+    toast.error(`🚨 SISMO M${earthquake.properties.mag.toFixed(1)}`, {
+      description: earthquake.properties.place || 'México',
+      duration: 15000,
+    });
+    // Record for status check-in timer
+    recordEarthquakeAlert(earthquake.id);
+  }, [showMajorSSNQuakeNotification, recordEarthquakeAlert]);
+  
   // Location and earthquake detection
   const { position } = useLocation();
+  
+  // Monitor earthquake history for major SSN quakes
+  useEarthquakeHistory(position, {
+    onMajorSSNQuake: handleMajorSSNQuake,
+  });
+  
   const { nearbyQuake, distanceKm, dismissAlert, markAsReported } = useEarthquakeDetection(
     position,
     handleEarthquakeDetected

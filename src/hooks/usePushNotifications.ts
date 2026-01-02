@@ -74,6 +74,39 @@ export function usePushNotifications() {
     }
   }, [state.isSupported]);
 
+  // Special notification for major SSN earthquakes (≥6.0) - alerts everyone in Mexico
+  const showMajorSSNQuakeNotification = useCallback((
+    earthquake: USGSEarthquake
+  ) => {
+    if (!state.isSupported || Notification.permission !== 'granted') {
+      return false;
+    }
+
+    const magnitude = earthquake.properties.mag.toFixed(1);
+    const place = earthquake.properties.place || 'México';
+    const depth = earthquake.properties.depth || earthquake.geometry.coordinates[2] || 0;
+
+    try {
+      const notification = new Notification(`🚨 SISMO FUERTE M${magnitude}`, {
+        body: `${place}\nProfundidad: ${Math.round(depth)} km\n⚠️ Mantente alerta`,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: `major-ssn-quake-${earthquake.id}`,
+        requireInteraction: true,
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+
+      return true;
+    } catch (error) {
+      console.error('Error showing major SSN notification:', error);
+      return false;
+    }
+  }, [state.isSupported]);
+
   const showCycloneNotification = useCallback((
     cyclone: TropicalCycloneAlert
   ) => {
@@ -230,6 +263,7 @@ export function usePushNotifications() {
     ...state,
     requestPermission,
     showEarthquakeNotification,
+    showMajorSSNQuakeNotification,
     showCycloneNotification,
     showFireNotification,
     showGenericNotification,
