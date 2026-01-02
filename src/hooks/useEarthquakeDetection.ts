@@ -9,6 +9,47 @@ import { getEarthquakeRadiusKm } from '@/hooks/useAlertSettings';
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
 const CHECK_INTERVAL_MS = 60 * 1000; // Check every 1 minute
 
+// Storage key for persisting acknowledged earthquakes
+const ACKNOWLEDGED_QUAKES_KEY = 'acknowledged_earthquakes';
+
+// Helper to get acknowledged quakes from localStorage
+function getAcknowledgedQuakes(): Set<string> {
+  try {
+    const stored = localStorage.getItem(ACKNOWLEDGED_QUAKES_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Filter out old entries (older than 7 days)
+      const now = Date.now();
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+      const filtered = Object.entries(parsed)
+        .filter(([_, timestamp]) => now - (timestamp as number) < sevenDaysMs)
+        .map(([id]) => id);
+      return new Set(filtered);
+    }
+  } catch {
+    console.warn('[EarthquakeDetection] Error reading acknowledged quakes from storage');
+  }
+  return new Set();
+}
+
+// Helper to save acknowledged quakes to localStorage
+function saveAcknowledgedQuake(quakeId: string) {
+  try {
+    const stored = localStorage.getItem(ACKNOWLEDGED_QUAKES_KEY);
+    const parsed = stored ? JSON.parse(stored) : {};
+    parsed[quakeId] = Date.now();
+    // Clean old entries while saving
+    const now = Date.now();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    const cleaned = Object.fromEntries(
+      Object.entries(parsed).filter(([_, timestamp]) => now - (timestamp as number) < sevenDaysMs)
+    );
+    localStorage.setItem(ACKNOWLEDGED_QUAKES_KEY, JSON.stringify(cleaned));
+  } catch {
+    console.warn('[EarthquakeDetection] Error saving acknowledged quake to storage');
+  }
+}
+
 interface EarthquakeDetectionState {
   nearbyQuake: USGSEarthquake | null;
   distanceKm: number | null;
@@ -35,10 +76,10 @@ export function useEarthquakeDetection(
     lastChecked: null,
   });
   
-  // Track which earthquakes we've already alerted about
-  const alertedQuakesRef = useRef<Set<string>>(new Set());
-  // Store dismissed quakes for the session
-  const dismissedQuakesRef = useRef<Set<string>>(new Set());
+  // Track which earthquakes we've already alerted about - load from storage on init
+  const alertedQuakesRef = useRef<Set<string>>(getAcknowledgedQuakes());
+  // Store dismissed quakes for the session (also persist)
+  const dismissedQuakesRef = useRef<Set<string>>(getAcknowledgedQuakes());
   // Store callback ref to avoid stale closures
   const notifyCallbackRef = useRef<NotifyCallback | undefined>(onEarthquakeDetected);
 
@@ -89,8 +130,9 @@ export function useEarthquakeDetection(
     const nearby = await checkForNearbyQuakes();
 
     if (nearby) {
-      // Mark as alerted so we don't show again
+      // Mark as alerted so we don't show again - persist to storage
       alertedQuakesRef.current.add(nearby.earthquake.id);
+      saveAcknowledgedQuake(nearby.earthquake.id);
       
       // Trigger push notification callback
       if (notifyCallbackRef.current) {
@@ -112,10 +154,12 @@ export function useEarthquakeDetection(
     }
   }, [position, checkForNearbyQuakes]);
 
-  // Dismiss current alert
+  // Dismiss current alert - persist to storage so it won't show again
   const dismissAlert = useCallback(() => {
     if (state.nearbyQuake) {
       dismissedQuakesRef.current.add(state.nearbyQuake.id);
+      saveAcknowledgedQuake(state.nearbyQuake.id);
+      console.log(`[EarthquakeDetection] Dismissed and persisted: ${state.nearbyQuake.id}`);
     }
     setState(prev => ({
       ...prev,

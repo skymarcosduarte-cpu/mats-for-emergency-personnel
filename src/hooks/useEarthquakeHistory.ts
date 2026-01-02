@@ -11,6 +11,48 @@ import { getSsnNationalAlertMagnitude } from '@/hooks/useAlertSettings';
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
 const SSN_FEED_URL = 'http://www.ssn.unam.mx/rss/ultimos-sismos.xml';
 
+// Storage key for persisting acknowledged major SSN earthquakes
+const ACKNOWLEDGED_MAJOR_SSN_KEY = 'acknowledged_major_ssn_quakes';
+
+// Helper to get acknowledged major SSN quakes from localStorage
+function getAcknowledgedMajorSSNQuakes(): Set<string> {
+  try {
+    const stored = localStorage.getItem(ACKNOWLEDGED_MAJOR_SSN_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Filter out old entries (older than 7 days)
+      const now = Date.now();
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+      const filtered = Object.entries(parsed)
+        .filter(([_, timestamp]) => now - (timestamp as number) < sevenDaysMs)
+        .map(([id]) => id);
+      return new Set(filtered);
+    }
+  } catch {
+    console.warn('[EarthquakeHistory] Error reading acknowledged major SSN quakes from storage');
+  }
+  return new Set();
+}
+
+// Helper to save acknowledged major SSN quake to localStorage
+function saveAcknowledgedMajorSSNQuake(quakeId: string) {
+  try {
+    const stored = localStorage.getItem(ACKNOWLEDGED_MAJOR_SSN_KEY);
+    const parsed = stored ? JSON.parse(stored) : {};
+    parsed[quakeId] = Date.now();
+    // Clean old entries while saving
+    const now = Date.now();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    const cleaned = Object.fromEntries(
+      Object.entries(parsed).filter(([_, timestamp]) => now - (timestamp as number) < sevenDaysMs)
+    );
+    localStorage.setItem(ACKNOWLEDGED_MAJOR_SSN_KEY, JSON.stringify(cleaned));
+    console.log(`[EarthquakeHistory] Persisted major SSN quake: ${quakeId}`);
+  } catch {
+    console.warn('[EarthquakeHistory] Error saving acknowledged major SSN quake to storage');
+  }
+}
+
 // Multiple CORS proxies for fallback (some may be blocked on Android)
 const CORS_PROXIES = [
   (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
@@ -160,8 +202,8 @@ export function useEarthquakeHistory(
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [rawEarthquakes, setRawEarthquakes] = useState<USGSEarthquake[]>([]);
   
-  // Track which major SSN quakes we've already alerted about
-  const alertedMajorQuakesRef = useRef<Set<string>>(new Set());
+  // Track which major SSN quakes we've already alerted about - load from storage on init
+  const alertedMajorQuakesRef = useRef<Set<string>>(getAcknowledgedMajorSSNQuakes());
   // Store callback ref to avoid stale closures
   const onMajorSSNQuakeRef = useRef(options?.onMajorSSNQuake);
   
@@ -243,11 +285,13 @@ export function useEarthquakeHistory(
             q => q.properties.mag >= ssnAlertThreshold
           );
           
-          // Alert for new major SSN quakes
+          // Alert for new major SSN quakes - only if not already acknowledged
           for (const quake of majorSSNQuakes) {
             if (!alertedMajorQuakesRef.current.has(quake.id)) {
               console.log(`[SSN] 🚨 MAJOR EARTHQUAKE DETECTED: M${quake.properties.mag} - ${quake.properties.place}`);
               alertedMajorQuakesRef.current.add(quake.id);
+              // Persist to storage immediately so it won't trigger again after refresh
+              saveAcknowledgedMajorSSNQuake(quake.id);
               
               if (onMajorSSNQuakeRef.current) {
                 onMajorSSNQuakeRef.current(quake);
