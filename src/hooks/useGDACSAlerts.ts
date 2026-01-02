@@ -15,7 +15,7 @@ const GDACS_FEEDS = {
 const ADDITIONAL_FEEDS = {
   conagua: 'https://smn.conagua.gob.mx/rss/avisos.xml',
   nasa_eonet: 'https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=20',
-  reliefweb: 'https://reliefweb.int/updates/rss.xml',
+  reliefweb: 'https://reliefweb.int/disasters/rss.xml',
   aemet: 'https://www.aemet.es/es/rss_info/avisos/esp',
 };
 
