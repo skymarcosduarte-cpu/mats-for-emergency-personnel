@@ -544,7 +544,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                   className="h-7 text-xs px-2"
                   onClick={() => setEarthquakeSourceFilter('ALL')}
                 >
-                  Todas
+                  Todas ({earthquakes.length})
                 </Button>
                 <Button
                   variant={earthquakeSourceFilter === 'USGS' ? 'default' : 'outline'}
@@ -555,7 +555,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                   )}
                   onClick={() => setEarthquakeSourceFilter('USGS')}
                 >
-                  USGS
+                  USGS ({earthquakes.filter(q => q.source === 'USGS').length})
                 </Button>
                 <Button
                   variant={earthquakeSourceFilter === 'SSN' ? 'default' : 'outline'}
@@ -566,7 +566,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                   )}
                   onClick={() => setEarthquakeSourceFilter('SSN')}
                 >
-                  SSN
+                  SSN ({earthquakes.filter(q => q.source === 'SSN').length})
                 </Button>
               </div>
             </div>
