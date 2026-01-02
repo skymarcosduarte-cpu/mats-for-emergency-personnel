@@ -6,12 +6,14 @@ import { useState, useEffect, useCallback } from 'react';
 const STORAGE_KEY = 'mats-alert-settings';
 
 const DEFAULT_EARTHQUAKE_RADIUS_KM = 50;
+const DEFAULT_SSN_NATIONAL_ALERT_MAGNITUDE = 6.0;
 
 interface AlertSettings {
   helpRequestSounds: boolean;
   earthquakeSounds: boolean;
   earthquakeRadiusKm: number;
   internationalRedAlerts: boolean;
+  ssnNationalAlertMagnitude: number;
 }
 
 const DEFAULT_SETTINGS: AlertSettings = {
@@ -19,6 +21,7 @@ const DEFAULT_SETTINGS: AlertSettings = {
   earthquakeSounds: true,
   earthquakeRadiusKm: DEFAULT_EARTHQUAKE_RADIUS_KM,
   internationalRedAlerts: true,
+  ssnNationalAlertMagnitude: DEFAULT_SSN_NATIONAL_ALERT_MAGNITUDE,
 };
 
 export function useAlertSettings() {
@@ -70,6 +73,12 @@ export function useAlertSettings() {
     saveSettings({ internationalRedAlerts: enabled });
   }, [saveSettings]);
 
+  const setSsnNationalAlertMagnitude = useCallback((magnitude: number) => {
+    // Clamp between 5.0 and 8.0
+    const clampedMagnitude = Math.max(5.0, Math.min(8.0, magnitude));
+    saveSettings({ ssnNationalAlertMagnitude: clampedMagnitude });
+  }, [saveSettings]);
+
   return {
     ...settings,
     loaded,
@@ -77,6 +86,7 @@ export function useAlertSettings() {
     setEarthquakeSounds,
     setEarthquakeRadiusKm,
     setInternationalRedAlerts,
+    setSsnNationalAlertMagnitude,
   };
 }
 
@@ -134,4 +144,18 @@ export function getEarthquakeRadiusKm(): number {
     // Ignore
   }
   return DEFAULT_EARTHQUAKE_RADIUS_KM;
+}
+
+// Standalone function to get SSN national alert magnitude threshold
+export function getSsnNationalAlertMagnitude(): number {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed.ssnNationalAlertMagnitude ?? DEFAULT_SSN_NATIONAL_ALERT_MAGNITUDE;
+    }
+  } catch (e) {
+    // Ignore
+  }
+  return DEFAULT_SSN_NATIONAL_ALERT_MAGNITUDE;
 }

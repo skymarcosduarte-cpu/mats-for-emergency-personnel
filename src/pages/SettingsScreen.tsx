@@ -116,7 +116,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 }) => {
   const { profile, role, signOut, updateProfile, updateRole, deleteAccount } = useAuth();
   const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
-  const { helpRequestSounds, earthquakeSounds, earthquakeRadiusKm, internationalRedAlerts, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusKm, setInternationalRedAlerts } = useAlertSettings();
+  const { helpRequestSounds, earthquakeSounds, earthquakeRadiusKm, internationalRedAlerts, ssnNationalAlertMagnitude, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusKm, setInternationalRedAlerts, setSsnNationalAlertMagnitude } = useAlertSettings();
   const { loading: loadingDataExport, data: userDataExport, fetchAllUserData, downloadAsJson } = useUserDataExport();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showDataExportDialog, setShowDataExportDialog] = useState(false);
@@ -1381,6 +1381,41 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   <span>15 km</span>
                   <span>160 km</span>
                 </div>
+              </div>
+
+              {/* SSN National Alert Magnitude Slider */}
+              <div className="space-y-3 p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                    <AlertTriangle className="w-5 h-5 text-destructive" />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-foreground font-medium">
+                      Umbral alerta nacional SSN
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Magnitud mínima para alertas en todo México
+                    </p>
+                  </div>
+                  <span className="text-lg font-bold text-destructive">
+                    M{ssnNationalAlertMagnitude.toFixed(1)}
+                  </span>
+                </div>
+                <Slider
+                  value={[ssnNationalAlertMagnitude]}
+                  onValueChange={(v) => setSsnNationalAlertMagnitude(v[0])}
+                  min={5.0}
+                  max={8.0}
+                  step={0.5}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground px-1">
+                  <span>M5.0</span>
+                  <span>M8.0</span>
+                </div>
+                <p className="text-xs text-muted-foreground italic">
+                  Sismos del SSN iguales o mayores a esta magnitud alertarán a toda la comunidad sin importar la distancia
+                </p>
               </div>
 
               <div className="flex items-center justify-between">
