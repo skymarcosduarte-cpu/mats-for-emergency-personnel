@@ -788,7 +788,7 @@ export function usePanicEvents() {
     }
   }, []);
 
-  // Resolve (eliminate) a panic event
+  // Resolve (mark as resolved) a panic event - used by rescatistas
   const resolveEvent = useCallback(async (eventId: string) => {
     const { error } = await supabase
       .from('panic_events')
@@ -803,6 +803,32 @@ export function usePanicEvents() {
       return false;
     }
 
+    // Update local state
+    setEvents(prev => prev.filter(e => e.id !== eventId));
+    return true;
+  }, []);
+
+  // Delete a panic event completely - used by the alert owner
+  const deleteEvent = useCallback(async (eventId: string) => {
+    console.log('[usePanicEvents] Attempting to DELETE event:', eventId);
+    
+    // First delete any associated responders
+    await supabase
+      .from('panic_event_responders')
+      .delete()
+      .eq('panic_id', eventId);
+    
+    const { error } = await supabase
+      .from('panic_events')
+      .delete()
+      .eq('id', eventId);
+
+    if (error) {
+      console.error('[usePanicEvents] Error deleting panic event:', error);
+      return false;
+    }
+
+    console.log('[usePanicEvents] Successfully deleted event:', eventId);
     // Update local state
     setEvents(prev => prev.filter(e => e.id !== eventId));
     return true;
@@ -893,7 +919,7 @@ export function usePanicEvents() {
     };
   }, [fetchEvents]);
 
-  return { events, resolveEvent, refetch: fetchEvents };
+  return { events, resolveEvent, deleteEvent, refetch: fetchEvents };
 }
 
 // Hook for tracking responders - gets location of users who are responding to help requests AND panic events
