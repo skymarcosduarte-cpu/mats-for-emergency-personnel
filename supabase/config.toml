@@ -15,6 +15,9 @@ verify_jwt = true
 [functions.send-message-push]
 verify_jwt = true
 
+[functions.send-web-push]
+verify_jwt = true
+
 [functions.check-delayed-trips]
 verify_jwt = true
 
