@@ -73,6 +73,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [showRecoverySuggestion, setShowRecoverySuggestion] = useState(false);
   
@@ -635,6 +636,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                         setPassword(e.target.value);
                         setError(null);
                       }}
+                      onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
+                      onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       placeholder="••••••••"
                       autoComplete="current-password"
                     />
@@ -646,6 +649,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  {capsLockOn && !showPassword && (
+                    <p className="text-xs text-warning mt-1 flex items-center gap-1">
+                      ⬆️ Bloq Mayús activado
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -772,6 +780,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                         setPassword(e.target.value);
                         setError(null);
                       }}
+                      onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
+                      onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       placeholder="Mínimo 6 caracteres"
                       className={password && password.length < 6 ? 'border-warning' : ''}
                       autoComplete="new-password"
@@ -784,6 +794,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  {capsLockOn && !showPassword && (
+                    <p className="text-xs text-warning mt-1 flex items-center gap-1">
+                      ⬆️ Bloq Mayús activado
+                    </p>
+                  )}
                   {password && password.length < 6 && (
                     <p className="text-xs text-warning mt-1">
                       {6 - password.length} caracteres más requeridos
