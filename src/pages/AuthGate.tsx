@@ -131,6 +131,13 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   const emailError = getEmailError(email);
   const forgotPasswordEmailError = getEmailError(forgotPasswordEmail);
 
+  const normalizePassword = (value: string) => {
+    const trimmed = value.trim();
+    return {
+      trimmed,
+      hadOuterWhitespace: value !== trimmed,
+    };
+  };
   // Handle forgot password
   const handleForgotPassword = async () => {
     if (!forgotPasswordEmail.trim()) {
@@ -185,29 +192,44 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       return;
     }
 
-    if (!password.trim()) {
+    const { trimmed: sanitizedPassword, hadOuterWhitespace } = normalizePassword(password);
+
+    if (!sanitizedPassword) {
       setError('Ingresa tu contraseña');
       return;
+    }
+
+    if (hadOuterWhitespace) {
+      toast({
+        title: 'Ajustamos tu contraseña',
+        description:
+          'Detectamos espacios al inicio o al final (a veces pasa con autocompletar). Los quitamos automáticamente.',
+      });
+      setPassword(sanitizedPassword);
     }
 
     setLoading(true);
 
     try {
-      const { error: signInError } = await signIn(email.trim().toLowerCase(), password, rememberMe);
+      const { error: signInError } = await signIn(
+        email.trim().toLowerCase(),
+        sanitizedPassword,
+        rememberMe
+      );
       if (signInError) {
         let errorMessage = 'Error al iniciar sesión. Intenta de nuevo.';
         let errorTitle = 'Error de inicio de sesión';
-        
+
         const isCredentialError = signInError.message.includes('Invalid login credentials');
-        
+
         if (isCredentialError) {
           errorMessage = 'Email o contraseña incorrectos. Verifica tus datos.';
           errorTitle = 'Credenciales inválidas';
-          
+
           // Track failed attempts for credential errors
           const newAttempts = loginAttempts + 1;
           setLoginAttempts(newAttempts);
-          
+
           // Show recovery suggestion after 2 failed attempts
           if (newAttempts >= 2) {
             setShowRecoverySuggestion(true);
@@ -220,7 +242,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           errorTitle = 'Límite de intentos';
           setShowRecoverySuggestion(true);
         }
-        
+
         setError(errorMessage);
         toast({
           title: errorTitle,
@@ -274,14 +296,25 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       return;
     }
 
-    if (!password.trim()) {
+    const { trimmed: sanitizedPassword, hadOuterWhitespace } = normalizePassword(password);
+
+    if (!sanitizedPassword) {
       setError('Ingresa una contraseña');
       return;
     }
 
-    if (password.length < 6) {
+    if (sanitizedPassword.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres');
       return;
+    }
+
+    if (hadOuterWhitespace) {
+      toast({
+        title: 'Ajustamos tu contraseña',
+        description:
+          'Detectamos espacios al inicio o al final (a veces pasa con autocompletar). Los quitamos automáticamente.',
+      });
+      setPassword(sanitizedPassword);
     }
 
     setLoading(true);
@@ -302,7 +335,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         const response = await supabase.functions.invoke('register-with-invite', {
           body: {
             email: email.trim().toLowerCase(),
-            password,
+            password: sanitizedPassword,
             inviteCode: trimmedCode,
           }
         });
@@ -370,7 +403,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         
         const { error: signInError } = await signIn(
           email.trim().toLowerCase(), 
-          password, 
+          sanitizedPassword, 
           rememberMe
         );
         
