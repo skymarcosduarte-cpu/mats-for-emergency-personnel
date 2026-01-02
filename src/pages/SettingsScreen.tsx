@@ -1372,14 +1372,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <Slider
                   value={[earthquakeRadiusKm]}
                   onValueChange={(v) => setEarthquakeRadiusKm(v[0])}
-                  min={15}
-                  max={160}
-                  step={5}
+                  min={20}
+                  max={400}
+                  step={10}
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground px-1">
-                  <span>15 km</span>
-                  <span>160 km</span>
+                  <span>20 km</span>
+                  <span>400 km</span>
                 </div>
               </div>
 
