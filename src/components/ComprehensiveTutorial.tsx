@@ -311,7 +311,7 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
         content: (
           <div className="space-y-4">
             <p>
-              La app detecta <strong>sismos cercanos a tu ubicación</strong> automáticamente usando datos oficiales del USGS, SSN y EMSC.
+              La app detecta <strong>sismos cercanos a tu ubicación</strong> automáticamente usando datos oficiales del USGS y SSN (México).
             </p>
             <div className="bg-warning/10 border border-warning/30 rounded-lg p-4">
               <p className="font-medium text-warning mb-2">Cuando hay un sismo cercano:</p>
@@ -322,9 +322,13 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
                 <li>Reportas tu estado y la intensidad percibida</li>
               </ol>
             </div>
-            <p className="text-sm">
-              Configura el radio de detección en <strong>Configuración → Alertas Sísmicas</strong>
-            </p>
+            <div className="bg-primary/10 rounded-lg p-4 space-y-2">
+              <p className="font-medium text-primary mb-2">Configura en Ajustes → Alertas:</p>
+              <ul className="text-sm space-y-1 list-disc list-inside">
+                <li><strong>Radio de detección</strong>: De 20 km hasta 400 km para sismos cercanos</li>
+                <li><strong>Umbral alerta nacional SSN</strong>: Magnitud mínima (5.0 a 8.0) para alertas de sismos en México que te avisan sin importar la distancia</li>
+              </ul>
+            </div>
           </div>
         ),
         tip: 'Reportar que estás bien ayuda a tu comunidad a saber que no necesitas ayuda',
@@ -772,13 +776,6 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
                 <div>
                   <p className="font-medium">Recientes</p>
                   <p className="text-sm text-muted-foreground">Accede rápido a las guías que has visto recientemente</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-                <MessageCircle className="w-5 h-5 text-safe mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium">Compartir</p>
-                  <p className="text-sm text-muted-foreground">Comparte guías por WhatsApp o copia el contenido</p>
                 </div>
               </div>
             </div>
