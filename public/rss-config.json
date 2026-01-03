@@ -1,0 +1,610 @@
+{
+  "configuracion_general": {
+    "nombre_sistema": "Sistema de Noticias de Emergencias",
+    "version": "1.0",
+    "descripcion": "Configuración para feeds RSS de noticias de última hora sobre emergencias en México, Latinoamérica y Norteamérica"
+  },
+  
+  "fuentes_rss": {
+    "mexico": [
+      {
+        "nombre": "Milenio",
+        "feeds": [
+          {
+            "url": "https://www.milenio.com/rss",
+            "categoria": "general",
+            "prioridad": "alta"
+          },
+          {
+            "url": "https://www.milenio.com/policia/rss",
+            "categoria": "policiaca",
+            "prioridad": "alta"
+          },
+          {
+            "url": "https://www.milenio.com/estados/rss",
+            "categoria": "estados",
+            "prioridad": "media"
+          }
+        ],
+        "polling_interval_minutos": 10,
+        "confiabilidad": "alta",
+        "velocidad_publicacion": "rapida"
+      },
+      {
+        "nombre": "El Universal",
+        "feeds": [
+          {
+            "url": "https://www.eluniversal.com.mx/rss.xml",
+            "categoria": "general",
+            "prioridad": "alta"
+          }
+        ],
+        "polling_interval_minutos": 10,
+        "confiabilidad": "alta",
+        "velocidad_publicacion": "rapida"
+      },
+      {
+        "nombre": "Reforma",
+        "feeds": [
+          {
+            "url": "https://www.reforma.com/rss/portada.xml",
+            "categoria": "general",
+            "prioridad": "alta",
+            "nota": "Requiere suscripción para contenido completo"
+          }
+        ],
+        "polling_interval_minutos": 15,
+        "confiabilidad": "muy_alta",
+        "velocidad_publicacion": "rapida"
+      },
+      {
+        "nombre": "La Jornada",
+        "feeds": [
+          {
+            "url": "https://www.jornada.com.mx/rss/",
+            "categoria": "general",
+            "prioridad": "media"
+          }
+        ],
+        "polling_interval_minutos": 15,
+        "confiabilidad": "alta",
+        "velocidad_publicacion": "media"
+      },
+      {
+        "nombre": "Proceso",
+        "feeds": [
+          {
+            "url": "https://www.proceso.com.mx/rss/",
+            "categoria": "general",
+            "prioridad": "media"
+          }
+        ],
+        "polling_interval_minutos": 20,
+        "confiabilidad": "muy_alta",
+        "velocidad_publicacion": "media"
+      },
+      {
+        "nombre": "El Informador",
+        "feeds": [
+          {
+            "url": "https://www.informador.mx/rss/mexico.xml",
+            "categoria": "nacional",
+            "prioridad": "media",
+            "region": "occidente"
+          },
+          {
+            "url": "https://www.informador.mx/rss/nacional.xml",
+            "categoria": "nacional",
+            "prioridad": "media"
+          }
+        ],
+        "polling_interval_minutos": 15,
+        "confiabilidad": "alta",
+        "velocidad_publicacion": "media",
+        "cobertura_regional": "Jalisco, zona occidente"
+      },
+      {
+        "nombre": "Animal Político",
+        "feeds": [
+          {
+            "url": "https://www.animalpolitico.com/feed/",
+            "categoria": "investigacion",
+            "prioridad": "media"
+          }
+        ],
+        "polling_interval_minutos": 20,
+        "confiabilidad": "muy_alta",
+        "velocidad_publicacion": "media"
+      },
+      {
+        "nombre": "Aristegui Noticias",
+        "feeds": [
+          {
+            "url": "https://aristeguinoticias.com/feed/",
+            "categoria": "analisis",
+            "prioridad": "media"
+          }
+        ],
+        "polling_interval_minutos": 20,
+        "confiabilidad": "alta",
+        "velocidad_publicacion": "media"
+      }
+    ],
+    
+    "latinoamerica": [
+      {
+        "nombre": "CNN en Español",
+        "feeds": [
+          {
+            "url": "https://cnnespanol.cnn.com/feed/",
+            "categoria": "breaking_news",
+            "prioridad": "muy_alta"
+          }
+        ],
+        "polling_interval_minutos": 5,
+        "confiabilidad": "muy_alta",
+        "velocidad_publicacion": "muy_rapida",
+        "cobertura": "Toda América Latina"
+      },
+      {
+        "nombre": "BBC Mundo",
+        "feeds": [
+          {
+            "url": "https://feeds.bbci.co.uk/mundo/rss.xml",
+            "categoria": "internacional",
+            "prioridad": "alta"
+          }
+        ],
+        "polling_interval_minutos": 10,
+        "confiabilidad": "muy_alta",
+        "velocidad_publicacion": "rapida",
+        "cobertura": "Mundial, énfasis Latinoamérica"
+      },
+      {
+        "nombre": "El Tiempo (Colombia)",
+        "feeds": [
+          {
+            "url": "https://www.eltiempo.com/rss",
+            "categoria": "general",
+            "prioridad": "media"
+          },
+          {
+            "url": "https://www.eltiempo.com/rss/mundo_eeuu-y-canada.xml",
+            "categoria": "internacional",
+            "prioridad": "baja"
+          }
+        ],
+        "polling_interval_minutos": 15,
+        "confiabilidad": "alta",
+        "velocidad_publicacion": "rapida",
+        "cobertura": "Colombia, Sudamérica"
+      },
+      {
+        "nombre": "Voz de América",
+        "feeds": [
+          {
+            "url": "https://www.vozdeamerica.com/api/zupkioepi_",
+            "categoria": "latinoamerica",
+            "prioridad": "media",
+            "nota": "Verificar URL actual en vozdeamerica.com/rssfeeds"
+          }
+        ],
+        "polling_interval_minutos": 15,
+        "confiabilidad": "alta",
+        "velocidad_publicacion": "media",
+        "cobertura": "América Latina, EEUU"
+      },
+      {
+        "nombre": "Infobae",
+        "feeds": [
+          {
+            "url": "https://www.infobae.com/feeds/rss/",
+            "categoria": "general",
+            "prioridad": "media"
+          }
+        ],
+        "polling_interval_minutos": 15,
+        "confiabilidad": "media",
+        "velocidad_publicacion": "rapida",
+        "cobertura": "Argentina, Latinoamérica"
+      }
+    ],
+    
+    "norteamerica_internacional": [
+      {
+        "nombre": "Associated Press (AP)",
+        "feeds": [
+          {
+            "url": "https://apnews.com/hub/latin-america",
+            "categoria": "latinoamerica",
+            "prioridad": "muy_alta",
+            "nota": "Puede requerir generador RSS"
+          }
+        ],
+        "polling_interval_minutos": 5,
+        "confiabilidad": "muy_alta",
+        "velocidad_publicacion": "muy_rapida",
+        "idioma": "inglés"
+      },
+      {
+        "nombre": "Reuters",
+        "feeds": [
+          {
+            "url": "https://reuters.com/world/americas",
+            "categoria": "americas",
+            "prioridad": "muy_alta",
+            "nota": "Puede requerir generador RSS como FiveFilters"
+          }
+        ],
+        "polling_interval_minutos": 5,
+        "confiabilidad": "muy_alta",
+        "velocidad_publicacion": "muy_rapida",
+        "idioma": "inglés"
+      },
+      {
+        "nombre": "NPR",
+        "feeds": [
+          {
+            "url": "https://npr.org/sections/latin-america",
+            "categoria": "latinoamerica",
+            "prioridad": "baja",
+            "nota": "Puede requerir generador RSS"
+          }
+        ],
+        "polling_interval_minutos": 30,
+        "confiabilidad": "muy_alta",
+        "velocidad_publicacion": "media",
+        "idioma": "inglés"
+      }
+    ]
+  },
+  
+  "palabras_clave_emergencias": {
+    "desastres_naturales": {
+      "sismos": ["sismo", "temblor", "terremoto", "réplica", "epicentro", "magnitud"],
+      "meteorologicos": ["huracán", "ciclón", "tormenta tropical", "tornado", "granizada"],
+      "hidrologicos": ["inundación", "desbordamiento", "deslizamiento", "alud", "avalancha"],
+      "incendios": ["incendio forestal", "incendio", "conflagración", "quema"],
+      "geologicos": ["erupción", "volcán", "actividad volcánica", "tsunami", "maremoto", "deslizamiento de tierra"]
+    },
+    "emergencias_humanas": {
+      "violencia": ["atentado", "explosión", "bomba", "tiroteo", "balacera", "enfrentamiento"],
+      "secuestros": ["secuestro", "desaparición", "levantón", "plagio"],
+      "accidentes": ["accidente aéreo", "avión", "estrellamiento", "desplome", "choque masivo", "descarrilamiento"],
+      "evacuaciones": ["evacuación", "desalojo", "éxodo", "desplazamiento forzado"]
+    },
+    "alertas_oficiales": {
+      "emergencia": ["alerta", "emergencia nacional", "estado de emergencia", "desastre", "calamidad", "zona de desastre"],
+      "proteccion_civil": ["protección civil", "alerta amarilla", "alerta naranja", "alerta roja"]
+    },
+    "salud_publica": {
+      "enfermedades": ["brote", "epidemia", "pandemia", "contagio masivo"],
+      "alertas": ["alerta sanitaria", "emergencia sanitaria", "cuarentena"]
+    },
+    "infraestructura_critica": {
+      "servicios": ["apagón", "corte de luz masivo", "falla eléctrica", "sin agua"],
+      "estructuras": ["colapso", "derrumbe", "hundimiento", "grieta"],
+      "quimicos": ["fuga de gas", "derrame químico", "explosión química", "nube tóxica"]
+    }
+  },
+  
+  "sistema_scoring": {
+    "descripcion": "Sistema de puntuación para determinar relevancia de noticias",
+    "reglas": [
+      {
+        "condicion": "palabra_clave_en_titulo",
+        "puntos": 10,
+        "descripcion": "Palabra de emergencia encontrada en el título"
+      },
+      {
+        "condicion": "palabra_clave_en_descripcion",
+        "puntos": 5,
+        "descripcion": "Palabra de emergencia encontrada en la descripción"
+      },
+      {
+        "condicion": "palabra_alta_prioridad_titulo",
+        "puntos": 15,
+        "palabras": ["alerta", "emergencia", "evacuación", "muertos", "heridos", "desastre"],
+        "descripcion": "Palabras críticas en el título"
+      },
+      {
+        "condicion": "ubicacion_mexico",
+        "puntos": 20,
+        "ubicaciones": ["méxico", "cdmx", "ciudad de méxico", "guadalajara", "monterrey", "puebla", "tijuana"],
+        "descripcion": "Evento ocurrido en México"
+      },
+      {
+        "condicion": "ubicacion_latinoamerica",
+        "puntos": 10,
+        "ubicaciones": ["colombia", "argentina", "chile", "perú", "venezuela", "centroamérica"],
+        "descripcion": "Evento ocurrido en Latinoamérica"
+      },
+      {
+        "condicion": "multiples_fuentes",
+        "puntos": 5,
+        "por_fuente_adicional": true,
+        "descripcion": "Bonus por cada fuente adicional que reporta el mismo evento"
+      }
+    ],
+    "umbrales": {
+      "critico": {
+        "score_minimo": 50,
+        "accion": "push_notification",
+        "color": "rojo",
+        "icono": "🔥"
+      },
+      "importante": {
+        "score_minimo": 35,
+        "accion": "badge_notification",
+        "color": "naranja",
+        "icono": "⚠️"
+      },
+      "relevante": {
+        "score_minimo": 25,
+        "accion": "mostrar_en_feed",
+        "color": "azul",
+        "icono": "📰"
+      },
+      "descartar": {
+        "score_maximo": 24,
+        "accion": "ignorar"
+      }
+    }
+  },
+  
+  "configuracion_polling": {
+    "intervalos_recomendados": {
+      "alta_velocidad": {
+        "minutos": 5,
+        "fuentes": ["CNN Español", "AP", "Reuters"],
+        "razon": "Breaking news, muy rápidos"
+      },
+      "velocidad_media": {
+        "minutos": 10,
+        "fuentes": ["Milenio", "El Universal", "BBC Mundo"],
+        "razon": "Noticias nacionales importantes"
+      },
+      "velocidad_baja": {
+        "minutos": 20,
+        "fuentes": ["Proceso", "Animal Político", "NPR"],
+        "razon": "Análisis y contexto"
+      }
+    },
+    "optimizaciones": {
+      "usar_conditional_requests": true,
+      "headers_requeridos": ["If-Modified-Since", "ETag"],
+      "cache_duracion_minutos": 5,
+      "timeout_segundos": 30,
+      "reintentos_en_error": 3,
+      "backoff_exponencial": true
+    },
+    "rate_limiting": {
+      "respetar_429": true,
+      "respetar_retry_after_header": true,
+      "backoff_minimo_segundos": 60,
+      "backoff_maximo_segundos": 3600
+    }
+  },
+  
+  "limites_notificaciones": {
+    "push_notifications": {
+      "max_por_hora": 3,
+      "max_por_dia": 15,
+      "score_minimo": 50,
+      "solo_eventos_criticos": true,
+      "respetar_horario_descanso": {
+        "activo": true,
+        "hora_inicio": "23:00",
+        "hora_fin": "07:00",
+        "excepciones_score": 70
+      }
+    },
+    "feed_noticias": {
+      "max_noticias_mostradas": 30,
+      "score_minimo": 25,
+      "ordenar_por": "timestamp_desc"
+    },
+    "limpieza_automatica": {
+      "eliminar_despues_horas": 48,
+      "mantener_criticas_dias": 7,
+      "mantener_con_multiples_fuentes_dias": 5,
+      "archivar_en_lugar_de_eliminar": true
+    }
+  },
+  
+  "deduplicacion": {
+    "algoritmo": "similitud_levenshtein",
+    "umbral_similitud": 0.7,
+    "ventana_temporal_horas": 2,
+    "criterios": [
+      "similitud_titulo > 70%",
+      "diferencia_tiempo < 2 horas",
+      "mismas_palabras_clave_criticas"
+    ],
+    "accion_al_detectar_duplicado": {
+      "agregar_fuente": true,
+      "actualizar_timestamp": true,
+      "incrementar_score": 5,
+      "mantener_titulo_mejor_redactado": true
+    }
+  },
+  
+  "geolocalizacion": {
+    "activada": true,
+    "priorizar_noticias_cercanas": true,
+    "radio_relevancia_km": 500,
+    "bonus_score_por_proximidad": {
+      "0-50km": 30,
+      "51-150km": 20,
+      "151-300km": 10,
+      "301-500km": 5
+    },
+    "fuentes_regionales": {
+      "guadalajara": ["El Informador"],
+      "cdmx": ["Reforma", "El Universal", "Milenio"],
+      "monterrey": ["Agregar fuentes locales"]
+    }
+  },
+  
+  "preferencias_usuario": {
+    "configurables": [
+      {
+        "opcion": "tipos_emergencias",
+        "valores": ["sismos", "huracanes", "incendios", "violencia", "salud", "todas"],
+        "default": "todas"
+      },
+      {
+        "opcion": "region_interes",
+        "valores": ["mexico", "latinoamerica", "norteamerica", "todas"],
+        "default": "mexico"
+      },
+      {
+        "opcion": "nivel_severidad",
+        "valores": ["solo_critico", "importante_y_critico", "todas"],
+        "default": "importante_y_critico"
+      },
+      {
+        "opcion": "notificaciones_push",
+        "valores": ["activadas", "solo_critico", "desactivadas"],
+        "default": "solo_critico"
+      },
+      {
+        "opcion": "horario_no_molestar",
+        "valores": ["activado", "desactivado"],
+        "default": "activado"
+      },
+      {
+        "opcion": "radio_alertas_km",
+        "valores": [50, 100, 200, 500, "sin_limite"],
+        "default": 500
+      }
+    ]
+  },
+  
+  "integracion_alertas_tecnicas": {
+    "descripcion": "Correlacionar feeds RSS con alertas técnicas existentes",
+    "flujo": [
+      "1. Alerta técnica detecta evento (ej: USGS sismo 6.5)",
+      "2. Sistema busca inmediatamente en feeds RSS noticias relacionadas",
+      "3. Agrupa alerta técnica + noticias de medios",
+      "4. Presenta contexto completo al usuario"
+    ],
+    "busqueda_palabras_relacionadas": {
+      "sismo": ["sismo", "terremoto", "temblor", "réplica"],
+      "huracan": ["huracán", "ciclón", "tormenta tropical"],
+      "incendio": ["incendio", "conflagración", "quema"]
+    },
+    "ventana_busqueda_minutos": 30
+  },
+  
+  "herramientas_complementarias": {
+    "generadores_rss": [
+      {
+        "nombre": "RSS.app",
+        "url": "https://rss.app",
+        "uso": "Generar feeds RSS de sitios sin RSS nativo",
+        "gratis": true
+      },
+      {
+        "nombre": "FiveFilters Feed Creator",
+        "url": "https://createfeed.fivefilters.org",
+        "uso": "Crear feeds RSS personalizados",
+        "gratis": true
+      },
+      {
+        "nombre": "FetchRSS",
+        "url": "https://fetchrss.com",
+        "uso": "Alternativa para generar feeds",
+        "gratis": "limitado"
+      }
+    ],
+    "apis_alternativas": [
+      {
+        "nombre": "Twitter/X API",
+        "uso": "Monitorear cuentas de medios para noticias antes que RSS",
+        "costo": "de_pago"
+      },
+      {
+        "nombre": "NewsAPI",
+        "url": "https://newsapi.org",
+        "uso": "Agregador de noticias con búsqueda",
+        "costo": "freemium"
+      }
+    ]
+  },
+  
+  "pruebas_y_validacion": {
+    "eventos_historicos_para_testing": [
+      {
+        "evento": "Sismo 7.1 del 19 de septiembre de 2017",
+        "ubicacion": "Ciudad de México, Puebla, Morelos",
+        "tipo": "sismo"
+      },
+      {
+        "evento": "Huracán Otis - Octubre 2023",
+        "ubicacion": "Acapulco, Guerrero",
+        "tipo": "huracan"
+      },
+      {
+        "evento": "Explosión en Tlahuelilpan - Enero 2019",
+        "ubicacion": "Hidalgo",
+        "tipo": "explosion_industrial"
+      }
+    ],
+    "metricas_monitorear": [
+      "latencia_deteccion_minutos",
+      "tasa_falsos_positivos",
+      "tasa_falsos_negativos",
+      "satisfaccion_usuario",
+      "tiempo_deduplicacion",
+      "precision_geolocalizacion"
+    ]
+  },
+  
+  "respaldo_twitter": {
+    "cuentas_oficiales_monitorear": [
+      "@SSNMexico",
+      "@CNPC_MX",
+      "@SEGOB_mx",
+      "@Milenio",
+      "@Reforma",
+      "@CNNEspanol",
+      "@AP",
+      "@Reuters"
+    ],
+    "nota": "Los medios frecuentemente publican en Twitter antes que en RSS. Considerar API si presupuesto lo permite."
+  },
+  
+  "checklist_implementacion": [
+    "Seleccionar 8-12 feeds RSS principales según región",
+    "Configurar cron job para polling cada 5-10 minutos",
+    "Implementar parser RSS (ej: feedparser en Python)",
+    "Crear base de datos para almacenar noticias",
+    "Implementar sistema de filtrado por palabras clave",
+    "Desarrollar algoritmo de scoring",
+    "Implementar deduplicación de noticias",
+    "Configurar límites de notificaciones",
+    "Diseñar UI con niveles de prioridad visual",
+    "Implementar limpieza automática (>48h)",
+    "Agregar preferencias de usuario",
+    "Integrar con alertas técnicas existentes (USGS, GDACS, NHC)",
+    "Configurar geolocalizacion y priorización regional",
+    "Implementar conditional requests (If-Modified-Since)",
+    "Probar con eventos históricos",
+    "Configurar monitoreo y métricas",
+    "Preparar escalabilidad del sistema"
+  ],
+  
+  "notas_tecnicas": {
+    "lenguajes_recomendados": ["Python", "Node.js", "Go"],
+    "librerias_utiles": {
+      "python": ["feedparser", "beautifulsoup4", "requests", "celery"],
+      "nodejs": ["rss-parser", "feedparser", "node-cron", "bull"],
+      "go": ["gofeed", "robfig/cron"]
+    },
+    "base_datos_recomendada": ["PostgreSQL", "MongoDB"],
+    "cola_trabajos": ["Redis + Bull/Celery", "RabbitMQ"],
+    "cache": "Redis con TTL de 5-10 minutos",
+    "notificaciones_push": ["Firebase Cloud Messaging", "OneSignal", "Pusher"]
+  }
+}
