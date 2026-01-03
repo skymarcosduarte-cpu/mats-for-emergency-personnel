@@ -54,6 +54,7 @@ import { CycloneMap } from '@/components/CycloneMap';
 import { SeismicWaveMap } from '@/components/SeismicWaveMap';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 import { useRecentQuakeCheckins } from '@/hooks/useRecentQuakeCheckins';
+import { useQuakeCheckinCounts } from '@/hooks/useQuakeCheckinCounts';
 
 // Removed - now using useEarthquakeHistory hook
 
@@ -136,6 +137,10 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     lastUpdated, 
     refresh: loadEarthquakes 
   } = useEarthquakeHistory(position);
+
+  // Get check-in counts for all earthquakes
+  const earthquakeIds = useMemo(() => earthquakes.map(q => q.id), [earthquakes]);
+  const { counts: checkinCounts } = useQuakeCheckinCounts(earthquakeIds);
 
   // Weather alerts (hurricanes, storms within 100 miles)
   const {
@@ -661,31 +666,40 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </div>
 
-                  {/* Quick action buttons */}
-                  <div className="flex gap-2 mt-3 justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-3 text-xs text-muted-foreground hover:text-safe"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleQuickCheckin(quake);
-                      }}
-                    >
-                      ✓ Todo bien
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-3 text-xs text-destructive/80 hover:text-destructive hover:bg-destructive/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedQuake(quake);
-                        setShowHelp14Dialog(true);
-                      }}
-                    >
-                      Reportar Daños
-                    </Button>
+                  {/* Quick action buttons with check-in count */}
+                  <div className="flex items-center gap-2 mt-3 justify-between">
+                    {/* Check-in counter */}
+                    {checkinCounts[quake.id]?.ok_count > 0 && (
+                      <span className="text-xs text-safe flex items-center gap-1">
+                        <Check className="w-3 h-3" />
+                        {checkinCounts[quake.id].ok_count} bien
+                      </span>
+                    )}
+                    <div className="flex gap-2 ml-auto">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-3 text-xs text-muted-foreground hover:text-safe"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuickCheckin(quake);
+                        }}
+                      >
+                        ✓ Todo bien
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-3 text-xs text-destructive/80 hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedQuake(quake);
+                          setShowHelp14Dialog(true);
+                        }}
+                      >
+                        Reportar Daños
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
