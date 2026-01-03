@@ -1,10 +1,10 @@
 // Community Events Screen for COMUNIDAD EX SOS
-// Message board for birthdays, health notices, hospital support, announcements + notifications
+// Message board for birthdays, health notices, hospital support, announcements + Breaking News
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper
 } from 'lucide-react';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
 import { Button } from '@/components/ui/button';
@@ -27,11 +27,11 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCommunityEvents, CommunityEventType } from '@/hooks/useCommunityEvents';
-import { useNotifications } from '@/hooks/useNotifications';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 import TripRouteMap from '@/components/TripRouteMap';
 import MapErrorBoundary from '@/components/MapErrorBoundary';
 import { TravelerLocationDialog } from '@/components/TravelerLocationDialog';
+import { BreakingNewsSection } from '@/components/BreakingNewsSection';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow, differenceInMinutes, isPast, format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -66,16 +66,6 @@ export const CommunityScreen: React.FC = () => {
     getEventTypeLabel,
     getEventTypeColor,
   } = useCommunityEvents();
-  
-  const { 
-    notifications, 
-    unreadCount, 
-    loading: notificationsLoading, 
-    markAsRead, 
-    markAllAsRead, 
-    deleteNotification,
-    deleteAllRead,
-  } = useNotifications();
 
   const {
     trips: communityTrips,
@@ -353,16 +343,8 @@ export const CommunityScreen: React.FC = () => {
           <TabsTrigger value="tablero" className="text-xs">
             📋 Tablero
           </TabsTrigger>
-          <TabsTrigger value="avisos" className="relative text-xs">
-            🔔 Avisos
-            {unreadCount > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
-              >
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </Badge>
-            )}
+          <TabsTrigger value="noticias" className="text-xs">
+            📰 Breaking News
           </TabsTrigger>
         </TabsList>
 
@@ -603,9 +585,9 @@ export const CommunityScreen: React.FC = () => {
           </div>
         </TabsContent>
 
-        {/* Avisos/Notifications Tab */}
-        <TabsContent value="avisos" className="mt-4 space-y-4">
-          {/* Active Community Trips in Avisos */}
+        {/* Breaking News Tab */}
+        <TabsContent value="noticias" className="mt-4 space-y-4">
+          {/* Active Community Trips */}
           {communityTrips.length > 0 && (
             <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30">
               <CardHeader className="pb-2">
@@ -682,155 +664,8 @@ export const CommunityScreen: React.FC = () => {
             </Card>
           )}
 
-          {/* Notifications section */}
-          <div className="space-y-3">
-            {notifications.length > 0 && (
-              <div className="flex justify-between items-center">
-                <h2 className="text-sm font-medium text-muted-foreground">Notificaciones</h2>
-                <div className="flex gap-1">
-                  {notifications.some(n => n.read) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={deleteAllRead}
-                      className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="w-3 h-3 mr-1" />
-                      Borrar leídas
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={markAllAsRead}
-                    className="text-xs"
-                  >
-                    <Check className="w-3 h-3 mr-1" />
-                    Marcar todo leído
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {notificationsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : notifications.length === 0 && communityTrips.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No tienes notificaciones</p>
-              </div>
-            ) : (
-              notifications.map((notification) => {
-                // Check if this is a trip-related notification that allows messaging
-                const isTripNotification = notification.type.startsWith('trip_');
-                const tripUserId = isTripNotification && notification.listing_id ? notification.listing_id : null;
-                const canMessage = tripUserId && tripUserId !== user?.id;
-                
-                return (
-                <Card 
-                  key={notification.id} 
-                  className={cn(
-                    "bg-card border-border transition-colors",
-                    !notification.read && "border-l-4 border-l-primary"
-                  )}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-3 flex-1">
-                        <div className={cn(
-                          "p-2 rounded-full",
-                          notification.type === 'marketplace_contact' 
-                            ? "bg-primary/10 text-primary"
-                            : isTripNotification
-                              ? notification.type === 'trip_overdue' 
-                                ? "bg-destructive/10 text-destructive"
-                                : "bg-amber-500/10 text-amber-600"
-                              : "bg-muted text-muted-foreground"
-                        )}>
-                          {notification.type === 'marketplace_contact' ? (
-                            <ShoppingBag className="w-4 h-4" />
-                          ) : isTripNotification ? (
-                            <Car className="w-4 h-4" />
-                          ) : (
-                            <Bell className="w-4 h-4" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={cn(
-                            "text-sm",
-                            !notification.read && "font-semibold"
-                          )}>
-                            {notification.title}
-                          </p>
-                          {notification.message && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {notification.message}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2 mt-2">
-                            <p className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(notification.created_at), { 
-                                addSuffix: true,
-                                locale: es 
-                              })}
-                            </p>
-                            {canMessage && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
-                                  onClick={() => setViewingTravelerId(tripUserId)}
-                                >
-                                  <MapPin className="w-3 h-3 mr-1" />
-                                  Ver ubicación
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10"
-                                  onClick={() => {
-                                    // Navigate to chat with this user
-                                    window.location.href = `/?chat=${tripUserId}`;
-                                  }}
-                                >
-                                  <MessageCircle className="w-3 h-3 mr-1" />
-                                  Mensaje
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        {!notification.read && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => markAsRead(notification.id)}
-                          >
-                            <Check className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => deleteNotification(notification.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-              })
-            )}
-          </div>
+          {/* Breaking News Section */}
+          <BreakingNewsSection />
         </TabsContent>
       </Tabs>
 

@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { NotificationsBell } from './NotificationsBell';
 
 interface AppHeaderProps {
   onPanicClick: () => void;
@@ -166,6 +167,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Notifications bell */}
+          <NotificationsBell />
+          
           {/* Messages button with badge */}
           <button
             onClick={onOpenMessages}
