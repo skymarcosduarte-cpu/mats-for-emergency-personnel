@@ -32,6 +32,9 @@ const PRIORITY_FEEDS: { url: string; source: string }[] = [
   
   // Internacional - Open RSS
   { url: 'https://www.reuters.com/arc/outboundfeeds/news/?outputType=xml', source: 'Reuters' },
+  { url: 'https://www.aljazeera.com/xml/rss/all.xml', source: 'Al Jazeera' },
+  { url: 'https://www.france24.com/es/rss', source: 'France24 Español' },
+  { url: 'https://www.dw.com/es/noticias/s-30684/rss', source: 'DW Español' },
 ];
 
 // Simple XML parsing for RSS
