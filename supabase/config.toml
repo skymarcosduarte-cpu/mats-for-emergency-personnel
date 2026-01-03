@@ -28,4 +28,4 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.fetch-rss-news]
-verify_jwt = true
+verify_jwt = false
