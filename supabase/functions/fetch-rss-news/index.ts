@@ -30,8 +30,8 @@ const PRIORITY_FEEDS: { url: string; source: string }[] = [
   { url: 'https://cnnespanol.cnn.com/feed/', source: 'CNN en Español' },
   { url: 'https://feeds.bbci.co.uk/mundo/rss.xml', source: 'BBC Mundo' },
   
-  // North America
-  { url: 'https://rss.nytimes.com/services/xml/rss/nyt/Americas.xml', source: 'NY Times' },
+  // Internacional - Open RSS
+  { url: 'https://www.reuters.com/arc/outboundfeeds/news/?outputType=xml', source: 'Reuters' },
 ];
 
 // Simple XML parsing for RSS
