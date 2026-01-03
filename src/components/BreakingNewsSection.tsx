@@ -17,11 +17,18 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
-// Format relative time for news items
+// Format relative time for news items (only for past dates)
 function formatNewsTime(pubDate: string): string {
   try {
     const date = new Date(pubDate);
     if (isNaN(date.getTime())) return '';
+    
+    // If date is in the future, don't show relative time (RSS parsing error)
+    const now = new Date();
+    if (date > now) {
+      return '';
+    }
+    
     return formatDistanceToNow(date, { addSuffix: true, locale: es });
   } catch {
     return '';
