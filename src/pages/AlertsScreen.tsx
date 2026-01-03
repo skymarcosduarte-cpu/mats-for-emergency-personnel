@@ -55,6 +55,7 @@ import { SeismicWaveMap } from '@/components/SeismicWaveMap';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 import { useRecentQuakeCheckins } from '@/hooks/useRecentQuakeCheckins';
 import { useQuakeCheckinCounts } from '@/hooks/useQuakeCheckinCounts';
+import { DamageReportsMiniMap } from '@/components/DamageReportsMiniMap';
 
 // Removed - now using useEarthquakeHistory hook
 
@@ -748,6 +749,18 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                       </Button>
                     </div>
                   </div>
+
+                  {/* Mini-map for damage reports */}
+                  {checkinCounts[quake.id]?.damage_count >= 2 && (
+                    <DamageReportsMiniMap
+                      eventId={quake.id}
+                      epicenterLat={quake.geometry.coordinates[1]}
+                      epicenterLng={quake.geometry.coordinates[0]}
+                      magnitude={quake.properties.mag}
+                      damageCount={checkinCounts[quake.id].damage_count}
+                      className="mt-3"
+                    />
+                  )}
                 </CardContent>
               </Card>
             ))
