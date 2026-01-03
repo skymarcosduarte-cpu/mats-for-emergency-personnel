@@ -19,7 +19,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.check-delayed-trips]
-verify_jwt = true
+verify_jwt = false
 
 [functions.notify-alert-resolved]
 verify_jwt = true
