@@ -662,29 +662,29 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                   </div>
 
                   {/* Quick action buttons */}
-                  <div className="flex gap-2 mt-4">
+                  <div className="flex gap-2 mt-3 justify-end">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="flex-1"
+                      className="h-7 px-3 text-xs text-muted-foreground hover:text-safe"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleQuickCheckin(quake);
                       }}
                     >
-                      Todo bien ✓
+                      ✓ Todo bien
                     </Button>
                     <Button
-                      variant="destructive"
+                      variant="ghost"
                       size="sm"
-                      className="flex-1"
+                      className="h-7 px-3 text-xs text-destructive/80 hover:text-destructive hover:bg-destructive/10"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedQuake(quake);
                         setShowHelp14Dialog(true);
                       }}
                     >
-                      Reporto Daños
+                      Reportar Daños
                     </Button>
                   </div>
                 </CardContent>
