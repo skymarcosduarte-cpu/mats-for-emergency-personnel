@@ -105,8 +105,22 @@ const NewsCard: React.FC<NewsCardProps> = ({ item }) => {
   );
 };
 
+// Filter out news with future dates (RSS parsing errors)
+function isValidNewsDate(pubDate: string): boolean {
+  try {
+    const date = new Date(pubDate);
+    if (isNaN(date.getTime())) return true; // Keep if can't parse
+    return date <= new Date();
+  } catch {
+    return true;
+  }
+}
+
 export const BreakingNewsSection: React.FC = () => {
   const { items, loading, error, fetchedAt, refresh } = useBreakingNews();
+  
+  // Filter out items with future dates
+  const validItems = items.filter(item => isValidNewsDate(item.pubDate));
 
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border">
@@ -136,12 +150,12 @@ export const BreakingNewsSection: React.FC = () => {
       </CardHeader>
       
       <CardContent className="space-y-2">
-        {loading && items.length === 0 ? (
+        {loading && validItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin mb-2" />
             <p className="text-sm">Cargando noticias...</p>
           </div>
-        ) : error && items.length === 0 ? (
+        ) : error && validItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <AlertCircle className="w-8 h-8 mb-2 text-destructive/50" />
             <p className="text-sm">Error al cargar noticias</p>
@@ -154,14 +168,14 @@ export const BreakingNewsSection: React.FC = () => {
               Reintentar
             </Button>
           </div>
-        ) : items.length === 0 ? (
+        ) : validItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <Newspaper className="w-8 h-8 mb-2 opacity-50" />
             <p className="text-sm">Sin noticias recientes</p>
           </div>
         ) : (
           <div className="space-y-2 max-h-[400px] overflow-y-auto scrollbar-thin pr-1">
-            {items.map((item, index) => (
+            {validItems.map((item, index) => (
               <NewsCard key={`${item.link}-${index}`} item={item} />
             ))}
           </div>
