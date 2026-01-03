@@ -19,7 +19,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
 // Available sources with region info
-const SOURCE_CONFIG: Record<string, { region: 'mexico' | 'latam' | 'internacional'; color: string }> = {
+const SOURCE_CONFIG: Record<string, { region: 'mexico' | 'latam' | 'internacional' | 'espana'; color: string }> = {
   'CNN en Español': { region: 'latam', color: 'bg-red-500/10 text-red-500 border-red-500/30' },
   'BBC Mundo': { region: 'latam', color: 'bg-blue-500/10 text-blue-500 border-blue-500/30' },
   'Milenio': { region: 'mexico', color: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
@@ -28,6 +28,8 @@ const SOURCE_CONFIG: Record<string, { region: 'mexico' | 'latam' | 'internaciona
   'Al Jazeera': { region: 'internacional', color: 'bg-teal-500/10 text-teal-600 border-teal-500/30' },
   'France24 Español': { region: 'internacional', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/30' },
   'DW Español': { region: 'internacional', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30' },
+  'El País': { region: 'espana', color: 'bg-sky-500/10 text-sky-600 border-sky-500/30' },
+  'RTVE': { region: 'espana', color: 'bg-rose-500/10 text-rose-600 border-rose-500/30' },
 };
 
 const REGION_LABELS: Record<string, string> = {
@@ -35,6 +37,7 @@ const REGION_LABELS: Record<string, string> = {
   mexico: 'México',
   latam: 'Latinoamérica',
   internacional: 'Internacional',
+  espana: 'España',
 };
 
 // Format relative time for news items (only for past dates)
@@ -144,7 +147,7 @@ export const BreakingNewsSection: React.FC = () => {
       });
   }, [items, selectedRegion]);
 
-  const regions = ['all', 'mexico', 'latam', 'internacional'];
+  const regions = ['all', 'mexico', 'latam', 'internacional', 'espana'];
 
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border">
@@ -224,7 +227,7 @@ export const BreakingNewsSection: React.FC = () => {
         {/* Sources info - Updated */}
         <div className="pt-2 border-t border-border/50">
           <p className="text-[10px] text-muted-foreground text-center">
-            Fuentes: CNN, BBC, Milenio, El Universal, Reuters, Al Jazeera, France24, DW
+            Fuentes: CNN, BBC, Milenio, El Universal, Reuters, Al Jazeera, France24, DW, El País, RTVE
           </p>
         </div>
       </CardContent>

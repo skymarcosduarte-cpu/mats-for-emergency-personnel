@@ -35,7 +35,59 @@ const PRIORITY_FEEDS: { url: string; source: string }[] = [
   { url: 'https://www.aljazeera.com/xml/rss/all.xml', source: 'Al Jazeera' },
   { url: 'https://www.france24.com/es/rss', source: 'France24 Español' },
   { url: 'https://www.dw.com/es/noticias/s-30684/rss', source: 'DW Español' },
+  
+  // España
+  { url: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada', source: 'El País' },
+  { url: 'https://api.rtve.es/api/lives.rss', source: 'RTVE' },
 ];
+
+// Decode HTML entities
+function decodeHtmlEntities(text: string): string {
+  const entities: Record<string, string> = {
+    '&quot;': '"',
+    '&apos;': "'",
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&nbsp;': ' ',
+    '&#39;': "'",
+    '&#34;': '"',
+    '&ldquo;': '"',
+    '&rdquo;': '"',
+    '&lsquo;': "'",
+    '&rsquo;': "'",
+    '&ndash;': '–',
+    '&mdash;': '—',
+    '&hellip;': '…',
+    '&iexcl;': '¡',
+    '&iquest;': '¿',
+    '&ntilde;': 'ñ',
+    '&Ntilde;': 'Ñ',
+    '&aacute;': 'á',
+    '&eacute;': 'é',
+    '&iacute;': 'í',
+    '&oacute;': 'ó',
+    '&uacute;': 'ú',
+    '&Aacute;': 'Á',
+    '&Eacute;': 'É',
+    '&Iacute;': 'Í',
+    '&Oacute;': 'Ó',
+    '&Uacute;': 'Ú',
+    '&uuml;': 'ü',
+    '&Uuml;': 'Ü',
+  };
+  
+  let result = text;
+  for (const [entity, char] of Object.entries(entities)) {
+    result = result.replace(new RegExp(entity, 'gi'), char);
+  }
+  
+  // Handle numeric entities like &#123;
+  result = result.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)));
+  result = result.replace(/&#x([0-9a-fA-F]+);/g, (_, code) => String.fromCharCode(parseInt(code, 16)));
+  
+  return result;
+}
 
 // Simple XML parsing for RSS
 function parseRSSItem(itemXml: string, source: string): RSSItem | null {
@@ -44,7 +96,8 @@ function parseRSSItem(itemXml: string, source: string): RSSItem | null {
       const regex = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i');
       const match = itemXml.match(regex);
       if (match) {
-        return (match[1] || match[2] || '').trim().replace(/<[^>]+>/g, '');
+        const raw = (match[1] || match[2] || '').trim().replace(/<[^>]+>/g, '');
+        return decodeHtmlEntities(raw);
       }
       return '';
     };
