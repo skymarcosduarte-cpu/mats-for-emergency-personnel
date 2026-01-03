@@ -667,32 +667,61 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                   </div>
 
                   {/* Quick action buttons with check-in count */}
-                  <div className="flex items-center gap-2 mt-3 justify-between">
-                    {/* Check-in counter with visual prominence based on count */}
-                    {checkinCounts[quake.id]?.ok_count > 0 && (() => {
-                      const count = checkinCounts[quake.id].ok_count;
-                      const isHighCount = count >= 10;
-                      const isMediumCount = count >= 5;
+                  <div className="flex items-center gap-2 mt-3 justify-between flex-wrap">
+                    {/* Check-in counters with visual prominence based on count */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* OK counter */}
+                      {checkinCounts[quake.id]?.ok_count > 0 && (() => {
+                        const count = checkinCounts[quake.id].ok_count;
+                        const isHighCount = count >= 10;
+                        const isMediumCount = count >= 5;
+                        
+                        return (
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "flex items-center gap-1 font-medium transition-all",
+                              isHighCount 
+                                ? "bg-safe text-safe-foreground border-safe animate-pulse shadow-lg shadow-safe/30" 
+                                : isMediumCount 
+                                  ? "bg-safe/20 text-safe border-safe/50" 
+                                  : "text-safe border-safe/30"
+                            )}
+                          >
+                            <Check className={cn("w-3.5 h-3.5", isHighCount && "animate-bounce")} />
+                            <span className={cn(isHighCount && "font-bold")}>
+                              {count} {isHighCount ? "bien!" : "bien"}
+                            </span>
+                          </Badge>
+                        );
+                      })()}
                       
-                      return (
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "flex items-center gap-1 font-medium transition-all",
-                            isHighCount 
-                              ? "bg-safe text-safe-foreground border-safe animate-pulse shadow-lg shadow-safe/30" 
-                              : isMediumCount 
-                                ? "bg-safe/20 text-safe border-safe/50" 
-                                : "text-safe border-safe/30"
-                          )}
-                        >
-                          <Check className={cn("w-3.5 h-3.5", isHighCount && "animate-bounce")} />
-                          <span className={cn(isHighCount && "font-bold")}>
-                            {count} {isHighCount ? "reportaron bien!" : "bien"}
-                          </span>
-                        </Badge>
-                      );
-                    })()}
+                      {/* Damage counter */}
+                      {checkinCounts[quake.id]?.damage_count > 0 && (() => {
+                        const count = checkinCounts[quake.id].damage_count;
+                        const isHighCount = count >= 5;
+                        const isMediumCount = count >= 2;
+                        
+                        return (
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "flex items-center gap-1 font-medium transition-all",
+                              isHighCount 
+                                ? "bg-destructive text-destructive-foreground border-destructive animate-pulse shadow-lg shadow-destructive/40" 
+                                : isMediumCount 
+                                  ? "bg-destructive/20 text-destructive border-destructive/50" 
+                                  : "text-destructive border-destructive/30"
+                            )}
+                          >
+                            <AlertTriangle className={cn("w-3.5 h-3.5", isHighCount && "animate-bounce")} />
+                            <span className={cn(isHighCount && "font-bold")}>
+                              {count} {isHighCount ? "¡reportan daños!" : "daños"}
+                            </span>
+                          </Badge>
+                        );
+                      })()}
+                    </div>
                     <div className="flex gap-2 ml-auto">
                       <Button
                         variant="ghost"
