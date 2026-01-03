@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface QuakeCheckinCount {
   usgs_event_id: string;
   ok_count: number;
+  damage_count: number;
   total_count: number;
 }
 
@@ -31,7 +32,7 @@ export function useQuakeCheckinCounts(eventIds: string[]) {
       const countMap: Record<string, QuakeCheckinCount> = {};
       
       for (const eventId of eventIds) {
-        countMap[eventId] = { usgs_event_id: eventId, ok_count: 0, total_count: 0 };
+        countMap[eventId] = { usgs_event_id: eventId, ok_count: 0, damage_count: 0, total_count: 0 };
       }
 
       for (const checkin of data || []) {
@@ -39,12 +40,15 @@ export function useQuakeCheckinCounts(eventIds: string[]) {
           countMap[checkin.usgs_event_id] = { 
             usgs_event_id: checkin.usgs_event_id, 
             ok_count: 0, 
+            damage_count: 0,
             total_count: 0 
           };
         }
         countMap[checkin.usgs_event_id].total_count++;
         if (checkin.damage_report === 'OK') {
           countMap[checkin.usgs_event_id].ok_count++;
+        } else if (checkin.damage_report === 'DAMAGE') {
+          countMap[checkin.usgs_event_id].damage_count++;
         }
       }
 
@@ -80,6 +84,7 @@ export function useQuakeCheckinCounts(eventIds: string[]) {
               const existing = prev[newCheckin.usgs_event_id] || { 
                 usgs_event_id: newCheckin.usgs_event_id, 
                 ok_count: 0, 
+                damage_count: 0,
                 total_count: 0 
               };
               return {
@@ -90,6 +95,9 @@ export function useQuakeCheckinCounts(eventIds: string[]) {
                   ok_count: newCheckin.damage_report === 'OK' 
                     ? existing.ok_count + 1 
                     : existing.ok_count,
+                  damage_count: newCheckin.damage_report === 'DAMAGE'
+                    ? existing.damage_count + 1
+                    : existing.damage_count,
                 },
               };
             });
