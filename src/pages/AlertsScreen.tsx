@@ -668,13 +668,31 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
 
                   {/* Quick action buttons with check-in count */}
                   <div className="flex items-center gap-2 mt-3 justify-between">
-                    {/* Check-in counter */}
-                    {checkinCounts[quake.id]?.ok_count > 0 && (
-                      <span className="text-xs text-safe flex items-center gap-1">
-                        <Check className="w-3 h-3" />
-                        {checkinCounts[quake.id].ok_count} bien
-                      </span>
-                    )}
+                    {/* Check-in counter with visual prominence based on count */}
+                    {checkinCounts[quake.id]?.ok_count > 0 && (() => {
+                      const count = checkinCounts[quake.id].ok_count;
+                      const isHighCount = count >= 10;
+                      const isMediumCount = count >= 5;
+                      
+                      return (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "flex items-center gap-1 font-medium transition-all",
+                            isHighCount 
+                              ? "bg-safe text-safe-foreground border-safe animate-pulse shadow-lg shadow-safe/30" 
+                              : isMediumCount 
+                                ? "bg-safe/20 text-safe border-safe/50" 
+                                : "text-safe border-safe/30"
+                          )}
+                        >
+                          <Check className={cn("w-3.5 h-3.5", isHighCount && "animate-bounce")} />
+                          <span className={cn(isHighCount && "font-bold")}>
+                            {count} {isHighCount ? "reportaron bien!" : "bien"}
+                          </span>
+                        </Badge>
+                      );
+                    })()}
                     <div className="flex gap-2 ml-auto">
                       <Button
                         variant="ghost"
