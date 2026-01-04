@@ -1,4 +1,4 @@
-// Breaking News Section - Clean, fluid display of emergency news
+// Últimas Noticias Section - Clean, fluid display of emergency news
 
 import React, { useState, useMemo } from 'react';
 import { 
@@ -157,7 +157,7 @@ export const BreakingNewsSection: React.FC = () => {
             <div className="p-1.5 rounded-full bg-destructive/10">
               <Newspaper className="w-4 h-4 text-destructive" />
             </div>
-            Breaking News
+            Últimas Noticias
           </CardTitle>
           <Button
             variant="ghost"
