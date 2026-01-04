@@ -344,7 +344,7 @@ export const CommunityScreen: React.FC = () => {
             📋 Tablero
           </TabsTrigger>
           <TabsTrigger value="noticias" className="text-xs">
-            📰 Breaking News
+            📰 Últimas Noticias
           </TabsTrigger>
         </TabsList>
 
