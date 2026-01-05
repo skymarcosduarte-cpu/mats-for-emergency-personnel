@@ -51,6 +51,9 @@ export function SplashScreen({ onComplete, minDuration = 2000 }: SplashScreenPro
           <p className="text-sm text-white/80 mt-1">
             Sistema de Emergencias
           </p>
+          <p className="text-xs text-white/60 mt-3 italic">
+            Con M.A.T.S. nunca estarás solo
+          </p>
         </div>
       </div>
 
