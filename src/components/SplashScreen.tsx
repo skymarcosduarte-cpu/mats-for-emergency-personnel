@@ -6,14 +6,14 @@ interface SplashScreenProps {
   minDuration?: number;
 }
 
-export function SplashScreen({ onComplete, minDuration = 3500 }: SplashScreenProps) {
+export function SplashScreen({ onComplete, minDuration = 4500 }: SplashScreenProps) {
   const [phase, setPhase] = useState<"initial" | "logo" | "text" | "exit">("initial");
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase("logo"), 200),
-      setTimeout(() => setPhase("text"), 1200),
-      setTimeout(() => setPhase("exit"), minDuration - 600),
+      setTimeout(() => setPhase("logo"), 400),
+      setTimeout(() => setPhase("text"), 1800),
+      setTimeout(() => setPhase("exit"), minDuration - 800),
       setTimeout(onComplete, minDuration),
     ];
     return () => timers.forEach(clearTimeout);
@@ -88,12 +88,7 @@ export function SplashScreen({ onComplete, minDuration = 3500 }: SplashScreenPro
             SOS
           </span>
           
-          <div className="mt-6 flex flex-col items-center gap-3">
-            <div className="w-12 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-            <p className="text-sm tracking-widest text-white/50 uppercase">
-              Sistema de Emergencias
-            </p>
-          </div>
+          <div className="mt-6 w-12 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
           
           <p className="mt-6 text-white/40 text-sm font-light italic">
             Con M.A.T.S. nunca estarás solo
