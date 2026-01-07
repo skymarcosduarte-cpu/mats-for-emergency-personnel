@@ -77,6 +77,8 @@ export const useInternalMessagesStore = () => {
 
   // Prevent double notifications between realtime + polling fetches
   const notifiedMessageIdsRef = useRef<Set<string>>(new Set());
+  const lastNotifiedAtRef = useRef<number>(0);
+  const notifyCooldownUntilRef = useRef<number>(0);
 
   // Realtime health tracking (used for auto-reconnect + debugging)
   const realtimeStatusRef = useRef<string>('INIT');
@@ -225,69 +227,88 @@ export const useInternalMessagesStore = () => {
       setConversations(convList);
 
       // Fallback notifications (polling path): if realtime silently dropped, we still notify.
+      // IMPORTANT: this must be extremely strict to avoid loops.
       if (newUnreadIncoming.length > 0) {
-        const newest = newUnreadIncoming.reduce((acc, m) =>
-          new Date(m.created_at).getTime() > new Date(acc.created_at).getTime() ? m : acc,
-        );
+        const candidates = newUnreadIncoming
+          .map((m) => ({ m, t: new Date(m.created_at).getTime() }))
+          .filter(({ t }) => t > lastNotifiedAtRef.current);
 
-        const isClave100 =
-          newest.message.includes('🚨 CLAVE 100') || newest.message.includes('CLAVE 100 - EMERGENCIA');
-
-        const muted = localStorage.getItem('chat_notifications_muted') === 'true';
-
-        try {
-          const { unlockAudioContext } = await import('@/lib/alertSound');
-          await unlockAudioContext();
-        } catch (e) {
-          console.warn('🔇 [PollingNotify] Could not unlock audio context:', e);
+        // Mark all as "seen" for notification purposes so we never spam.
+        for (const { m } of candidates) {
+          notifiedMessageIdsRef.current.add(m.id);
         }
 
-        if (!muted) {
-          if (isClave100) {
-            playClave100Alert();
+        if (candidates.length > 0) {
+          const newest = candidates.reduce((acc, cur) => (cur.t > acc.t ? cur : acc)).m;
+          lastNotifiedAtRef.current = Math.max(...candidates.map((c) => c.t));
+
+          // Cooldown: prevents bursts if fetchData runs repeatedly.
+          const nowMs = Date.now();
+          if (nowMs < notifyCooldownUntilRef.current) {
+            console.log('🔇 [PollingNotify] Cooldown active, skipping sound/toast');
           } else {
-            playMessageNotification();
-            triggerMessageVibration();
+            notifyCooldownUntilRef.current = nowMs + 1500;
+
+            const isClave100 =
+              newest.message.includes('🚨 CLAVE 100') || newest.message.includes('CLAVE 100 - EMERGENCIA');
+
+            const muted = localStorage.getItem('chat_notifications_muted') === 'true';
+
+            try {
+              const { unlockAudioContext } = await import('@/lib/alertSound');
+              await unlockAudioContext();
+            } catch (e) {
+              console.warn('🔇 [PollingNotify] Could not unlock audio context:', e);
+            }
+
+            if (!muted) {
+              if (isClave100) {
+                playClave100Alert();
+              } else {
+                playMessageNotification();
+                triggerMessageVibration();
+              }
+            } else if (isClave100) {
+              playClave100Alert();
+            }
+
+            let senderName = senderNamesCache.current.get(newest.sender_id);
+            if (!senderName) {
+              const conv = convList.find((c) => c.user_id === newest.sender_id);
+              senderName = conv?.display_name || 'Usuario';
+              senderNamesCache.current.set(newest.sender_id, senderName);
+            }
+
+            if (isClave100) {
+              triggerClave100Notification(senderName, newest.message, newest.sender_id);
+              setClave100Alert({
+                isVisible: true,
+                senderName,
+                senderId: newest.sender_id,
+                message: newest.message,
+                imageUrl: newest.image_url || null,
+                audioUrl: newest.audio_url || null,
+                audioDurationMs: newest.audio_duration_ms || null,
+              });
+
+              toast.error(`🚨 CLAVE 100 de ${senderName}`, {
+                description: newest.message.substring(0, 100) + (newest.message.length > 100 ? '...' : ''),
+                duration: 15000,
+              });
+            } else {
+              toast.info(`💬 ${senderName}`, {
+                description: newest.message.substring(0, 80) + (newest.message.length > 80 ? '...' : ''),
+                duration: 5000,
+              });
+            }
+
+            showBrowserNotification(
+              isClave100 ? '🚨 CLAVE 100 - EMERGENCIA' : senderName,
+              newest.message,
+              newest.sender_id,
+            );
           }
-        } else if (isClave100) {
-          playClave100Alert();
         }
-
-        let senderName = senderNamesCache.current.get(newest.sender_id);
-        if (!senderName) {
-          const conv = convList.find((c) => c.user_id === newest.sender_id);
-          senderName = conv?.display_name || 'Usuario';
-          senderNamesCache.current.set(newest.sender_id, senderName);
-        }
-
-        if (isClave100) {
-          triggerClave100Notification(senderName, newest.message, newest.sender_id);
-          setClave100Alert({
-            isVisible: true,
-            senderName,
-            senderId: newest.sender_id,
-            message: newest.message,
-            imageUrl: newest.image_url || null,
-            audioUrl: newest.audio_url || null,
-            audioDurationMs: newest.audio_duration_ms || null,
-          });
-
-          toast.error(`🚨 CLAVE 100 de ${senderName}`, {
-            description: newest.message.substring(0, 100) + (newest.message.length > 100 ? '...' : ''),
-            duration: 15000,
-          });
-        } else {
-          toast.info(`💬 ${senderName}`, {
-            description: newest.message.substring(0, 80) + (newest.message.length > 80 ? '...' : ''),
-            duration: 5000,
-          });
-        }
-
-        showBrowserNotification(
-          isClave100 ? '🚨 CLAVE 100 - EMERGENCIA' : senderName,
-          newest.message,
-          newest.sender_id,
-        );
       }
 
       hasHydratedRef.current = true;
@@ -647,131 +668,154 @@ export const useInternalMessagesStore = () => {
               lastRealtimeEventAtRef.current = Date.now();
 
               const newMessage = payload.new as InternalMessage;
+              if (!newMessage) return;
+              if (newMessage.sender_id === user.id) return;
 
-              if (newMessage && newMessage.sender_id !== user.id) {
-                console.log('📨 [Realtime] New message received via postgres_changes');
+              // De-dupe: never notify twice for the same message id
+              if (notifiedMessageIdsRef.current.has(newMessage.id)) {
+                console.log('🧯 [Realtime] Duplicate message event ignored:', newMessage.id);
+                return;
+              }
 
-                // Add message if not already present (avoid duplicates)
-                setMessages((prev) => {
-                  if (prev.some((m) => m.id === newMessage.id)) return prev;
-                  return [...prev, newMessage];
-                });
+              notifiedMessageIdsRef.current.add(newMessage.id);
+              const newMessageAt = new Date(newMessage.created_at).getTime();
+              if (newMessageAt > lastNotifiedAtRef.current) {
+                lastNotifiedAtRef.current = newMessageAt;
+              }
 
-                // Update unread count
-                setUnreadCount((prev) => prev + 1);
+              console.log('📨 [Realtime] New message received via postgres_changes');
 
-                // Update conversations
-                setConversations((prev) => {
-                  const existing = prev.find((c) => c.user_id === newMessage.sender_id);
-                  if (existing) {
-                    return prev
-                      .map((c) =>
-                        c.user_id === newMessage.sender_id
-                          ? {
-                              ...c,
-                              last_message: newMessage.message,
-                              last_message_at: newMessage.created_at,
-                              unread_count: c.unread_count + 1,
-                            }
-                          : c,
-                      )
-                      .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
-                  }
+              // Add message if not already present (avoid duplicates)
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === newMessage.id)) return prev;
+                return [...prev, newMessage];
+              });
 
-                  // New conversation - fetch data to get user name
-                  fetchData();
-                  return prev;
-                });
+              // Update unread count
+              setUnreadCount((prev) => prev + 1);
 
-                // Check if it's a Clave 100 message
-                const isClave100 =
-                  newMessage.message.includes('🚨 CLAVE 100') ||
-                  newMessage.message.includes('CLAVE 100 - EMERGENCIA');
-
-                console.log('📨 New message details:', {
-                  isClave100,
-                  messagePreview: newMessage.message.substring(0, 50),
-                  senderId: newMessage.sender_id,
-                  documentVisible: document.visibilityState,
-                });
-
-                // Play notification sound and vibration (if not muted)
-                // IMPORTANT: Try to unlock audio context first for better reliability
-                const muted = localStorage.getItem('chat_notifications_muted') === 'true';
-
-                try {
-                  const { unlockAudioContext } = await import('@/lib/alertSound');
-                  await unlockAudioContext();
-                  console.log('🔊 Audio context unlocked before playing notification');
-                } catch (e) {
-                  console.warn('🔇 Could not unlock audio context:', e);
+              // Update conversations
+              setConversations((prev) => {
+                const existing = prev.find((c) => c.user_id === newMessage.sender_id);
+                if (existing) {
+                  return prev
+                    .map((c) =>
+                      c.user_id === newMessage.sender_id
+                        ? {
+                            ...c,
+                            last_message: newMessage.message,
+                            last_message_at: newMessage.created_at,
+                            unread_count: c.unread_count + 1,
+                          }
+                        : c,
+                    )
+                    .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
                 }
 
-                if (!muted) {
-                  if (isClave100) {
-                    console.log('🚨 CLAVE 100 DETECTED - Playing emergency alert!');
-                    playClave100Alert();
-                  } else {
-                    console.log('🔔 Playing message notification sound...');
-                    playMessageNotification();
-                    triggerMessageVibration();
-                  }
-                } else if (isClave100) {
-                  console.log('🚨 CLAVE 100 DETECTED (muted mode) - Playing emergency alert anyway!');
+                // New conversation - fetch data to get user name
+                fetchData();
+                return prev;
+              });
+
+              // Check if it's a Clave 100 message
+              const isClave100 =
+                newMessage.message.includes('🚨 CLAVE 100') || newMessage.message.includes('CLAVE 100 - EMERGENCIA');
+
+              console.log('📨 New message details:', {
+                isClave100,
+                messagePreview: newMessage.message.substring(0, 50),
+                senderId: newMessage.sender_id,
+                documentVisible: document.visibilityState,
+              });
+
+              // Cooldown: prevents bursts if the client gets many events quickly
+              const nowMs = Date.now();
+              const shouldNotifyNow = nowMs >= notifyCooldownUntilRef.current;
+              if (shouldNotifyNow) {
+                notifyCooldownUntilRef.current = nowMs + 1500;
+              }
+
+              // Play notification sound and vibration (if not muted)
+              // IMPORTANT: Try to unlock audio context first for better reliability
+              const muted = localStorage.getItem('chat_notifications_muted') === 'true';
+
+              if (!shouldNotifyNow) {
+                console.log('🔇 [Realtime] Cooldown active, skipping sound/toast');
+                return;
+              }
+
+              try {
+                const { unlockAudioContext } = await import('@/lib/alertSound');
+                await unlockAudioContext();
+                console.log('🔊 Audio context unlocked before playing notification');
+              } catch (e) {
+                console.warn('🔇 Could not unlock audio context:', e);
+              }
+
+              if (!muted) {
+                if (isClave100) {
+                  console.log('🚨 CLAVE 100 DETECTED - Playing emergency alert!');
                   playClave100Alert();
                 } else {
-                  console.log('🔇 Notifications are muted, skipping sound');
+                  console.log('🔔 Playing message notification sound...');
+                  playMessageNotification();
+                  triggerMessageVibration();
                 }
+              } else if (isClave100) {
+                console.log('🚨 CLAVE 100 DETECTED (muted mode) - Playing emergency alert anyway!');
+                playClave100Alert();
+              } else {
+                console.log('🔇 Notifications are muted, skipping sound');
+              }
 
-                // Get sender name for notification
-                let senderName = senderNamesCache.current.get(newMessage.sender_id);
+              // Get sender name for notification
+              let senderName = senderNamesCache.current.get(newMessage.sender_id);
 
-                if (!senderName) {
-                  const { data } = await supabase
-                    .from('user_locations_with_roles')
-                    .select('display_name, show_name_on_map')
-                    .eq('user_id', newMessage.sender_id)
-                    .single();
+              if (!senderName) {
+                const { data } = await supabase
+                  .from('user_locations_with_roles')
+                  .select('display_name, show_name_on_map')
+                  .eq('user_id', newMessage.sender_id)
+                  .single();
 
-                  senderName = data?.show_name_on_map && data?.display_name ? data.display_name : 'Usuario';
-                  senderNamesCache.current.set(newMessage.sender_id, senderName);
-                }
+                senderName = data?.show_name_on_map && data?.display_name ? data.display_name : 'Usuario';
+                senderNamesCache.current.set(newMessage.sender_id, senderName);
+              }
 
-                // Trigger native notification for Clave 100 (works in background)
-                if (isClave100) {
-                  console.log('🚨 Triggering native Clave 100 notification');
-                  triggerClave100Notification(senderName, newMessage.message, newMessage.sender_id);
-                }
+              // Trigger native notification for Clave 100 (works in background)
+              if (isClave100) {
+                console.log('🚨 Triggering native Clave 100 notification');
+                triggerClave100Notification(senderName, newMessage.message, newMessage.sender_id);
+              }
 
-                showBrowserNotification(
-                  isClave100 ? '🚨 CLAVE 100 - EMERGENCIA' : senderName,
-                  newMessage.message,
-                  newMessage.sender_id,
-                );
+              showBrowserNotification(
+                isClave100 ? '🚨 CLAVE 100 - EMERGENCIA' : senderName,
+                newMessage.message,
+                newMessage.sender_id,
+              );
 
-                if (isClave100) {
-                  console.log('🚨 Setting Clave 100 overlay visible for sender:', senderName);
-                  setClave100Alert({
-                    isVisible: true,
-                    senderName,
-                    senderId: newMessage.sender_id,
-                    message: newMessage.message,
-                    imageUrl: newMessage.image_url || null,
-                    audioUrl: newMessage.audio_url || null,
-                    audioDurationMs: newMessage.audio_duration_ms || null,
-                  });
+              if (isClave100) {
+                console.log('🚨 Setting Clave 100 overlay visible for sender:', senderName);
+                setClave100Alert({
+                  isVisible: true,
+                  senderName,
+                  senderId: newMessage.sender_id,
+                  message: newMessage.message,
+                  imageUrl: newMessage.image_url || null,
+                  audioUrl: newMessage.audio_url || null,
+                  audioDurationMs: newMessage.audio_duration_ms || null,
+                });
 
-                  toast.error(`🚨 CLAVE 100 de ${senderName}`, {
-                    description:
-                      newMessage.message.substring(0, 100) + (newMessage.message.length > 100 ? '...' : ''),
-                    duration: 15000,
-                  });
-                } else {
-                  toast.info(`💬 ${senderName}`, {
-                    description: newMessage.message.substring(0, 80) + (newMessage.message.length > 80 ? '...' : ''),
-                    duration: 5000,
-                  });
-                }
+                toast.error(`🚨 CLAVE 100 de ${senderName}`, {
+                  description:
+                    newMessage.message.substring(0, 100) + (newMessage.message.length > 100 ? '...' : ''),
+                  duration: 15000,
+                });
+              } else {
+                toast.info(`💬 ${senderName}`, {
+                  description: newMessage.message.substring(0, 80) + (newMessage.message.length > 80 ? '...' : ''),
+                  duration: 5000,
+                });
               }
             },
           )
