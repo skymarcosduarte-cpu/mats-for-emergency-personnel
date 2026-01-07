@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Users, Shield, Ticket, Calendar, Search, RefreshCw, X, Plus, Copy, Check, Loader2 } from 'lucide-react';
+import { Users, Shield, Ticket, Calendar, Search, RefreshCw, X, Plus, Copy, Check, Loader2, MessageSquare, Mail, MailOpen, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,24 @@ interface InviteStats {
   created_at: string;
 }
 
+interface MessageStats {
+  total_messages: number;
+  total_read: number;
+  total_unread: number;
+  unique_senders: number;
+  unique_receivers: number;
+  messages_today: number;
+  messages_this_week: number;
+}
+
+interface BroadcastMessage {
+  id: string;
+  message: string;
+  created_at: string;
+  total_sent: number;
+  total_read: number;
+}
+
 interface AdminPanelProps {
   open: boolean;
   onClose: () => void;
@@ -52,9 +70,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
   const { role, user } = useAuth();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [invites, setInvites] = useState<InviteStats[]>([]);
+  const [messageStats, setMessageStats] = useState<MessageStats | null>(null);
+  const [broadcastMessages, setBroadcastMessages] = useState<BroadcastMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'users' | 'invites'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'invites' | 'messages'>('users');
   
   // Create invite form state
   const [showCreateInvite, setShowCreateInvite] = useState(false);
@@ -93,8 +113,69 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
       } else {
         setInvites(invitesData || []);
       }
+
+      // Fetch message statistics
+      await fetchMessageStats();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMessageStats = async () => {
+    try {
+      // Get all messages for stats (using admin query)
+      const { data: allMessages, error: messagesError } = await supabase
+        .from('internal_messages')
+        .select('id, read, sender_id, receiver_id, created_at, message');
+
+      if (messagesError) {
+        console.error('Error fetching messages:', messagesError);
+        return;
+      }
+
+      const messages = allMessages || [];
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(todayStart);
+      weekStart.setDate(weekStart.getDate() - 7);
+
+      const stats: MessageStats = {
+        total_messages: messages.length,
+        total_read: messages.filter(m => m.read).length,
+        total_unread: messages.filter(m => !m.read).length,
+        unique_senders: new Set(messages.map(m => m.sender_id)).size,
+        unique_receivers: new Set(messages.map(m => m.receiver_id)).size,
+        messages_today: messages.filter(m => new Date(m.created_at) >= todayStart).length,
+        messages_this_week: messages.filter(m => new Date(m.created_at) >= weekStart).length,
+      };
+
+      setMessageStats(stats);
+
+      // Find broadcast messages (messages sent by same sender to many recipients at similar times)
+      const senderGroups = messages.reduce((acc, msg) => {
+        const key = `${msg.sender_id}-${msg.message.substring(0, 50)}`;
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(msg);
+        return acc;
+      }, {} as Record<string, typeof messages>);
+
+      const broadcasts: BroadcastMessage[] = Object.entries(senderGroups)
+        .filter(([_, msgs]) => msgs.length >= 5) // At least 5 recipients = broadcast
+        .map(([_, msgs]) => ({
+          id: msgs[0].id,
+          message: msgs[0].message.length > 100 ? msgs[0].message.substring(0, 100) + '...' : msgs[0].message,
+          created_at: msgs[0].created_at,
+          total_sent: msgs.length,
+          total_read: msgs.filter(m => m.read).length,
+        }))
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 10);
+
+      setBroadcastMessages(broadcasts);
+    } catch (err) {
+      console.error('Error calculating message stats:', err);
     }
   };
 
@@ -235,7 +316,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
           </DialogHeader>
 
           {/* Stats summary */}
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-4 gap-3 mb-4">
             <div className="bg-muted/50 rounded-lg p-3 text-center">
               <Users className="w-5 h-5 mx-auto mb-1 text-primary" />
               <div className="text-2xl font-bold">{users.length}</div>
@@ -245,6 +326,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
               <Ticket className="w-5 h-5 mx-auto mb-1 text-amber-500" />
               <div className="text-2xl font-bold">{invites.length}</div>
               <div className="text-xs text-muted-foreground">Códigos</div>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <MessageSquare className="w-5 h-5 mx-auto mb-1 text-blue-500" />
+              <div className="text-2xl font-bold">{messageStats?.total_messages || 0}</div>
+              <div className="text-xs text-muted-foreground">Mensajes</div>
             </div>
             <div className="bg-muted/50 rounded-lg p-3 text-center">
               <Calendar className="w-5 h-5 mx-auto mb-1 text-emerald-500" />
@@ -261,7 +347,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 border-b border-border pb-2">
+          <div className="flex gap-2 border-b border-border pb-2 flex-wrap">
             <Button
               variant={activeTab === 'users' ? 'default' : 'ghost'}
               size="sm"
@@ -277,6 +363,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
             >
               <Ticket className="w-4 h-4 mr-1" />
               Códigos
+            </Button>
+            <Button
+              variant={activeTab === 'messages' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('messages')}
+            >
+              <MessageSquare className="w-4 h-4 mr-1" />
+              Mensajes
             </Button>
             <Button
               variant="ghost"
@@ -440,6 +534,124 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
                     )}
                   </TableBody>
                 </Table>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'messages' && (
+            <div className="flex-1 overflow-auto space-y-4">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : messageStats ? (
+                <>
+                  {/* Message Stats Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center">
+                      <MessageSquare className="w-5 h-5 mx-auto mb-1 text-blue-500" />
+                      <div className="text-xl font-bold">{messageStats.total_messages}</div>
+                      <div className="text-xs text-muted-foreground">Total mensajes</div>
+                    </div>
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-center">
+                      <MailOpen className="w-5 h-5 mx-auto mb-1 text-emerald-500" />
+                      <div className="text-xl font-bold">{messageStats.total_read}</div>
+                      <div className="text-xs text-muted-foreground">Leídos</div>
+                    </div>
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-center">
+                      <Mail className="w-5 h-5 mx-auto mb-1 text-amber-500" />
+                      <div className="text-xl font-bold">{messageStats.total_unread}</div>
+                      <div className="text-xs text-muted-foreground">No leídos</div>
+                    </div>
+                    <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 text-center">
+                      <TrendingUp className="w-5 h-5 mx-auto mb-1 text-purple-500" />
+                      <div className="text-xl font-bold">
+                        {messageStats.total_messages > 0 
+                          ? Math.round((messageStats.total_read / messageStats.total_messages) * 100) 
+                          : 0}%
+                      </div>
+                      <div className="text-xs text-muted-foreground">Tasa lectura</div>
+                    </div>
+                  </div>
+
+                  {/* Activity Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-primary">{messageStats.messages_today}</div>
+                      <div className="text-xs text-muted-foreground">Hoy</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-primary">{messageStats.messages_this_week}</div>
+                      <div className="text-xs text-muted-foreground">Esta semana</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold">{messageStats.unique_senders}</div>
+                      <div className="text-xs text-muted-foreground">Remitentes</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold">{messageStats.unique_receivers}</div>
+                      <div className="text-xs text-muted-foreground">Destinatarios</div>
+                    </div>
+                  </div>
+
+                  {/* Broadcast Messages */}
+                  {broadcastMessages.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-sm flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" />
+                        Mensajes Masivos Recientes
+                      </h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Mensaje</TableHead>
+                            <TableHead className="w-20">Enviados</TableHead>
+                            <TableHead className="w-20">Leídos</TableHead>
+                            <TableHead className="w-20">%</TableHead>
+                            <TableHead className="w-28">Fecha</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {broadcastMessages.map((msg) => (
+                            <TableRow key={msg.id}>
+                              <TableCell className="max-w-[200px] truncate text-sm">
+                                {msg.message}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{msg.total_sent}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-600">
+                                  {msg.total_read}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-medium">
+                                  {Math.round((msg.total_read / msg.total_sent) * 100)}%
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {format(new Date(msg.created_at), 'dd MMM HH:mm', { locale: es })}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+
+                  {broadcastMessages.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No hay mensajes masivos recientes</p>
+                      <p className="text-xs">Los mensajes enviados a 5+ usuarios aparecerán aquí</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No se pudieron cargar las estadísticas
+                </div>
               )}
             </div>
           )}
