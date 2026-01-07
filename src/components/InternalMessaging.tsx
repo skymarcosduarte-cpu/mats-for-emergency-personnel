@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Check, CheckCheck, Circle, Maximize2, Minimize2, AlertTriangle } from 'lucide-react';
+import { Check, CheckCheck, Circle, Maximize2, Minimize2, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import { X, Send, MessageCircle, ArrowLeft, Bell, BellOff, Trash2, Mic, Play, Pause, Square, Loader2, ImagePlus, Camera, MapPin } from 'lucide-react';
 import { Clave100Dialog } from './Clave100Dialog';
 import { formatDistanceToNow } from 'date-fns';
@@ -130,7 +130,8 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     loading,
     isMuted,
     toggleMute,
-    refetch
+    refetch,
+    realtimeStatus
   } = useInternalMessages();
   
   // Refetch messages when modal opens to ensure fresh data
@@ -1089,6 +1090,28 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
               )}
             </div>
           </div>
+          
+          {/* Realtime status indicator - only in chat view */}
+          {selectedUserId && (
+            <div 
+              className={cn(
+                "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium",
+                realtimeStatus === 'SUBSCRIBED' 
+                  ? "bg-green-500/10 text-green-600 dark:text-green-400" 
+                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400 animate-pulse"
+              )}
+              title={`Estado del canal: ${realtimeStatus}`}
+            >
+              {realtimeStatus === 'SUBSCRIBED' ? (
+                <Wifi className="w-3 h-3" />
+              ) : (
+                <WifiOff className="w-3 h-3" />
+              )}
+              <span className="hidden sm:inline">
+                {realtimeStatus === 'SUBSCRIBED' ? 'Conectado' : realtimeStatus === 'INIT' ? 'Iniciando...' : 'Reconectando...'}
+              </span>
+            </div>
+          )}
           <div className="flex items-center gap-1">
             {/* Clear conversation button - only when in conversation */}
             {selectedUserId && (
