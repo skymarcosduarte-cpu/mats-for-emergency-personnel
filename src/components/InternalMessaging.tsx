@@ -800,48 +800,51 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     
     setSendingImage(true);
     
-    // Use setTimeout to prevent UI blocking
-    setTimeout(async () => {
-      try {
-        // Upload to Supabase storage
-        const fileExt = selectedImage.type === 'image/webp' ? 'webp' : 
-                        selectedImage.type === 'image/png' ? 'png' : 'jpg';
-        const fileName = `chat_images/${user.id}/${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('reports_media')
-          .upload(fileName, selectedImage, {
-            contentType: selectedImage.type,
-            upsert: false
-          });
+    try {
+      // Upload to Supabase storage - use user.id as folder for RLS
+      const fileExt = selectedImage.type === 'image/webp' ? 'webp' : 
+                      selectedImage.type === 'image/png' ? 'png' : 'jpg';
+      const fileName = `${user.id}/chat_${Date.now()}.${fileExt}`;
+      
+      console.log('Uploading image:', fileName, 'size:', selectedImage.size, 'type:', selectedImage.type);
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('reports_media')
+        .upload(fileName, selectedImage, {
+          contentType: selectedImage.type,
+          upsert: false
+        });
 
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          throw new Error('Error al subir la imagen');
-        }
-
-        // Send message with image URL
-        const success = await sendMessage(
-          selectedUserId, 
-          '📷 Imagen',
-          null,
-          null,
-          fileName
-        );
-
-        if (success) {
-          cancelImage();
-          toast.success('Imagen enviada');
-        } else {
-          throw new Error('Error al enviar');
-        }
-      } catch (error) {
-        console.error('Error sending image:', error);
-        toast.error('Error al enviar imagen');
-      } finally {
+      if (uploadError) {
+        console.error('Upload error details:', uploadError.message, uploadError);
+        toast.error(`Error: ${uploadError.message}`);
         setSendingImage(false);
+        return;
       }
-    }, 50);
+
+      console.log('Upload successful:', uploadData);
+
+      // Send message with image URL
+      const success = await sendMessage(
+        selectedUserId, 
+        '📷 Imagen',
+        null,
+        null,
+        fileName
+      );
+
+      if (success) {
+        cancelImage();
+        toast.success('Imagen enviada');
+      } else {
+        toast.error('Error al enviar mensaje');
+      }
+    } catch (error) {
+      console.error('Error sending image:', error);
+      toast.error('Error al enviar imagen');
+    } finally {
+      setSendingImage(false);
+    }
   };
 
   const getSignedImageUrl = useCallback(async (imagePath: string): Promise<string | null> => {
