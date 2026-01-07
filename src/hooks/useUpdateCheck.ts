@@ -240,9 +240,18 @@ export function useUpdateCheck() {
     };
   }, []); // Empty deps - only run once on mount
 
-  const applyUpdate = useCallback(() => {
-    // Always reload after attempting to activate the waiting worker.
-    // Some environments (iframes/strict browsers) can ignore controllerchange.
+  const applyUpdate = useCallback(async () => {
+    // Clear caches first for reliable update
+    try {
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+    } catch {
+      // ignore cache clearing errors
+    }
+
+    // Activate waiting worker if exists
     if (registration?.waiting) {
       try {
         registration.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -251,14 +260,12 @@ export function useUpdateCheck() {
       }
     }
 
-    // Hard reload fallback
-    setTimeout(() => {
-      try {
-        window.location.reload();
-      } catch {
-        window.location.href = window.location.href;
-      }
-    }, 300);
+    // Immediate hard reload - no timeout that could fail
+    try {
+      window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();
+    } catch {
+      window.location.reload();
+    }
   }, [registration]);
 
   const dismissUpdate = useCallback(() => {
