@@ -387,6 +387,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     }
 
     setLoading(true);
+    console.log('[AuthGate] Starting signup process...');
 
     // Retry logic for transient network errors
     const maxRetries = 2;
@@ -396,11 +397,23 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       try {
         if (attempt > 0) {
           console.log(`[AuthGate] Retry attempt ${attempt}/${maxRetries}`);
+          toast({
+            title: 'Reintentando...',
+            description: `Intento ${attempt + 1} de ${maxRetries + 1}`,
+          });
           // Wait before retry
           await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
 
+        // Create abort controller for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          console.log('[AuthGate] Request timeout after 30s');
+          controller.abort();
+        }, 30000); // 30 second timeout
+
         // Call server-side registration endpoint
+        console.log('[AuthGate] Calling register-with-invite function...');
         const response = await supabase.functions.invoke('register-with-invite', {
           body: {
             email: email.trim().toLowerCase(),
@@ -409,24 +422,21 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           }
         });
 
+        clearTimeout(timeoutId);
+        console.log('[AuthGate] Function response received:', { error: !!response.error, data: !!response.data });
+
         // Check for network-level errors (fetch failed, timeout, etc.)
         if (response.error) {
-          console.error('[AuthGate] Network/fetch error:', response.error);
+          console.error('[AuthGate] Function error:', response.error);
           lastError = response.error;
           
-          // Only retry on network/timeout errors
-          if (response.error.message?.includes('network') || 
-              response.error.message?.includes('timeout') ||
-              response.error.message?.includes('fetch') ||
-              response.error.message?.includes('Failed to fetch')) {
-            if (attempt < maxRetries) continue;
-          }
-          
           // Check if the error contains the actual response from the server
-          // supabase.functions.invoke puts server error responses in response.error for non-2xx status
           const serverMessage = response.error?.message || '';
+          
+          // Handle specific server errors that should not be retried
           if (serverMessage.includes('email ya está registrado') || 
-              serverMessage.includes('ya registrado')) {
+              serverMessage.includes('ya registrado') ||
+              serverMessage.includes('already registered')) {
             const errorMessage = 'Este email ya está registrado. Intenta iniciar sesión o recuperar tu contraseña.';
             setError(errorMessage);
             toast({
@@ -438,6 +448,30 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
             return;
           }
           
+          if (serverMessage.includes('código') || serverMessage.includes('invitación') || serverMessage.includes('invite')) {
+            setError(serverMessage);
+            toast({
+              title: 'Error con código de invitación',
+              description: serverMessage,
+              variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+          }
+          
+          // Only retry on network/timeout errors
+          if (response.error.message?.includes('network') || 
+              response.error.message?.includes('timeout') ||
+              response.error.message?.includes('fetch') ||
+              response.error.message?.includes('Failed to fetch') ||
+              response.error.message?.includes('aborted')) {
+            if (attempt < maxRetries) {
+              console.log('[AuthGate] Network error, will retry...');
+              continue;
+            }
+          }
+          
+          // Non-retryable error
           const connectionError = 'Error de conexión. Verifica tu internet e intenta de nuevo.';
           setError(connectionError);
           toast({
@@ -450,6 +484,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         }
 
         const result = response.data;
+        console.log('[AuthGate] Function result:', result);
 
         // Server returned an error in the body (for 400 responses that still return JSON)
         if (!result || !result.success) {
@@ -469,6 +504,10 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
         // Success! Now sign in the user
         console.log('[AuthGate] User created successfully, signing in...');
+        toast({
+          title: '¡Cuenta creada!',
+          description: 'Iniciando sesión...',
+        });
         
         const { error: signInError } = await signIn(
           email.trim().toLowerCase(), 
@@ -481,13 +520,14 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           console.log('[AuthGate] Sign-in after registration failed:', signInError);
           toast({
             title: '¡Cuenta creada!',
-            description: 'Ahora inicia sesión con tus credenciales.',
+            description: 'Tu cuenta fue creada. Ahora inicia sesión con tus credenciales.',
           });
           setAuthTab('login');
           // Clear password for security when switching to login tab
           setPassword('');
         } else {
           // Sign-in succeeded, show success toast
+          console.log('[AuthGate] Sign-in successful!');
           toast({
             title: '¡Bienvenido/a!',
             description: 'Tu cuenta ha sido creada exitosamente.',
@@ -502,6 +542,12 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         console.error('[AuthGate] Unexpected signup error:', err);
         lastError = err as Error;
         
+        // Check if it's an abort error (timeout)
+        if (err instanceof Error && err.name === 'AbortError') {
+          console.log('[AuthGate] Request was aborted (timeout)');
+          if (attempt < maxRetries) continue;
+        }
+        
         // Only retry on unexpected errors that might be transient
         if (attempt < maxRetries) continue;
       }
@@ -509,7 +555,13 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
     // All retries failed
     console.error('[AuthGate] All signup attempts failed:', lastError);
-    setError('Error de conexión. Por favor verifica tu internet e intenta de nuevo.');
+    const finalError = 'No pudimos conectar con el servidor. Por favor verifica tu conexión a internet y vuelve a intentar.';
+    setError(finalError);
+    toast({
+      title: 'Error de conexión',
+      description: 'Verifica tu internet e intenta de nuevo.',
+      variant: 'destructive',
+    });
     setLoading(false);
   };
 
@@ -550,22 +602,94 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     setError(null);
     setPrivacySettings({ shareLocation, shareMedicalInfo });
 
-    try {
-      // Check if profile already exists (edge case: user refreshed mid-registration)
-      const { data: existingProfile, error: checkError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user?.id)
-        .maybeSingle();
+    // Retry logic for profile creation
+    const maxRetries = 2;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`[AuthGate] Profile creation retry ${attempt}/${maxRetries}`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
 
-      if (checkError) {
-        console.error('[AuthGate] Error checking existing profile:', checkError);
-      }
+        // Check if profile already exists (edge case: user refreshed mid-registration)
+        const { data: existingProfile, error: checkError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user?.id)
+          .maybeSingle();
 
-      if (existingProfile) {
-        console.log('[AuthGate] Profile already exists, updating privacy settings and completing...');
-        // Profile exists - just update privacy settings
-        const { error: updateError } = await supabase
+        if (checkError) {
+          console.error('[AuthGate] Error checking existing profile:', checkError);
+          // On network error, retry
+          if (checkError.message?.includes('fetch') || checkError.message?.includes('network')) {
+            if (attempt < maxRetries) continue;
+          }
+        }
+
+        if (existingProfile) {
+          console.log('[AuthGate] Profile already exists, updating privacy settings and completing...');
+          // Profile exists - just update privacy settings
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              share_location: shareLocation,
+              share_medical_info: shareMedicalInfo,
+              privacy_consent_at: new Date().toISOString(),
+              terms_accepted_at: new Date().toISOString(),
+            })
+            .eq('id', user?.id);
+
+          if (updateError) {
+            console.error('[AuthGate] Error updating privacy settings:', updateError);
+            // On network error, retry
+            if (updateError.message?.includes('fetch') || updateError.message?.includes('network')) {
+              if (attempt < maxRetries) continue;
+            }
+          }
+
+          // Force refetch profile to update auth state
+          await refetchProfile();
+          
+          // Close dialog and complete
+          setShowPrivacyConsent(false);
+          setLoading(false);
+          onAuthComplete?.();
+          return;
+        }
+
+        console.log('[AuthGate] Creating new profile...');
+        const nickname = profileForm.nickname.trim() || profileForm.fullName.split(' ')[0];
+        
+        const { error: profileError } = await createProfile({
+          full_name: profileForm.fullName,
+          nickname,
+          specialty: profileForm.specialties.length > 0 ? profileForm.specialties : null,
+          phone: profileForm.phone,
+          birthday: profileForm.birthday,
+          role: profileForm.role,
+          can_provide_medical_assistance: profileForm.canProvideMedicalAssistance,
+          has_first_aid_kit: profileForm.hasFirstAidKit,
+          has_ambulance: profileForm.hasAmbulance,
+          has_rescue_unit: profileForm.hasRescueUnit,
+          has_k9_unit: profileForm.hasK9Unit,
+        });
+
+        if (profileError) {
+          console.error('[AuthGate] Profile creation error:', profileError);
+          // On network error, retry
+          if (profileError.message?.includes('fetch') || profileError.message?.includes('network')) {
+            if (attempt < maxRetries) continue;
+          }
+          setShowPrivacyConsent(false);
+          setError(translateError(profileError.message));
+          setLoading(false);
+          return;
+        }
+
+        console.log('[AuthGate] Profile created, updating privacy settings...');
+        // Update privacy settings
+        const { error: privacyError } = await supabase
           .from('profiles')
           .update({
             share_location: shareLocation,
@@ -575,78 +699,40 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           })
           .eq('id', user?.id);
 
-        if (updateError) {
-          console.error('[AuthGate] Error updating privacy settings:', updateError);
+        if (privacyError) {
+          console.error('[AuthGate] Privacy settings update error:', privacyError);
+          // Non-critical, continue
         }
 
-        // Force refetch profile to update auth state
+        // Force refetch profile to update auth state before completing
+        console.log('[AuthGate] Refetching profile to update auth state...');
         await refetchProfile();
-        
-        // Close dialog and complete
+
+        console.log('[AuthGate] Registration complete!');
+        toast({
+          title: '¡Registro completado!',
+          description: 'Tu perfil ha sido creado exitosamente. ¡Bienvenido/a a la comunidad!',
+        });
         setShowPrivacyConsent(false);
+        setLoading(false);
         onAuthComplete?.();
         return;
-      }
-
-      console.log('[AuthGate] Creating new profile...');
-      const nickname = profileForm.nickname.trim() || profileForm.fullName.split(' ')[0];
-      
-      const { error: profileError } = await createProfile({
-        full_name: profileForm.fullName,
-        nickname,
-        specialty: profileForm.specialties.length > 0 ? profileForm.specialties : null,
-        phone: profileForm.phone,
-        birthday: profileForm.birthday,
-        role: profileForm.role,
-        can_provide_medical_assistance: profileForm.canProvideMedicalAssistance,
-        has_first_aid_kit: profileForm.hasFirstAidKit,
-        has_ambulance: profileForm.hasAmbulance,
-        has_rescue_unit: profileForm.hasRescueUnit,
-        has_k9_unit: profileForm.hasK9Unit,
-      });
-
-      if (profileError) {
-        console.error('[AuthGate] Profile creation error:', profileError);
+        
+      } catch (err) {
+        console.error('[AuthGate] Unexpected error during profile creation:', err);
+        if (attempt < maxRetries) continue;
+        
         setShowPrivacyConsent(false);
-        setError(translateError(profileError.message));
+        setError('Error al crear perfil. Verifica tu conexión e intenta de nuevo.');
+        setLoading(false);
         return;
       }
-
-      console.log('[AuthGate] Profile created, updating privacy settings...');
-      // Update privacy settings
-      const { error: privacyError } = await supabase
-        .from('profiles')
-        .update({
-          share_location: shareLocation,
-          share_medical_info: shareMedicalInfo,
-          privacy_consent_at: new Date().toISOString(),
-          terms_accepted_at: new Date().toISOString(),
-        })
-        .eq('id', user?.id);
-
-      if (privacyError) {
-        console.error('[AuthGate] Privacy settings update error:', privacyError);
-        // Non-critical, continue
-      }
-
-      // Force refetch profile to update auth state before completing
-      console.log('[AuthGate] Refetching profile to update auth state...');
-      await refetchProfile();
-
-      console.log('[AuthGate] Registration complete!');
-      toast({
-        title: '¡Registro completado!',
-        description: 'Tu perfil ha sido creado exitosamente. ¡Bienvenido/a a la comunidad!',
-      });
-      setShowPrivacyConsent(false);
-      onAuthComplete?.();
-    } catch (err) {
-      console.error('[AuthGate] Unexpected error during profile creation:', err);
-      setShowPrivacyConsent(false);
-      setError('Error al crear perfil. Intenta de nuevo.');
-    } finally {
-      setLoading(false);
     }
+    
+    // All retries failed
+    setShowPrivacyConsent(false);
+    setError('No se pudo crear el perfil. Verifica tu conexión e intenta de nuevo.');
+    setLoading(false);
   };
 
   return (
