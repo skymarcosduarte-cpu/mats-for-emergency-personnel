@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Loader2, Eye, EyeOff, UserPlus, LogIn, Mail } from 'lucide-react';
+import { BirthdayPicker } from '@/components/BirthdayPicker';
 import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -1106,18 +1107,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                 />
               </div>
 
-              <div>
-                <Label>Fecha de nacimiento *</Label>
-                <Input
-                  type="date"
-                  value={profileForm.birthday}
-                  onChange={(e) => setProfileForm({ ...profileForm, birthday: e.target.value })}
-                  max={new Date().toISOString().split('T')[0]}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Tu cumpleaños aparecerá en el tablero de la comunidad
-                </p>
-              </div>
+              <BirthdayPicker
+                value={profileForm.birthday}
+                onChange={(value) => setProfileForm({ ...profileForm, birthday: value })}
+                required
+              />
 
               <div>
                 <Label>Especialidades (selecciona todas las que apliquen)</Label>
