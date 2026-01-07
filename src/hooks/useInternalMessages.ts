@@ -71,6 +71,12 @@ export const useInternalMessagesStore = () => {
   const fetchInProgressRef = useRef(false);
   const lastFetchRef = useRef(0);
   const userNamesMapRef = useRef<Map<string, string | null>>(new Map());
+  
+  // Used to avoid playing sounds/toasts on the initial hydration fetch
+  const hasHydratedRef = useRef(false);
+
+  // Prevent double notifications between realtime + polling fetches
+  const notifiedMessageIdsRef = useRef<Set<string>>(new Set());
 
   // Realtime health tracking (used for auto-reconnect + debugging)
   const realtimeStatusRef = useRef<string>('INIT');
@@ -130,6 +136,8 @@ export const useInternalMessagesStore = () => {
     lastFetchRef.current = now;
 
     try {
+      const prevIds = new Set(messagesRef.current.map((m) => m.id));
+
       const { data, error } = await supabase
         .from('internal_messages')
         .select('*')
@@ -137,34 +145,51 @@ export const useInternalMessagesStore = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      
+
       const messagesData = data || [];
+
+      // Detect new, unread incoming messages that might have been missed by realtime.
+      // IMPORTANT: avoid notifying on initial hydration.
+      const newUnreadIncoming = hasHydratedRef.current
+        ? messagesData.filter(
+            (m) =>
+              m.receiver_id === user.id &&
+              !m.read &&
+              m.sender_id !== user.id &&
+              !prevIds.has(m.id) &&
+              !notifiedMessageIdsRef.current.has(m.id),
+          )
+        : [];
+
       setMessages(messagesData);
 
       // Calculate unread count
-      const unread = messagesData.filter(m => m.receiver_id === user.id && !m.read).length;
+      const unread = messagesData.filter((m) => m.receiver_id === user.id && !m.read).length;
       setUnreadCount(unread);
 
       // Build conversations from messages
-      const conversationMap = new Map<string, {
-        last_message: string;
-        last_message_at: string;
-        unread_count: number;
-      }>();
+      const conversationMap = new Map<
+        string,
+        {
+          last_message: string;
+          last_message_at: string;
+          unread_count: number;
+        }
+      >();
 
       // Sort by date descending for conversation building
       const sortedForConv = [...messagesData].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
 
-      sortedForConv.forEach(msg => {
+      sortedForConv.forEach((msg) => {
         const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
-        
+
         if (!conversationMap.has(otherUserId)) {
           conversationMap.set(otherUserId, {
             last_message: msg.message,
             last_message_at: msg.created_at,
-            unread_count: 0
+            unread_count: 0,
           });
         }
 
@@ -176,30 +201,96 @@ export const useInternalMessagesStore = () => {
 
       // Fetch display names only for new users
       const userIds = Array.from(conversationMap.keys());
-      const newUserIds = userIds.filter(id => !userNamesMapRef.current.has(id));
-      
+      const newUserIds = userIds.filter((id) => !userNamesMapRef.current.has(id));
+
       if (newUserIds.length > 0) {
         const { data: usersData } = await supabase
           .from('user_locations_with_roles')
           .select('user_id, display_name, show_name_on_map')
           .in('user_id', newUserIds);
 
-        (usersData || []).forEach(u => {
+        (usersData || []).forEach((u) => {
           userNamesMapRef.current.set(u.user_id!, u.show_name_on_map ? u.display_name : null);
         });
       }
 
-      const convList: Conversation[] = userIds.map(userId => ({
+      const convList: Conversation[] = userIds.map((userId) => ({
         user_id: userId,
         display_name: userNamesMapRef.current.get(userId) || null,
-        ...conversationMap.get(userId)!
+        ...conversationMap.get(userId)!,
       }));
 
-      convList.sort((a, b) => 
-        new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
-      );
+      convList.sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
 
       setConversations(convList);
+
+      // Fallback notifications (polling path): if realtime silently dropped, we still notify.
+      if (newUnreadIncoming.length > 0) {
+        const newest = newUnreadIncoming.reduce((acc, m) =>
+          new Date(m.created_at).getTime() > new Date(acc.created_at).getTime() ? m : acc,
+        );
+
+        const isClave100 =
+          newest.message.includes('🚨 CLAVE 100') || newest.message.includes('CLAVE 100 - EMERGENCIA');
+
+        const muted = localStorage.getItem('chat_notifications_muted') === 'true';
+
+        try {
+          const { unlockAudioContext } = await import('@/lib/alertSound');
+          await unlockAudioContext();
+        } catch (e) {
+          console.warn('🔇 [PollingNotify] Could not unlock audio context:', e);
+        }
+
+        if (!muted) {
+          if (isClave100) {
+            playClave100Alert();
+          } else {
+            playMessageNotification();
+            triggerMessageVibration();
+          }
+        } else if (isClave100) {
+          playClave100Alert();
+        }
+
+        let senderName = senderNamesCache.current.get(newest.sender_id);
+        if (!senderName) {
+          const conv = convList.find((c) => c.user_id === newest.sender_id);
+          senderName = conv?.display_name || 'Usuario';
+          senderNamesCache.current.set(newest.sender_id, senderName);
+        }
+
+        if (isClave100) {
+          triggerClave100Notification(senderName, newest.message, newest.sender_id);
+          setClave100Alert({
+            isVisible: true,
+            senderName,
+            senderId: newest.sender_id,
+            message: newest.message,
+            imageUrl: newest.image_url || null,
+            audioUrl: newest.audio_url || null,
+            audioDurationMs: newest.audio_duration_ms || null,
+          });
+
+          toast.error(`🚨 CLAVE 100 de ${senderName}`, {
+            description: newest.message.substring(0, 100) + (newest.message.length > 100 ? '...' : ''),
+            duration: 15000,
+          });
+        } else {
+          toast.info(`💬 ${senderName}`, {
+            description: newest.message.substring(0, 80) + (newest.message.length > 80 ? '...' : ''),
+            duration: 5000,
+          });
+        }
+
+        showBrowserNotification(
+          isClave100 ? '🚨 CLAVE 100 - EMERGENCIA' : senderName,
+          newest.message,
+          newest.sender_id,
+        );
+      }
+
+      hasHydratedRef.current = true;
     } catch (err) {
       console.error('Error fetching messages:', err);
     } finally {
@@ -766,9 +857,11 @@ export const useInternalMessagesStore = () => {
         return;
       }
 
-      // Also refetch occasionally to catch missed messages (safe + lightweight)
+      // Also refetch occasionally to catch missed messages.
+      // In foreground we poll more aggressively because mobile OSes can silently pause sockets.
       const sinceLastEventMs = Date.now() - (lastRealtimeEventAtRef.current || 0);
-      if (sinceLastEventMs > 2 * 60 * 1000) {
+      const thresholdMs = document.visibilityState === 'visible' ? 25_000 : 120_000;
+      if (sinceLastEventMs > thresholdMs) {
         fetchData();
       }
     }, 30000);
