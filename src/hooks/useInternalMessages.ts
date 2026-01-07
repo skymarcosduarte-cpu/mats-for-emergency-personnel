@@ -71,6 +71,10 @@ export const useInternalMessagesStore = () => {
   const fetchInProgressRef = useRef(false);
   const lastFetchRef = useRef(0);
   const userNamesMapRef = useRef<Map<string, string | null>>(new Map());
+
+  // Realtime health tracking (used for auto-reconnect + debugging)
+  const realtimeStatusRef = useRef<string>('INIT');
+  const lastRealtimeEventAtRef = useRef<number>(0);
   
   // Clave 100 overlay state
   const [clave100Alert, setClave100Alert] = useState<{
@@ -492,193 +496,289 @@ export const useInternalMessagesStore = () => {
     );
   }, [user?.id]);
 
-  // Subscribe to realtime updates with auto-reconnect on visibility change
+  // Subscribe to realtime updates (auto-reconnect). This is what powers in-app chat notifications.
   useEffect(() => {
     if (!user?.id) return;
 
     setLoading(true);
     fetchData(true);
 
-    let channel = supabase
-      .channel('internal_messages_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'internal_messages',
-          filter: `receiver_id=eq.${user.id}`
-        },
-        async (payload) => {
-          const newMessage = payload.new as InternalMessage;
-          
-          if (newMessage && newMessage.sender_id !== user.id) {
-            console.log('📨 [Realtime] New message received via postgres_changes');
-            
-            // Add message if not already present (avoid duplicates)
-            setMessages(prev => {
-              if (prev.some(m => m.id === newMessage.id)) return prev;
-              return [...prev, newMessage];
-            });
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let reconnectTimer: number | null = null;
+    let healthTimer: number | null = null;
+    let cancelled = false;
+    let reconnectAttempts = 0;
 
-            // Update unread count
-            setUnreadCount(prev => prev + 1);
+    const clearTimers = () => {
+      if (reconnectTimer) window.clearTimeout(reconnectTimer);
+      if (healthTimer) window.clearInterval(healthTimer);
+      reconnectTimer = null;
+      healthTimer = null;
+    };
 
-            // Update conversations
-            setConversations(prev => {
-              const existing = prev.find(c => c.user_id === newMessage.sender_id);
-              if (existing) {
-                return prev.map(c => 
-                  c.user_id === newMessage.sender_id 
-                    ? { ...c, last_message: newMessage.message, last_message_at: newMessage.created_at, unread_count: c.unread_count + 1 }
-                    : c
-                ).sort((a, b) => 
-                  new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
+    const scheduleReconnect = (reason: string) => {
+      if (cancelled) return;
+
+      const delay = Math.min(30000, 1000 * Math.pow(2, reconnectAttempts)); // 1s, 2s, 4s… max 30s
+      reconnectAttempts = Math.min(reconnectAttempts + 1, 10);
+
+      console.warn('🔁 [Realtime] Scheduling reconnect:', { reason, delay, reconnectAttempts });
+
+      if (reconnectTimer) window.clearTimeout(reconnectTimer);
+      reconnectTimer = window.setTimeout(() => {
+        if (!cancelled) setupChannel('scheduled_reconnect');
+      }, delay);
+    };
+
+    const setupChannel = (cause: string) => {
+      if (cancelled) return;
+
+      try {
+        if (channel) {
+          console.log('🧹 [Realtime] Removing existing channel before resubscribe');
+          supabase.removeChannel(channel);
+          channel = null;
+        }
+
+        console.log('📡 [Realtime] Subscribing internal_messages channel', { cause, userId: user.id });
+
+        channel = supabase
+          .channel(`internal_messages_changes:${user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'internal_messages',
+              filter: `receiver_id=eq.${user.id}`,
+            },
+            async (payload) => {
+              lastRealtimeEventAtRef.current = Date.now();
+
+              const newMessage = payload.new as InternalMessage;
+
+              if (newMessage && newMessage.sender_id !== user.id) {
+                console.log('📨 [Realtime] New message received via postgres_changes');
+
+                // Add message if not already present (avoid duplicates)
+                setMessages((prev) => {
+                  if (prev.some((m) => m.id === newMessage.id)) return prev;
+                  return [...prev, newMessage];
+                });
+
+                // Update unread count
+                setUnreadCount((prev) => prev + 1);
+
+                // Update conversations
+                setConversations((prev) => {
+                  const existing = prev.find((c) => c.user_id === newMessage.sender_id);
+                  if (existing) {
+                    return prev
+                      .map((c) =>
+                        c.user_id === newMessage.sender_id
+                          ? {
+                              ...c,
+                              last_message: newMessage.message,
+                              last_message_at: newMessage.created_at,
+                              unread_count: c.unread_count + 1,
+                            }
+                          : c,
+                      )
+                      .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+                  }
+
+                  // New conversation - fetch data to get user name
+                  fetchData();
+                  return prev;
+                });
+
+                // Check if it's a Clave 100 message
+                const isClave100 =
+                  newMessage.message.includes('🚨 CLAVE 100') ||
+                  newMessage.message.includes('CLAVE 100 - EMERGENCIA');
+
+                console.log('📨 New message details:', {
+                  isClave100,
+                  messagePreview: newMessage.message.substring(0, 50),
+                  senderId: newMessage.sender_id,
+                  documentVisible: document.visibilityState,
+                });
+
+                // Play notification sound and vibration (if not muted)
+                // IMPORTANT: Try to unlock audio context first for better reliability
+                const muted = localStorage.getItem('chat_notifications_muted') === 'true';
+
+                try {
+                  const { unlockAudioContext } = await import('@/lib/alertSound');
+                  await unlockAudioContext();
+                  console.log('🔊 Audio context unlocked before playing notification');
+                } catch (e) {
+                  console.warn('🔇 Could not unlock audio context:', e);
+                }
+
+                if (!muted) {
+                  if (isClave100) {
+                    console.log('🚨 CLAVE 100 DETECTED - Playing emergency alert!');
+                    playClave100Alert();
+                  } else {
+                    console.log('🔔 Playing message notification sound...');
+                    playMessageNotification();
+                    triggerMessageVibration();
+                  }
+                } else if (isClave100) {
+                  console.log('🚨 CLAVE 100 DETECTED (muted mode) - Playing emergency alert anyway!');
+                  playClave100Alert();
+                } else {
+                  console.log('🔇 Notifications are muted, skipping sound');
+                }
+
+                // Get sender name for notification
+                let senderName = senderNamesCache.current.get(newMessage.sender_id);
+
+                if (!senderName) {
+                  const { data } = await supabase
+                    .from('user_locations_with_roles')
+                    .select('display_name, show_name_on_map')
+                    .eq('user_id', newMessage.sender_id)
+                    .single();
+
+                  senderName = data?.show_name_on_map && data?.display_name ? data.display_name : 'Usuario';
+                  senderNamesCache.current.set(newMessage.sender_id, senderName);
+                }
+
+                // Trigger native notification for Clave 100 (works in background)
+                if (isClave100) {
+                  console.log('🚨 Triggering native Clave 100 notification');
+                  triggerClave100Notification(senderName, newMessage.message, newMessage.sender_id);
+                }
+
+                showBrowserNotification(
+                  isClave100 ? '🚨 CLAVE 100 - EMERGENCIA' : senderName,
+                  newMessage.message,
+                  newMessage.sender_id,
                 );
-              } else {
-                // New conversation - fetch data to get user name
-                fetchData();
-                return prev;
-              }
-            });
 
-            // Check if it's a Clave 100 message
-            const isClave100 = newMessage.message.includes('🚨 CLAVE 100') || newMessage.message.includes('CLAVE 100 - EMERGENCIA');
-            
-            console.log('📨 New message details:', {
-              isClave100,
-              messagePreview: newMessage.message.substring(0, 50),
-              senderId: newMessage.sender_id,
-              documentVisible: document.visibilityState
-            });
-            
-            // Play notification sound and vibration (if not muted)
-            // IMPORTANT: Try to unlock audio context first for better reliability
-            const muted = localStorage.getItem('chat_notifications_muted') === 'true';
-            
-            // Import and unlock audio context dynamically
-            try {
-              const { unlockAudioContext } = await import('@/lib/alertSound');
-              await unlockAudioContext();
-              console.log('🔊 Audio context unlocked before playing notification');
-            } catch (e) {
-              console.warn('🔇 Could not unlock audio context:', e);
-            }
-            
-            if (!muted) {
-              if (isClave100) {
-                // Play special Clave 100 alert - always loud
-                console.log('🚨 CLAVE 100 DETECTED - Playing emergency alert!');
-                playClave100Alert();
-              } else {
-                console.log('🔔 Playing message notification sound...');
-                playMessageNotification();
-                triggerMessageVibration();
-              }
-            } else if (isClave100) {
-              // Even if muted, Clave 100 should alert (it's an emergency)
-              console.log('🚨 CLAVE 100 DETECTED (muted mode) - Playing emergency alert anyway!');
-              playClave100Alert();
-            } else {
-              console.log('🔇 Notifications are muted, skipping sound');
-            }
-            
-            // Get sender name for notification
-            let senderName = senderNamesCache.current.get(newMessage.sender_id);
-            
-            if (!senderName) {
-              const { data } = await supabase
-                .from('user_locations_with_roles')
-                .select('display_name, show_name_on_map')
-                .eq('user_id', newMessage.sender_id)
-                .single();
-              
-              senderName = data?.show_name_on_map && data?.display_name ? data.display_name : 'Usuario';
-              senderNamesCache.current.set(newMessage.sender_id, senderName);
-            }
-            
-            // Trigger native notification for Clave 100 (works in background)
-            if (isClave100) {
-              console.log('🚨 Triggering native Clave 100 notification');
-              triggerClave100Notification(senderName, newMessage.message, newMessage.sender_id);
-            }
-            
-            showBrowserNotification(
-              isClave100 ? '🚨 CLAVE 100 - EMERGENCIA' : senderName, 
-              newMessage.message, 
-              newMessage.sender_id
-            );
-            
-            if (isClave100) {
-              console.log('🚨 Setting Clave 100 overlay visible for sender:', senderName);
-              // Show fullscreen overlay for Clave 100
-              setClave100Alert({
-                isVisible: true,
-                senderName,
-                senderId: newMessage.sender_id,
-                message: newMessage.message,
-                imageUrl: newMessage.image_url || null,
-                audioUrl: newMessage.audio_url || null,
-                audioDurationMs: newMessage.audio_duration_ms || null
-              });
-              
-              toast.error(`🚨 CLAVE 100 de ${senderName}`, {
-                description: newMessage.message.substring(0, 100) + (newMessage.message.length > 100 ? '...' : ''),
-                duration: 15000,
-              });
-            } else {
-              toast.info(`💬 ${senderName}`, {
-                description: newMessage.message.substring(0, 80) + (newMessage.message.length > 80 ? '...' : ''),
-                duration: 5000,
-              });
-            }
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'internal_messages',
-          filter: `sender_id=eq.${user.id}`
-        },
-        (payload) => {
-          // Update read status for sent messages
-          const updated = payload.new as InternalMessage;
-          setMessages(prev => prev.map(m => m.id === updated.id ? updated : m));
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'internal_messages'
-        },
-        (payload) => {
-          const deleted = payload.old as { id: string };
-          setMessages(prev => prev.filter(m => m.id !== deleted.id));
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 [Realtime] Channel subscription status:', status);
-      });
+                if (isClave100) {
+                  console.log('🚨 Setting Clave 100 overlay visible for sender:', senderName);
+                  setClave100Alert({
+                    isVisible: true,
+                    senderName,
+                    senderId: newMessage.sender_id,
+                    message: newMessage.message,
+                    imageUrl: newMessage.image_url || null,
+                    audioUrl: newMessage.audio_url || null,
+                    audioDurationMs: newMessage.audio_duration_ms || null,
+                  });
 
-    // Handle visibility change - refetch when coming back to foreground
-    // This ensures we don't miss messages while in background
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log('👁️ App became visible - refetching messages to catch any missed');
-        fetchData(true);
+                  toast.error(`🚨 CLAVE 100 de ${senderName}`, {
+                    description:
+                      newMessage.message.substring(0, 100) + (newMessage.message.length > 100 ? '...' : ''),
+                    duration: 15000,
+                  });
+                } else {
+                  toast.info(`💬 ${senderName}`, {
+                    description: newMessage.message.substring(0, 80) + (newMessage.message.length > 80 ? '...' : ''),
+                    duration: 5000,
+                  });
+                }
+              }
+            },
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'internal_messages',
+              filter: `sender_id=eq.${user.id}`,
+            },
+            (payload) => {
+              lastRealtimeEventAtRef.current = Date.now();
+              const updated = payload.new as InternalMessage;
+              setMessages((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+            },
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'DELETE',
+              schema: 'public',
+              table: 'internal_messages',
+            },
+            (payload) => {
+              lastRealtimeEventAtRef.current = Date.now();
+              const deleted = payload.old as { id: string };
+              setMessages((prev) => prev.filter((m) => m.id !== deleted.id));
+            },
+          )
+          .subscribe((status) => {
+            realtimeStatusRef.current = status;
+            console.log('📡 [Realtime] internal_messages status:', status);
+
+            if (status === 'SUBSCRIBED') {
+              reconnectAttempts = 0;
+              setLoading(false);
+              return;
+            }
+
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+              scheduleReconnect(status);
+            }
+          });
+      } catch (err) {
+        console.error('❌ [Realtime] Failed to setup channel:', err);
+        scheduleReconnect('setup_failed');
       }
     };
 
+    // Initial subscribe
+    setupChannel('initial');
+
+    // Refetch + resubscribe when coming back to foreground
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('👁️ App became visible - refetching + checking realtime');
+        fetchData(true);
+        if (realtimeStatusRef.current !== 'SUBSCRIBED') {
+          setupChannel('visibility_refocus');
+        }
+      }
+    };
+
+    // Resubscribe when network comes back
+    const handleOnline = () => {
+      console.log('🌐 Back online - refetching + resubscribing realtime');
+      fetchData(true);
+      setupChannel('online');
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+
+    // Health check: if channel drops silently, re-subscribe.
+    healthTimer = window.setInterval(() => {
+      if (cancelled) return;
+
+      const status = realtimeStatusRef.current;
+      if (status !== 'SUBSCRIBED') {
+        console.warn('🩺 [Realtime] Healthcheck detected non-subscribed state:', status);
+        setupChannel('healthcheck_not_subscribed');
+        return;
+      }
+
+      // Also refetch occasionally to catch missed messages (safe + lightweight)
+      const sinceLastEventMs = Date.now() - (lastRealtimeEventAtRef.current || 0);
+      if (sinceLastEventMs > 2 * 60 * 1000) {
+        fetchData();
+      }
+    }, 30000);
 
     return () => {
+      cancelled = true;
+      clearTimers();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      supabase.removeChannel(channel);
+      window.removeEventListener('online', handleOnline);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [user?.id, fetchData]);
 
