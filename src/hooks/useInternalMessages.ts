@@ -492,14 +492,14 @@ export const useInternalMessagesStore = () => {
     );
   }, [user?.id]);
 
-  // Subscribe to realtime updates
+  // Subscribe to realtime updates with auto-reconnect on visibility change
   useEffect(() => {
     if (!user?.id) return;
 
     setLoading(true);
     fetchData(true);
 
-    const channel = supabase
+    let channel = supabase
       .channel('internal_messages_changes')
       .on(
         'postgres_changes',
@@ -513,6 +513,8 @@ export const useInternalMessagesStore = () => {
           const newMessage = payload.new as InternalMessage;
           
           if (newMessage && newMessage.sender_id !== user.id) {
+            console.log('📨 [Realtime] New message received via postgres_changes');
+            
             // Add message if not already present (avoid duplicates)
             setMessages(prev => {
               if (prev.some(m => m.id === newMessage.id)) return prev;
@@ -543,20 +545,33 @@ export const useInternalMessagesStore = () => {
             // Check if it's a Clave 100 message
             const isClave100 = newMessage.message.includes('🚨 CLAVE 100') || newMessage.message.includes('CLAVE 100 - EMERGENCIA');
             
-            console.log('📨 New message received:', {
+            console.log('📨 New message details:', {
               isClave100,
               messagePreview: newMessage.message.substring(0, 50),
-              senderId: newMessage.sender_id
+              senderId: newMessage.sender_id,
+              documentVisible: document.visibilityState
             });
             
             // Play notification sound and vibration (if not muted)
+            // IMPORTANT: Try to unlock audio context first for better reliability
             const muted = localStorage.getItem('chat_notifications_muted') === 'true';
+            
+            // Import and unlock audio context dynamically
+            try {
+              const { unlockAudioContext } = await import('@/lib/alertSound');
+              await unlockAudioContext();
+              console.log('🔊 Audio context unlocked before playing notification');
+            } catch (e) {
+              console.warn('🔇 Could not unlock audio context:', e);
+            }
+            
             if (!muted) {
               if (isClave100) {
                 // Play special Clave 100 alert - always loud
                 console.log('🚨 CLAVE 100 DETECTED - Playing emergency alert!');
                 playClave100Alert();
               } else {
+                console.log('🔔 Playing message notification sound...');
                 playMessageNotification();
                 triggerMessageVibration();
               }
@@ -564,6 +579,8 @@ export const useInternalMessagesStore = () => {
               // Even if muted, Clave 100 should alert (it's an emergency)
               console.log('🚨 CLAVE 100 DETECTED (muted mode) - Playing emergency alert anyway!');
               playClave100Alert();
+            } else {
+              console.log('🔇 Notifications are muted, skipping sound');
             }
             
             // Get sender name for notification
@@ -644,9 +661,23 @@ export const useInternalMessagesStore = () => {
           setMessages(prev => prev.filter(m => m.id !== deleted.id));
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 [Realtime] Channel subscription status:', status);
+      });
+
+    // Handle visibility change - refetch when coming back to foreground
+    // This ensures we don't miss messages while in background
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('👁️ App became visible - refetching messages to catch any missed');
+        fetchData(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       supabase.removeChannel(channel);
     };
   }, [user?.id, fetchData]);
