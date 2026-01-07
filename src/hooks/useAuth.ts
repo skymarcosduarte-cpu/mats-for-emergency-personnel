@@ -74,36 +74,76 @@ export function useAuth() {
     loadCachedAuth();
   }, []);
 
-  // Fetch user profile
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-      
-    if (error) {
-      console.error('Error fetching profile:', error);
-      return null;
+  // Fetch user profile with retry logic for transient network errors
+  const fetchProfile = useCallback(async (userId: string, retries = 2): Promise<Profile | null> => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+          
+        if (error) {
+          // On network errors, retry
+          if (error.message?.includes('fetch') || error.message?.includes('network') || error.code === 'PGRST000') {
+            console.warn(`[useAuth] Profile fetch attempt ${attempt + 1} failed, retrying...`, error);
+            if (attempt < retries) {
+              await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+              continue;
+            }
+          }
+          console.error('[useAuth] Error fetching profile:', error);
+          return null;
+        }
+        
+        return data as Profile | null;
+      } catch (e) {
+        console.error(`[useAuth] Profile fetch exception on attempt ${attempt + 1}:`, e);
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+          continue;
+        }
+        return null;
+      }
     }
-    
-    return data as Profile | null;
+    return null;
   }, []);
 
-  // Fetch user role
-  const fetchRole = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .maybeSingle();
-      
-    if (error) {
-      console.error('Error fetching role:', error);
-      return null;
+  // Fetch user role with retry logic for transient network errors
+  const fetchRole = useCallback(async (userId: string, retries = 2): Promise<'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR' | null> => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+          
+        if (error) {
+          // On network errors, retry
+          if (error.message?.includes('fetch') || error.message?.includes('network') || error.code === 'PGRST000') {
+            console.warn(`[useAuth] Role fetch attempt ${attempt + 1} failed, retrying...`, error);
+            if (attempt < retries) {
+              await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+              continue;
+            }
+          }
+          console.error('[useAuth] Error fetching role:', error);
+          return null;
+        }
+        
+        return data?.role as 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR' | null;
+      } catch (e) {
+        console.error(`[useAuth] Role fetch exception on attempt ${attempt + 1}:`, e);
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+          continue;
+        }
+        return null;
+      }
     }
-    
-    return data?.role as 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR' | null;
+    return null;
   }, []);
 
   // Initialize auth state
@@ -136,10 +176,16 @@ export function useAuth() {
               fetchProfile(session.user.id),
               fetchRole(session.user.id),
             ]);
-            setState(prev => ({ ...prev, profile, role }));
-            // Cache for instant load next time
+            // IMPORTANT: Only update if we got a valid profile
+            // Prevents showing AuthGate on transient network errors
             if (profile) {
+              setState(prev => ({ ...prev, profile, role }));
               cacheAuthSession(session.user.id, profile, role);
+            } else {
+              // Profile fetch failed - check if we have cached data
+              console.warn('[useAuth] Profile fetch returned null, keeping existing state');
+              // Only clear profile if we're sure user doesn't have one (new user)
+              // Keep cached/current state on network failures
             }
           }, 0);
         } else {

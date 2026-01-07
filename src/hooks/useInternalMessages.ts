@@ -818,18 +818,23 @@ export const useInternalMessagesStore = () => {
                 console.warn('🔇 Could not unlock audio context:', e);
               }
 
-              // Get sender name for notification
+              // Get sender name for notification (with error protection)
               let senderName = senderNamesCache.current.get(newMessage.sender_id);
 
               if (!senderName) {
-                const { data } = await supabase
-                  .from('user_locations_with_roles')
-                  .select('display_name, show_name_on_map')
-                  .eq('user_id', newMessage.sender_id)
-                  .single();
+                try {
+                  const { data } = await supabase
+                    .from('user_locations_with_roles')
+                    .select('display_name, show_name_on_map')
+                    .eq('user_id', newMessage.sender_id)
+                    .single();
 
-                senderName = data?.show_name_on_map && data?.display_name ? data.display_name : 'Usuario';
-                senderNamesCache.current.set(newMessage.sender_id, senderName);
+                  senderName = data?.show_name_on_map && data?.display_name ? data.display_name : 'Usuario';
+                  senderNamesCache.current.set(newMessage.sender_id, senderName);
+                } catch (e) {
+                  console.warn('[Realtime] Failed to fetch sender name, using default:', e);
+                  senderName = 'Usuario';
+                }
               }
 
               // Trigger native notification for Clave 100 (works in background)
