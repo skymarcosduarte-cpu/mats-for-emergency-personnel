@@ -386,15 +386,38 @@ export function triggerMessageVibration(): void {
 /**
  * Play message notification (sound + vibration)
  * Strong and attention-grabbing
+ * Automatically tries to resume audio context if suspended
  */
 export function playMessageNotification(): void {
-  playMessageSound();
-  triggerMessageVibration();
+  const ctx = getAudioContext();
   
-  // Repeat sound after a short delay for extra attention
-  setTimeout(() => {
+  // Try to resume context if suspended (common when app was in background)
+  if (ctx && ctx.state === 'suspended') {
+    console.log('🔊 [AlertSound] Audio context suspended, attempting to resume...');
+    ctx.resume().then(() => {
+      console.log('🔊 [AlertSound] Audio context resumed successfully');
+      playMessageSound();
+      triggerMessageVibration();
+      
+      // Repeat sound after a short delay for extra attention
+      setTimeout(() => {
+        playMessageSound();
+      }, 800);
+    }).catch((e) => {
+      console.warn('🔇 [AlertSound] Failed to resume audio context:', e);
+      // Still try to vibrate even if audio fails
+      triggerMessageVibration();
+    });
+  } else {
+    console.log('🔔 [AlertSound] Playing message notification sound');
     playMessageSound();
-  }, 800);
+    triggerMessageVibration();
+    
+    // Repeat sound after a short delay for extra attention
+    setTimeout(() => {
+      playMessageSound();
+    }, 800);
+  }
 }
 
 /**
