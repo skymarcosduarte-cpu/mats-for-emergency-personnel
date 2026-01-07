@@ -1,7 +1,6 @@
 // Global update availability hook with Android-safe timeouts
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { Sparkles } from 'lucide-react';
 import { checkForUpdates, isNewerVersionAvailable, APP_VERSION } from '@/lib/versionCheck';
 
 // Global state for update availability (shared across components)
@@ -40,38 +39,24 @@ const SW_READY_TIMEOUT = 5000; // 5 seconds to get service worker ready
 const UPDATE_CHECK_TIMEOUT = 8000; // 8 seconds for update check
 const SERVER_CHECK_INTERVAL = 10 * 60 * 1000; // 10 minutes
 
-// Check server for new version and show notification
-async function checkServerVersion(showToast = false): Promise<boolean> {
+// Check server for new version (UI is handled elsewhere)
+async function checkServerVersion(): Promise<boolean> {
   try {
     const versionInfo = await checkForUpdates();
-    
+
     if (versionInfo && isNewerVersionAvailable(APP_VERSION, versionInfo.latest)) {
       globalServerUpdateAvailable = true;
       globalLatestVersion = versionInfo.latest;
       globalReleaseNotes = versionInfo.releaseNotes || null;
-      
-      // Show notification only if not already shown in this session
-      const notifiedVersion = sessionStorage.getItem('version-notified');
-      if (showToast && notifiedVersion !== versionInfo.latest) {
-        sessionStorage.setItem('version-notified', versionInfo.latest);
-        
-        toast.info(`Nueva versión ${versionInfo.latest} disponible`, {
-          description: versionInfo.releaseNotes || 'Actualiza para obtener las últimas mejoras',
-          duration: 15000,
-          action: {
-            label: 'Actualizar',
-            onClick: () => {
-              window.location.reload();
-            },
-          },
-        });
-      }
-      
+
+      // Just update global state; UI (toast/banner) should be shown by components.
       notifyListeners(true);
       return true;
     }
-    
+
     globalServerUpdateAvailable = false;
+    globalLatestVersion = null;
+    globalReleaseNotes = null;
     return false;
   } catch (error) {
     console.log('Server version check error:', error);
@@ -142,14 +127,14 @@ export function useUpdateCheck() {
     // Check server version on mount (delayed to not block initial load)
     const serverCheckTimer = setTimeout(() => {
       if (isMountedRef.current) {
-        checkServerVersion(true);
+        checkServerVersion();
       }
     }, 5000);
 
     // Periodic server version checks
     serverIntervalRef.current = window.setInterval(() => {
       if (isMountedRef.current) {
-        checkServerVersion(true);
+        checkServerVersion();
       }
     }, SERVER_CHECK_INTERVAL);
 
@@ -167,12 +152,19 @@ export function useUpdateCheck() {
       setIsChecking(true);
 
       try {
-        // Wrap serviceWorker.ready in a timeout to prevent hanging
-        const reg = await withTimeout(
-          navigator.serviceWorker.ready,
+        // Prefer registrations over navigator.serviceWorker.ready to avoid hanging/timeouts
+        const regs = await withTimeout(
+          navigator.serviceWorker.getRegistrations(),
           SW_READY_TIMEOUT,
-          'Service worker ready timed out'
+          'Service worker registrations timed out'
         );
+
+        const reg = regs[0] || null;
+        if (!reg) {
+          // No SW registered in this environment; we still support server-side update notices.
+          setCheckFailed(false);
+          return;
+        }
 
         if (!isMountedRef.current) return;
         setRegistration(reg);
@@ -276,20 +268,23 @@ export function useUpdateCheck() {
   // Manual refresh/retry for when check failed
   const retryCheck = useCallback(async () => {
     // Also check server
-    await checkServerVersion(true);
-    
+    await checkServerVersion();
+
     if (!registration) {
       // Try to get registration again
       if ('serviceWorker' in navigator) {
         setIsChecking(true);
         try {
-          const reg = await withTimeout(
-            navigator.serviceWorker.ready,
+          const regs = await withTimeout(
+            navigator.serviceWorker.getRegistrations(),
             SW_READY_TIMEOUT,
-            'Service worker ready timed out'
+            'Service worker registrations timed out'
           );
-          setRegistration(reg);
-          await performUpdateCheck(reg, true);
+          const reg = regs[0] || null;
+          if (reg) {
+            setRegistration(reg);
+            await performUpdateCheck(reg, true);
+          }
         } catch (error) {
           console.log('Retry failed:', error);
           toast.error('No se pudo verificar actualizaciones');
