@@ -991,6 +991,19 @@ export const useInternalMessagesStore = () => {
     }
   }, [conversations]);
 
+  // Expose realtime status for debugging indicator
+  const [realtimeStatus, setRealtimeStatus] = useState<string>('INIT');
+  
+  // Sync internal ref to exposed state
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (realtimeStatusRef.current !== realtimeStatus) {
+        setRealtimeStatus(realtimeStatusRef.current);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [realtimeStatus]);
+
   return {
     messages,
     conversations,
@@ -1008,7 +1021,8 @@ export const useInternalMessagesStore = () => {
     getConversationMessages,
     refetch: () => fetchData(true),
     clave100Alert,
-    dismissClave100
+    dismissClave100,
+    realtimeStatus
   };
 };
 
