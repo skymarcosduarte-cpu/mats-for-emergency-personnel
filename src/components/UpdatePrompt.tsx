@@ -20,9 +20,11 @@ export function UpdatePrompt() {
     if (updateAvailable && !hasShownToast) {
       const wasDismissed = sessionStorage.getItem("update-dismissed") === "true";
       if (wasDismissed) return;
-      
+
       setHasShownToast(true);
-      
+      // Prevent showing multiple update UIs at the same time (toast + floating button)
+      sessionStorage.setItem("update-ui-shown-at", String(Date.now()));
+
       // Delay slightly to not interrupt initial page load
       const timer = setTimeout(() => {
         toast.info('Nueva versión disponible', {
@@ -44,7 +46,7 @@ export function UpdatePrompt() {
           },
         });
       }, 2000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [updateAvailable, hasShownToast, applyUpdate, dismissUpdate]);
@@ -64,11 +66,13 @@ export function UpdatePrompt() {
 export function UpdateIndicator() {
   const updateAvailable = useUpdateAvailable();
   const { applyUpdate } = useUpdateCheck();
-  
+
   const wasDismissed = sessionStorage.getItem("update-dismissed") === "true";
-  
-  if (!updateAvailable || wasDismissed) return null;
-  
+  const shownAt = Number(sessionStorage.getItem("update-ui-shown-at") || "0");
+  const recentlyShown = shownAt > 0 && Date.now() - shownAt < 60_000; // 60s
+
+  if (!updateAvailable || wasDismissed || recentlyShown) return null;
+
   return (
     <button
       onClick={() => {
