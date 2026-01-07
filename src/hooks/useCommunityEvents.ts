@@ -49,20 +49,26 @@ export function useCommunityEvents() {
 
   // Fetch all active events
   const fetchEvents = useCallback(async () => {
+    console.log('[useCommunityEvents] Starting fetchEvents...');
+    setLoading(true);
     try {
       const { data, error: fetchError } = await supabase
         .from('community_events')
         .select('*')
         .eq('is_active', true)
-        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('[useCommunityEvents] Supabase error:', fetchError);
+        throw fetchError;
+      }
       
+      console.log('[useCommunityEvents] Fetched', data?.length || 0, 'events');
       setEvents((data || []) as CommunityEvent[]);
+      setError(null);
     } catch (err) {
-      console.error('Error fetching community events:', err);
+      console.error('[useCommunityEvents] Error fetching community events:', err);
       setError('Error al cargar eventos');
     } finally {
       setLoading(false);
@@ -71,15 +77,20 @@ export function useCommunityEvents() {
 
   // Fetch nearby birthdays (yesterday, today, tomorrow)
   const fetchBirthdays = useCallback(async () => {
+    console.log('[useCommunityEvents] Fetching birthdays...');
     try {
       const { data, error: fetchError } = await supabase
         .rpc('get_nearby_birthdays');
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('[useCommunityEvents] Birthday fetch error:', fetchError);
+        throw fetchError;
+      }
       
+      console.log('[useCommunityEvents] Fetched', data?.length || 0, 'birthdays');
       setBirthdays((data || []) as NearbyBirthday[]);
     } catch (err) {
-      console.error('Error fetching birthdays:', err);
+      console.error('[useCommunityEvents] Error fetching birthdays:', err);
     }
   }, []);
 

@@ -112,13 +112,21 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
   };
 
   const fetchListings = async () => {
+    console.log('[MarketScreen] Starting fetchListings...');
+    setLoading(true);
     try {
       const { data: listingsData, error: listingsError } = await supabase
         .from('marketplace_listings')
         .select('*')
+        .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      if (listingsError) throw listingsError;
+      if (listingsError) {
+        console.error('[MarketScreen] Supabase error:', listingsError);
+        throw listingsError;
+      }
+
+      console.log('[MarketScreen] Fetched', listingsData?.length || 0, 'listings');
 
       // Fetch profiles for all unique user IDs
       const userIds = [...new Set(listingsData?.map(l => l.user_id) || [])];
@@ -137,7 +145,7 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
 
       setListings(listingsWithProfiles);
     } catch (error) {
-      console.error('Error fetching listings:', error);
+      console.error('[MarketScreen] Error fetching listings:', error);
       toast({
         title: 'Error',
         description: 'No se pudieron cargar los anuncios',
