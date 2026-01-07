@@ -43,12 +43,17 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
   }, [open]);
 
   const handleAccept = useCallback(() => {
-    if (isSubmitting) return;
+    if (isSubmitting) {
+      console.log('[PrivacyConsentDialog] Already submitting, ignoring click');
+      return;
+    }
     if (acceptedTerms) {
-      console.log('[PrivacyConsentDialog] Accept clicked, calling onAccept...');
+      console.log('[PrivacyConsentDialog] Accept clicked, setting submitting state and calling onAccept...');
       setIsSubmitting(true);
-      // Call onAccept directly - no delay needed since parent handles async
-      onAccept(shareLocation, shareMedicalInfo);
+      // Small delay to ensure the UI updates before the potentially slow operation
+      setTimeout(() => {
+        onAccept(shareLocation, shareMedicalInfo);
+      }, 50);
     }
   }, [acceptedTerms, shareLocation, shareMedicalInfo, onAccept, isSubmitting]);
 
