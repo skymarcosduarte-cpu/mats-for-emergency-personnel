@@ -52,19 +52,18 @@ export function useAuth() {
   });
 
   // Load cached auth immediately on mount (sync from localStorage for instant display)
+  // NOTE: Cache is only used for faster initial render, but we ALWAYS validate from DB
   useEffect(() => {
     const loadCachedAuth = async () => {
       try {
         const cached = await getCachedAuthSession();
         if (cached && cached.profile) {
-          console.log('[useAuth] Loaded from cache instantly - bypassing loading state');
+          console.log('[useAuth] Loaded from cache for instant display');
           setState(prev => ({
             ...prev,
             profile: cached.profile as Profile,
             role: cached.role as 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR' | null,
-            // If we have cached profile, we can skip the loading state
-            // The session will be validated in background
-            loading: false,
+            // Keep loading true - we'll validate from DB
           }));
         }
       } catch (e) {
@@ -195,36 +194,39 @@ export function useAuth() {
       }
     );
 
-    // THEN check for existing session
+    // THEN check for existing session - ALWAYS fetch profile from DB to validate
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setState(prev => ({
         ...prev,
         session,
         user: session?.user ?? null,
-        loading: false,
       }));
 
       if (session?.user) {
+        console.log('[useAuth] Validating profile from database for user:', session.user.id);
         const [profile, role] = await Promise.all([
           fetchProfile(session.user.id),
           fetchRole(session.user.id),
         ]);
-        // Only update state if we successfully fetched the profile
-        // to prevent showing AuthGate due to transient network errors
+        
+        // Always update state with fresh data from DB
+        setState(prev => ({ 
+          ...prev, 
+          profile, 
+          role,
+          loading: false 
+        }));
+        
         if (profile) {
-          setState(prev => ({ ...prev, profile, role }));
+          console.log('[useAuth] Profile validated from DB:', profile.nickname);
           cacheAuthSession(session.user.id, profile, role);
         } else {
-          // Profile fetch failed - try one more time after a short delay
-          console.warn('[useAuth] Initial profile fetch failed, retrying once more...');
-          await new Promise(r => setTimeout(r, 1000));
-          const retryProfile = await fetchProfile(session.user.id);
-          const retryRole = await fetchRole(session.user.id);
-          if (retryProfile) {
-            setState(prev => ({ ...prev, profile: retryProfile, role: retryRole }));
-            cacheAuthSession(session.user.id, retryProfile, retryRole);
-          }
+          // Profile genuinely doesn't exist - clear cache to avoid confusion
+          console.log('[useAuth] No profile found in DB - user needs to complete registration');
+          clearAuthSessionCache();
         }
+      } else {
+        setState(prev => ({ ...prev, loading: false }));
       }
     });
 
