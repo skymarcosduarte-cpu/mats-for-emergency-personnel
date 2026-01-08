@@ -69,6 +69,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   const [authTab, setAuthTab] = useState<'login' | 'signup'>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailExistsError, setEmailExistsError] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
@@ -342,6 +343,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   const handleSignup = async () => {
     // Clear previous errors
     setError(null);
+    setEmailExistsError(false);
 
     // Validate invite code first (most common user issue)
     if (!inviteCode.trim()) {
@@ -438,13 +440,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           if (serverMessage.includes('email ya está registrado') || 
               serverMessage.includes('ya registrado') ||
               serverMessage.includes('already registered')) {
-            const errorMessage = 'Este email ya está registrado. Intenta iniciar sesión o recuperar tu contraseña.';
-            setError(errorMessage);
-            toast({
-              title: 'Email ya registrado',
-              description: errorMessage,
-              variant: 'destructive',
-            });
+            setEmailExistsError(true);
+            setError('Este email ya está registrado.');
             setLoading(false);
             return;
           }
@@ -491,6 +488,16 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         if (!result || !result.success) {
           const errorMsg = result?.error || 'Error desconocido al crear cuenta';
           console.log('[AuthGate] Server error:', errorMsg);
+          
+          // Check for email exists error in response body
+          if (errorMsg.includes('email ya está registrado') || 
+              errorMsg.includes('ya registrado') ||
+              errorMsg.includes('already registered')) {
+            setEmailExistsError(true);
+            setError('Este email ya está registrado.');
+            setLoading(false);
+            return;
+          }
           
           // Show the specific error message from the server
           setError(errorMsg);
@@ -1002,6 +1009,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                     onChange={(e) => {
                       setEmail(e.target.value);
                       setError(null);
+                      setEmailExistsError(false);
                     }}
                     placeholder="tu@email.com"
                     className={emailError ? 'border-destructive' : ''}
@@ -1051,7 +1059,45 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                   )}
                 </div>
 
-                <Button onClick={handleSignup} disabled={loading} className="w-full">
+                {/* Email exists error with action buttons */}
+                {emailExistsError && (
+                  <div className="p-4 rounded-lg bg-warning/10 border border-warning space-y-3">
+                    <p className="text-sm text-warning font-medium">
+                      ⚠️ Este email ya está registrado
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      <Button 
+                        variant="default"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => {
+                          setAuthTab('login');
+                          setEmailExistsError(false);
+                          setError(null);
+                        }}
+                      >
+                        <LogIn className="w-4 h-4 mr-2" />
+                        Ir a Iniciar Sesión
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => {
+                          setShowForgotPassword(true);
+                          setForgotPasswordEmail(email);
+                          setForgotPasswordSuccess(false);
+                          setEmailExistsError(false);
+                          setError(null);
+                        }}
+                      >
+                        ¿Olvidaste tu contraseña?
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                <Button onClick={handleSignup} disabled={loading || emailExistsError} className="w-full">
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
