@@ -209,10 +209,21 @@ export function useAuth() {
           fetchProfile(session.user.id),
           fetchRole(session.user.id),
         ]);
-        setState(prev => ({ ...prev, profile, role }));
-        // Cache for instant load next time
+        // Only update state if we successfully fetched the profile
+        // to prevent showing AuthGate due to transient network errors
         if (profile) {
+          setState(prev => ({ ...prev, profile, role }));
           cacheAuthSession(session.user.id, profile, role);
+        } else {
+          // Profile fetch failed - try one more time after a short delay
+          console.warn('[useAuth] Initial profile fetch failed, retrying once more...');
+          await new Promise(r => setTimeout(r, 1000));
+          const retryProfile = await fetchProfile(session.user.id);
+          const retryRole = await fetchRole(session.user.id);
+          if (retryProfile) {
+            setState(prev => ({ ...prev, profile: retryProfile, role: retryRole }));
+            cacheAuthSession(session.user.id, retryProfile, retryRole);
+          }
         }
       }
     });
