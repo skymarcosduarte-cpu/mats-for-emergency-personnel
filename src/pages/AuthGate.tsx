@@ -61,7 +61,7 @@ const SPECIALTIES = [
 ];
 
 interface AuthGateProps {
-  onAuthComplete?: () => void;
+  onAuthComplete?: () => void | Promise<void>;
 }
 
 export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
@@ -662,7 +662,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           // Close dialog and complete
           setShowPrivacyConsent(false);
           setLoading(false);
-          onAuthComplete?.();
+          await onAuthComplete?.();
           return;
         }
 
@@ -723,7 +723,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         });
         setShowPrivacyConsent(false);
         setLoading(false);
-        onAuthComplete?.();
+        await onAuthComplete?.();
         return;
         
       } catch (err) {
