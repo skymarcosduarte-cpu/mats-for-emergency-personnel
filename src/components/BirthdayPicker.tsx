@@ -112,9 +112,9 @@ export const BirthdayPicker: React.FC<BirthdayPickerProps> = ({
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Año" />
           </SelectTrigger>
-          <SelectContent className="max-h-60">
+          <SelectContent className="max-h-60 z-[9999] pointer-events-auto bg-popover">
             {years.map((y) => (
-              <SelectItem key={y} value={y}>
+              <SelectItem key={y} value={y} className="cursor-pointer">
                 {y}
               </SelectItem>
             ))}
@@ -126,9 +126,9 @@ export const BirthdayPicker: React.FC<BirthdayPickerProps> = ({
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Mes" />
           </SelectTrigger>
-          <SelectContent className="max-h-60">
+          <SelectContent className="max-h-60 z-[9999] pointer-events-auto bg-popover">
             {MONTHS.map((m) => (
-              <SelectItem key={m.value} value={m.value}>
+              <SelectItem key={m.value} value={m.value} className="cursor-pointer">
                 {m.label}
               </SelectItem>
             ))}
@@ -140,9 +140,9 @@ export const BirthdayPicker: React.FC<BirthdayPickerProps> = ({
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Día" />
           </SelectTrigger>
-          <SelectContent className="max-h-60">
+          <SelectContent className="max-h-60 z-[9999] pointer-events-auto bg-popover">
             {days.map((d) => (
-              <SelectItem key={d} value={d}>
+              <SelectItem key={d} value={d} className="cursor-pointer">
                 {d}
               </SelectItem>
             ))}
