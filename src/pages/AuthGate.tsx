@@ -1156,7 +1156,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
               <BirthdayPicker
                 value={profileForm.birthday}
                 onChange={(value) => setProfileForm({ ...profileForm, birthday: value })}
-                required
               />
 
               <div>
@@ -1405,11 +1404,23 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
               <Button
                 onClick={handleProfileSubmit}
-                disabled={loading || !profileForm.fullName || !profileForm.phone || !profileForm.birthday}
+                disabled={loading || !profileForm.fullName || !profileForm.phone}
                 className="w-full"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
                 Completar Registro
+              </Button>
+
+              {/* Emergency exit button */}
+              <Button
+                variant="ghost"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  window.location.reload();
+                }}
+                className="w-full text-muted-foreground"
+              >
+                Cerrar sesión y salir
               </Button>
             </div>
           )}
