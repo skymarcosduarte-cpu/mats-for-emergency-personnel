@@ -1,14 +1,10 @@
 // Birthday Picker Component
 // Easy year/month/day selection for birth dates
 
+// Birthday Picker Component
+// Easy year/month/day selection for birth dates
+
 import React, { useMemo } from 'react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 
 interface BirthdayPickerProps {
@@ -33,6 +29,11 @@ const MONTHS = [
   { value: '12', label: 'Diciembre' },
 ];
 
+const baseSelectClassName =
+  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background ' +
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ' +
+  'disabled:cursor-not-allowed disabled:opacity-50';
+
 export const BirthdayPicker: React.FC<BirthdayPickerProps> = ({
   value,
   onChange,
@@ -56,47 +57,42 @@ export const BirthdayPicker: React.FC<BirthdayPickerProps> = ({
     return result;
   }, []);
 
+  const getDaysInMonth = (y: string, m: string) => {
+    if (!y || !m) return 31;
+    return new Date(parseInt(y, 10), parseInt(m, 10), 0).getDate();
+  };
+
   // Generate days based on selected month and year
   const days = useMemo(() => {
-    if (!month || !year) {
-      // Default to 31 days
-      return Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
-    }
-    
-    const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
+    const daysInMonth = getDaysInMonth(year, month);
     return Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString().padStart(2, '0'));
   }, [month, year]);
 
+  const buildDate = (y: string, m: string, d: string): string => {
+    if (!y || !m || !d) return '';
+    return `${y}-${m}-${d}`;
+  };
+
+  const clampDay = (y: string, m: string, d: string) => {
+    if (!d) return '';
+    const max = getDaysInMonth(y, m);
+    const n = parseInt(d, 10);
+    if (!Number.isFinite(n)) return '';
+    return Math.min(Math.max(n, 1), max).toString().padStart(2, '0');
+  };
+
   const handleYearChange = (newYear: string) => {
-    const newValue = buildDate(newYear, month, day);
-    onChange(newValue);
+    const validDay = month ? clampDay(newYear, month, day) : day;
+    onChange(buildDate(newYear, month, validDay));
   };
 
   const handleMonthChange = (newMonth: string) => {
-    // Validate day if month changes
-    let validDay = day;
-    if (year && day) {
-      const daysInMonth = new Date(parseInt(year), parseInt(newMonth), 0).getDate();
-      if (parseInt(day) > daysInMonth) {
-        validDay = daysInMonth.toString().padStart(2, '0');
-      }
-    }
-    const newValue = buildDate(year, newMonth, validDay);
-    onChange(newValue);
+    const validDay = year ? clampDay(year, newMonth, day) : day;
+    onChange(buildDate(year, newMonth, validDay));
   };
 
   const handleDayChange = (newDay: string) => {
-    const newValue = buildDate(year, month, newDay);
-    onChange(newValue);
-  };
-
-  const buildDate = (y: string, m: string, d: string): string => {
-    if (!y || !m || !d) {
-      // Return partial or empty
-      if (y && m && d) return `${y}-${m}-${d}`;
-      return '';
-    }
-    return `${y}-${m}-${d}`;
+    onChange(buildDate(year, month, newDay));
   };
 
   return (
@@ -106,52 +102,64 @@ export const BirthdayPicker: React.FC<BirthdayPickerProps> = ({
           {label} {required && '*'}
         </Label>
       )}
+
       <div className="grid grid-cols-3 gap-2">
-        {/* Year selector - FIRST for easy access */}
-        <Select value={year} onValueChange={handleYearChange}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Año" />
-          </SelectTrigger>
-          <SelectContent className="max-h-60 z-[9999] pointer-events-auto bg-popover">
-            {years.map((y) => (
-              <SelectItem key={y} value={y} className="cursor-pointer">
-                {y}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Year selector */}
+        <select
+          className={baseSelectClassName}
+          value={year}
+          onChange={(e) => handleYearChange(e.target.value)}
+          aria-label="Año"
+        >
+          <option value="" disabled>
+            Año
+          </option>
+          {years.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
 
         {/* Month selector */}
-        <Select value={month} onValueChange={handleMonthChange}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Mes" />
-          </SelectTrigger>
-          <SelectContent className="max-h-60 z-[9999] pointer-events-auto bg-popover">
-            {MONTHS.map((m) => (
-              <SelectItem key={m.value} value={m.value} className="cursor-pointer">
-                {m.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <select
+          className={baseSelectClassName}
+          value={month}
+          onChange={(e) => handleMonthChange(e.target.value)}
+          aria-label="Mes"
+          disabled={!year}
+        >
+          <option value="" disabled>
+            Mes
+          </option>
+          {MONTHS.map((m) => (
+            <option key={m.value} value={m.value}>
+              {m.label}
+            </option>
+          ))}
+        </select>
 
         {/* Day selector */}
-        <Select value={day} onValueChange={handleDayChange}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Día" />
-          </SelectTrigger>
-          <SelectContent className="max-h-60 z-[9999] pointer-events-auto bg-popover">
-            {days.map((d) => (
-              <SelectItem key={d} value={d} className="cursor-pointer">
-                {d}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <select
+          className={baseSelectClassName}
+          value={day}
+          onChange={(e) => handleDayChange(e.target.value)}
+          aria-label="Día"
+          disabled={!year || !month}
+        >
+          <option value="" disabled>
+            Día
+          </option>
+          {days.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
       </div>
-      <p className="text-xs text-muted-foreground">
-        Tu cumpleaños aparecerá en el tablero de la comunidad
-      </p>
+
+      <p className="text-xs text-muted-foreground">Tu cumpleaños aparecerá en el tablero de la comunidad</p>
     </div>
   );
 };
+
