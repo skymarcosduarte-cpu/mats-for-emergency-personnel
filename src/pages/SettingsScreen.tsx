@@ -70,6 +70,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { UpdateButton, InstallButton } from '@/components/UpdatePrompt';
 import { supabase } from '@/integrations/supabase/client';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useWebPushSubscription } from '@/hooks/useWebPushSubscription';
 import { useAlertSettings } from '@/hooks/useAlertSettings';
 import { playSubtleAlert, playUrgentAlert, playClave100Alert, stopClave100Alert } from '@/lib/alertSound';
 import type { UserRole } from '@/types';
@@ -116,6 +117,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 }) => {
   const { profile, role, signOut, updateProfile, updateRole, deleteAccount } = useAuth();
   const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
+  const { isSupported: webPushSupported, isSubscribed: webPushSubscribed, subscribe: subscribeToPush } = useWebPushSubscription();
   const { helpRequestSounds, earthquakeSounds, earthquakeRadiusKm, internationalRedAlerts, ssnNationalAlertMagnitude, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusKm, setInternationalRedAlerts, setSsnNationalAlertMagnitude } = useAlertSettings();
   const { loading: loadingDataExport, data: userDataExport, fetchAllUserData, downloadAsJson } = useUserDataExport();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
@@ -169,7 +171,43 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   const handleRequestPermission = async () => {
     setRequestingPermission(true);
-    await requestPermission();
+    const granted = await requestPermission();
+    // If permission granted, also subscribe to web push
+    if (granted && webPushSupported && !webPushSubscribed) {
+      await subscribeToPush();
+    }
+    setRequestingPermission(false);
+  };
+
+  const handleEnableBackgroundNotifications = async () => {
+    setRequestingPermission(true);
+    try {
+      // First ensure we have permission
+      if (permission !== 'granted') {
+        const granted = await requestPermission();
+        if (!granted) {
+          toast.error('Se requiere permiso de notificaciones');
+          setRequestingPermission(false);
+          return;
+        }
+      }
+      // Then subscribe to web push
+      if (webPushSupported) {
+        const success = await subscribeToPush();
+        if (success) {
+          toast.success('Notificaciones en segundo plano activadas', {
+            description: 'Recibirás alertas y mensajes aunque la app esté cerrada.',
+          });
+        } else {
+          toast.error('No se pudo activar', {
+            description: 'Intenta cerrar y volver a abrir la app.',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error enabling background notifications:', error);
+      toast.error('Error al activar notificaciones');
+    }
     setRequestingPermission(false);
   };
 
@@ -1349,6 +1387,54 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <Bell className="w-4 h-4 mr-2" />
                 Probar Notificación
               </Button>
+            )}
+
+            {/* Background notifications status */}
+            {permission === 'granted' && webPushSupported && (
+              <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {webPushSubscribed ? (
+                      <div className="w-10 h-10 rounded-full bg-safe/10 flex items-center justify-center">
+                        <Wifi className="w-5 h-5 text-safe" />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
+                        <Wifi className="w-5 h-5 text-warning" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {webPushSubscribed ? 'Segundo plano activo' : 'Segundo plano inactivo'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {webPushSubscribed 
+                          ? 'Recibirás alertas aunque la app esté cerrada'
+                          : 'No recibirás mensajes si sales de la app'}
+                      </p>
+                    </div>
+                  </div>
+                  {!webPushSubscribed && (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={handleEnableBackgroundNotifications}
+                      disabled={requestingPermission}
+                    >
+                      {requestingPermission ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        'Activar'
+                      )}
+                    </Button>
+                  )}
+                </div>
+                {!webPushSubscribed && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    💡 Para mejor experiencia, instala la app en tu pantalla de inicio (Compartir → Agregar a inicio).
+                  </p>
+                )}
+              </div>
             )}
 
             {/* Sound toggles */}
