@@ -592,11 +592,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
   // Handle profile creation - show privacy consent first
   const handleProfileSubmit = async () => {
-    if (!profileForm.fullName.trim() || !profileForm.phone.trim() || !profileForm.birthday) {
+    if (!profileForm.fullName.trim() || !profileForm.phone.trim() || !profileForm.role) {
       setError('Completa todos los campos obligatorios');
       return;
     }
-    
+
     // Show privacy consent dialog
     setShowPrivacyConsent(true);
   };
@@ -674,7 +674,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           nickname,
           specialty: profileForm.specialties.length > 0 ? profileForm.specialties : null,
           phone: profileForm.phone,
-          birthday: profileForm.birthday,
+          birthday: profileForm.birthday || null,
           role: profileForm.role,
           can_provide_medical_assistance: profileForm.canProvideMedicalAssistance,
           has_first_aid_kit: profileForm.hasFirstAidKit,
@@ -1404,7 +1404,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
               <Button
                 onClick={handleProfileSubmit}
-                disabled={loading || !profileForm.fullName || !profileForm.phone}
+                disabled={loading || !profileForm.fullName || !profileForm.phone || !profileForm.role}
                 className="w-full"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
