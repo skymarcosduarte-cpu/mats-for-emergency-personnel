@@ -137,32 +137,8 @@ serve(async (req) => {
 
     console.log(`[${requestId}] Invite code validated successfully`);
 
-    // Step 2: Check if email already exists
-    const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers();
-    
-    if (listError) {
-      console.error(`[${requestId}] Error listing users:`, listError);
-      return new Response(
-        JSON.stringify({ error: 'Error al verificar disponibilidad del email. Intenta de nuevo.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const emailExists = existingUsers?.users?.some(
-      u => u.email?.toLowerCase() === emailTrimmed
-    );
-
-    if (emailExists) {
-      console.log(`[${requestId}] Email already registered: ${emailTrimmed.substring(0, 3)}***`);
-      return new Response(
-        JSON.stringify({ error: 'Este email ya está registrado. Intenta iniciar sesión o recuperar tu contraseña.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`[${requestId}] Email available, proceeding with registration`);
-
-    // Step 3: Use the invite code atomically (increment counter)
+    // Step 2: Use the invite code atomically BEFORE creating user
+    // This way if user creation fails, we haven't wasted the invite
     const { data: useResult, error: useError } = await supabase.rpc('use_invite_code', { 
       invite_code: normalizedCode 
     });
@@ -177,7 +153,8 @@ serve(async (req) => {
 
     console.log(`[${requestId}] Invite code consumed, creating user account`);
 
-    // Step 4: Create the user using Admin API (auto-confirms email)
+    // Step 3: Create the user using Admin API (auto-confirms email)
+    // This will fail if email already exists - we handle that error specifically
     const { data: authData, error: createError } = await supabase.auth.admin.createUser({
       email: emailTrimmed,
       password,
@@ -190,20 +167,34 @@ serve(async (req) => {
     if (createError) {
       console.error(`[${requestId}] Error creating user:`, createError);
       
-      // Try to provide a helpful error message
-      let errorMessage = 'Error al crear cuenta. ';
-      if (createError.message.includes('already registered')) {
-        errorMessage = 'Este email ya está registrado. Intenta iniciar sesión.';
-      } else if (createError.message.includes('weak password')) {
-        errorMessage = 'La contraseña es muy débil. Usa una combinación de letras y números.';
-      } else if (createError.message.includes('rate limit')) {
-        errorMessage = 'Demasiados intentos. Espera unos minutos antes de intentar de nuevo.';
-      } else {
-        errorMessage += 'Intenta de nuevo en unos momentos.';
+      // Check for email already exists error FIRST and return specific message
+      if (createError.message?.includes('already registered') || 
+          createError.code === 'email_exists' ||
+          createError.message?.includes('email_exists')) {
+        return new Response(
+          JSON.stringify({ error: 'Este email ya está registrado. Intenta iniciar sesión o recuperar tu contraseña.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
       
+      // Other specific error messages
+      if (createError.message?.includes('weak password')) {
+        return new Response(
+          JSON.stringify({ error: 'La contraseña es muy débil. Usa una combinación de letras y números.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (createError.message?.includes('rate limit')) {
+        return new Response(
+          JSON.stringify({ error: 'Demasiados intentos. Espera unos minutos antes de intentar de nuevo.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Generic error
       return new Response(
-        JSON.stringify({ error: errorMessage }),
+        JSON.stringify({ error: 'Error al crear cuenta. Intenta de nuevo en unos momentos.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -218,7 +209,7 @@ serve(async (req) => {
 
     console.log(`[${requestId}] User created successfully: ${authData.user.id}`);
 
-    // Step 5: Update profile with the invite code used (profile is created by trigger)
+    // Step 4: Update profile with the invite code used (profile is created by trigger)
     // Wait a moment for the trigger to create the profile
     await new Promise(resolve => setTimeout(resolve, 500));
     
