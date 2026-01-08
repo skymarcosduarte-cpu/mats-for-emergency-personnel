@@ -80,7 +80,7 @@ function AppContent() {
   const [userRole] = useState<UserRole>('SOS_ACTIVO');
   
   // Use the auth hook to check for existing session
-  const { user, profile, loading: authLoading, signOut } = useAuth();
+  const { user, profile, loading: authLoading, signOut, refetchProfile } = useAuth();
   
   // Determine authentication state
   const isAuthenticated = !!user;
@@ -148,8 +148,10 @@ function AppContent() {
   }
 
   // Show auth gate if not authenticated or profile incomplete
+  // IMPORTANT: AppContent and AuthGate each call useAuth() (separate state instances).
+  // We bridge them via onAuthComplete so AppContent refreshes its profile state after registration.
   if (!isAuthenticated || !isProfileComplete) {
-    return <AuthGate onAuthComplete={() => {}} />;
+    return <AuthGate onAuthComplete={refetchProfile} />;
   }
 
   // Show onboarding for new users (legacy - short version)
