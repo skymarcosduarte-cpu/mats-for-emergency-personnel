@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import DOMPurify from 'dompurify';
-import { ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame, AlertTriangle, Users } from 'lucide-react';
+import { ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame, AlertTriangle, Users, Radio } from 'lucide-react';
 import { GpsStatusBanner } from '@/components/GpsStatusBanner';
 import { MapControlsMenu } from '@/components/MapControlsMenu';
 import { ImOkButton } from '@/components/ImOkButton';
@@ -21,6 +21,7 @@ import { AlertDetailModal } from '@/components/AlertDetailModal';
 import { ActiveUsersPanel } from '@/components/ActiveUsersPanel';
 import { InternalMessaging } from '@/components/InternalMessaging';
 import { SpecialtyFilter } from '@/components/SpecialtyFilter';
+import { LiveEventsMapView } from '@/components/LiveEventsMapView';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -1372,6 +1373,9 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
 
   // Specialty filter state
   const [selectedSpecialtyFilters, setSelectedSpecialtyFilters] = useState<string[]>([]);
+
+  // Map view mode: 'comunidad' (default) or 'eventos' (live events)
+  const [mapViewMode, setMapViewMode] = useState<'comunidad' | 'eventos'>('comunidad');
 
   const { position, error: locationError, getCurrentPosition, loading: locationLoading, watching: locationWatching } = useLocation();
   const { role, user } = useAuth();
@@ -3117,63 +3121,108 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       {/* Map container */}
       <div ref={mapRef} className="w-full h-full map-container" />
 
-      {/* Active users count + center button + alerts panel */}
-      <div className="map-fixed-header flex items-center justify-between pointer-events-none">
-        <div className="pointer-events-auto">
-          <MapControlsMenu 
-            position={position}
-            onCenterOnMe={centerOnMe}
-            onRefreshLocations={refetchLocations}
-            activeUsersCount={locations.length}
-            forceCloseMenus={forceCloseMenus}
-          />
-        </div>
-        
-        {/* Alerts Panel Button */}
-        <div className="pointer-events-auto">
-          <AlertsPanel
-            panicEvents={panicEvents}
-            helpRequests={helpRequests}
-            onViewLocation={handleViewLocation}
-            isRescatista={isRescatista}
-            currentUserId={currentUserId}
-            onResolveHelpRequest={resolveRequest}
-            onResolvePanicEvent={resolveEvent}
-            onDeletePanicEvent={deleteEvent}
-            activeResponders={activeResponders}
-            userPosition={position}
-            onRespondToRequest={handleRespondToRequest}
-            onCancelResponse={handleCancelResponse}
-            onMarkAsArrived={handleMarkAsArrived}
-            onResolve={handleMarkAsResolved}
-          />
+      {/* Map View Toggle - Comunidad / En Vivo */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[1001] pointer-events-auto">
+        <div className="bg-background/95 backdrop-blur-sm rounded-full shadow-lg border border-border p-0.5 flex">
+          <button
+            onClick={() => setMapViewMode('comunidad')}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5",
+              mapViewMode === 'comunidad' 
+                ? "bg-primary text-primary-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Comunidad</span>
+          </button>
+          <button
+            onClick={() => setMapViewMode('eventos')}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5",
+              mapViewMode === 'eventos' 
+                ? "bg-warning text-warning-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Radio className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">En Vivo</span>
+          </button>
         </div>
       </div>
 
-      {/* Map legend with POI toggles */}
-      <MapLegend 
-        poiVisibility={poiVisibility}
-        onTogglePOI={handleTogglePOI}
-        poisLoading={poisLoading}
-        isNavigating={!!selectedMapAlert || usersPanelOpen}
+      {/* Live Events View - only renders when active */}
+      <LiveEventsMapView 
+        map={mapInstanceRef.current}
+        isActive={mapViewMode === 'eventos'}
+        userPosition={position}
       />
 
-      {/* Specialty Filter - always visible */}
-      <SpecialtyFilter
-        selectedSpecialties={selectedSpecialtyFilters}
-        onSpecialtiesChange={setSelectedSpecialtyFilters}
-        availableSpecialties={availableSpecialties}
-        specialistCounts={specialistCounts}
-      />
+      {/* Active users count + center button + alerts panel - hide in eventos mode */}
+      {mapViewMode === 'comunidad' && (
+        <div className="map-fixed-header flex items-center justify-between pointer-events-none">
+          <div className="pointer-events-auto">
+            <MapControlsMenu 
+              position={position}
+              onCenterOnMe={centerOnMe}
+              onRefreshLocations={refetchLocations}
+              activeUsersCount={locations.length}
+              forceCloseMenus={forceCloseMenus}
+            />
+          </div>
+          
+          {/* Alerts Panel Button */}
+          <div className="pointer-events-auto">
+            <AlertsPanel
+              panicEvents={panicEvents}
+              helpRequests={helpRequests}
+              onViewLocation={handleViewLocation}
+              isRescatista={isRescatista}
+              currentUserId={currentUserId}
+              onResolveHelpRequest={resolveRequest}
+              onResolvePanicEvent={resolveEvent}
+              onDeletePanicEvent={deleteEvent}
+              activeResponders={activeResponders}
+              userPosition={position}
+              onRespondToRequest={handleRespondToRequest}
+              onCancelResponse={handleCancelResponse}
+              onMarkAsArrived={handleMarkAsArrived}
+              onResolve={handleMarkAsResolved}
+            />
+          </div>
+        </div>
+      )}
 
-      {/* Active Users Panel */}
-      <ActiveUsersPanel
-        users={locations}
-        onCenterOnUser={handleViewLocation}
-        onMessageUser={handleMessageUser}
-        onOpenChange={setUsersPanelOpen}
-        forceCloseSignal={forceCloseMenus}
-      />
+      {/* Map legend with POI toggles - hide in eventos mode */}
+      {mapViewMode === 'comunidad' && (
+        <MapLegend 
+          poiVisibility={poiVisibility}
+          onTogglePOI={handleTogglePOI}
+          poisLoading={poisLoading}
+          isNavigating={!!selectedMapAlert || usersPanelOpen}
+        />
+      )}
+
+      {/* Specialty Filter - only in comunidad mode */}
+      {mapViewMode === 'comunidad' && (
+        <SpecialtyFilter
+          selectedSpecialties={selectedSpecialtyFilters}
+          onSpecialtiesChange={setSelectedSpecialtyFilters}
+          availableSpecialties={availableSpecialties}
+          specialistCounts={specialistCounts}
+        />
+      )}
+
+      {/* Active Users Panel - only in comunidad mode */}
+      {mapViewMode === 'comunidad' && (
+        <ActiveUsersPanel
+          users={locations}
+          onCenterOnUser={handleViewLocation}
+          onMessageUser={handleMessageUser}
+          onOpenChange={setUsersPanelOpen}
+          forceCloseSignal={forceCloseMenus}
+        />
+      )}
 
       {/* Internal Messaging Modal */}
       {messagingOpen && (
