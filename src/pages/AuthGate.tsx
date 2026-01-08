@@ -70,6 +70,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailExistsError, setEmailExistsError] = useState(false);
+  const [inviteCodeError, setInviteCodeError] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
@@ -344,6 +345,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     // Clear previous errors
     setError(null);
     setEmailExistsError(false);
+    setInviteCodeError(false);
 
     // Validate invite code first (most common user issue)
     if (!inviteCode.trim()) {
@@ -473,6 +475,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
               serverMessage.includes('no encontrado') ||
               serverMessage.includes('expirado') ||
               serverMessage.includes('límite')) {
+            setInviteCodeError(true);
             setError(serverMessage);
             toast({
               title: 'Error con código de invitación',
@@ -796,8 +799,19 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
         <div className="w-full max-w-sm space-y-6">
           {error && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
-              {error}
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive space-y-2">
+              <p>{error}</p>
+              {inviteCodeError && (
+                <p className="text-xs">
+                  ¿Necesitas ayuda?{' '}
+                  <a 
+                    href={`mailto:contacto@latamgrowthoperators.com?subject=Ayuda con código de invitación MATS&body=Hola, necesito ayuda con mi código de invitación.%0A%0AMi email: ${encodeURIComponent(email)}%0ACódigo que usé: ${encodeURIComponent(inviteCode)}`}
+                    className="underline font-medium hover:text-destructive/80"
+                  >
+                    Escríbenos a contacto@latamgrowthoperators.com
+                  </a>
+                </p>
+              )}
             </div>
           )}
 
