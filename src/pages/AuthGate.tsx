@@ -1411,6 +1411,33 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                 Completar Registro
               </Button>
 
+              {/* Emergency update / cache reset */}
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={async () => {
+                  try {
+                    // Unregister service workers
+                    if ('serviceWorker' in navigator) {
+                      const regs = await navigator.serviceWorker.getRegistrations();
+                      await Promise.all(regs.map((reg) => reg.unregister()));
+                    }
+
+                    // Clear caches
+                    if ('caches' in window) {
+                      const names = await caches.keys();
+                      await Promise.all(names.map((name) => caches.delete(name)));
+                    }
+                  } finally {
+                    // Force reload with cache-busting param
+                    window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
+                  }
+                }}
+                className="w-full"
+              >
+                Forzar actualización (limpiar caché)
+              </Button>
+
               {/* Emergency exit button */}
               <Button
                 variant="ghost"
