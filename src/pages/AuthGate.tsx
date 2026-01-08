@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Loader2, Eye, EyeOff, UserPlus, LogIn, Mail } from 'lucide-react';
-import { BirthdayPicker } from '@/components/BirthdayPicker';
+// BirthdayPicker removed - birthday is now captured in Settings
 import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -1153,10 +1153,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                 />
               </div>
 
-              <BirthdayPicker
-                value={profileForm.birthday}
-                onChange={(value) => setProfileForm({ ...profileForm, birthday: value })}
-              />
+              {/* Birthday is now captured in Settings after registration */}
 
               <div>
                 <Label>Especialidades (selecciona todas las que apliquen)</Label>
