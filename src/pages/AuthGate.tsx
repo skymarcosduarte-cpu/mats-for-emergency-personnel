@@ -428,13 +428,32 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         clearTimeout(timeoutId);
         console.log('[AuthGate] Function response received:', { error: !!response.error, data: !!response.data });
 
-        // Check for network-level errors (fetch failed, timeout, etc.)
+        // Check for errors - supabase.functions.invoke wraps non-2xx responses in response.error
+        // But the actual JSON body might be in response.error.context or we need to parse it
         if (response.error) {
           console.error('[AuthGate] Function error:', response.error);
           lastError = response.error;
           
-          // Check if the error contains the actual response from the server
-          const serverMessage = response.error?.message || '';
+          // The error message from supabase functions.invoke for 4xx responses
+          // is typically the raw error or context contains the parsed body
+          let serverMessage = '';
+          
+          // Try to extract the actual error message from the response
+          // Supabase functions.invoke puts the parsed JSON in error.context for 4xx responses
+          if (response.error.context?.error) {
+            serverMessage = response.error.context.error;
+          } else if (typeof response.error.context === 'string') {
+            try {
+              const parsed = JSON.parse(response.error.context);
+              serverMessage = parsed.error || '';
+            } catch {
+              serverMessage = response.error.context;
+            }
+          } else if (response.error.message) {
+            serverMessage = response.error.message;
+          }
+          
+          console.log('[AuthGate] Extracted server message:', serverMessage);
           
           // Handle specific server errors that should not be retried
           if (serverMessage.includes('email ya está registrado') || 
@@ -446,7 +465,14 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
             return;
           }
           
-          if (serverMessage.includes('código') || serverMessage.includes('invitación') || serverMessage.includes('invite')) {
+          // Handle invite code errors - check for various phrases
+          if (serverMessage.includes('código') || 
+              serverMessage.includes('invitación') || 
+              serverMessage.includes('invite') ||
+              serverMessage.includes('Código') ||
+              serverMessage.includes('no encontrado') ||
+              serverMessage.includes('expirado') ||
+              serverMessage.includes('límite')) {
             setError(serverMessage);
             toast({
               title: 'Error con código de invitación',
@@ -457,19 +483,32 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
             return;
           }
           
+          // If we got a meaningful server message, show it
+          if (serverMessage && !serverMessage.includes('FunctionsHttpError') && serverMessage.length < 200) {
+            setError(serverMessage);
+            toast({
+              title: 'Error de registro',
+              description: serverMessage,
+              variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+          }
+          
           // Only retry on network/timeout errors
-          if (response.error.message?.includes('network') || 
-              response.error.message?.includes('timeout') ||
-              response.error.message?.includes('fetch') ||
-              response.error.message?.includes('Failed to fetch') ||
-              response.error.message?.includes('aborted')) {
+          const rawErrorMsg = response.error.message || '';
+          if (rawErrorMsg.includes('network') || 
+              rawErrorMsg.includes('timeout') ||
+              rawErrorMsg.includes('fetch') ||
+              rawErrorMsg.includes('Failed to fetch') ||
+              rawErrorMsg.includes('aborted')) {
             if (attempt < maxRetries) {
               console.log('[AuthGate] Network error, will retry...');
               continue;
             }
           }
           
-          // Non-retryable error
+          // Non-retryable error - show generic connection error
           const connectionError = 'Error de conexión. Verifica tu internet e intenta de nuevo.';
           setError(connectionError);
           toast({
