@@ -756,7 +756,39 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               </div>
             </div>
 
-            {/* Delete Account */}
+            {/* Birthday */}
+            <div className="border-t border-border pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-lg">🎂</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Fecha de nacimiento</p>
+                    <p className="text-xs text-muted-foreground">
+                      {profile?.birthday
+                        ? new Date(profile.birthday + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
+                        : 'No registrada'}
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="date"
+                  value={profile?.birthday || ''}
+                  onChange={async (e) => {
+                    const value = e.target.value;
+                    try {
+                      await updateProfile({ birthday: value || null } as any);
+                      toast.success('Fecha de nacimiento actualizada');
+                    } catch {
+                      toast.error('Error al guardar');
+                    }
+                  }}
+                  className="bg-muted border border-border rounded-md px-2 py-1 text-sm"
+                />
+              </div>
+            </div>
+
             <div className="border-t border-border pt-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
