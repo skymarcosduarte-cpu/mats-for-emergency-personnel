@@ -14,11 +14,27 @@ import type { GDACSAlert } from '@/hooks/useGDACSAlerts';
 // USGS feed for earthquakes
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
 
+// SSN (Servicio Sismológico Nacional México) - últimos sismos
+const SSN_URL = 'http://www.ssn.unam.mx/sismicidad/ultimos/';
+
 // CORS proxies for external feeds
 const CORS_PROXIES = [
   'https://api.allorigins.win/raw?url=',
   'https://corsproxy.io/?',
 ];
+
+// SSN Earthquake interface
+interface SSNEarthquake {
+  id: string;
+  magnitude: number;
+  lat: number;
+  lng: number;
+  depth: number;
+  location: string;
+  date: string;
+  time: string;
+  timestamp: Date;
+}
 
 interface LiveEventsMapViewProps {
   map: L.Map | null;
@@ -28,6 +44,7 @@ interface LiveEventsMapViewProps {
 
 interface EventsState {
   earthquakes: USGSEarthquake[];
+  ssnEarthquakes: SSNEarthquake[];
   cyclones: TropicalCycloneAlert[];
   fires: FireHotspot[];
   gdacsAlerts: GDACSAlert[];
@@ -74,6 +91,54 @@ const createEarthquakeIcon = (magnitude: number) => {
           z-index: 1;
           box-shadow: 0 2px 8px ${color}80;
         ">${magnitude.toFixed(1)}</div>
+      </div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+  });
+};
+
+// Create SSN (Mexico) earthquake marker - distinctive green/teal with "MX" badge
+const createSSNEarthquakeIcon = (magnitude: number) => {
+  const size = Math.max(22, Math.min(50, magnitude * 9));
+  const color = magnitude >= 5 ? '#059669' : magnitude >= 4 ? '#10b981' : '#34d399';
+  
+  return L.divIcon({
+    className: 'ssn-earthquake-marker',
+    html: `
+      <div style="
+        width: ${size}px;
+        height: ${size}px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <div style="
+          position: absolute;
+          width: ${size}px;
+          height: ${size}px;
+          background: ${color}40;
+          border-radius: 50%;
+          animation: pulseEvent 1.5s infinite;
+        "></div>
+        <div style="
+          width: ${size * 0.75}px;
+          height: ${size * 0.75}px;
+          background: ${color};
+          border: 2px solid #fff;
+          border-radius: 50%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          z-index: 1;
+          box-shadow: 0 2px 8px ${color}80;
+        ">
+          <span style="font-size: ${Math.max(9, size * 0.28)}px; font-weight: bold; color: white; line-height: 1;">${magnitude.toFixed(1)}</span>
+          <span style="font-size: 7px; color: rgba(255,255,255,0.9); font-weight: 600; line-height: 1;">SSN</span>
+        </div>
       </div>
     `,
     iconSize: [size, size],
@@ -172,6 +237,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const [events, setEvents] = useState<EventsState>({
     earthquakes: [],
+    ssnEarthquakes: [],
     cyclones: [],
     fires: [],
     gdacsAlerts: [],
@@ -310,6 +376,89 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
   }, []);
 
+  // Fetch SSN earthquakes (last 4 hours from Mexico's Servicio Sismológico Nacional)
+  const fetchSSNEarthquakes = useCallback(async (): Promise<SSNEarthquake[]> => {
+    try {
+      const proxyUrl = `${CORS_PROXIES[0]}${encodeURIComponent(SSN_URL)}`;
+      const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
+      if (!response.ok) return [];
+      
+      const html = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      // SSN uses a table with class "content" for earthquake data
+      const rows = doc.querySelectorAll('table tr');
+      const earthquakes: SSNEarthquake[] = [];
+      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+      
+      rows.forEach((row, index) => {
+        try {
+          const cells = row.querySelectorAll('td');
+          if (cells.length < 4) return;
+          
+          // Parse magnitude from first cell
+          const magText = cells[0]?.textContent?.trim() || '';
+          const magnitude = parseFloat(magText);
+          if (isNaN(magnitude)) return;
+          
+          // Parse location info from second cell
+          const locationCell = cells[1]?.textContent || '';
+          const locationLines = locationCell.split('\n').map(l => l.trim()).filter(Boolean);
+          
+          // Extract location name
+          const location = locationLines[0] || 'México';
+          
+          // Try to extract date/time
+          const dateMatch = locationCell.match(/(\d{4}-\d{2}-\d{2})/);
+          const timeMatch = locationCell.match(/(\d{2}:\d{2}:\d{2})/);
+          const date = dateMatch ? dateMatch[1] : '';
+          const time = timeMatch ? timeMatch[1] : '';
+          
+          // Try to extract coordinates
+          const latMatch = locationCell.match(/([\d.]+)\s*°/);
+          const lngMatch = locationCell.match(/,\s*-?([\d.]+)\s*°/);
+          
+          // Also try alternate format from the second part
+          let lat = latMatch ? parseFloat(latMatch[1]) : 0;
+          let lng = lngMatch ? parseFloat(lngMatch[1]) : 0;
+          
+          // Make longitude negative for Mexico (Western Hemisphere)
+          if (lng > 0) lng = -lng;
+          
+          // Skip if no valid coordinates
+          if (lat === 0 || lng === 0) return;
+          
+          // Parse timestamp and filter to last 4 hours
+          if (date && time) {
+            const timestamp = new Date(`${date}T${time}`);
+            if (timestamp < fourHoursAgo) return;
+            
+            earthquakes.push({
+              id: `ssn-${index}-${date}-${time}`,
+              magnitude,
+              lat,
+              lng,
+              depth: 0,
+              location,
+              date,
+              time,
+              timestamp,
+            });
+          }
+        } catch (e) {
+          // Skip malformed rows
+        }
+      });
+      
+      console.log(`[LiveEvents] SSN: Found ${earthquakes.length} earthquakes in last 4 hours`);
+      return earthquakes;
+    } catch (error) {
+      console.warn('[LiveEvents] Error fetching SSN earthquakes:', error);
+      return [];
+    }
+  }, []);
+
   // Fetch all events
   const fetchAllEvents = useCallback(async () => {
     if (!isActive) return;
@@ -318,17 +467,19 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     
     try {
       // Fetch all in parallel for speed
-      const [earthquakes, cyclones, fires] = await Promise.all([
+      const [earthquakes, ssnEarthquakes, cyclones, fires] = await Promise.all([
         fetchEarthquakes(),
+        fetchSSNEarthquakes(),
         fetchCyclones(),
         fetchFires(),
       ]);
       
       setEvents({
         earthquakes,
+        ssnEarthquakes,
         cyclones,
         fires,
-        gdacsAlerts: [], // Can add later if needed
+        gdacsAlerts: [],
         loading: false,
         lastUpdate: new Date(),
       });
@@ -336,7 +487,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       console.error('[LiveEvents] Error fetching events:', error);
       setEvents(prev => ({ ...prev, loading: false }));
     }
-  }, [isActive, fetchEarthquakes, fetchCyclones, fetchFires]);
+  }, [isActive, fetchEarthquakes, fetchSSNEarthquakes, fetchCyclones, fetchFires]);
 
   // Fetch events when view becomes active
   useEffect(() => {
@@ -450,6 +601,39 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       markersRef.current.set(key, marker);
     });
 
+    // Add SSN earthquake markers (Mexico, last 4 hours) - render on top
+    events.ssnEarthquakes.forEach((quake) => {
+      const key = `ssn-${quake.id}`;
+      
+      const marker = L.marker([quake.lat, quake.lng], {
+        icon: createSSNEarthquakeIcon(quake.magnitude),
+        zIndexOffset: Math.round(quake.magnitude * 150), // Higher z-index than USGS
+      })
+        .addTo(map)
+        .bindPopup(`
+          <div style="text-align: center; min-width: 160px;">
+            <div style="font-size: 10px; color: #059669; font-weight: 600; margin-bottom: 2px;">
+              🇲🇽 SSN México (Últimas 4h)
+            </div>
+            <div style="font-size: 18px; font-weight: bold; color: #059669;">
+              M${quake.magnitude.toFixed(1)}
+            </div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">
+              ${quake.location}
+            </div>
+            <div style="font-size: 11px; color: #999; margin-top: 4px;">
+              ${quake.date} ${quake.time}
+            </div>
+            <a href="http://www.ssn.unam.mx/sismicidad/ultimos/" target="_blank" 
+               style="display: block; margin-top: 8px; font-size: 11px; color: #059669;">
+              Ver en SSN →
+            </a>
+          </div>
+        `);
+      
+      markersRef.current.set(key, marker);
+    });
+
   }, [map, isActive, events]);
 
   // Don't render anything if not active (keeps it lightweight)
@@ -468,19 +652,25 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       {/* Stats bar - only show when loaded */}
       {!events.loading && events.lastUpdate && (
         <div className="absolute bottom-20 left-2 right-2 z-[1000] flex items-center justify-between bg-background/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-          <div className="flex items-center gap-3 text-xs">
+          <div className="flex items-center gap-2 text-xs flex-wrap">
+            {events.ssnEarthquakes.length > 0 && (
+              <span className="flex items-center gap-1 text-emerald-600 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                {events.ssnEarthquakes.length} SSN
+              </span>
+            )}
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-warning" />
-              {events.earthquakes.length} sismos
+              {events.earthquakes.length} USGS
             </span>
             <span className="flex items-center gap-1">
               <span className="text-orange-500">🔥</span>
-              {events.fires.length} incendios
+              {events.fires.length}
             </span>
             {events.cyclones.length > 0 && (
               <span className="flex items-center gap-1">
                 <span>🌀</span>
-                {events.cyclones.length} ciclones
+                {events.cyclones.length}
               </span>
             )}
           </div>
