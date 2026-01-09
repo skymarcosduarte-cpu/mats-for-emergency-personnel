@@ -294,32 +294,37 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     [selectedUserId, getConversationMessages, messages]
   );
 
+  // Track last message ID to detect new messages
+  const lastMessageId = conversationMessages.length > 0 
+    ? conversationMessages[conversationMessages.length - 1].id 
+    : null;
+
   // Debounced scroll ref to prevent excessive scrolling
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     const el = messagesEndRef.current;
-    if (!el) return;
+    if (!el || !isOpen) return;
 
     // Clear any pending scroll
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
     }
     
-    // Debounce scroll to prevent freezing
+    // Shorter delay for immediate feedback when new messages arrive
     scrollTimeoutRef.current = setTimeout(() => {
       const shouldSmooth = conversationMessages.length <= 40;
       requestAnimationFrame(() => {
         el.scrollIntoView({ behavior: shouldSmooth ? 'smooth' : 'auto', block: 'end' });
       });
-    }, 50);
+    }, 30);
     
     return () => {
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
     };
-  }, [conversationMessages.length]);
+  }, [lastMessageId, isOpen, conversationMessages.length]);
 
   // Mark as read when opening conversation
   useEffect(() => {
