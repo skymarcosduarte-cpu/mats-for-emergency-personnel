@@ -911,7 +911,8 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     body.style.position = 'fixed';
     body.style.top = `-${scrollY}px`;
     body.style.width = '100%';
-    body.style.touchAction = 'none';
+    // Allow touch interactions inside the modal (scroll/tap) while background is locked via fixed positioning
+    body.style.touchAction = 'auto';
 
     return () => {
       html.classList.remove('chat-modal-open');
@@ -1021,27 +1022,8 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
           ? "bg-background p-0" 
           : "bg-black/70 p-4 pt-16 pb-24"
       )}
-      style={{ touchAction: 'none' }}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
-      onTouchStart={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
-      onTouchMove={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
-      onTouchEnd={(e) => e.stopPropagation()}
-      onWheel={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
-      onPointerDown={(e) => e.stopPropagation()}
-      onPointerMove={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
+      role="dialog"
+      aria-modal="true"
     >
       <div 
         className={cn(
