@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SSN_URL = 'https://www.ssn.unam.mx/sismicidad/ultimos/';
+const SSN_URL = 'http://www.ssn.unam.mx/sismicidad/ultimos/';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
