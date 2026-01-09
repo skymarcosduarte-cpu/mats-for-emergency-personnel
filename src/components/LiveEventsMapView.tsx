@@ -331,45 +331,23 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
   }, []);
 
-  // Fetch fire hotspots (Mexico)
+  // Fetch fire hotspots (Mexico) via edge function
   const fetchFires = useCallback(async (): Promise<FireHotspot[]> => {
     try {
-      const response = await fetch(
-        'https://firms.modaps.eosdis.nasa.gov/api/country/csv/VIIRS_SNPP_NRT/MEX/1',
-        { signal: AbortSignal.timeout(10000) }
-      );
-      if (!response.ok) return [];
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('fetch-fires');
       
-      const text = await response.text();
-      const lines = text.trim().split('\n');
-      if (lines.length <= 1) return [];
-      
-      const fires: FireHotspot[] = [];
-      for (let i = 1; i < Math.min(lines.length, 200); i++) { // Limit to 200 fires
-        const parts = lines[i].split(',');
-        if (parts.length < 10) continue;
-        
-        const lat = parseFloat(parts[0]);
-        const lng = parseFloat(parts[1]);
-        const brightness = parseFloat(parts[2]);
-        const confidence = parts[8]?.toLowerCase() as 'low' | 'nominal' | 'high';
-        
-        if (!isNaN(lat) && !isNaN(lng)) {
-          fires.push({
-            id: `fire-${i}-${lat.toFixed(3)}-${lng.toFixed(3)}`,
-            lat,
-            lng,
-            brightness,
-            confidence: confidence || 'nominal',
-            frp: parseFloat(parts[12]) || 0,
-            satellite: 'VIIRS',
-            acqDate: parts[5] || '',
-            acqTime: parts[6] || '',
-          });
-        }
+      if (error) {
+        console.warn('[LiveEvents] Error calling fetch-fires:', error);
+        return [];
       }
       
-      return fires;
+      if (!data?.success || !data?.fires) {
+        console.warn('[LiveEvents] No fire data returned');
+        return [];
+      }
+      
+      return data.fires as FireHotspot[];
     } catch (error) {
       console.warn('[LiveEvents] Error fetching fires:', error);
       return [];
