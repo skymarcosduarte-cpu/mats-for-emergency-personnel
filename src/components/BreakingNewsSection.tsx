@@ -132,9 +132,13 @@ function isValidNewsDate(pubDate: string): boolean {
   }
 }
 
+const INITIAL_ITEMS_COUNT = 10;
+const LOAD_MORE_COUNT = 10;
+
 export const BreakingNewsSection: React.FC = () => {
   const { items, loading, error, fetchedAt, refresh } = useBreakingNews();
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [visibleCount, setVisibleCount] = useState(INITIAL_ITEMS_COUNT);
   
   // Filter out items with future dates and by selected region
   const validItems = useMemo(() => {
@@ -146,6 +150,20 @@ export const BreakingNewsSection: React.FC = () => {
         return sourceConfig?.region === selectedRegion;
       });
   }, [items, selectedRegion]);
+
+  // Reset visible count when region changes
+  const handleRegionChange = (region: string) => {
+    setSelectedRegion(region);
+    setVisibleCount(INITIAL_ITEMS_COUNT);
+  };
+
+  const visibleItems = validItems.slice(0, visibleCount);
+  const hasMore = visibleCount < validItems.length;
+  const remainingCount = validItems.length - visibleCount;
+
+  const loadMore = () => {
+    setVisibleCount(prev => prev + LOAD_MORE_COUNT);
+  };
 
   const regions = ['all', 'mexico', 'latam', 'internacional', 'espana'];
 
@@ -184,7 +202,7 @@ export const BreakingNewsSection: React.FC = () => {
               variant={selectedRegion === region ? 'default' : 'outline'}
               size="sm"
               className="h-6 text-[10px] px-2"
-              onClick={() => setSelectedRegion(region)}
+              onClick={() => handleRegionChange(region)}
             >
               {REGION_LABELS[region]}
             </Button>
@@ -217,14 +235,29 @@ export const BreakingNewsSection: React.FC = () => {
             <p className="text-sm">Sin noticias en esta región</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {validItems.map((item, index) => (
-              <NewsCard key={`${item.link}-${index}`} item={item} />
-            ))}
-          </div>
+          <>
+            <div className="space-y-2">
+              {visibleItems.map((item, index) => (
+                <NewsCard key={`${item.link}-${index}`} item={item} />
+              ))}
+            </div>
+            
+            {/* Load more button */}
+            {hasMore && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mt-3"
+                onClick={loadMore}
+              >
+                <Loader2 className="w-3 h-3 mr-2" />
+                Ver más noticias ({remainingCount} restantes)
+              </Button>
+            )}
+          </>
         )}
         
-        {/* Sources info - Updated */}
+        {/* Sources info */}
         <div className="pt-2 border-t border-border/50">
           <p className="text-[10px] text-muted-foreground text-center">
             Fuentes: CNN, BBC, Milenio, El Universal, Reuters, Al Jazeera, France24, DW, El País, RTVE
