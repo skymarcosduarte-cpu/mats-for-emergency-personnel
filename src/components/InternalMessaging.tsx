@@ -145,6 +145,9 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearingConversation, setClearingConversation] = useState(false);
   
+  // Discard draft confirmation state
+  const [showDiscardDraftConfirm, setShowDiscardDraftConfirm] = useState(false);
+  
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
   const [messageText, setMessageText] = useState('');
@@ -408,6 +411,44 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     setSelectedUserName(null);
     setShowClearConfirm(false);
   };
+
+  // Check if there's a pending draft (audio or image)
+  const hasPendingDraft = !!audioBlob || !!selectedImage || isRecording;
+
+  // Handle backdrop click - close or show confirmation if draft exists
+  const handleBackdropClick = useCallback(() => {
+    if (isFullscreen) return; // No backdrop in fullscreen mode
+    
+    if (hasPendingDraft) {
+      setShowDiscardDraftConfirm(true);
+    } else {
+      onClose();
+    }
+  }, [isFullscreen, hasPendingDraft, onClose]);
+
+  // Force close and discard draft
+  const handleDiscardDraftAndClose = useCallback(() => {
+    // Clean up audio
+    if (audioBlob) {
+      setAudioBlob(null);
+      setRecordingDuration(0);
+    }
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+      setRecordingDuration(0);
+    }
+    // Clean up image
+    if (selectedImage) {
+      setSelectedImage(null);
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+        setImagePreview(null);
+      }
+    }
+    setShowDiscardDraftConfirm(false);
+    onClose();
+  }, [audioBlob, isRecording, selectedImage, imagePreview, onClose]);
 
   const handleSendLocation = async () => {
     if (!selectedUserId || sendingLocation) return;
@@ -1020,10 +1061,11 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
         "fixed inset-0 z-[10000] flex items-start justify-center overflow-y-auto",
         isFullscreen 
           ? "bg-background p-0" 
-          : "bg-black/70 p-4 pt-16 pb-24"
+          : "bg-black/70 p-4 pt-16 pb-24 cursor-pointer"
       )}
       role="dialog"
       aria-modal="true"
+      onClick={handleBackdropClick}
     >
       <div 
         className={cn(
@@ -1462,6 +1504,28 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {clearingConversation ? 'Limpiando...' : 'Limpiar mis mensajes'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Discard draft confirmation dialog */}
+      <AlertDialog open={showDiscardDraftConfirm} onOpenChange={setShowDiscardDraftConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Descartar borrador?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tienes {audioBlob || isRecording ? 'una nota de voz' : 'una foto'} sin enviar. 
+              Si cierras ahora, se perderá.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continuar editando</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDiscardDraftAndClose}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Descartar y cerrar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
