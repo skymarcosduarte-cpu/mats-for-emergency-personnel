@@ -25,7 +25,7 @@ serve(async (req) => {
     // NOTE: We use the /area endpoint (bbox) instead of /country because /country has intermittent outages.
     const source = 'VIIRS_SNPP_NRT';
     const bbox = '-118,14,-86,33'; // approx Mexico bounds: west,south,east,north
-    const dayRange = '1';
+    const dayRange = '3'; // use last 72h to avoid showing empty results too often
     const firmsUrl = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${apiKey}/${source}/${bbox}/${dayRange}`;
 
     console.log('Fetching fires from FIRMS...', { source, bbox, dayRange });
