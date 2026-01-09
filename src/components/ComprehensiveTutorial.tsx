@@ -322,13 +322,6 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
   }, [currentSection, currentStep]);
 
   const handleComplete = async () => {
-    // Fire confetti
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
-
     // Mark tutorial as completed
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -346,10 +339,22 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
       description: 'Ya estás listo para usar la aplicación',
     });
 
+    // Start exit animation
     setIsExiting(true);
+    
+    // Fire confetti after a small delay so it's visible over the fading tutorial
+    setTimeout(() => {
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.5 },
+        zIndex: 99999,
+      });
+    }, 100);
+    
     setTimeout(() => {
       onComplete();
-    }, 300);
+    }, 400);
   };
 
   const goToSection = (sectionIndex: number) => {
