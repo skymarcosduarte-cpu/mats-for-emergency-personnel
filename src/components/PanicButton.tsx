@@ -782,9 +782,22 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         </div>
       )}
 
-      <div className="px-4 pb-6 sm:p-0">
-        <Button variant="ghost" onClick={() => setIsOpen(false)} className="mt-2 w-full sm:w-auto">
-          <X className="w-4 h-4 mr-2" />
+      {/* Cancel button - fixed at bottom with safe area padding */}
+      <div className="sticky bottom-0 left-0 right-0 px-4 pb-safe bg-gradient-to-t from-card via-card to-transparent pt-4">
+        <Button 
+          variant="outline" 
+          onClick={() => setIsOpen(false)}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            setIsOpen(false);
+          }}
+          className="w-full h-12 border-2 border-destructive/50 text-destructive hover:bg-destructive/10 font-semibold touch-manipulation"
+          style={{ 
+            WebkitTapHighlightColor: 'transparent',
+            marginBottom: 'env(safe-area-inset-bottom, 16px)'
+          }}
+        >
+          <X className="w-5 h-5 mr-2" />
           Cancelar
         </Button>
       </div>
@@ -1013,9 +1026,22 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         <span className="text-sm">La alerta se enviará a todos los usuarios conectados</span>
       </div>
 
-      <div className="px-4 pb-6">
-        <Button variant="ghost" onClick={() => setIsOpen(false)} className="mt-2 w-full">
-          <X className="w-4 h-4 mr-2" />
+      {/* Cancel button - fixed at bottom with safe area padding */}
+      <div className="sticky bottom-0 left-0 right-0 px-4 pb-safe bg-gradient-to-t from-card via-card to-transparent pt-4">
+        <Button 
+          variant="outline" 
+          onClick={() => setIsOpen(false)}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            setIsOpen(false);
+          }}
+          className="w-full h-12 border-2 border-destructive/50 text-destructive hover:bg-destructive/10 font-semibold touch-manipulation"
+          style={{ 
+            WebkitTapHighlightColor: 'transparent',
+            marginBottom: 'env(safe-area-inset-bottom, 16px)'
+          }}
+        >
+          <X className="w-5 h-5 mr-2" />
           Cancelar
         </Button>
       </div>
