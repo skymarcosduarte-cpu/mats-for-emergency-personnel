@@ -217,7 +217,7 @@ export const BreakingNewsSection: React.FC = () => {
             <p className="text-sm">Sin noticias en esta región</p>
           </div>
         ) : (
-          <div className="space-y-2 max-h-[400px] overflow-y-auto scrollbar-thin pr-1">
+          <div className="space-y-2">
             {validItems.map((item, index) => (
               <NewsCard key={`${item.link}-${index}`} item={item} />
             ))}
