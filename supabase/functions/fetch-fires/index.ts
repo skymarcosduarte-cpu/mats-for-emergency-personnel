@@ -21,11 +21,15 @@ serve(async (req) => {
       );
     }
 
-    // Fetch fire hotspots for Mexico from NASA FIRMS
-    const firmsUrl = `https://firms.modaps.eosdis.nasa.gov/api/country/csv/${apiKey}/VIIRS_SNPP_NRT/MEX/1`;
-    
-    console.log('Fetching fires from FIRMS...');
-    
+    // Fetch fire hotspots around Mexico from NASA FIRMS
+    // NOTE: We use the /area endpoint (bbox) instead of /country because /country has intermittent outages.
+    const source = 'VIIRS_SNPP_NRT';
+    const bbox = '-118,14,-86,33'; // approx Mexico bounds: west,south,east,north
+    const dayRange = '1';
+    const firmsUrl = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${apiKey}/${source}/${bbox}/${dayRange}`;
+
+    console.log('Fetching fires from FIRMS...', { source, bbox, dayRange });
+
     const response = await fetch(firmsUrl, {
       signal: AbortSignal.timeout(15000),
     });
@@ -40,74 +44,94 @@ serve(async (req) => {
 
     const csvText = await response.text();
     const trimmed = csvText.trim();
-    const lines = trimmed.split(/\r?\n/);
 
-    const header = (lines[0] || '').toLowerCase();
-    if (!header.includes('latitude') || !header.includes('longitude')) {
-      console.error('Unexpected FIRMS response header:', lines[0]);
+    // FIRMS sometimes returns plain-text errors like "Invalid API call." with 200 OK.
+    if (trimmed.toLowerCase().includes('invalid api call')) {
+      console.error('FIRMS returned error text:', trimmed.slice(0, 200));
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Unexpected FIRMS response (check API key / endpoint)',
-        }),
+        JSON.stringify({ success: false, error: 'FIRMS invalid API call (check MAP_KEY / endpoint)' }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const lines = trimmed.split(/\r?\n/);
+    const headerLine = (lines[0] || '').trim();
+    const header = headerLine.toLowerCase().split(',').map((h) => h.trim());
+
+    const idx = (name: string) => header.indexOf(name);
+    const latIdx = idx('latitude');
+    const lngIdx = idx('longitude');
+    const confIdx = idx('confidence');
+    const frpIdx = idx('frp');
+    const dateIdx = idx('acq_date');
+    const timeIdx = idx('acq_time');
+    const satIdx = idx('satellite');
+    const brightIdx = header.findIndex((h) => h === 'bright_ti4' || h === 'brightness' || h === 'bright');
+
+    if (latIdx === -1 || lngIdx === -1) {
+      console.error('Unexpected FIRMS CSV header:', headerLine);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unexpected FIRMS CSV header' }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (lines.length <= 1) {
-      return new Response(
-        JSON.stringify({ success: true, fires: [] }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ success: true, fires: [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    // Parse CSV
     const fires: Array<Record<string, unknown>> = [];
-    for (let i = 1; i < Math.min(lines.length, 200); i++) {
-      const parts = lines[i].split(',');
-      if (parts.length < 7) continue;
 
-      const lat = parseFloat(parts[0]);
-      const lng = parseFloat(parts[1]);
-      const brightness = parseFloat(parts[2]);
+    for (let i = 1; i < Math.min(lines.length, 400); i++) {
+      const row = lines[i];
+      if (!row) continue;
 
-      // FIRMS confidence can be: low/nominal/high OR numeric (0-100)
-      const rawConfidence = (parts[9] ?? parts[8] ?? '').toString().trim().toLowerCase();
-      let confidence: 'low' | 'nominal' | 'high' = 'nominal';
-      const numericConfidence = Number(rawConfidence);
-      if (Number.isFinite(numericConfidence)) {
-        confidence = numericConfidence >= 80 ? 'high' : numericConfidence >= 30 ? 'nominal' : 'low';
-      } else if (rawConfidence.includes('high')) {
-        confidence = 'high';
-      } else if (rawConfidence.includes('low')) {
-        confidence = 'low';
-      } else if (rawConfidence.includes('nom')) {
-        confidence = 'nominal';
-      }
-
-      const frp = parseFloat(parts[12] || '') || 0;
-
+      const parts = row.split(',');
+      const lat = parseFloat(parts[latIdx] || '');
+      const lng = parseFloat(parts[lngIdx] || '');
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
 
+      const brightness = brightIdx >= 0 ? parseFloat(parts[brightIdx] || '') : NaN;
+
+      const rawConf = (confIdx >= 0 ? parts[confIdx] : '')?.toString().trim().toLowerCase();
+      let confidence: 'low' | 'nominal' | 'high' = 'nominal';
+      if (rawConf === 'h' || rawConf?.includes('high')) confidence = 'high';
+      else if (rawConf === 'l' || rawConf?.includes('low')) confidence = 'low';
+      else if (rawConf === 'n' || rawConf?.includes('nom')) confidence = 'nominal';
+      else {
+        const numericConfidence = Number(rawConf);
+        if (Number.isFinite(numericConfidence)) {
+          confidence = numericConfidence >= 80 ? 'high' : numericConfidence >= 30 ? 'nominal' : 'low';
+        }
+      }
+
+      const frp = frpIdx >= 0 ? parseFloat(parts[frpIdx] || '') || 0 : 0;
+      const acqDate = dateIdx >= 0 ? (parts[dateIdx] || '').toString() : '';
+      const acqTime = timeIdx >= 0 ? (parts[timeIdx] || '').toString() : '';
+      const satellite = satIdx >= 0 ? (parts[satIdx] || '').toString() : 'VIIRS';
+
       fires.push({
-        id: `fire-${i}-${lat.toFixed(3)}-${lng.toFixed(3)}`,
+        id: `fire-${i}-${lat.toFixed(3)}-${lng.toFixed(3)}-${acqDate}-${acqTime}`,
         lat,
         lng,
-        brightness,
+        brightness: Number.isFinite(brightness) ? brightness : undefined,
         confidence,
         frp,
-        satellite: (parts[7] || 'VIIRS').toString(),
-        acqDate: (parts[5] || '').toString(),
-        acqTime: (parts[6] || '').toString(),
+        satellite,
+        acqDate,
+        acqTime,
       });
+
+      if (fires.length >= 200) break;
     }
 
     console.log(`Found ${fires.length} fire hotspots`);
 
-    return new Response(
-      JSON.stringify({ success: true, fires }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ success: true, fires }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('Error fetching fires:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
