@@ -455,8 +455,8 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      {/* Content with navigation inside */}
+      <div className="flex-1 overflow-y-auto p-4 pb-6">
         <AnimatePresence mode="wait">
           <motion.div
             key={`${currentSection}-${currentStep}`}
@@ -488,49 +488,49 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
                 </p>
               </div>
             )}
+
+            {/* Navigation buttons - inside content for visibility */}
+            <div className="mt-8 pt-6 border-t border-border">
+              <div className="flex items-center justify-between gap-4">
+                <Button
+                  variant="outline"
+                  onClick={handlePrev}
+                  disabled={isFirstStep}
+                  className="flex items-center gap-2 h-12 px-6"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                  <span className="font-medium">Anterior</span>
+                </Button>
+
+                {/* Section dots */}
+                <div className="flex items-center gap-2">
+                  {TUTORIAL_SECTIONS.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => goToSection(idx)}
+                      className={cn(
+                        "w-3 h-3 rounded-full transition-all",
+                        idx === currentSection 
+                          ? "bg-primary w-6" 
+                          : idx < currentSection 
+                            ? "bg-safe" 
+                            : "bg-muted-foreground/30"
+                      )}
+                    />
+                  ))}
+                </div>
+
+                <Button
+                  onClick={handleNext}
+                  className="flex items-center gap-2 h-12 px-6"
+                >
+                  <span className="font-medium">{isLastStep ? 'Finalizar' : 'Siguiente'}</span>
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
           </motion.div>
         </AnimatePresence>
-      </div>
-
-      {/* Navigation - Fixed at bottom with high visibility */}
-      <div className="shrink-0 p-4 border-t bg-background pb-8">
-        <div className="flex items-center justify-between gap-2 max-w-lg mx-auto">
-          <Button
-            variant="outline"
-            onClick={handlePrev}
-            disabled={isFirstStep}
-            className="flex items-center gap-1 min-w-[100px] h-12"
-          >
-            <ChevronLeft className="w-5 h-5" />
-            <span className="font-medium">Anterior</span>
-          </Button>
-
-          {/* Section dots */}
-          <div className="flex items-center gap-1.5">
-            {TUTORIAL_SECTIONS.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => goToSection(idx)}
-                className={cn(
-                  "w-2.5 h-2.5 rounded-full transition-all",
-                  idx === currentSection 
-                    ? "bg-primary w-5" 
-                    : idx < currentSection 
-                      ? "bg-safe" 
-                      : "bg-muted-foreground/30"
-                )}
-              />
-            ))}
-          </div>
-
-          <Button
-            onClick={handleNext}
-            className="flex items-center gap-1 min-w-[100px] h-12"
-          >
-            <span className="font-medium">{isLastStep ? 'Finalizar' : 'Siguiente'}</span>
-            <ChevronRight className="w-5 h-5" />
-          </Button>
-        </div>
       </div>
 
       {/* Disclaimer confirmation modal */}
