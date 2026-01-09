@@ -357,11 +357,20 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   // Fetch SSN earthquakes (last 24 hours from Mexico's Servicio Sismológico Nacional)
   const fetchSSNEarthquakes = useCallback(async (): Promise<SSNEarthquake[]> => {
     try {
-      const proxyUrl = `${CORS_PROXIES[0]}${encodeURIComponent(SSN_URL)}`;
-      const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
-      if (!response.ok) return [];
-      
-      const html = await response.text();
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('fetch-ssn');
+
+      if (error) {
+        console.warn('[LiveEvents] Error calling fetch-ssn:', error);
+        return [];
+      }
+
+      if (!data?.success || typeof data?.html !== 'string') {
+        console.warn('[LiveEvents] Invalid SSN response');
+        return [];
+      }
+
+      const html = data.html as string;
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
