@@ -271,9 +271,23 @@
   /* App Header */
   .app-header {
     @apply flex items-center justify-between px-4 py-2 bg-card/95 backdrop-blur-xl border-b border-border;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
     padding-top: calc(8px + env(safe-area-inset-top, 0));
     min-height: var(--app-header-height);
     overflow: hidden;
+    /* High z-index to stay above everything */
+    z-index: 99999;
+    /* GPU acceleration for smooth positioning during zoom */
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    /* Prevent visual viewport issues */
+    contain: layout style;
   }
 
   /* Main content wrapper - accounts for fixed header */
