@@ -785,8 +785,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     setLoading(false);
   };
 
+  // iOS-specific touch event handling for buttons
+  const handleButtonTouchEnd = (e: React.TouchEvent, callback: () => void) => {
+    e.preventDefault();
+    callback();
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col" style={{ minHeight: '100vh' }}>
+    <div 
+      className="min-h-screen bg-background text-foreground flex flex-col overflow-y-auto" 
+      style={{ minHeight: '100vh', WebkitOverflowScrolling: 'touch' }}
+    >
       {/* Privacy Consent Dialog */}
       <PrivacyConsentDialog
         open={showPrivacyConsent}
@@ -1210,39 +1219,50 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
               <div>
                 <Label>Especialidades (selecciona todas las que apliquen)</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2 max-h-64 overflow-y-auto p-1">
+                <div 
+                  className="grid grid-cols-2 gap-2 mt-2 max-h-64 overflow-y-auto p-1"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                >
                   {SPECIALTIES.map((spec) => {
                     const isSelected = profileForm.specialties.includes(spec);
+                    const toggleSpec = () => {
+                      if (isSelected) {
+                        setProfileForm({
+                          ...profileForm,
+                          specialties: profileForm.specialties.filter((s) => s !== spec),
+                        });
+                      } else {
+                        setProfileForm({
+                          ...profileForm,
+                          specialties: [...profileForm.specialties, spec],
+                        });
+                      }
+                    };
                     return (
-                      <label
+                      <button
                         key={spec}
+                        type="button"
+                        onClick={toggleSpec}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          toggleSpec();
+                        }}
                         className={cn(
-                          "flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all text-sm min-w-0 overflow-hidden",
+                          "flex items-center gap-2 p-2 rounded-lg border transition-all text-sm min-w-0 overflow-hidden text-left touch-manipulation",
                           isSelected
                             ? "border-primary bg-primary/10 text-primary"
                             : "border-border hover:border-primary/50"
                         )}
+                        style={{ WebkitTapHighlightColor: 'transparent' }}
                       >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setProfileForm({
-                                ...profileForm,
-                                specialties: [...profileForm.specialties, spec],
-                              });
-                            } else {
-                              setProfileForm({
-                                ...profileForm,
-                                specialties: profileForm.specialties.filter((s) => s !== spec),
-                              });
-                            }
-                          }}
-                          className="w-4 h-4 rounded accent-primary flex-shrink-0"
-                        />
+                        <div className={cn(
+                          "w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center",
+                          isSelected ? "bg-primary border-primary" : "border-muted-foreground"
+                        )}>
+                          {isSelected && <span className="text-xs text-primary-foreground">✓</span>}
+                        </div>
                         <span className="break-words leading-tight">{spec}</span>
-                      </label>
+                      </button>
                     );
                   })}
                 </div>
@@ -1262,12 +1282,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                   <button
                     type="button"
                     onClick={() => setProfileForm({ ...profileForm, role: 'SOS_ACTIVO' })}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      setProfileForm({ ...profileForm, role: 'SOS_ACTIVO' });
+                    }}
                     className={cn(
-                      'p-4 rounded-lg border-2 text-left transition-all',
+                      'p-4 rounded-lg border-2 text-left transition-all touch-manipulation',
                       profileForm.role === 'SOS_ACTIVO'
                         ? 'border-mats-green bg-mats-green/10'
                         : 'border-border hover:border-mats-green/50'
                     )}
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
                   >
                     <div className="flex items-center gap-3">
                       <div className="text-2xl">🏥</div>
@@ -1284,12 +1309,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                   <button
                     type="button"
                     onClick={() => setProfileForm({ ...profileForm, role: 'EX_SOS' })}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      setProfileForm({ ...profileForm, role: 'EX_SOS' });
+                    }}
                     className={cn(
-                      'p-4 rounded-lg border-2 text-left transition-all',
+                      'p-4 rounded-lg border-2 text-left transition-all touch-manipulation',
                       profileForm.role === 'EX_SOS'
                         ? 'border-primary bg-primary/10'
                         : 'border-border hover:border-primary/50'
                     )}
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
                   >
                     <div className="flex items-center gap-3">
                       <div className="text-2xl">🎖️</div>
@@ -1306,12 +1336,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                   <button
                     type="button"
                     onClick={() => setProfileForm({ ...profileForm, role: 'FAMILIAR' })}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      setProfileForm({ ...profileForm, role: 'FAMILIAR' });
+                    }}
                     className={cn(
-                      'p-4 rounded-lg border-2 text-left transition-all',
+                      'p-4 rounded-lg border-2 text-left transition-all touch-manipulation',
                       profileForm.role === 'FAMILIAR'
                         ? 'border-accent bg-accent/10'
                         : 'border-border hover:border-accent/50'
                     )}
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
                   >
                     <div className="flex items-center gap-3">
                       <div className="text-2xl">👨‍👩‍👧</div>
@@ -1454,8 +1489,14 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
               <Button
                 onClick={handleProfileSubmit}
+                onTouchEnd={(e) => {
+                  if (!loading && profileForm.fullName && profileForm.phone && profileForm.role) {
+                    handleButtonTouchEnd(e, handleProfileSubmit);
+                  }
+                }}
                 disabled={loading || !profileForm.fullName || !profileForm.phone || !profileForm.role}
-                className="w-full"
+                className="w-full touch-manipulation"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
                 Completar Registro
