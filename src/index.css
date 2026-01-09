@@ -110,6 +110,8 @@
     /* iOS keyboard fix - prevent viewport resize */
     height: 100%;
     height: -webkit-fill-available;
+    /* Prevent zoom affecting fixed elements */
+    overflow: hidden;
   }
 
   body {
@@ -120,27 +122,23 @@
     min-height: 100vh;
     min-height: 100dvh;
     min-height: -webkit-fill-available;
-    /* iOS scroll lock when keyboard opens */
-    position: fixed;
-    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    /* Use overflow hidden to create a containing block for fixed elements */
     overflow: hidden;
-  }
-
-  /* Body can scroll when not in input focus */
-  body:not(.keyboard-open) {
     position: relative;
-    overflow: auto;
   }
 
   #root {
     min-height: 100vh;
     min-height: 100dvh;
     min-height: -webkit-fill-available;
-    overflow-x: hidden;
-    overflow-y: auto;
     height: 100%;
-    /* Scroll container for iOS */
-    -webkit-overflow-scrolling: touch;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
   }
 
   /* Monospace for data/codes */
@@ -290,10 +288,15 @@
     contain: layout style;
   }
 
-  /* Main content wrapper - accounts for fixed header */
+  /* Main content wrapper - scrollable area between fixed header/footer */
   .main-content {
     padding-top: var(--app-header-height);
     padding-bottom: calc(64px + env(safe-area-inset-bottom, 0));
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+    height: 100%;
   }
 
   /* FAB Container (legacy, kept for other uses) */
