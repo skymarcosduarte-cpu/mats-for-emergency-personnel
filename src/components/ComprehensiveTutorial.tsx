@@ -492,29 +492,29 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* Navigation */}
-      <div className="p-4 border-t bg-background">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
+      {/* Navigation - Fixed for mobile visibility */}
+      <div className="p-4 border-t bg-background safe-area-bottom">
+        <div className="flex items-center justify-between gap-2 max-w-lg mx-auto">
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={handlePrev}
             disabled={isFirstStep}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 min-w-[100px]"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Anterior</span>
+            <span>Anterior</span>
           </Button>
 
           {/* Section dots */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             {TUTORIAL_SECTIONS.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => goToSection(idx)}
                 className={cn(
-                  "w-2 h-2 rounded-full transition-all",
+                  "w-2.5 h-2.5 rounded-full transition-all",
                   idx === currentSection 
-                    ? "bg-primary w-4" 
+                    ? "bg-primary w-5" 
                     : idx < currentSection 
                       ? "bg-safe" 
                       : "bg-muted-foreground/30"
@@ -525,7 +525,7 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
 
           <Button
             onClick={handleNext}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 min-w-[100px]"
           >
             <span>{isLastStep ? 'Finalizar' : 'Siguiente'}</span>
             <ChevronRight className="w-4 h-4" />
