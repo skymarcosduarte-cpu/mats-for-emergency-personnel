@@ -52,12 +52,6 @@ const PANIC_OPTIONS: PanicOption[] = [
     description: 'Necesito apoyo policial',
   },
   {
-    type: 'MECANICO',
-    label: 'Mecánico',
-    icon: <Wrench className="w-6 h-6" />,
-    description: 'Falla mecánica o ponchadura',
-  },
-  {
     type: 'PROTECCION_CIVIL',
     label: 'Protección Civil',
     icon: <HardHat className="w-6 h-6" />,
@@ -124,10 +118,6 @@ const EMERGENCY_TYPE_VOICE_COMMANDS: { keywords: string[]; type: PanicType }[] =
   { 
     keywords: ['patrulla', 'policía', 'policia', 'asalto', 'robo', 'delincuente', 'ladrón', 'seguridad'],
     type: 'PATRULLA' 
-  },
-  { 
-    keywords: ['mecánico', 'mecanico', 'falla mecánica', 'ponchadura', 'llanta', 'carro descompuesto', 'auto varado', 'no arranca'],
-    type: 'MECANICO' 
   },
   { 
     keywords: ['protección civil', 'proteccion civil', 'emergencia general', 'inundación', 'derrumbe', 'gas', 'fuga'],
