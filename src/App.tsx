@@ -541,8 +541,8 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <main className="main-content flex-1 overflow-y-auto overflow-x-hidden">{renderScreen()}</main>
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} onPanicTriggered={handlePanicTriggered} />
       
-      {/* Unread Messages Banner */}
-      {!messagesBannerDismissed && unreadMessageCount > 0 && (
+      {/* Unread Messages Banner - only show when chat modal is NOT open */}
+      {!messagingOpen && !messagesBannerDismissed && unreadMessageCount > 0 && (
         <UnreadMessagesBanner
           unreadCount={unreadMessageCount}
           senderName={lastUnreadSender?.name}
