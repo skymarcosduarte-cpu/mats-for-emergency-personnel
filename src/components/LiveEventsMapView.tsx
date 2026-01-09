@@ -15,7 +15,7 @@ import type { GDACSAlert } from '@/hooks/useGDACSAlerts';
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
 
 // SSN (Servicio Sismológico Nacional México) - últimos sismos
-const SSN_URL = 'http://www.ssn.unam.mx/sismicidad/ultimos/';
+const SSN_URL = 'https://www.ssn.unam.mx/sismicidad/ultimos/';
 
 // CORS proxies for external feeds
 const CORS_PROXIES = [
@@ -402,44 +402,42 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           const magnitude = parseFloat(magText);
           if (isNaN(magnitude)) return;
           
-          // Parse location info from second cell
-          const locationCell = cells[1]?.textContent || '';
-          const locationLines = locationCell.split('\n').map(l => l.trim()).filter(Boolean);
-          
-          // Extract location name
-          const location = locationLines[0] || 'México';
-          
-          // Try to extract date/time
-          const dateMatch = locationCell.match(/(\d{4}-\d{2}-\d{2})/);
-          const timeMatch = locationCell.match(/(\d{2}:\d{2}:\d{2})/);
+          // Parse date/time from the second cell
+          const dateTimeCell = cells[1]?.textContent?.replace(/\s+/g, ' ').trim() || '';
+          const dateMatch = dateTimeCell.match(/(\d{4}-\d{2}-\d{2})/);
+          const timeMatch = dateTimeCell.match(/(\d{2}:\d{2}:\d{2})/);
           const date = dateMatch ? dateMatch[1] : '';
           const time = timeMatch ? timeMatch[1] : '';
-          
-          // Try to extract coordinates
-          const latMatch = locationCell.match(/([\d.]+)\s*°/);
-          const lngMatch = locationCell.match(/,\s*-?([\d.]+)\s*°/);
-          
-          // Also try alternate format from the second part
-          let lat = latMatch ? parseFloat(latMatch[1]) : 0;
-          let lng = lngMatch ? parseFloat(lngMatch[1]) : 0;
-          
-          // Make longitude negative for Mexico (Western Hemisphere)
-          if (lng > 0) lng = -lng;
-          
-          // Skip if no valid coordinates
-          if (lat === 0 || lng === 0) return;
-          
+
+          // Parse location + coordinates from the third cell
+          const locationCell = cells[2]?.textContent?.replace(/\s+/g, ' ').trim() || '';
+          if (!locationCell) return;
+
+          const location = (locationCell.split(':')[0] || 'México').trim();
+
+          // Extract coordinates (SSN sometimes returns "Â°" in text)
+          const coordMatch = locationCell.match(/:\s*(-?[\d.]+)\s*(?:Â?°)?\s*,\s*(-?[\d.]+)\s*(?:Â?°)?/);
+          if (!coordMatch) return;
+
+          const lat = parseFloat(coordMatch[1]);
+          const lng = parseFloat(coordMatch[2]);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+          // Parse depth (usually "10.6 km")
+          const depthText = cells[3]?.textContent?.trim() || '';
+          const depth = Number.isFinite(parseFloat(depthText)) ? parseFloat(depthText) : 0;
+
           // Parse timestamp and filter to last 24 hours
           if (date && time) {
             const timestamp = new Date(`${date}T${time}`);
             if (timestamp < twentyFourHoursAgo) return;
-            
+
             earthquakes.push({
               id: `ssn-${index}-${date}-${time}`,
               magnitude,
               lat,
               lng,
-              depth: 0,
+              depth,
               location,
               date,
               time,
@@ -619,7 +617,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       markersRef.current.set(key, marker);
     });
 
-    // Add SSN earthquake markers (Mexico, last 4 hours) - render on top
+    // Add SSN earthquake markers (Mexico, last 24 hours) - render on top
     events.ssnEarthquakes.forEach((quake) => {
       const key = `ssn-${quake.id}`;
       
@@ -631,7 +629,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         .bindPopup(`
           <div style="text-align: center; min-width: 160px;">
             <div style="font-size: 10px; color: #059669; font-weight: 600; margin-bottom: 2px;">
-              🇲🇽 SSN México (Últimas 4h)
+              🇲🇽 SSN México (Últimas 24h)
             </div>
             <div style="font-size: 18px; font-weight: bold; color: #059669;">
               M${quake.magnitude.toFixed(1)}
