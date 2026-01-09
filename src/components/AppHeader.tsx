@@ -140,7 +140,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   return (
     <>
-      <header className="app-header fixed top-0 left-0 right-0 z-[100]">
+      <header className="app-header">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <MatsLogo size={36} showText className="min-w-0" />
 
