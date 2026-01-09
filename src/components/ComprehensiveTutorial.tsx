@@ -492,17 +492,17 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* Navigation - Fixed for mobile visibility */}
-      <div className="p-4 border-t bg-background safe-area-bottom">
+      {/* Navigation - Fixed at bottom with high visibility */}
+      <div className="shrink-0 p-4 border-t bg-background pb-8">
         <div className="flex items-center justify-between gap-2 max-w-lg mx-auto">
           <Button
             variant="outline"
             onClick={handlePrev}
             disabled={isFirstStep}
-            className="flex items-center gap-1 min-w-[100px]"
+            className="flex items-center gap-1 min-w-[100px] h-12"
           >
-            <ChevronLeft className="w-4 h-4" />
-            <span>Anterior</span>
+            <ChevronLeft className="w-5 h-5" />
+            <span className="font-medium">Anterior</span>
           </Button>
 
           {/* Section dots */}
@@ -525,10 +525,10 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
 
           <Button
             onClick={handleNext}
-            className="flex items-center gap-1 min-w-[100px]"
+            className="flex items-center gap-1 min-w-[100px] h-12"
           >
-            <span>{isLastStep ? 'Finalizar' : 'Siguiente'}</span>
-            <ChevronRight className="w-4 h-4" />
+            <span className="font-medium">{isLastStep ? 'Finalizar' : 'Siguiente'}</span>
+            <ChevronRight className="w-5 h-5" />
           </Button>
         </div>
       </div>
