@@ -496,6 +496,24 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
   }, [isActive, events.lastUpdate, fetchAllEvents]);
 
+  // Auto-center map on Mexico when SSN earthquakes are found
+  useEffect(() => {
+    if (!map || !isActive || events.ssnEarthquakes.length === 0) return;
+    
+    // Calculate bounds from SSN earthquakes
+    const bounds = L.latLngBounds(
+      events.ssnEarthquakes.map(eq => [eq.lat, eq.lng] as [number, number])
+    );
+    
+    // Fit map to SSN earthquake bounds with padding
+    map.fitBounds(bounds, { 
+      padding: [50, 50],
+      maxZoom: 8,
+      animate: true,
+      duration: 0.5
+    });
+  }, [map, isActive, events.ssnEarthquakes]);
+
   // Clear markers when view becomes inactive
   useEffect(() => {
     if (!isActive && map) {
