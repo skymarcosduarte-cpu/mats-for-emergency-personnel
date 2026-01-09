@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.notify-app-update]
 verify_jwt = false
+
+[functions.fetch-fires]
+verify_jwt = false
+
+[functions.fetch-ssn]
+verify_jwt = false

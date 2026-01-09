@@ -39,8 +39,21 @@ serve(async (req) => {
     }
 
     const csvText = await response.text();
-    const lines = csvText.trim().split('\n');
-    
+    const trimmed = csvText.trim();
+    const lines = trimmed.split(/\r?\n/);
+
+    const header = (lines[0] || '').toLowerCase();
+    if (!header.includes('latitude') || !header.includes('longitude')) {
+      console.error('Unexpected FIRMS response header:', lines[0]);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Unexpected FIRMS response (check API key / endpoint)',
+        }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (lines.length <= 1) {
       return new Response(
         JSON.stringify({ success: true, fires: [] }),
@@ -49,30 +62,44 @@ serve(async (req) => {
     }
 
     // Parse CSV
-    const fires = [];
+    const fires: Array<Record<string, unknown>> = [];
     for (let i = 1; i < Math.min(lines.length, 200); i++) {
       const parts = lines[i].split(',');
-      if (parts.length < 10) continue;
+      if (parts.length < 7) continue;
 
       const lat = parseFloat(parts[0]);
       const lng = parseFloat(parts[1]);
       const brightness = parseFloat(parts[2]);
-      const confidence = parts[8]?.toLowerCase() || 'nominal';
-      const frp = parseFloat(parts[12]) || 0;
 
-      if (!isNaN(lat) && !isNaN(lng)) {
-        fires.push({
-          id: `fire-${i}-${lat.toFixed(3)}-${lng.toFixed(3)}`,
-          lat,
-          lng,
-          brightness,
-          confidence,
-          frp,
-          satellite: 'VIIRS',
-          acqDate: parts[5] || '',
-          acqTime: parts[6] || '',
-        });
+      // FIRMS confidence can be: low/nominal/high OR numeric (0-100)
+      const rawConfidence = (parts[9] ?? parts[8] ?? '').toString().trim().toLowerCase();
+      let confidence: 'low' | 'nominal' | 'high' = 'nominal';
+      const numericConfidence = Number(rawConfidence);
+      if (Number.isFinite(numericConfidence)) {
+        confidence = numericConfidence >= 80 ? 'high' : numericConfidence >= 30 ? 'nominal' : 'low';
+      } else if (rawConfidence.includes('high')) {
+        confidence = 'high';
+      } else if (rawConfidence.includes('low')) {
+        confidence = 'low';
+      } else if (rawConfidence.includes('nom')) {
+        confidence = 'nominal';
       }
+
+      const frp = parseFloat(parts[12] || '') || 0;
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+      fires.push({
+        id: `fire-${i}-${lat.toFixed(3)}-${lng.toFixed(3)}`,
+        lat,
+        lng,
+        brightness,
+        confidence,
+        frp,
+        satellite: (parts[7] || 'VIIRS').toString(),
+        acqDate: (parts[5] || '').toString(),
+        acqTime: (parts[6] || '').toString(),
+      });
     }
 
     console.log(`Found ${fires.length} fire hotspots`);
