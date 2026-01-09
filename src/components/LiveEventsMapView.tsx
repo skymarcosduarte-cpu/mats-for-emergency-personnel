@@ -376,7 +376,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
   }, []);
 
-  // Fetch SSN earthquakes (last 4 hours from Mexico's Servicio Sismológico Nacional)
+  // Fetch SSN earthquakes (last 24 hours from Mexico's Servicio Sismológico Nacional)
   const fetchSSNEarthquakes = useCallback(async (): Promise<SSNEarthquake[]> => {
     try {
       const proxyUrl = `${CORS_PROXIES[0]}${encodeURIComponent(SSN_URL)}`;
@@ -390,7 +390,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       // SSN uses a table with class "content" for earthquake data
       const rows = doc.querySelectorAll('table tr');
       const earthquakes: SSNEarthquake[] = [];
-      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       
       rows.forEach((row, index) => {
         try {
@@ -429,10 +429,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           // Skip if no valid coordinates
           if (lat === 0 || lng === 0) return;
           
-          // Parse timestamp and filter to last 4 hours
+          // Parse timestamp and filter to last 24 hours
           if (date && time) {
             const timestamp = new Date(`${date}T${time}`);
-            if (timestamp < fourHoursAgo) return;
+            if (timestamp < twentyFourHoursAgo) return;
             
             earthquakes.push({
               id: `ssn-${index}-${date}-${time}`,
@@ -451,7 +451,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         }
       });
       
-      console.log(`[LiveEvents] SSN: Found ${earthquakes.length} earthquakes in last 4 hours`);
+      console.log(`[LiveEvents] SSN: Found ${earthquakes.length} earthquakes in last 24 hours`);
       return earthquakes;
     } catch (error) {
       console.warn('[LiveEvents] Error fetching SSN earthquakes:', error);
