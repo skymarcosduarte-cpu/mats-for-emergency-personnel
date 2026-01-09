@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Users, Shield, Ticket, Calendar, Search, RefreshCw, X, Plus, Copy, Check, Loader2, MessageSquare, Mail, MailOpen, TrendingUp } from 'lucide-react';
+import { Users, Shield, Ticket, Calendar, Search, RefreshCw, X, Plus, Copy, Check, Loader2, MessageSquare, Mail, MailOpen, TrendingUp, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { UserEditDialog } from './UserEditDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -82,6 +83,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
   const [newCodeMaxUses, setNewCodeMaxUses] = useState<string>('10');
   const [creatingCode, setCreatingCode] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  
+  // User edit state
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
   const isAdmin = role === 'SOS_ACTIVO';
 
@@ -418,12 +422,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
                         <TableHead>Código Usado</TableHead>
                         <TableHead>Rol</TableHead>
                         <TableHead>Registro</TableHead>
+                        <TableHead className="w-12"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredUsers.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                             {searchQuery ? 'No se encontraron usuarios' : 'No hay usuarios registrados'}
                           </TableCell>
                         </TableRow>
@@ -448,6 +453,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
                               {user.registered_at
                                 ? format(new Date(user.registered_at), 'dd MMM yyyy', { locale: es })
                                 : '-'}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setEditingUserId(user.user_id)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))
@@ -725,6 +740,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ open, onClose }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* User Edit Dialog */}
+      <UserEditDialog
+        open={!!editingUserId}
+        onClose={() => setEditingUserId(null)}
+        userId={editingUserId || ''}
+        onUpdated={fetchData}
+      />
     </>
   );
 };
