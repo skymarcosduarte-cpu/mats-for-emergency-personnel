@@ -313,49 +313,37 @@ export const CommunityScreen: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Sticky Header + Tabs Container */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border flex-shrink-0">
-        {/* Header */}
-        <div className="p-4 pb-2">
+    <div className="pb-20">
+      <Tabs defaultValue="tablero" className="px-4 pt-4">
+        {/* Sticky Community sub-header (title + tabs) */}
+        <div className="sticky top-0 z-20 -mx-4 px-4 pb-3 bg-background/95 backdrop-blur-sm border-b border-border">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-foreground">Comunidad</h1>
             <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={refresh}
-                disabled={loading}
-              >
+              <Button variant="ghost" size="icon" onClick={refresh} disabled={loading}>
                 <RefreshCw className={cn('w-5 h-5', loading && 'animate-spin')} />
               </Button>
-              <Button
-                size="sm"
-                onClick={() => setShowNewDialog(true)}
-              >
+              <Button size="sm" onClick={() => setShowNewDialog(true)}>
                 <MessageSquarePlus className="w-4 h-4 mr-1" />
                 Publicar
               </Button>
             </div>
           </div>
-        </div>
-      </div>
 
-      <Tabs defaultValue="tablero" className="flex-1 flex flex-col overflow-hidden">
-        {/* Sticky TabsList */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm px-4 py-2 flex-shrink-0">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="tablero" className="text-xs">
-              📋 Tablero
-            </TabsTrigger>
-            <TabsTrigger value="noticias" className="text-xs">
-              📰 Últimas Noticias
-            </TabsTrigger>
-          </TabsList>
+          <div className="mt-3">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="tablero" className="text-xs">
+                📋 Tablero
+              </TabsTrigger>
+              <TabsTrigger value="noticias" className="text-xs">
+                📰 Últimas Noticias
+              </TabsTrigger>
+            </TabsList>
+          </div>
         </div>
 
         {/* Tablero Tab */}
-        <TabsContent value="tablero" className="flex-1 overflow-auto pb-20 scrollbar-thin mt-0 p-4 space-y-4">
+        <TabsContent value="tablero" className="mt-4 space-y-4">
           {/* Nearby Birthdays (Yesterday, Today, Tomorrow) */}
           {birthdays.length > 0 && (
             <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/30">
@@ -592,7 +580,7 @@ export const CommunityScreen: React.FC = () => {
         </TabsContent>
 
         {/* Breaking News Tab */}
-        <TabsContent value="noticias" className="flex-1 overflow-auto pb-20 scrollbar-thin mt-0 p-4 space-y-4">
+        <TabsContent value="noticias" className="mt-4 space-y-4">
           {/* Active Community Trips */}
           {communityTrips.length > 0 && (
             <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30">
