@@ -382,7 +382,7 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: isExiting ? 0 : 1 }}
-      className="fixed inset-0 z-[100] bg-background flex flex-col"
+      className="fixed inset-0 z-[9999] bg-background flex flex-col"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
