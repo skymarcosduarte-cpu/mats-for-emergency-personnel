@@ -167,10 +167,8 @@ export function useInactiveDelayedTripsAlert() {
             navigator.vibrate([500, 200, 500, 200, 500]);
           }
           
-          // Clear the alert after 1 hour to allow re-alerting if still inactive
-          setTimeout(() => {
-            alertedTripsRef.current.delete(alertKey);
-          }, 60 * 60 * 1000);
+          // Don't clear the alert - only notify once per trip
+          // The alert will only be cleared when the trip is completed/cancelled
         }
       }
 
