@@ -146,7 +146,7 @@ export function useInactiveDelayedTripsAlert() {
           // Set the pending trip so UI can handle it
           setPendingInactiveTrip(trip);
           
-          // Show toast notification silently (no sound/vibration) with action
+          // Show toast notification silently (no sound/vibration) with actions
           toast.warning(`⚠️ ${trip.nickname} sin actualización`, {
             description: `Viaje a ${trip.destination} retrasado ${trip.overdueMinutes} min. Sin actualización de ubicación por ${trip.minutesSinceUpdate} min.`,
             duration: 15000,
@@ -155,6 +155,10 @@ export function useInactiveDelayedTripsAlert() {
               onClick: () => {
                 setPendingInactiveTrip(trip);
               },
+            },
+            cancel: {
+              label: 'Cerrar',
+              onClick: () => {},
             },
           });
           
