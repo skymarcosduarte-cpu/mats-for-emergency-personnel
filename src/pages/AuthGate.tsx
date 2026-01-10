@@ -113,16 +113,24 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     shareMedicalInfo: true,
   });
 
-  const { signUp, signIn, createProfile, user, isProfileComplete, refetchProfile } = useAuth();
+  const { signUp, signIn, createProfile, user, isProfileComplete, needsProfileCompletion, refetchProfile, loading: authLoading } = useAuth();
 
-  // Check if user needs to complete profile
+  // Check if user needs to complete profile - show profile form immediately if detected
   useEffect(() => {
-    if (user && !isProfileComplete) {
+    if (needsProfileCompletion) {
+      console.log('[AuthGate] User needs profile completion - redirecting to profile form');
       setStep('profile');
+      // Show a friendly message explaining what happened
+      if (!error) {
+        toast({
+          title: '¡Hola! Tu cuenta existe',
+          description: 'Por favor completa tu perfil para continuar.',
+        });
+      }
     } else if (user && isProfileComplete) {
       onAuthComplete?.();
     }
-  }, [user, isProfileComplete, onAuthComplete]);
+  }, [user, isProfileComplete, needsProfileCompletion, onAuthComplete, error]);
 
   // Email validation helper with detailed feedback
   const isValidEmail = (email: string): boolean => {
@@ -1197,9 +1205,27 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
           {step === 'profile' && (
             <div className="space-y-4">
+              {/* Special message for users with account but no profile */}
+              {needsProfileCompletion && (
+                <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 text-center space-y-2">
+                  <div className="text-2xl">👋</div>
+                  <h2 className="font-semibold text-primary">¡Bienvenido/a de nuevo!</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Tu cuenta está activa pero falta completar tu perfil para acceder a la app.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Email: <span className="font-medium">{user?.email}</span>
+                  </p>
+                </div>
+              )}
+              
               <div className="text-center">
                 <h1 className="text-2xl font-bold text-foreground">Tu Perfil</h1>
-                <p className="text-sm text-muted-foreground mt-1">Completa tu información</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {needsProfileCompletion 
+                    ? 'Completa los siguientes datos para continuar' 
+                    : 'Completa tu información'}
+                </p>
               </div>
 
               <div>

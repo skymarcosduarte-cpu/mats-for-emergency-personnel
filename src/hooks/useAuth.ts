@@ -484,10 +484,14 @@ export function useAuth() {
     console.log('[useAuth] Profile refetched:', !!profile);
   }, [state.user, fetchProfile, fetchRole]);
 
+  // Check if user needs to complete their profile (has account but no profile)
+  const needsProfileCompletion = !!state.user && !state.profile && !state.loading;
+
   return {
     ...state,
     isAuthenticated: !!state.user,
     isProfileComplete: !!state.profile,
+    needsProfileCompletion,
     signUp,
     signIn,
     createProfile,
