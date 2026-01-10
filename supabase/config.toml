@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.fetch-ssn]
 verify_jwt = false
+
+[functions.remind-incomplete-profiles]
+verify_jwt = false
