@@ -55,6 +55,7 @@ import { useBackgroundSync } from '@/hooks/useBackgroundSync';
 import { useOverdueTrips } from '@/hooks/useOverdueTrips';
 import { useDelayedTripChecker } from '@/hooks/useDelayedTripChecker';
 import { useInactiveDelayedTripsAlert } from '@/hooks/useInactiveDelayedTripsAlert';
+import { useAutoArrivalDetection } from '@/hooks/useAutoArrivalDetection';
 import { useEmergencyNotification } from '@/hooks/useEmergencyNotification';
 import { useInternalMessages } from '@/hooks/useInternalMessages';
 import { InternalMessagesProvider } from '@/providers/InternalMessagesProvider';
@@ -288,6 +289,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     pendingInactiveTrip, 
     dismissInactiveTrip 
   } = useInactiveDelayedTripsAlert();
+  
+  // Auto-detect arrival at destination via GPS and mark trip as completed
+  useAutoArrivalDetection();
   
   // Emergency contact notification
   const { notifyEmergencyContacts } = useEmergencyNotification();
