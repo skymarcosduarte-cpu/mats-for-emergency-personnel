@@ -141,6 +141,12 @@ serve(async (req) => {
         notificationType = 'trip_arrived_delayed';
         break;
 
+      case 'auto_arrived':
+        title = '📍 Llegada detectada automáticamente';
+        message = `El GPS detectó que ${userName} llegó a ${destination}. El viaje se marcó como completado.`;
+        notificationType = 'trip_auto_arrived';
+        break;
+
       case 'overdue':
         title = '⚠️ Viaje atrasado';
         message = `${userName} debía llegar a ${destination} hace ${overdueMinutes} minutos. No ha confirmado su llegada.`;
