@@ -1,5 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,9 +10,47 @@ const corsHeaders = {
 // Delay threshold in minutes
 const DELAY_THRESHOLD_MINUTES = 30;
 
-// Web Push VAPID keys (you'll need to set these as secrets)
+// Web Push VAPID keys
 const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY');
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY');
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+
+// Helper function to send email via Resend API
+async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  if (!RESEND_API_KEY) {
+    console.warn('[check-delayed-trips] RESEND_API_KEY not configured');
+    return false;
+  }
+  
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'M.A.T.S. <onboarding@resend.dev>',
+        to: [to],
+        subject,
+        html,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[check-delayed-trips] Resend API error:', errorText);
+      return false;
+    }
+
+    const result = await response.json();
+    console.log('[check-delayed-trips] Email sent:', result);
+    return true;
+  } catch (error) {
+    console.error('[check-delayed-trips] Error sending email:', error);
+    return false;
+  }
+}
 
 interface DelayedTrip {
   id: string;
@@ -21,6 +60,8 @@ interface DelayedTrip {
   eta: string;
   created_at: string;
   nickname?: string;
+  full_name?: string;
+  email?: string;
   minutes_overdue: number;
 }
 
@@ -57,7 +98,6 @@ serve(async (req) => {
     }
 
     console.log(`[check-delayed-trips] Authenticated user: ${user.id}`);
-
     console.log('[check-delayed-trips] Starting delayed trips check...');
 
     // Find active trips where ETA has passed by more than DELAY_THRESHOLD_MINUTES
@@ -74,7 +114,7 @@ serve(async (req) => {
         created_at
       `)
       .eq('status', 'ACTIVE')
-      .lt('eta', thresholdTime); // ETA is in the past by at least threshold
+      .lt('eta', thresholdTime);
 
     if (tripsError) {
       console.error('[check-delayed-trips] Error fetching trips:', tripsError);
@@ -84,61 +124,84 @@ serve(async (req) => {
     if (!delayedTrips || delayedTrips.length === 0) {
       console.log('[check-delayed-trips] No delayed trips found');
       return new Response(
-        JSON.stringify({ success: true, delayedCount: 0, notificationsSent: 0 }),
+        JSON.stringify({ success: true, delayedCount: 0, notificationsSent: 0, emailsSent: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     console.log(`[check-delayed-trips] Found ${delayedTrips.length} delayed trips`);
 
-    // Get user nicknames
+    // Get user nicknames and full names
     const userIds = [...new Set(delayedTrips.map(t => t.user_id))];
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, nickname, full_name')
       .in('id', userIds);
 
-    const nicknameMap = new Map(
-      profiles?.map(p => [p.id, p.nickname || p.full_name || 'Usuario']) || []
+    // Get user emails from auth.users
+    const { data: authUsers } = await supabase.auth.admin.listUsers();
+    const emailMap = new Map(
+      authUsers?.users?.map(u => [u.id, u.email]) || []
+    );
+
+    const profileMap = new Map(
+      profiles?.map(p => [p.id, { nickname: p.nickname, full_name: p.full_name }]) || []
     );
 
     // Calculate delay for each trip
     const now = Date.now();
-    const tripsWithDelay: DelayedTrip[] = delayedTrips.map(trip => ({
-      ...trip,
-      nickname: nicknameMap.get(trip.user_id),
-      minutes_overdue: Math.floor((now - new Date(trip.eta).getTime()) / 60000)
-    }));
+    const tripsWithDelay: DelayedTrip[] = delayedTrips.map(trip => {
+      const profile = profileMap.get(trip.user_id);
+      return {
+        ...trip,
+        nickname: profile?.nickname || 'Usuario',
+        full_name: profile?.full_name || 'Usuario',
+        email: emailMap.get(trip.user_id),
+        minutes_overdue: Math.floor((now - new Date(trip.eta).getTime()) / 60000)
+      };
+    });
 
-    // Check which trips have already been notified recently (within last 2 hours)
+    // Check which trips have already been emailed recently (within last 4 hours)
     // to avoid spam notifications
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
     
     const { data: recentNotifications } = await supabase
       .from('notifications')
-      .select('user_id, message')
-      .eq('type', 'trip_delayed')
-      .gte('created_at', twoHoursAgo);
+      .select('user_id, type')
+      .in('type', ['trip_delayed', 'trip_delayed_email'])
+      .gte('created_at', fourHoursAgo);
 
-    const recentlyNotifiedUsers = new Set(recentNotifications?.map(n => n.user_id) || []);
+    const recentlyEmailedUsers = new Set(
+      recentNotifications
+        ?.filter(n => n.type === 'trip_delayed_email')
+        .map(n => n.user_id) || []
+    );
+
+    const recentlyNotifiedUsers = new Set(
+      recentNotifications?.map(n => n.user_id) || []
+    );
 
     // Filter out trips that were already notified
     const tripsToNotify = tripsWithDelay.filter(trip => !recentlyNotifiedUsers.has(trip.user_id));
+    const tripsToEmail = tripsWithDelay.filter(trip => 
+      !recentlyEmailedUsers.has(trip.user_id) && trip.email
+    );
 
-    if (tripsToNotify.length === 0) {
-      console.log('[check-delayed-trips] All delayed trips already notified recently');
+    if (tripsToNotify.length === 0 && tripsToEmail.length === 0) {
+      console.log('[check-delayed-trips] All delayed trips already notified/emailed recently');
       return new Response(
         JSON.stringify({ 
           success: true, 
           delayedCount: delayedTrips.length, 
           notificationsSent: 0,
+          emailsSent: 0,
           alreadyNotified: delayedTrips.length 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`[check-delayed-trips] Sending notifications for ${tripsToNotify.length} trips`);
+    console.log(`[check-delayed-trips] Sending notifications for ${tripsToNotify.length} trips, emails for ${tripsToEmail.length}`);
 
     // Get all online users to notify about each delayed trip
     const { data: onlineUsers } = await supabase
@@ -148,7 +211,7 @@ serve(async (req) => {
 
     const onlineUserIds = onlineUsers?.map(u => u.user_id) || [];
 
-    // Create notifications for each delayed trip
+    // Create notifications
     const allNotifications: Array<{
       user_id: string;
       type: string;
@@ -182,19 +245,6 @@ serve(async (req) => {
           });
         }
       }
-
-      // Get emergency contacts for the trip owner
-      const { data: emergencyContacts } = await supabase
-        .from('emergency_contacts')
-        .select('name, phone, email')
-        .eq('user_id', trip.user_id)
-        .order('is_primary', { ascending: false });
-
-      if (emergencyContacts && emergencyContacts.length > 0) {
-        console.log(`[check-delayed-trips] Trip ${trip.id} has ${emergencyContacts.length} emergency contacts`);
-        // In a production app, you would send SMS/email to emergency contacts here
-        // For now, we log it
-      }
     }
 
     // Insert all notifications
@@ -208,6 +258,107 @@ serve(async (req) => {
       } else {
         console.log(`[check-delayed-trips] Created ${allNotifications.length} notifications`);
       }
+    }
+
+    // Send emails to travelers who haven't opened the app
+    let emailsSent = 0;
+    const emailNotifications: Array<{
+      user_id: string;
+      type: string;
+      title: string;
+      message: string;
+      read: boolean;
+    }> = [];
+
+    for (const trip of tripsToEmail) {
+      if (!trip.email) continue;
+
+      try {
+        const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M.A.T.S. - Actualiza tu estado</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #1a1a2e; color: #ffffff; padding: 20px; margin: 0;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #16213e; border-radius: 16px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <h1 style="color: #f59e0b; margin: 0; font-size: 28px;">⚠️ M.A.T.S.</h1>
+      <p style="color: #9ca3af; margin-top: 8px;">Sistema de Monitoreo Activo de Tránsito y Seguridad</p>
+    </div>
+    
+    <div style="background-color: #1f2937; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+      <h2 style="color: #f59e0b; margin-top: 0; font-size: 20px;">Hola ${trip.full_name || trip.nickname},</h2>
+      
+      <p style="color: #e5e7eb; line-height: 1.6; font-size: 16px;">
+        Creaste un viaje en M.A.T.S. con destino a <strong style="color: #60a5fa;">${trip.destination}</strong> 
+        y debías llegar hace <strong style="color: #f87171;">${trip.minutes_overdue} minutos</strong>.
+      </p>
+      
+      <p style="color: #e5e7eb; line-height: 1.6; font-size: 16px;">
+        <strong>La comunidad está pendiente de ti</strong> y nos preocupa no saber de ti.
+      </p>
+      
+      <div style="background-color: #374151; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 0 8px 8px 0; margin: 20px 0;">
+        <p style="color: #fbbf24; margin: 0; font-size: 14px;">
+          📍 <strong>Origen:</strong> ${trip.origin}<br>
+          🎯 <strong>Destino:</strong> ${trip.destination}<br>
+          ⏰ <strong>ETA original:</strong> ${new Date(trip.eta).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}
+        </p>
+      </div>
+    </div>
+    
+    <div style="text-align: center; margin-bottom: 24px;">
+      <a href="https://mats.lovable.app" style="display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000000; font-weight: bold; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-size: 18px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);">
+        🚀 Abrir M.A.T.S. y actualizar mi estado
+      </a>
+    </div>
+    
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin-bottom: 0;">
+      Si ya llegaste a tu destino, abre la app para confirmar tu llegada y tranquilizar a la comunidad.
+    </p>
+    
+    <hr style="border: none; border-top: 1px solid #374151; margin: 24px 0;">
+    
+    <p style="color: #6b7280; font-size: 12px; text-align: center; margin: 0;">
+      Este mensaje fue enviado automáticamente por M.A.T.S.<br>
+      Si no creaste este viaje, por favor ignora este mensaje.
+    </p>
+  </div>
+</body>
+</html>
+`;
+
+        const emailSent = await sendEmail(
+          trip.email,
+          'Creaste viaje en M.A.T.S. y no hemos sabido de ti',
+          emailHtml
+        );
+
+        if (emailSent) {
+          console.log(`[check-delayed-trips] Email sent to ${trip.email}`);
+          emailsSent++;
+
+          // Track that we sent an email to this user
+          emailNotifications.push({
+            user_id: trip.user_id,
+            type: 'trip_delayed_email',
+            title: '📧 Email enviado',
+            message: `Se envió email de seguimiento a ${trip.email} por viaje retrasado a ${trip.destination}`,
+            read: true
+          });
+        }
+
+      } catch (emailError) {
+        console.error(`[check-delayed-trips] Error sending email to ${trip.email}:`, emailError);
+      }
+    }
+
+    // Insert email tracking notifications
+    if (emailNotifications.length > 0) {
+      await supabase.from('notifications').insert(emailNotifications);
     }
 
     // Send push notifications to trip owners
@@ -224,9 +375,6 @@ serve(async (req) => {
         if (!trip) continue;
 
         try {
-          // Send web push notification
-          // Note: Full web push implementation requires the web-push library
-          // For now, we log the intent
           console.log(`[check-delayed-trips] Would send push to user ${sub.user_id}: Trip ${trip.minutes_overdue}min late`);
           pushSent++;
         } catch (pushError) {
@@ -235,7 +383,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`[check-delayed-trips] Completed. Delayed: ${delayedTrips.length}, Notified: ${tripsToNotify.length}, Push sent: ${pushSent}`);
+    console.log(`[check-delayed-trips] Completed. Delayed: ${delayedTrips.length}, Notified: ${tripsToNotify.length}, Push: ${pushSent}, Emails: ${emailsSent}`);
 
     return new Response(
       JSON.stringify({ 
@@ -243,10 +391,16 @@ serve(async (req) => {
         delayedCount: delayedTrips.length,
         notificationsSent: allNotifications.length,
         pushSent,
+        emailsSent,
         tripsNotified: tripsToNotify.map(t => ({
           id: t.id,
           destination: t.destination,
           minutesOverdue: t.minutes_overdue
+        })),
+        tripsEmailed: tripsToEmail.map(t => ({
+          id: t.id,
+          email: t.email,
+          destination: t.destination
         }))
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -254,7 +408,6 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[check-delayed-trips] Error:', error);
-    // SECURITY: Don't expose internal error details to clients
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
