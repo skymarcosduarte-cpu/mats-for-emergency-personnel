@@ -392,7 +392,14 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     }
 
     setLoading(true);
-    console.log('[AuthGate] Starting signup process...');
+    const signupStartTime = Date.now();
+    const signupId = crypto.randomUUID().slice(0, 8);
+    
+    console.log(`[AuthGate][${signupId}] ========== STARTING SIGNUP ==========`);
+    console.log(`[AuthGate][${signupId}] Email: ${email.trim().substring(0, 3)}***@${email.split('@')[1] || 'unknown'}`);
+    console.log(`[AuthGate][${signupId}] Invite code: ${trimmedCode}`);
+    console.log(`[AuthGate][${signupId}] Password length: ${sanitizedPassword.length}`);
+    console.log(`[AuthGate][${signupId}] User agent: ${navigator.userAgent.substring(0, 100)}`);
 
     // Retry logic for transient network errors
     const maxRetries = 2;
@@ -401,7 +408,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         if (attempt > 0) {
-          console.log(`[AuthGate] Retry attempt ${attempt}/${maxRetries}`);
+          console.log(`[AuthGate][${signupId}] Retry attempt ${attempt}/${maxRetries}`);
           toast({
             title: 'Reintentando...',
             description: `Intento ${attempt + 1} de ${maxRetries + 1}`,
@@ -413,12 +420,14 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         // Create abort controller for timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
-          console.log('[AuthGate] Request timeout after 30s');
+          console.log(`[AuthGate][${signupId}] Request timeout after 30s`);
           controller.abort();
         }, 30000); // 30 second timeout
 
         // Call server-side registration endpoint
-        console.log('[AuthGate] Calling register-with-invite function...');
+        console.log(`[AuthGate][${signupId}] Calling register-with-invite function...`);
+        const requestStartTime = Date.now();
+        
         const response = await supabase.functions.invoke('register-with-invite', {
           body: {
             email: email.trim().toLowerCase(),
@@ -427,8 +436,18 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           }
         });
 
+        const requestDuration = Date.now() - requestStartTime;
         clearTimeout(timeoutId);
-        console.log('[AuthGate] Function response received:', { error: !!response.error, data: !!response.data });
+        
+        console.log(`[AuthGate][${signupId}] Function response received in ${requestDuration}ms`);
+        console.log(`[AuthGate][${signupId}] Response has error: ${!!response.error}`);
+        console.log(`[AuthGate][${signupId}] Response has data: ${!!response.data}`);
+        if (response.data) {
+          console.log(`[AuthGate][${signupId}] Response data:`, JSON.stringify(response.data).substring(0, 200));
+        }
+        if (response.error) {
+          console.log(`[AuthGate][${signupId}] Response error:`, JSON.stringify(response.error).substring(0, 500));
+        }
 
         // Check for errors - supabase.functions.invoke wraps non-2xx responses in response.error
         // But the actual JSON body might be in response.error.context or we need to parse it

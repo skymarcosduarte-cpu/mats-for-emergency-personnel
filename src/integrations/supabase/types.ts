@@ -719,6 +719,39 @@ export type Database = {
         }
         Relationships: []
       }
+      registration_logs: {
+        Row: {
+          client_info: Json | null
+          created_at: string | null
+          email_hash: string
+          error_code: string | null
+          error_message: string | null
+          id: string
+          invite_code: string | null
+          status: string
+        }
+        Insert: {
+          client_info?: Json | null
+          created_at?: string | null
+          email_hash: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          invite_code?: string | null
+          status: string
+        }
+        Update: {
+          client_info?: Json | null
+          created_at?: string | null
+          email_hash?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          invite_code?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       report_media: {
         Row: {
           created_at: string | null
