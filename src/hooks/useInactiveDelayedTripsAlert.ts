@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { playUrgentAlert } from '@/lib/alertSound';
+
 import { toast } from 'sonner';
 
 const LOCATION_INACTIVE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
@@ -143,29 +143,20 @@ export function useInactiveDelayedTripsAlert() {
           
           console.log('[useInactiveDelayedTripsAlert] Inactive delayed trip detected:', trip);
           
-          // Play urgent alert sound
-          playUrgentAlert();
-          
           // Set the pending trip so UI can handle it
           setPendingInactiveTrip(trip);
           
-          // Show toast notification with action that sets the pending trip
-          toast.error(`⚠️ ${trip.nickname} sin actualización`, {
+          // Show toast notification silently (no sound/vibration) with action
+          toast.warning(`⚠️ ${trip.nickname} sin actualización`, {
             description: `Viaje a ${trip.destination} retrasado ${trip.overdueMinutes} min. Sin actualización de ubicación por ${trip.minutesSinceUpdate} min.`,
-            duration: 30000,
+            duration: 15000,
             action: {
               label: 'Ver',
               onClick: () => {
-                // Set the trip so the UI can handle opening the dialog
                 setPendingInactiveTrip(trip);
               },
             },
           });
-          
-          // Vibrate if available
-          if ('vibrate' in navigator) {
-            navigator.vibrate([500, 200, 500, 200, 500]);
-          }
           
           // Don't clear the alert - only notify once per trip
           // The alert will only be cleared when the trip is completed/cancelled
