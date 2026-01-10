@@ -140,6 +140,14 @@ export function TravelerLocationDialog({
     });
   };
 
+  // Determine "online" status based on last update (< 5 minutes = online)
+  const isReallyOnline = () => {
+    if (!location?.updated_at) return false;
+    const lastUpdate = new Date(location.updated_at);
+    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+    return lastUpdate.getTime() > fiveMinutesAgo;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md bg-card border-border">
@@ -173,13 +181,13 @@ export function TravelerLocationDialog({
                       {profile?.nickname || 'Viajero'}
                     </p>
                     <div className="flex items-center gap-2">
-                      {location.is_online ? (
+                      {isReallyOnline() ? (
                         <Badge variant="secondary" className="text-xs bg-safe/20 text-safe">
                           <span className="w-1.5 h-1.5 rounded-full bg-safe mr-1 animate-pulse" />
                           En línea
                         </Badge>
                       ) : (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground">
                           Desconectado
                         </Badge>
                       )}
