@@ -329,6 +329,22 @@ export function useAuth() {
         .eq('user_id', state.user.id);
     }
 
+    // Send welcome email (fire and forget - don't block registration)
+    supabase.functions.invoke('send-welcome-email', {
+      body: {
+        user_id: state.user.id,
+        email: state.user.email,
+        nickname: profileData.nickname,
+        full_name: profileData.full_name,
+      },
+    }).then(({ error }) => {
+      if (error) {
+        console.warn('[useAuth] Failed to send welcome email:', error);
+      } else {
+        console.log('[useAuth] Welcome email sent to', state.user?.email);
+      }
+    }).catch(e => console.warn('[useAuth] Welcome email error:', e));
+
     // Refetch profile and role
     const [profile, role] = await Promise.all([
       fetchProfile(state.user.id),
