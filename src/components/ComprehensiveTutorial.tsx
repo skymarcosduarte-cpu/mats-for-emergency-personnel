@@ -539,50 +539,51 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
       </div>
 
       {/* Disclaimer confirmation modal */}
-      <AnimatePresence>
-        {showDisclaimer && (
+      {showDisclaimer && (
+        <div 
+          className="fixed inset-0 z-[10000] bg-black/60 flex items-center justify-center p-4"
+          onClick={(e) => {
+            // Only close if clicking the backdrop, not the modal content
+            if (e.target === e.currentTarget) {
+              setShowDisclaimer(false);
+            }
+          }}
+        >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] bg-black/50 flex items-center justify-center p-4"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-background rounded-xl p-6 max-w-md w-full shadow-xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-background rounded-xl p-6 max-w-md w-full shadow-xl"
-            >
-              <div className="text-center mb-4">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="text-lg font-bold">Acepto los términos</h3>
+            <div className="text-center mb-4">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+                <Shield className="w-6 h-6 text-primary" />
               </div>
-              
-              <p className="text-sm text-muted-foreground mb-6 text-center">
-                Al continuar, aceptas que M.A.T.S. es una comunidad de apoyo mutuo voluntario y que todo el soporte ofrecido es sin garantías de respuesta.
-              </p>
+              <h3 className="text-lg font-bold">Acepto los términos</h3>
+            </div>
+            
+            <p className="text-sm text-muted-foreground mb-6 text-center">
+              Al continuar, aceptas que M.A.T.S. es una comunidad de apoyo mutuo voluntario y que todo el soporte ofrecido es sin garantías de respuesta.
+            </p>
 
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setShowDisclaimer(false)}
-                >
-                  Volver
-                </Button>
-                <Button
-                  className="flex-1"
-                  onClick={handleComplete}
-                >
-                  Acepto y continúo
-                </Button>
-              </div>
-            </motion.div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 h-12"
+                onClick={() => setShowDisclaimer(false)}
+              >
+                Volver
+              </Button>
+              <Button
+                className="flex-1 h-12"
+                onClick={handleComplete}
+              >
+                Acepto y continúo
+              </Button>
+            </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </motion.div>
   );
 };
