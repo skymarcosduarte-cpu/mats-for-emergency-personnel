@@ -72,7 +72,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useWebPushSubscription } from '@/hooks/useWebPushSubscription';
 import { useAlertSettings } from '@/hooks/useAlertSettings';
-import { playSubtleAlert, playUrgentAlert, playClave100Alert, stopClave100Alert } from '@/lib/alertSound';
+import { playSubtleAlert, playUrgentAlert, playClave100Alert, stopClave100Alert, playSkyAlertNotification, playSkyAlertSevereAlert, stopSkyAlertAlert } from '@/lib/alertSound';
 import type { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 import { useUserDataExport } from '@/hooks/useUserDataExport';
@@ -118,7 +118,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const { profile, role, signOut, updateProfile, updateRole, deleteAccount } = useAuth();
   const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
   const { isSupported: webPushSupported, isSubscribed: webPushSubscribed, subscribe: subscribeToPush } = useWebPushSubscription();
-  const { helpRequestSounds, earthquakeSounds, earthquakeRadiusKm, internationalRedAlerts, ssnNationalAlertMagnitude, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusKm, setInternationalRedAlerts, setSsnNationalAlertMagnitude } = useAlertSettings();
+  const { helpRequestSounds, earthquakeSounds, earthquakeRadiusKm, internationalRedAlerts, ssnNationalAlertMagnitude, skyAlertSounds, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusKm, setInternationalRedAlerts, setSsnNationalAlertMagnitude, setSkyAlertSounds } = useAlertSettings();
   const { loading: loadingDataExport, data: userDataExport, fetchAllUserData, downloadAsJson } = useUserDataExport();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showDataExportDialog, setShowDataExportDialog] = useState(false);
@@ -1593,6 +1593,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 />
               </div>
 
+              {/* SkyAlert Sounds Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center",
+                    skyAlertSounds ? "bg-orange-500/10" : "bg-muted"
+                  )}>
+                    {skyAlertSounds ? (
+                      <Volume2 className="w-5 h-5 text-orange-500" />
+                    ) : (
+                      <VolumeX className="w-5 h-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="skyalert-sounds" className="text-foreground font-medium">
+                      SkyAlert sísmico
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Sonido para alertas de SkyAlert
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="skyalert-sounds"
+                  checked={skyAlertSounds}
+                  onCheckedChange={setSkyAlertSounds}
+                />
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -1614,6 +1643,60 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   <Volume2 className="w-4 h-4 mr-2" />
                   Sonido cercano
                 </Button>
+              </div>
+
+              {/* SkyAlert Test */}
+              <div className="mt-4 p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                    <AlertTriangle className="w-5 h-5 text-orange-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-orange-600 dark:text-orange-400">Prueba SkyAlert</p>
+                    <p className="text-xs text-muted-foreground">
+                      Verifica el sonido de alerta sísmica estilo SASMEX
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      console.log('🔔 Testing SkyAlert notification');
+                      playSkyAlertNotification();
+                    }}
+                    className="flex-1 border-orange-500/50 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10"
+                    disabled={!skyAlertSounds}
+                  >
+                    <Volume2 className="w-4 h-4 mr-2" />
+                    Moderada
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      console.log('🚨 Testing SkyAlert SEVERE');
+                      playSkyAlertSevereAlert();
+                    }}
+                    className="flex-1 border-orange-500/50 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10"
+                    disabled={!skyAlertSounds}
+                  >
+                    <Volume2 className="w-4 h-4 mr-2" />
+                    🚨 Severa
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      console.log('Stopping SkyAlert test');
+                      stopSkyAlertAlert();
+                    }}
+                    className="border-orange-500/50 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10"
+                  >
+                    <VolumeX className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               
               {/* Clave 100 Test */}
