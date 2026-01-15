@@ -718,3 +718,201 @@ export async function playClave100Alert(): Promise<void> {
     stopClave100Alert();
   }, 60000);
 }
+
+// ========== SKYALERT SEISMIC ALERT SOUNDS ==========
+
+// Store interval IDs for SkyAlert persistent alerts
+let skyAlertSoundInterval: ReturnType<typeof setInterval> | null = null;
+let skyAlertVibrationInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Play SkyAlert seismic alert sound - Mexican SASMEX-style siren
+ * Distinctive frequency sweep for immediate recognition
+ */
+export function playSkyAlertSound(): void {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) {
+      console.warn('SkyAlert: No audio context available');
+      return;
+    }
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(e => console.warn('Failed to resume audio context:', e));
+    }
+
+    const now = ctx.currentTime;
+    const duration = 4; // 4 seconds per cycle
+    
+    // Create a compressor for better output
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.value = -30;
+    compressor.knee.value = 30;
+    compressor.ratio.value = 8;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.25;
+    compressor.connect(ctx.destination);
+    
+    // Main siren oscillator - SASMEX-like sweep 800-1000 Hz
+    const sirenOsc = ctx.createOscillator();
+    const sirenGain = ctx.createGain();
+    sirenOsc.connect(sirenGain);
+    sirenGain.connect(compressor);
+    sirenOsc.type = 'sawtooth'; // Harsh, penetrating
+    sirenGain.gain.setValueAtTime(0.7, now);
+    
+    // Sweep frequency up and down like Mexican seismic alert
+    sirenOsc.frequency.setValueAtTime(800, now);
+    for (let i = 0; i < 8; i++) {
+      const cycleStart = now + i * 0.5;
+      sirenOsc.frequency.linearRampToValueAtTime(1000, cycleStart + 0.25);
+      sirenOsc.frequency.linearRampToValueAtTime(800, cycleStart + 0.5);
+    }
+    sirenOsc.start(now);
+    sirenOsc.stop(now + duration);
+    sirenGain.gain.setValueAtTime(0.7, now + duration - 0.1);
+    sirenGain.gain.linearRampToValueAtTime(0, now + duration);
+    
+    // Add harmonic layer for distinctiveness
+    const harmOsc = ctx.createOscillator();
+    const harmGain = ctx.createGain();
+    harmOsc.connect(harmGain);
+    harmGain.connect(compressor);
+    harmOsc.type = 'triangle';
+    harmGain.gain.setValueAtTime(0.4, now);
+    
+    // Higher frequency harmonics
+    harmOsc.frequency.setValueAtTime(1600, now);
+    for (let i = 0; i < 8; i++) {
+      const cycleStart = now + i * 0.5;
+      harmOsc.frequency.linearRampToValueAtTime(2000, cycleStart + 0.25);
+      harmOsc.frequency.linearRampToValueAtTime(1600, cycleStart + 0.5);
+    }
+    harmOsc.start(now);
+    harmOsc.stop(now + duration);
+    harmGain.gain.setValueAtTime(0.4, now + duration - 0.1);
+    harmGain.gain.linearRampToValueAtTime(0, now + duration);
+    
+    console.log('SkyAlert: Sound playing');
+  } catch (e) {
+    console.error('SkyAlert: Error playing sound:', e);
+  }
+}
+
+/**
+ * Trigger SkyAlert seismic vibration pattern
+ * Simulates earthquake wave feeling
+ */
+export function triggerSkyAlertVibration(): void {
+  console.log('SkyAlert: Triggering vibration');
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate([
+        // P-wave simulation - three long pulses
+        300, 100, 300, 100, 300,
+        200,
+        // S-wave simulation - rapid short pulses
+        150, 50, 150, 50, 150, 50, 150, 50, 150,
+        300,
+        // Final urgent pulses
+        500, 100, 500, 100, 500
+      ]);
+    } catch (e) {
+      console.warn('SkyAlert: Vibration not supported', e);
+    }
+  }
+}
+
+/**
+ * Play single SkyAlert notification (for moderate alerts)
+ * Sound + vibration once
+ */
+export function playSkyAlertNotification(): void {
+  playSkyAlertSound();
+  triggerSkyAlertVibration();
+}
+
+/**
+ * Stop the persistent SkyAlert alert
+ */
+export function stopSkyAlertAlert(): void {
+  if (skyAlertSoundInterval) {
+    clearInterval(skyAlertSoundInterval);
+    skyAlertSoundInterval = null;
+  }
+  if (skyAlertVibrationInterval) {
+    clearInterval(skyAlertVibrationInterval);
+    skyAlertVibrationInterval = null;
+  }
+  // Stop any ongoing vibration
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    navigator.vibrate(0);
+  }
+}
+
+/**
+ * Play SkyAlert SEVERE alert - continuous until stopped
+ * Maximum emergency - persistent sound and vibration
+ */
+export async function playSkyAlertSevereAlert(): Promise<void> {
+  console.log('🚨 SkyAlertSevereAlert: STARTING SEISMIC EMERGENCY ALERT');
+  
+  // Stop any existing alert first
+  stopSkyAlertAlert();
+  
+  // Unlock audio context first
+  await unlockAudioContext();
+  
+  // Resume audio context if needed
+  const ctx = getAudioContext();
+  if (ctx && ctx.state === 'suspended') {
+    try {
+      await ctx.resume();
+      console.log('SkyAlertSevereAlert: Audio context resumed');
+    } catch (e) {
+      console.error('SkyAlertSevereAlert: Failed to resume audio context:', e);
+    }
+  }
+  
+  // Play immediately
+  try {
+    playSkyAlertSound();
+    triggerSkyAlertVibration();
+  } catch (e) {
+    console.error('SkyAlertSevereAlert: Error on initial play:', e);
+  }
+  
+  // Retry after a short delay
+  setTimeout(() => {
+    try {
+      playSkyAlertSound();
+      triggerSkyAlertVibration();
+    } catch (e) {
+      console.error('SkyAlertSevereAlert: Error on retry:', e);
+    }
+  }, 500);
+  
+  // Keep repeating sound every 5 seconds until stopped
+  skyAlertSoundInterval = setInterval(() => {
+    try {
+      playSkyAlertSound();
+    } catch (e) {
+      console.error('SkyAlertSevereAlert: Error in sound interval:', e);
+    }
+  }, 5000);
+  
+  // Keep repeating vibration every 6 seconds until stopped
+  skyAlertVibrationInterval = setInterval(() => {
+    try {
+      triggerSkyAlertVibration();
+    } catch (e) {
+      console.error('SkyAlertSevereAlert: Error in vibration interval:', e);
+    }
+  }, 6000);
+  
+  // Auto-stop after 60 seconds as a safety measure
+  setTimeout(() => {
+    console.log('SkyAlertSevereAlert: Auto-stopping after 60 seconds');
+    stopSkyAlertAlert();
+  }, 60000);
+}

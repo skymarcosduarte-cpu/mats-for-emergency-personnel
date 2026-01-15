@@ -1,7 +1,7 @@
 // MATS Service Worker for Push Notifications & Background Tasks
 
 const CACHE_NAME = 'mats-v1';
-const CRITICAL_ALERT_TYPES = ['SEISMIC', 'AMBULANCE', 'PANIC', 'SOS'];
+const CRITICAL_ALERT_TYPES = ['SEISMIC', 'AMBULANCE', 'PANIC', 'SOS', 'SKYALERT'];
 
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker...');
@@ -17,6 +17,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('periodicsync', (event) => {
   if (event.tag === 'mats-heartbeat') {
     event.waitUntil(sendHeartbeat());
+  }
+  if (event.tag === 'skyalert-check') {
+    event.waitUntil(checkSkyAlert());
   }
 });
 
@@ -45,6 +48,15 @@ async function sendHeartbeat() {
 async function syncOfflineActions() {
   console.log('[SW] Syncing offline actions');
   // Will be handled by the offline queue in the app
+}
+
+async function checkSkyAlert() {
+  try {
+    console.log('[SW] Background SkyAlert check');
+    // This will be handled by the edge function
+  } catch (e) {
+    console.warn('[SW] SkyAlert check failed:', e);
+  }
 }
 
 // Handle push notifications - Enhanced for critical alerts
@@ -118,6 +130,8 @@ self.addEventListener('notificationclick', (event) => {
   // Route based on alert type
   if (data.alertType === 'SEISMIC') {
     targetUrl = '/alerts?tab=seismic';
+  } else if (data.alertType === 'SKYALERT') {
+    targetUrl = '/alerts?tab=skyalert';
   } else if (data.alertType === 'AMBULANCE' || data.alertType === 'SOS') {
     targetUrl = '/status';
   } else if (data.alertType === 'PANIC') {

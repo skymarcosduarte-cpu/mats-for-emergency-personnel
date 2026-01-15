@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.remind-incomplete-profiles]
 verify_jwt = false
+
+[functions.fetch-skyalert]
+verify_jwt = false

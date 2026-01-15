@@ -14,6 +14,7 @@ interface AlertSettings {
   earthquakeRadiusKm: number;
   internationalRedAlerts: boolean;
   ssnNationalAlertMagnitude: number;
+  skyAlertSounds: boolean;
 }
 
 const DEFAULT_SETTINGS: AlertSettings = {
@@ -22,6 +23,7 @@ const DEFAULT_SETTINGS: AlertSettings = {
   earthquakeRadiusKm: DEFAULT_EARTHQUAKE_RADIUS_KM,
   internationalRedAlerts: true,
   ssnNationalAlertMagnitude: DEFAULT_SSN_NATIONAL_ALERT_MAGNITUDE,
+  skyAlertSounds: true,
 };
 
 export function useAlertSettings() {
@@ -79,6 +81,10 @@ export function useAlertSettings() {
     saveSettings({ ssnNationalAlertMagnitude: clampedMagnitude });
   }, [saveSettings]);
 
+  const setSkyAlertSounds = useCallback((enabled: boolean) => {
+    saveSettings({ skyAlertSounds: enabled });
+  }, [saveSettings]);
+
   return {
     ...settings,
     loaded,
@@ -87,6 +93,7 @@ export function useAlertSettings() {
     setEarthquakeRadiusKm,
     setInternationalRedAlerts,
     setSsnNationalAlertMagnitude,
+    setSkyAlertSounds,
   };
 }
 

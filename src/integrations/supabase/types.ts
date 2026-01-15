@@ -836,6 +836,30 @@ export type Database = {
         }
         Relationships: []
       }
+      skyalert_cache: {
+        Row: {
+          alert_data: Json
+          alert_id: string
+          created_at: string
+          id: string
+          processed_at: string
+        }
+        Insert: {
+          alert_data: Json
+          alert_id: string
+          created_at?: string
+          id?: string
+          processed_at?: string
+        }
+        Update: {
+          alert_data?: Json
+          alert_id?: string
+          created_at?: string
+          id?: string
+          processed_at?: string
+        }
+        Relationships: []
+      }
       status_messages: {
         Row: {
           created_at: string | null
