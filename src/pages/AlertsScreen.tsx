@@ -507,7 +507,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
           <TabsTrigger value="myalerts" className="text-xs px-1">
             📋 Mías
           </TabsTrigger>
-          <TabsTrigger value="earthquakes" className="text-xs px-1">Sismos</TabsTrigger>
+          <TabsTrigger value="earthquakes" className="text-xs px-1">Sismos SSN/USGS</TabsTrigger>
           <TabsTrigger value="skyalert" className="relative text-xs px-1">
             🔔 SkyAlert
           </TabsTrigger>

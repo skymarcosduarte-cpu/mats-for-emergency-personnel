@@ -55,7 +55,7 @@ const NAV_ITEMS: NavItem[] = [
     hideInDisaster: true,
   },
   { id: 'community', label: 'Comunidad', icon: <Users className="w-5 h-5" /> },
-  { id: 'settings', label: 'Config', icon: <Settings className="w-5 h-5" /> },
+  { id: 'settings', label: 'Ajustes', icon: <Settings className="w-5 h-5" /> },
 ];
 
 interface BottomNavigationProps {
