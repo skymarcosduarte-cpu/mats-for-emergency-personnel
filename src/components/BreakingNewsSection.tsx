@@ -32,13 +32,17 @@ const SOURCE_CONFIG: Record<string, { category: 'nacionales' | 'internacionales'
   'France24 Español': { category: 'internacionales', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/30' },
   'DW Español': { category: 'internacionales', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30' },
   
-  // Deportes (Mundial)
+  // Deportes (Mundial + Latinoamérica)
   'ESPN': { category: 'deportes', color: 'bg-red-600/10 text-red-600 border-red-600/30' },
+  'ESPN Latam': { category: 'deportes', color: 'bg-red-500/10 text-red-500 border-red-500/30' },
   'Marca': { category: 'deportes', color: 'bg-red-500/10 text-red-500 border-red-500/30' },
   'AS': { category: 'deportes', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30' },
   'Sky Sports': { category: 'deportes', color: 'bg-sky-500/10 text-sky-600 border-sky-500/30' },
   'Goal': { category: 'deportes', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30' },
   'Yahoo Sports': { category: 'deportes', color: 'bg-violet-500/10 text-violet-600 border-violet-500/30' },
+  'TyC Sports': { category: 'deportes', color: 'bg-blue-500/10 text-blue-600 border-blue-500/30' },
+  'Fox Sports MX': { category: 'deportes', color: 'bg-gray-500/10 text-gray-600 border-gray-500/30' },
+  'Olé': { category: 'deportes', color: 'bg-orange-500/10 text-orange-600 border-orange-500/30' },
   
   // Emergencias
   'CENAPRED': { category: 'emergencias', color: 'bg-orange-600/10 text-orange-600 border-orange-600/30' },
@@ -274,7 +278,7 @@ export const BreakingNewsSection: React.FC = () => {
         {/* Sources info */}
         <div className="pt-2 border-t border-border/50">
           <p className="text-[10px] text-muted-foreground text-center">
-            Fuentes: Milenio, El Universal, CNN, BBC, Reuters, ESPN, Marca, Sky Sports, Goal, CENAPRED, ReliefWeb
+            Fuentes: Milenio, El Universal, CNN, BBC, Reuters, ESPN, TyC Sports, Fox Sports, Olé, CENAPRED
           </p>
         </div>
       </CardContent>

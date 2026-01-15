@@ -34,13 +34,17 @@ const PRIORITY_FEEDS: { url: string; source: string; category: string }[] = [
   { url: 'https://www.france24.com/es/rss', source: 'France24 Español', category: 'internacionales' },
   { url: 'https://www.dw.com/es/noticias/s-30684/rss', source: 'DW Español', category: 'internacionales' },
   
-  // Deportes (Mundial)
+  // Deportes (Mundial + Latinoamérica)
   { url: 'https://www.espn.com/espn/rss/news', source: 'ESPN', category: 'deportes' },
+  { url: 'https://www.espn.com.mx/espn/rss/noticias', source: 'ESPN Latam', category: 'deportes' },
   { url: 'https://www.marca.com/rss/portada.xml', source: 'Marca', category: 'deportes' },
   { url: 'https://as.com/rss/tags/ultimas_noticias.xml', source: 'AS', category: 'deportes' },
   { url: 'https://www.skysports.com/rss/12040', source: 'Sky Sports', category: 'deportes' },
   { url: 'https://www.goal.com/feeds/es/news', source: 'Goal', category: 'deportes' },
   { url: 'https://sports.yahoo.com/rss/', source: 'Yahoo Sports', category: 'deportes' },
+  { url: 'https://www.tycsports.com/rss/futbol.xml', source: 'TyC Sports', category: 'deportes' },
+  { url: 'https://www.foxsports.com.mx/rss/', source: 'Fox Sports MX', category: 'deportes' },
+  { url: 'https://www.ole.com.ar/rss/ultimas-noticias/', source: 'Olé', category: 'deportes' },
   
   // Emergencias
   { url: 'https://www.gob.mx/cenapred/es/archivo/rss', source: 'CENAPRED', category: 'emergencias' },
