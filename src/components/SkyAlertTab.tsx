@@ -32,6 +32,8 @@ export function SkyAlertTab() {
 
   const getLevelColor = (level: SkyAlert['level']) => {
     switch (level) {
+      case 'violenta':
+        return 'bg-purple-600 text-white';
       case 'severa':
         return 'bg-destructive text-destructive-foreground';
       case 'moderada':
@@ -43,6 +45,8 @@ export function SkyAlertTab() {
 
   const getLevelBorder = (level: SkyAlert['level']) => {
     switch (level) {
+      case 'violenta':
+        return 'border-purple-600';
       case 'severa':
         return 'border-destructive';
       case 'moderada':
@@ -54,6 +58,8 @@ export function SkyAlertTab() {
 
   const getLevelIcon = (level: SkyAlert['level']) => {
     switch (level) {
+      case 'violenta':
+        return '💥';
       case 'severa':
         return '🚨';
       case 'moderada':
@@ -62,6 +68,9 @@ export function SkyAlertTab() {
         return '📢';
     }
   };
+
+  // Only show severe and violent alerts
+  const visibleAlerts = alerts.filter(a => a.level === 'severa' || a.level === 'violenta');
 
   return (
     <div className="space-y-4">
@@ -84,8 +93,8 @@ export function SkyAlertTab() {
         </div>
         
         <div className="flex items-center gap-2">
-          {/* Only show active badge for non-preventive alerts */}
-          {alerts.some(a => a.level !== 'preventiva') ? (
+          {/* Only show active badge for severe/violent alerts */}
+          {visibleAlerts.length > 0 ? (
             <Badge variant="destructive" className="animate-pulse">
               Alerta activa
             </Badge>
@@ -129,14 +138,14 @@ export function SkyAlertTab() {
       </div>
 
       {/* Loading state */}
-      {loading && alerts.length === 0 && (
+      {loading && visibleAlerts.length === 0 && (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       )}
 
       {/* Empty state */}
-      {!loading && alerts.length === 0 && (
+      {!loading && visibleAlerts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="relative mb-4">
             <Activity className="w-16 h-16 text-muted-foreground/30" />
@@ -154,10 +163,10 @@ export function SkyAlertTab() {
         </div>
       )}
 
-      {/* Alerts list - filter out preventive alerts */}
-      {alerts.filter(a => a.level !== 'preventiva').length > 0 && (
+      {/* Alerts list - only severe and violent */}
+      {visibleAlerts.length > 0 && (
         <div className="space-y-3">
-          {alerts.filter(a => a.level !== 'preventiva').map((alert) => (
+          {visibleAlerts.map((alert) => (
             <Card 
               key={alert.id}
               className={cn(
