@@ -12,7 +12,7 @@ import {
 
 export interface SkyAlert {
   id: string;
-  level: 'preventiva' | 'moderada' | 'severa';
+  level: 'preventiva' | 'moderada' | 'severa' | 'violenta';
   magnitude?: number;
   region: string;
   message: string;
@@ -116,8 +116,21 @@ export function useSkyAlertAlerts() {
         if (!seenAlertIds.current.has(alert.id)) {
           seenAlertIds.current.add(alert.id);
           
-          // Show toast and play sound based on severity
-          if (alert.level === 'severa') {
+          // Show toast and play sound only for severe/violent alerts
+          if (alert.level === 'violenta') {
+            toast.error(
+              `💥 ALERTA SÍSMICA VIOLENTA - ${alert.region}`,
+              {
+                description: alert.magnitude 
+                  ? `Magnitud ${alert.magnitude.toFixed(1)} - ${alert.message}`
+                  : alert.message,
+                duration: 20000,
+              }
+            );
+            if (soundsEnabled) {
+              playSkyAlertSevereAlert();
+            }
+          } else if (alert.level === 'severa') {
             toast.error(
               `🚨 ALERTA SÍSMICA SEVERA - ${alert.region}`,
               {
@@ -130,26 +143,13 @@ export function useSkyAlertAlerts() {
             if (soundsEnabled) {
               playSkyAlertSevereAlert();
             }
-          } else if (alert.level === 'moderada') {
-            toast.warning(
-              `⚠️ Alerta Sísmica Moderada - ${alert.region}`,
-              {
-                description: alert.magnitude 
-                  ? `Magnitud ${alert.magnitude.toFixed(1)}`
-                  : alert.message,
-                duration: 10000,
-              }
-            );
-            if (soundsEnabled) {
-              playSkyAlertNotification();
-            }
           }
-          // Note: Preventive alerts are silently logged, no toast/sound
+          // Moderada and Preventiva alerts are silently logged, no toast/sound
         }
       }
 
-      // Stop severe alert sound if no more severe alerts
-      if (!response.alerts.some(a => a.level === 'severa')) {
+      // Stop severe alert sound if no more severe/violent alerts
+      if (!response.alerts.some(a => a.level === 'severa' || a.level === 'violenta')) {
         stopSkyAlertAlert();
       }
 
