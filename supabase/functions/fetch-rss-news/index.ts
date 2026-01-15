@@ -214,8 +214,8 @@ Deno.serve(async (req) => {
       return true;
     });
     
-    // Return top 15 items
-    const finalItems = uniqueItems.slice(0, 15);
+    // Return top 30 items to ensure category diversity
+    const finalItems = uniqueItems.slice(0, 30);
     
     console.log(`Returning ${finalItems.length} news items`);
     
