@@ -143,15 +143,8 @@ export function useSkyAlertAlerts() {
             if (soundsEnabled) {
               playSkyAlertNotification();
             }
-          } else {
-            toast.info(
-              `📢 Alerta Sísmica Preventiva - ${alert.region}`,
-              {
-                description: alert.message,
-                duration: 5000,
-              }
-            );
           }
+          // Note: Preventive alerts are silently logged, no toast/sound
         }
       }
 
