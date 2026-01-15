@@ -166,3 +166,17 @@ export function getSsnNationalAlertMagnitude(): number {
   }
   return DEFAULT_SSN_NATIONAL_ALERT_MAGNITUDE;
 }
+
+// Standalone function to check if SkyAlert sounds are enabled
+export function areSkyAlertSoundsEnabled(): boolean {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed.skyAlertSounds ?? true;
+    }
+  } catch (e) {
+    // Ignore
+  }
+  return true;
+}

@@ -16,6 +16,7 @@ const CHANNELS = {
   CLAVE_100: 'clave_100_alerts',
   EMERGENCY: 'emergency_alerts',
   SEISMIC: 'seismic_alerts',
+  SKYALERT: 'skyalert_alerts',
   MESSAGES: 'messages',
   GENERAL: 'general',
 };
@@ -108,6 +109,18 @@ export function useNativeNotifications() {
         sound: 'seismic.wav',
         lights: true,
         lightColor: '#f59e0b',
+      });
+
+      await LocalNotifications.createChannel({
+        id: CHANNELS.SKYALERT,
+        name: 'SkyAlert - Alertas Sísmicas',
+        description: 'Alertas del Sistema de Alerta Sísmica Mexicano',
+        importance: 5, // MAX
+        visibility: 1, // PUBLIC
+        vibration: true,
+        sound: 'skyalert.wav',
+        lights: true,
+        lightColor: '#ff6600', // Orange like SkyAlert
       });
 
       await LocalNotifications.createChannel({
@@ -359,6 +372,80 @@ export function useNativeNotifications() {
     }
   }, [isNative]);
 
+  // Show SkyAlert seismic notification
+  const showSkyAlertNotification = useCallback(async (
+    level: 'preventiva' | 'moderada' | 'severa',
+    magnitude: number | undefined,
+    region: string,
+    message: string
+  ) => {
+    console.log('[NativeNotifications] 🔔 SkyAlert notification triggered:', level);
+    
+    // Haptic feedback based on level
+    if (isNative) {
+      try {
+        if (level === 'severa') {
+          await Haptics.notification({ type: NotificationType.Error });
+          await Haptics.impact({ style: ImpactStyle.Heavy });
+          await new Promise(r => setTimeout(r, 200));
+          await Haptics.impact({ style: ImpactStyle.Heavy });
+          await new Promise(r => setTimeout(r, 200));
+          await Haptics.impact({ style: ImpactStyle.Heavy });
+        } else if (level === 'moderada') {
+          await Haptics.notification({ type: NotificationType.Warning });
+          await Haptics.impact({ style: ImpactStyle.Heavy });
+        } else {
+          await Haptics.notification({ type: NotificationType.Success });
+        }
+      } catch (e) {
+        console.warn('[NativeNotifications] Haptics failed:', e);
+      }
+    }
+
+    const levelEmoji = level === 'severa' ? '🚨' : level === 'moderada' ? '⚠️' : '📢';
+    const title = `${levelEmoji} ALERTA SÍSMICA ${level.toUpperCase()}`;
+    const body = magnitude 
+      ? `M${magnitude.toFixed(1)} - ${region}` 
+      : message.substring(0, 150);
+
+    if (!isNative) {
+      if (Notification.permission === 'granted') {
+        const notification = new Notification(title, {
+          body,
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          tag: 'skyalert',
+          requireInteraction: level === 'severa',
+        });
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+      }
+      return;
+    }
+
+    try {
+      const notification: LocalNotificationSchema = {
+        id: Date.now(),
+        title,
+        body,
+        channelId: CHANNELS.SKYALERT,
+        smallIcon: 'ic_stat_icon',
+        largeIcon: 'ic_launcher',
+        iconColor: '#ff6600',
+        ongoing: level === 'severa',
+        autoCancel: level !== 'severa',
+        extra: { type: 'skyalert', level, magnitude, region },
+      };
+
+      await LocalNotifications.schedule({ notifications: [notification] });
+      console.log('[NativeNotifications] SkyAlert notification shown');
+    } catch (error) {
+      console.error('[NativeNotifications] Failed to show SkyAlert notification:', error);
+    }
+  }, [isNative]);
+
   // Cancel all notifications
   const cancelAll = useCallback(async () => {
     if (!isNative) return;
@@ -390,6 +477,8 @@ export function useNativeNotifications() {
           window.location.href = '/community';
         } else if (extra?.type === 'seismic') {
           window.location.href = '/alerts?tab=seismic';
+        } else if (extra?.type === 'skyalert') {
+          window.location.href = '/alerts?tab=skyalert';
         } else if (extra?.type === 'message') {
           window.location.href = '/community';
         } else if (extra?.type === 'emergency') {
@@ -412,6 +501,7 @@ export function useNativeNotifications() {
     showClave100Notification,
     showEmergencyNotification,
     showSeismicNotification,
+    showSkyAlertNotification,
     showMessageNotification,
     cancelAll,
   };

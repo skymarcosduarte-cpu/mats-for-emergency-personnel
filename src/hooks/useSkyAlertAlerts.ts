@@ -41,7 +41,7 @@ function areSkyAlertSoundsEnabled(): boolean {
       return parsed.skyAlertSounds ?? true;
     }
   } catch {
-    // Ignore
+    // Ignore errors
   }
   return true;
 }
