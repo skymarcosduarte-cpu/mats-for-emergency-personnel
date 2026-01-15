@@ -20,30 +20,42 @@ import { cn } from '@/lib/utils';
 
 // Available sources with category info
 const SOURCE_CONFIG: Record<string, { category: 'nacionales' | 'internacionales' | 'deportes' | 'emergencias'; color: string }> = {
-  // Nacionales
+  // Nacionales (expanded)
   'Milenio': { category: 'nacionales', color: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
   'El Universal': { category: 'nacionales', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
   'El Informador': { category: 'nacionales', color: 'bg-rose-500/10 text-rose-600 border-rose-500/30' },
+  'La Jornada': { category: 'nacionales', color: 'bg-red-500/10 text-red-600 border-red-500/30' },
+  'Excélsior': { category: 'nacionales', color: 'bg-blue-500/10 text-blue-600 border-blue-500/30' },
+  'Reforma': { category: 'nacionales', color: 'bg-slate-500/10 text-slate-600 border-slate-500/30' },
+  'Proceso': { category: 'nacionales', color: 'bg-orange-500/10 text-orange-600 border-orange-500/30' },
+  'Expansión': { category: 'nacionales', color: 'bg-cyan-500/10 text-cyan-600 border-cyan-500/30' },
+  'El Financiero': { category: 'nacionales', color: 'bg-green-500/10 text-green-600 border-green-500/30' },
+  'El Economista': { category: 'nacionales', color: 'bg-teal-500/10 text-teal-600 border-teal-500/30' },
   
-  // Internacionales
+  // Internacionales (expanded)
   'CNN en Español': { category: 'internacionales', color: 'bg-red-500/10 text-red-500 border-red-500/30' },
   'BBC Mundo': { category: 'internacionales', color: 'bg-blue-500/10 text-blue-500 border-blue-500/30' },
   'Reuters': { category: 'internacionales', color: 'bg-orange-500/10 text-orange-600 border-orange-500/30' },
   'Al Jazeera': { category: 'internacionales', color: 'bg-teal-500/10 text-teal-600 border-teal-500/30' },
   'France24 Español': { category: 'internacionales', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/30' },
   'DW Español': { category: 'internacionales', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30' },
+  'El País': { category: 'internacionales', color: 'bg-sky-500/10 text-sky-600 border-sky-500/30' },
+  'Infobae': { category: 'internacionales', color: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
+  'RTVE': { category: 'internacionales', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
+  'TeleSUR': { category: 'internacionales', color: 'bg-green-600/10 text-green-600 border-green-600/30' },
   
-  // Deportes (Mundial + Latinoamérica)
-  'ESPN': { category: 'deportes', color: 'bg-red-600/10 text-red-600 border-red-600/30' },
+  // Deportes en Español (expanded)
   'ESPN Latam': { category: 'deportes', color: 'bg-red-500/10 text-red-500 border-red-500/30' },
   'Marca': { category: 'deportes', color: 'bg-red-500/10 text-red-500 border-red-500/30' },
   'AS': { category: 'deportes', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30' },
-  'Sky Sports': { category: 'deportes', color: 'bg-sky-500/10 text-sky-600 border-sky-500/30' },
-  'Goal': { category: 'deportes', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30' },
-  'Yahoo Sports': { category: 'deportes', color: 'bg-violet-500/10 text-violet-600 border-violet-500/30' },
   'TyC Sports': { category: 'deportes', color: 'bg-blue-500/10 text-blue-600 border-blue-500/30' },
-  'Fox Sports MX': { category: 'deportes', color: 'bg-gray-500/10 text-gray-600 border-gray-500/30' },
   'Olé': { category: 'deportes', color: 'bg-orange-500/10 text-orange-600 border-orange-500/30' },
+  'Goal': { category: 'deportes', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30' },
+  'Medio Tiempo': { category: 'deportes', color: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
+  'Récord': { category: 'deportes', color: 'bg-rose-500/10 text-rose-600 border-rose-500/30' },
+  'Depor': { category: 'deportes', color: 'bg-green-500/10 text-green-600 border-green-500/30' },
+  'Mundo Deportivo': { category: 'deportes', color: 'bg-sky-500/10 text-sky-600 border-sky-500/30' },
+  'Sport': { category: 'deportes', color: 'bg-pink-500/10 text-pink-600 border-pink-500/30' },
   
   // Emergencias (solo fuentes dedicadas a emergencias)
   'CENAPRED': { category: 'emergencias', color: 'bg-orange-600/10 text-orange-600 border-orange-600/30' },
