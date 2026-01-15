@@ -21,24 +21,29 @@ interface RSSSource {
 }
 
 // High-priority, reliable sources to fetch
-const PRIORITY_FEEDS: { url: string; source: string }[] = [
-  // Mexico - High reliability
-  { url: 'https://www.milenio.com/rss', source: 'Milenio' },
-  { url: 'https://www.eluniversal.com.mx/rss.xml', source: 'El Universal' },
+const PRIORITY_FEEDS: { url: string; source: string; category: string }[] = [
+  // Mexico - Nacionales
+  { url: 'https://www.milenio.com/rss', source: 'Milenio', category: 'nacionales' },
+  { url: 'https://www.eluniversal.com.mx/rss.xml', source: 'El Universal', category: 'nacionales' },
   
-  // Latinoamérica - Very high reliability
-  { url: 'https://cnnespanol.cnn.com/feed/', source: 'CNN en Español' },
-  { url: 'https://feeds.bbci.co.uk/mundo/rss.xml', source: 'BBC Mundo' },
+  // Internacionales
+  { url: 'https://cnnespanol.cnn.com/feed/', source: 'CNN en Español', category: 'internacionales' },
+  { url: 'https://feeds.bbci.co.uk/mundo/rss.xml', source: 'BBC Mundo', category: 'internacionales' },
+  { url: 'https://www.reuters.com/arc/outboundfeeds/news/?outputType=xml', source: 'Reuters', category: 'internacionales' },
+  { url: 'https://www.aljazeera.com/xml/rss/all.xml', source: 'Al Jazeera', category: 'internacionales' },
+  { url: 'https://www.france24.com/es/rss', source: 'France24 Español', category: 'internacionales' },
+  { url: 'https://www.dw.com/es/noticias/s-30684/rss', source: 'DW Español', category: 'internacionales' },
   
-  // Internacional - Open RSS
-  { url: 'https://www.reuters.com/arc/outboundfeeds/news/?outputType=xml', source: 'Reuters' },
-  { url: 'https://www.aljazeera.com/xml/rss/all.xml', source: 'Al Jazeera' },
-  { url: 'https://www.france24.com/es/rss', source: 'France24 Español' },
-  { url: 'https://www.dw.com/es/noticias/s-30684/rss', source: 'DW Español' },
+  // Deportes
+  { url: 'https://www.espn.com.mx/espn/rss/news', source: 'ESPN México', category: 'deportes' },
+  { url: 'https://www.marca.com/rss/futbol.xml', source: 'Marca', category: 'deportes' },
+  { url: 'https://as.com/rss/tags/ultimas_noticias.xml', source: 'AS', category: 'deportes' },
+  { url: 'https://www.mediotiempo.com/rss/portada.xml', source: 'Medio Tiempo', category: 'deportes' },
   
-  // España
-  { url: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada', source: 'El País' },
-  { url: 'https://api.rtve.es/api/lives.rss', source: 'RTVE' },
+  // Emergencias
+  { url: 'https://www.gob.mx/cenapred/es/archivo/rss', source: 'CENAPRED', category: 'emergencias' },
+  { url: 'https://reliefweb.int/updates/rss.xml?country=170', source: 'ReliefWeb México', category: 'emergencias' },
+  { url: 'https://www.informador.mx/rss/jalisco.xml', source: 'El Informador', category: 'emergencias' },
 ];
 
 // Decode HTML entities

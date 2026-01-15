@@ -20,16 +20,28 @@ import { cn } from '@/lib/utils';
 
 // Available sources with category info
 const SOURCE_CONFIG: Record<string, { category: 'nacionales' | 'internacionales' | 'deportes' | 'emergencias'; color: string }> = {
-  'CNN en Español': { category: 'internacionales', color: 'bg-red-500/10 text-red-500 border-red-500/30' },
-  'BBC Mundo': { category: 'internacionales', color: 'bg-blue-500/10 text-blue-500 border-blue-500/30' },
+  // Nacionales
   'Milenio': { category: 'nacionales', color: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
   'El Universal': { category: 'nacionales', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
+  
+  // Internacionales
+  'CNN en Español': { category: 'internacionales', color: 'bg-red-500/10 text-red-500 border-red-500/30' },
+  'BBC Mundo': { category: 'internacionales', color: 'bg-blue-500/10 text-blue-500 border-blue-500/30' },
   'Reuters': { category: 'internacionales', color: 'bg-orange-500/10 text-orange-600 border-orange-500/30' },
   'Al Jazeera': { category: 'internacionales', color: 'bg-teal-500/10 text-teal-600 border-teal-500/30' },
   'France24 Español': { category: 'internacionales', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/30' },
   'DW Español': { category: 'internacionales', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30' },
-  'El País': { category: 'internacionales', color: 'bg-sky-500/10 text-sky-600 border-sky-500/30' },
-  'RTVE': { category: 'internacionales', color: 'bg-rose-500/10 text-rose-600 border-rose-500/30' },
+  
+  // Deportes
+  'ESPN México': { category: 'deportes', color: 'bg-red-600/10 text-red-600 border-red-600/30' },
+  'Marca': { category: 'deportes', color: 'bg-red-500/10 text-red-500 border-red-500/30' },
+  'AS': { category: 'deportes', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30' },
+  'Medio Tiempo': { category: 'deportes', color: 'bg-green-500/10 text-green-600 border-green-500/30' },
+  
+  // Emergencias
+  'CENAPRED': { category: 'emergencias', color: 'bg-orange-600/10 text-orange-600 border-orange-600/30' },
+  'ReliefWeb México': { category: 'emergencias', color: 'bg-blue-600/10 text-blue-600 border-blue-600/30' },
+  'El Informador': { category: 'emergencias', color: 'bg-rose-500/10 text-rose-600 border-rose-500/30' },
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -260,7 +272,7 @@ export const BreakingNewsSection: React.FC = () => {
         {/* Sources info */}
         <div className="pt-2 border-t border-border/50">
           <p className="text-[10px] text-muted-foreground text-center">
-            Fuentes: CNN, BBC, Milenio, El Universal, Reuters, Al Jazeera, France24, DW, El País, RTVE
+            Fuentes: Milenio, El Universal, CNN, BBC, Reuters, ESPN, Marca, CENAPRED, ReliefWeb
           </p>
         </div>
       </CardContent>
