@@ -84,7 +84,8 @@ export function SkyAlertTab() {
         </div>
         
         <div className="flex items-center gap-2">
-          {isActive ? (
+          {/* Only show active badge for non-preventive alerts */}
+          {alerts.some(a => a.level !== 'preventiva') ? (
             <Badge variant="destructive" className="animate-pulse">
               Alerta activa
             </Badge>
@@ -153,10 +154,10 @@ export function SkyAlertTab() {
         </div>
       )}
 
-      {/* Alerts list */}
-      {alerts.length > 0 && (
+      {/* Alerts list - filter out preventive alerts */}
+      {alerts.filter(a => a.level !== 'preventiva').length > 0 && (
         <div className="space-y-3">
-          {alerts.map((alert) => (
+          {alerts.filter(a => a.level !== 'preventiva').map((alert) => (
             <Card 
               key={alert.id}
               className={cn(
