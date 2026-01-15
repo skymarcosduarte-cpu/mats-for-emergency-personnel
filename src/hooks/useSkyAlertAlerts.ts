@@ -12,7 +12,7 @@ import {
 
 export interface SkyAlert {
   id: string;
-  level: 'preventiva' | 'moderada' | 'severa' | 'violenta';
+  level: 'preventiva' | 'moderada' | 'severa' | 'violenta' | 'severo' | 'violento';
   magnitude?: number;
   region: string;
   message: string;
@@ -117,7 +117,10 @@ export function useSkyAlertAlerts() {
           seenAlertIds.current.add(alert.id);
           
           // Show toast and play sound only for severe/violent alerts
-          if (alert.level === 'violenta') {
+          const isViolent = alert.level === 'violenta' || alert.level === 'violento';
+          const isSevere = alert.level === 'severa' || alert.level === 'severo';
+          
+          if (isViolent) {
             toast.error(
               `💥 ALERTA SÍSMICA VIOLENTA - ${alert.region}`,
               {
@@ -130,7 +133,7 @@ export function useSkyAlertAlerts() {
             if (soundsEnabled) {
               playSkyAlertSevereAlert();
             }
-          } else if (alert.level === 'severa') {
+          } else if (isSevere) {
             toast.error(
               `🚨 ALERTA SÍSMICA SEVERA - ${alert.region}`,
               {
@@ -149,7 +152,11 @@ export function useSkyAlertAlerts() {
       }
 
       // Stop severe alert sound if no more severe/violent alerts
-      if (!response.alerts.some(a => a.level === 'severa' || a.level === 'violenta')) {
+      const hasActiveAlert = response.alerts.some(a => 
+        a.level === 'severa' || a.level === 'severo' || 
+        a.level === 'violenta' || a.level === 'violento'
+      );
+      if (!hasActiveAlert) {
         stopSkyAlertAlert();
       }
 

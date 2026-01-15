@@ -33,8 +33,10 @@ export function SkyAlertTab() {
   const getLevelColor = (level: SkyAlert['level']) => {
     switch (level) {
       case 'violenta':
+      case 'violento':
         return 'bg-purple-600 text-white';
       case 'severa':
+      case 'severo':
         return 'bg-destructive text-destructive-foreground';
       case 'moderada':
         return 'bg-warning text-warning-foreground';
@@ -46,8 +48,10 @@ export function SkyAlertTab() {
   const getLevelBorder = (level: SkyAlert['level']) => {
     switch (level) {
       case 'violenta':
+      case 'violento':
         return 'border-purple-600';
       case 'severa':
+      case 'severo':
         return 'border-destructive';
       case 'moderada':
         return 'border-warning';
@@ -59,8 +63,10 @@ export function SkyAlertTab() {
   const getLevelIcon = (level: SkyAlert['level']) => {
     switch (level) {
       case 'violenta':
+      case 'violento':
         return '💥';
       case 'severa':
+      case 'severo':
         return '🚨';
       case 'moderada':
         return '⚠️';
@@ -69,8 +75,11 @@ export function SkyAlertTab() {
     }
   };
 
-  // Only show severe and violent alerts
-  const visibleAlerts = alerts.filter(a => a.level === 'severa' || a.level === 'violenta');
+  // Only show severe and violent alerts (both masculine and feminine forms)
+  const visibleAlerts = alerts.filter(a => 
+    a.level === 'severa' || a.level === 'severo' || 
+    a.level === 'violenta' || a.level === 'violento'
+  );
 
   return (
     <div className="space-y-4">
