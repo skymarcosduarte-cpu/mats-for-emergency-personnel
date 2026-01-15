@@ -136,16 +136,32 @@ serve(async (req) => {
       }
     }
 
-    // Sort by date (newest first) and limit to 200
-    allFires.sort((a, b) => {
+    // Separate fires into Mexico (lat < 28) and US/border regions (lat >= 28)
+    // Mexico mainland is roughly 14°N to 28°N
+    const mexicoFires = allFires.filter(f => (f.lat as number) < 28);
+    const borderFires = allFires.filter(f => (f.lat as number) >= 28);
+    
+    console.log(`Geographic distribution: ${mexicoFires.length} in Mexico, ${borderFires.length} in border/US region`);
+
+    // Sort each group by date (newest first)
+    const sortByDate = (a: Record<string, unknown>, b: Record<string, unknown>) => {
       const dateA = `${a.acqDate}-${String(a.acqTime).padStart(4, '0')}`;
       const dateB = `${b.acqDate}-${String(b.acqTime).padStart(4, '0')}`;
       return dateB.localeCompare(dateA);
-    });
+    };
     
-    const fires = allFires.slice(0, 200);
+    mexicoFires.sort(sortByDate);
+    borderFires.sort(sortByDate);
+    
+    // Take up to 120 from Mexico and up to 80 from border region
+    // This ensures Mexico fires are always included
+    const mexicoSlice = mexicoFires.slice(0, 120);
+    const borderSlice = borderFires.slice(0, 80);
+    
+    // Combine and sort again by date
+    const fires = [...mexicoSlice, ...borderSlice].sort(sortByDate).slice(0, 200);
 
-    console.log(`Returning ${fires.length} fire hotspots (newest date: ${fires[0]?.acqDate || 'none'})`);
+    console.log(`Returning ${fires.length} fire hotspots (${mexicoSlice.length} Mexico, ${borderSlice.length} border) - newest: ${fires[0]?.acqDate || 'none'}`);
 
     return new Response(JSON.stringify({ success: true, fires }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
