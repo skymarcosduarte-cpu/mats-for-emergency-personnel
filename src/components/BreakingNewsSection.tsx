@@ -58,6 +58,26 @@ const CATEGORY_LABELS: Record<string, string> = {
   emergencias: 'Emergencias',
 };
 
+// Keywords to identify emergency news by content (not just source)
+const EMERGENCY_KEYWORDS = [
+  'accidente', 'emergencia', 'explosión', 'explosion', 'desastre', 
+  'huracán', 'huracan', 'incendio', 'terremoto', 'sismo', 'temblor',
+  'inundación', 'inundacion', 'tornado', 'tsunami', 'evacuación', 'evacuacion',
+  'muertos', 'fallecidos', 'víctimas', 'victimas', 'heridos', 'lesionados',
+  'derrumbe', 'colapso', 'atentado', 'alerta', 'urgente', 'grave',
+  'tormenta', 'ciclón', 'ciclon', 'erupción', 'erupcion', 'volcán', 'volcan',
+  'rescate', 'deslizamiento', 'avalancha', 'sequía', 'sequia',
+  'contaminación', 'contaminacion', 'fuga de gas', 'naufragio', 'secuestro',
+  'asesinato', 'homicidio', 'tragedia', 'catástrofe', 'catastrofe',
+  'blackout', 'apagón', 'apagon', 'crisis', 'epidemia', 'pandemia'
+];
+
+// Check if a news item matches emergency keywords
+function isEmergencyNews(item: NewsItem): boolean {
+  const textToSearch = `${item.title} ${item.description || ''}`.toLowerCase();
+  return EMERGENCY_KEYWORDS.some(keyword => textToSearch.includes(keyword));
+}
+
 // Format relative time for news items (only for past dates)
 function formatNewsTime(pubDate: string): string {
   try {
@@ -152,6 +172,7 @@ function isValidNewsDate(pubDate: string): boolean {
 
 const INITIAL_ITEMS_COUNT = 10;
 const LOAD_MORE_COUNT = 10;
+const MAX_ITEMS_COUNT = 30;
 
 export const BreakingNewsSection: React.FC = () => {
   const { items, loading, error, fetchedAt, refresh } = useBreakingNews();
@@ -164,9 +185,18 @@ export const BreakingNewsSection: React.FC = () => {
       .filter(item => isValidNewsDate(item.pubDate))
       .filter(item => {
         if (selectedCategory === 'all') return true;
+        
+        // For emergencies, check both source AND content keywords
+        if (selectedCategory === 'emergencias') {
+          const sourceConfig = SOURCE_CONFIG[item.source];
+          const isEmergencySource = sourceConfig?.category === 'emergencias';
+          return isEmergencySource || isEmergencyNews(item);
+        }
+        
         const sourceConfig = SOURCE_CONFIG[item.source];
         return sourceConfig?.category === selectedCategory;
-      });
+      })
+      .slice(0, MAX_ITEMS_COUNT); // Limit to max 30 items
   }, [items, selectedCategory]);
 
   // Reset visible count when category changes
