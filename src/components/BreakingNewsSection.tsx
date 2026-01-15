@@ -18,26 +18,26 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
-// Available sources with region info
-const SOURCE_CONFIG: Record<string, { region: 'mexico' | 'latam' | 'internacional' | 'espana'; color: string }> = {
-  'CNN en Español': { region: 'latam', color: 'bg-red-500/10 text-red-500 border-red-500/30' },
-  'BBC Mundo': { region: 'latam', color: 'bg-blue-500/10 text-blue-500 border-blue-500/30' },
-  'Milenio': { region: 'mexico', color: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
-  'El Universal': { region: 'mexico', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
-  'Reuters': { region: 'internacional', color: 'bg-orange-500/10 text-orange-600 border-orange-500/30' },
-  'Al Jazeera': { region: 'internacional', color: 'bg-teal-500/10 text-teal-600 border-teal-500/30' },
-  'France24 Español': { region: 'internacional', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/30' },
-  'DW Español': { region: 'internacional', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30' },
-  'El País': { region: 'espana', color: 'bg-sky-500/10 text-sky-600 border-sky-500/30' },
-  'RTVE': { region: 'espana', color: 'bg-rose-500/10 text-rose-600 border-rose-500/30' },
+// Available sources with category info
+const SOURCE_CONFIG: Record<string, { category: 'nacionales' | 'internacionales' | 'deportes' | 'emergencias'; color: string }> = {
+  'CNN en Español': { category: 'internacionales', color: 'bg-red-500/10 text-red-500 border-red-500/30' },
+  'BBC Mundo': { category: 'internacionales', color: 'bg-blue-500/10 text-blue-500 border-blue-500/30' },
+  'Milenio': { category: 'nacionales', color: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
+  'El Universal': { category: 'nacionales', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
+  'Reuters': { category: 'internacionales', color: 'bg-orange-500/10 text-orange-600 border-orange-500/30' },
+  'Al Jazeera': { category: 'internacionales', color: 'bg-teal-500/10 text-teal-600 border-teal-500/30' },
+  'France24 Español': { category: 'internacionales', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/30' },
+  'DW Español': { category: 'internacionales', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30' },
+  'El País': { category: 'internacionales', color: 'bg-sky-500/10 text-sky-600 border-sky-500/30' },
+  'RTVE': { category: 'internacionales', color: 'bg-rose-500/10 text-rose-600 border-rose-500/30' },
 };
 
-const REGION_LABELS: Record<string, string> = {
+const CATEGORY_LABELS: Record<string, string> = {
   all: 'Todas',
-  mexico: 'México',
-  latam: 'Latinoamérica',
-  internacional: 'Internacional',
-  espana: 'España',
+  nacionales: 'Nacionales',
+  internacionales: 'Internacionales',
+  deportes: 'Deportes',
+  emergencias: 'Emergencias',
 };
 
 // Format relative time for news items (only for past dates)
@@ -137,23 +137,23 @@ const LOAD_MORE_COUNT = 10;
 
 export const BreakingNewsSection: React.FC = () => {
   const { items, loading, error, fetchedAt, refresh } = useBreakingNews();
-  const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [visibleCount, setVisibleCount] = useState(INITIAL_ITEMS_COUNT);
   
-  // Filter out items with future dates and by selected region
+  // Filter out items with future dates and by selected category
   const validItems = useMemo(() => {
     return items
       .filter(item => isValidNewsDate(item.pubDate))
       .filter(item => {
-        if (selectedRegion === 'all') return true;
+        if (selectedCategory === 'all') return true;
         const sourceConfig = SOURCE_CONFIG[item.source];
-        return sourceConfig?.region === selectedRegion;
+        return sourceConfig?.category === selectedCategory;
       });
-  }, [items, selectedRegion]);
+  }, [items, selectedCategory]);
 
-  // Reset visible count when region changes
-  const handleRegionChange = (region: string) => {
-    setSelectedRegion(region);
+  // Reset visible count when category changes
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
     setVisibleCount(INITIAL_ITEMS_COUNT);
   };
 
@@ -165,7 +165,7 @@ export const BreakingNewsSection: React.FC = () => {
     setVisibleCount(prev => prev + LOAD_MORE_COUNT);
   };
 
-  const regions = ['all', 'mexico', 'latam', 'internacional', 'espana'];
+  const categories = ['all', 'nacionales', 'internacionales', 'deportes', 'emergencias'];
 
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border">
@@ -193,18 +193,18 @@ export const BreakingNewsSection: React.FC = () => {
           </p>
         )}
         
-        {/* Region filter */}
+        {/* Category filter */}
         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
           <Filter className="w-3 h-3 text-muted-foreground" />
-          {regions.map(region => (
+          {categories.map(category => (
             <Button
-              key={region}
-              variant={selectedRegion === region ? 'default' : 'outline'}
+              key={category}
+              variant={selectedCategory === category ? 'default' : 'outline'}
               size="sm"
               className="h-6 text-[10px] px-2"
-              onClick={() => handleRegionChange(region)}
+              onClick={() => handleCategoryChange(category)}
             >
-              {REGION_LABELS[region]}
+              {CATEGORY_LABELS[category]}
             </Button>
           ))}
         </div>
