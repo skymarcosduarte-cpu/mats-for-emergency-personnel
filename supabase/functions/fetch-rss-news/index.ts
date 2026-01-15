@@ -34,11 +34,13 @@ const PRIORITY_FEEDS: { url: string; source: string; category: string }[] = [
   { url: 'https://www.france24.com/es/rss', source: 'France24 Español', category: 'internacionales' },
   { url: 'https://www.dw.com/es/noticias/s-30684/rss', source: 'DW Español', category: 'internacionales' },
   
-  // Deportes
-  { url: 'https://www.espn.com.mx/espn/rss/news', source: 'ESPN México', category: 'deportes' },
-  { url: 'https://www.marca.com/rss/futbol.xml', source: 'Marca', category: 'deportes' },
+  // Deportes (Mundial)
+  { url: 'https://www.espn.com/espn/rss/news', source: 'ESPN', category: 'deportes' },
+  { url: 'https://www.marca.com/rss/portada.xml', source: 'Marca', category: 'deportes' },
   { url: 'https://as.com/rss/tags/ultimas_noticias.xml', source: 'AS', category: 'deportes' },
-  { url: 'https://www.mediotiempo.com/rss/portada.xml', source: 'Medio Tiempo', category: 'deportes' },
+  { url: 'https://www.skysports.com/rss/12040', source: 'Sky Sports', category: 'deportes' },
+  { url: 'https://www.goal.com/feeds/es/news', source: 'Goal', category: 'deportes' },
+  { url: 'https://sports.yahoo.com/rss/', source: 'Yahoo Sports', category: 'deportes' },
   
   // Emergencias
   { url: 'https://www.gob.mx/cenapred/es/archivo/rss', source: 'CENAPRED', category: 'emergencias' },
