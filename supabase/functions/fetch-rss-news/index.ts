@@ -22,34 +22,46 @@ interface RSSSource {
 
 // High-priority, reliable sources to fetch
 const PRIORITY_FEEDS: { url: string; source: string; category: string }[] = [
-  // Mexico - Nacionales
+  // Mexico - Nacionales (expanded)
   { url: 'https://www.milenio.com/rss', source: 'Milenio', category: 'nacionales' },
   { url: 'https://www.eluniversal.com.mx/rss.xml', source: 'El Universal', category: 'nacionales' },
+  { url: 'https://www.informador.mx/rss/jalisco.xml', source: 'El Informador', category: 'nacionales' },
+  { url: 'https://www.jornada.com.mx/rss/edicion.xml', source: 'La Jornada', category: 'nacionales' },
+  { url: 'https://www.excelsior.com.mx/rss.xml', source: 'Excélsior', category: 'nacionales' },
+  { url: 'https://www.reforma.com/rss/portada.xml', source: 'Reforma', category: 'nacionales' },
+  { url: 'https://www.proceso.com.mx/feed', source: 'Proceso', category: 'nacionales' },
+  { url: 'https://expansion.mx/rss', source: 'Expansión', category: 'nacionales' },
+  { url: 'https://www.elfinanciero.com.mx/arc/outboundfeeds/rss/', source: 'El Financiero', category: 'nacionales' },
+  { url: 'https://www.eleconomista.com.mx/rss/', source: 'El Economista', category: 'nacionales' },
   
-  // Internacionales
+  // Internacionales (expanded)
   { url: 'https://cnnespanol.cnn.com/feed/', source: 'CNN en Español', category: 'internacionales' },
   { url: 'https://feeds.bbci.co.uk/mundo/rss.xml', source: 'BBC Mundo', category: 'internacionales' },
   { url: 'https://www.reuters.com/arc/outboundfeeds/news/?outputType=xml', source: 'Reuters', category: 'internacionales' },
   { url: 'https://www.aljazeera.com/xml/rss/all.xml', source: 'Al Jazeera', category: 'internacionales' },
   { url: 'https://www.france24.com/es/rss', source: 'France24 Español', category: 'internacionales' },
   { url: 'https://www.dw.com/es/noticias/s-30684/rss', source: 'DW Español', category: 'internacionales' },
+  { url: 'https://elpais.com/rss/elpais/portada.xml', source: 'El País', category: 'internacionales' },
+  { url: 'https://www.infobae.com/america/rss/', source: 'Infobae', category: 'internacionales' },
+  { url: 'https://www.rtve.es/noticias/rss/', source: 'RTVE', category: 'internacionales' },
+  { url: 'https://www.telesurtv.net/rss/news.xml', source: 'TeleSUR', category: 'internacionales' },
   
-  // Deportes (Mundial + Latinoamérica)
-  { url: 'https://www.espn.com/espn/rss/news', source: 'ESPN', category: 'deportes' },
+  // Deportes en Español (expanded)
   { url: 'https://www.espn.com.mx/espn/rss/noticias', source: 'ESPN Latam', category: 'deportes' },
   { url: 'https://www.marca.com/rss/portada.xml', source: 'Marca', category: 'deportes' },
   { url: 'https://as.com/rss/tags/ultimas_noticias.xml', source: 'AS', category: 'deportes' },
-  { url: 'https://www.skysports.com/rss/12040', source: 'Sky Sports', category: 'deportes' },
-  { url: 'https://www.goal.com/feeds/es/news', source: 'Goal', category: 'deportes' },
-  { url: 'https://sports.yahoo.com/rss/', source: 'Yahoo Sports', category: 'deportes' },
   { url: 'https://www.tycsports.com/rss/futbol.xml', source: 'TyC Sports', category: 'deportes' },
-  { url: 'https://www.foxsports.com.mx/rss/', source: 'Fox Sports MX', category: 'deportes' },
   { url: 'https://www.ole.com.ar/rss/ultimas-noticias/', source: 'Olé', category: 'deportes' },
+  { url: 'https://www.goal.com/feeds/es/news', source: 'Goal', category: 'deportes' },
+  { url: 'https://www.mediotiempo.com/rss.xml', source: 'Medio Tiempo', category: 'deportes' },
+  { url: 'https://www.record.com.mx/rss.xml', source: 'Récord', category: 'deportes' },
+  { url: 'https://depor.com/rss/home.xml', source: 'Depor', category: 'deportes' },
+  { url: 'https://www.mundodeportivo.com/rss/home.xml', source: 'Mundo Deportivo', category: 'deportes' },
+  { url: 'https://www.sport.es/es/rss/home.xml', source: 'Sport', category: 'deportes' },
   
   // Emergencias
   { url: 'https://www.gob.mx/cenapred/es/archivo/rss', source: 'CENAPRED', category: 'emergencias' },
   { url: 'https://reliefweb.int/updates/rss.xml?country=170', source: 'ReliefWeb México', category: 'emergencias' },
-  { url: 'https://www.informador.mx/rss/jalisco.xml', source: 'El Informador', category: 'emergencias' },
 ];
 
 // Decode HTML entities
