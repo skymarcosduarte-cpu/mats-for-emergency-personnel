@@ -52,6 +52,7 @@ import { MyAlertsHistory } from '@/components/MyAlertsHistory';
 import { QuakeCheckinMap } from '@/components/QuakeCheckinMap';
 import { CycloneMap } from '@/components/CycloneMap';
 import { SeismicWaveMap } from '@/components/SeismicWaveMap';
+import { SkyAlertTab } from '@/components/SkyAlertTab';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 import { useRecentQuakeCheckins } from '@/hooks/useRecentQuakeCheckins';
 import { useQuakeCheckinCounts } from '@/hooks/useQuakeCheckinCounts';
@@ -507,16 +508,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             📋 Mías
           </TabsTrigger>
           <TabsTrigger value="earthquakes" className="text-xs px-1">Sismos</TabsTrigger>
-          <TabsTrigger value="weather" className="relative text-xs px-1">
-            NOAA/USA
-            {weatherAlerts.length > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
-              >
-                {weatherAlerts.length}
-              </Badge>
-            )}
+          <TabsTrigger value="skyalert" className="relative text-xs px-1">
+            🔔 SkyAlert
           </TabsTrigger>
           <TabsTrigger value="otros" className="relative text-xs px-1">
             Otros
