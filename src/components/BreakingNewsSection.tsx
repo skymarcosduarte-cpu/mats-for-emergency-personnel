@@ -179,10 +179,46 @@ export const BreakingNewsSection: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [visibleCount, setVisibleCount] = useState(INITIAL_ITEMS_COUNT);
   
-  // Filter out items with future dates and by selected category
+  // Get all valid items (filtered by date only)
+  const allValidItems = useMemo(() => {
+    return items.filter(item => isValidNewsDate(item.pubDate));
+  }, [items]);
+
+  // Calculate counts per category
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      all: Math.min(allValidItems.length, MAX_ITEMS_COUNT),
+      nacionales: 0,
+      internacionales: 0,
+      deportes: 0,
+      emergencias: 0,
+    };
+    
+    allValidItems.forEach(item => {
+      const sourceConfig = SOURCE_CONFIG[item.source];
+      if (sourceConfig?.category) {
+        counts[sourceConfig.category]++;
+      }
+      // Also count emergency news by keywords
+      if (isEmergencyNews(item)) {
+        // Only count if not already counted as emergency source
+        if (sourceConfig?.category !== 'emergencias') {
+          counts.emergencias++;
+        }
+      }
+    });
+    
+    // Cap each count to MAX_ITEMS_COUNT
+    Object.keys(counts).forEach(key => {
+      counts[key] = Math.min(counts[key], MAX_ITEMS_COUNT);
+    });
+    
+    return counts;
+  }, [allValidItems]);
+
+  // Filter items by selected category
   const validItems = useMemo(() => {
-    return items
-      .filter(item => isValidNewsDate(item.pubDate))
+    return allValidItems
       .filter(item => {
         if (selectedCategory === 'all') return true;
         
@@ -197,7 +233,7 @@ export const BreakingNewsSection: React.FC = () => {
         return sourceConfig?.category === selectedCategory;
       })
       .slice(0, MAX_ITEMS_COUNT); // Limit to max 30 items
-  }, [items, selectedCategory]);
+  }, [allValidItems, selectedCategory]);
 
   // Reset visible count when category changes
   const handleCategoryChange = (category: string) => {
@@ -244,17 +280,28 @@ export const BreakingNewsSection: React.FC = () => {
         {/* Category filter */}
         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
           <Filter className="w-3 h-3 text-muted-foreground" />
-          {categories.map(category => (
-            <Button
-              key={category}
-              variant={selectedCategory === category ? 'default' : 'outline'}
-              size="sm"
-              className="h-6 text-[10px] px-2"
-              onClick={() => handleCategoryChange(category)}
-            >
-              {CATEGORY_LABELS[category]}
-            </Button>
-          ))}
+          {categories.map(category => {
+            const count = categoryCounts[category] || 0;
+            return (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? 'default' : 'outline'}
+                size="sm"
+                className="h-6 text-[10px] px-2 gap-1"
+                onClick={() => handleCategoryChange(category)}
+              >
+                {CATEGORY_LABELS[category]}
+                <span className={cn(
+                  "text-[9px] px-1 py-0.5 rounded-full min-w-[16px] text-center",
+                  selectedCategory === category 
+                    ? "bg-primary-foreground/20 text-primary-foreground" 
+                    : "bg-muted text-muted-foreground"
+                )}>
+                  {count}
+                </span>
+              </Button>
+            );
+          })}
         </div>
       </CardHeader>
       
