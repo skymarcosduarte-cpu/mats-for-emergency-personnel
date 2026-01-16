@@ -5,40 +5,69 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SSN_RSS_URL = 'https://www.ssn.unam.mx/rss/ultimos-sismos.xml';
-const TIMEOUT_MS = 30000;
-const MAX_RETRIES = 3;
+// Direct SSN URLs
+const SSN_URLS = [
+  'https://www.ssn.unam.mx/rss/ultimos-sismos.xml',
+  'http://www.ssn.unam.mx/rss/ultimos-sismos.xml',
+];
 
-async function fetchWithRetry(url: string, retries = MAX_RETRIES): Promise<Response> {
-  let lastError: unknown;
+// CORS/Proxy fallbacks (when SSN blocks direct connections from datacenter)
+const PROXY_TEMPLATES = [
+  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+];
 
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      console.log(`[fetch-ssn-rss] Attempt ${attempt}/${retries}`);
-      const res = await fetch(url, {
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; MATSApp/1.0)',
-          'Accept': 'application/xml, text/xml, */*',
-          'Accept-Language': 'es-MX,es;q=0.9,en;q=0.6',
-        },
-      });
+const TIMEOUT_MS = 20000;
 
-      if (res.ok) return res;
+async function tryFetch(url: string, label: string): Promise<string | null> {
+  try {
+    console.log(`[fetch-ssn-rss] Trying ${label}...`);
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/xml, text/xml, application/rss+xml, */*',
+        'Accept-Language': 'es-MX,es;q=0.9',
+        'Cache-Control': 'no-cache',
+      },
+    });
 
-      lastError = new Error(`SSN RSS fetch failed: ${res.status} ${res.statusText}`);
-      console.error('[fetch-ssn-rss] Non-OK response:', res.status, res.statusText);
-    } catch (err) {
-      lastError = err;
-      console.error('[fetch-ssn-rss] Error:', err instanceof Error ? err.message : err);
+    if (!res.ok) {
+      console.warn(`[fetch-ssn-rss] ${label} returned ${res.status}`);
+      return null;
     }
 
-    if (attempt < retries) {
-      await new Promise((r) => setTimeout(r, 750 * attempt));
+    const text = await res.text();
+    if (text.includes('<rss') || text.includes('<item')) {
+      console.log(`[fetch-ssn-rss] ${label} success, length: ${text.length}`);
+      return text;
+    }
+
+    console.warn(`[fetch-ssn-rss] ${label} response not valid RSS`);
+    return null;
+  } catch (err) {
+    console.error(`[fetch-ssn-rss] ${label} error:`, err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+async function fetchSSNRss(): Promise<string> {
+  // 1) Try direct URLs first
+  for (const url of SSN_URLS) {
+    const result = await tryFetch(url, `direct ${url}`);
+    if (result) return result;
+  }
+
+  // 2) Try via proxy services
+  for (const proxyFn of PROXY_TEMPLATES) {
+    for (const url of SSN_URLS) {
+      const proxyUrl = proxyFn(url);
+      const result = await tryFetch(proxyUrl, `proxy for ${url}`);
+      if (result) return result;
     }
   }
 
-  throw lastError instanceof Error ? lastError : new Error('Unknown error fetching SSN RSS');
+  throw new Error('SSN RSS unavailable from all sources');
 }
 
 serve(async (req) => {
@@ -47,16 +76,13 @@ serve(async (req) => {
   }
 
   try {
-    const res = await fetchWithRetry(SSN_RSS_URL);
-    const xml = await res.text();
-
-    console.log(`[fetch-ssn-rss] XML length: ${xml.length}`);
+    const xml = await fetchSSNRss();
 
     return new Response(JSON.stringify({ success: true, xml }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('[fetch-ssn-rss] Unexpected error:', error);
+    console.error('[fetch-ssn-rss] All attempts failed:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(JSON.stringify({ success: false, error: message }), {
       status: 500,
