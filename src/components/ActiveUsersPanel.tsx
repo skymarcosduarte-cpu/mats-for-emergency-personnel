@@ -208,15 +208,30 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
       >
         {isOpen && (
           <div className="flex flex-col h-full max-h-[60vh]">
-            {/* Header with Close Button */}
+            {/* Header with Welcome Message */}
             <div className="p-3 border-b border-border">
+              {/* Welcome message */}
+              <div className="bg-gradient-to-r from-primary/10 to-safe/10 rounded-lg p-2 mb-3">
+                <p className="text-xs font-medium text-center">
+                  👋 ¡Bienvenido al Mapa en Vivo!
+                </p>
+                <p className="text-[11px] text-muted-foreground text-center mt-1">
+                  {activeUsers.length === 0 
+                    ? 'No hay usuarios activos en este momento'
+                    : activeUsers.length === 1 
+                      ? '1 miembro de la comunidad está activo ahora'
+                      : `${activeUsers.length} miembros de la comunidad están activos ahora`
+                  }
+                </p>
+              </div>
+
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <div className="relative">
                     <div className="w-2.5 h-2.5 rounded-full bg-safe" />
                     <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-safe animate-ping opacity-75" />
                   </div>
-                  <span className="font-semibold text-sm">{users.length} usuarios activos</span>
+                  <span className="font-semibold text-sm">{activeUsers.length} activos</span>
                 </div>
                 {/* Close Button */}
                 <Button
@@ -232,7 +247,7 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
               <div className="flex gap-2 text-[10px] text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-mats-green" />
-                  {sosActivoCount} SOS Activo
+                  {sosActivoCount} SOS
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-primary" />
