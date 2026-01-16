@@ -89,6 +89,36 @@ export type Database = {
         }
         Relationships: []
       }
+      clave100_drills: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          notification_sent_at: string | null
+          notified_users: number | null
+          scheduled_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          notification_sent_at?: string | null
+          notified_users?: number | null
+          scheduled_at: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          notification_sent_at?: string | null
+          notified_users?: number | null
+          scheduled_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       community_events: {
         Row: {
           created_at: string

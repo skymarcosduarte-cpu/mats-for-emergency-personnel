@@ -115,7 +115,7 @@ const SPECIALTIES = [
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onLogout
 }) => {
-  const { profile, role, signOut, updateProfile, updateRole, deleteAccount } = useAuth();
+  const { user, profile, role, signOut, updateProfile, updateRole, deleteAccount } = useAuth();
   const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
   const { isSupported: webPushSupported, isSubscribed: webPushSubscribed, subscribe: subscribeToPush } = useWebPushSubscription();
   const { helpRequestSounds, earthquakeSounds, earthquakeRadiusKm, internationalRedAlerts, ssnNationalAlertMagnitude, skyAlertSounds, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusKm, setInternationalRedAlerts, setSsnNationalAlertMagnitude, setSkyAlertSounds } = useAlertSettings();
@@ -168,6 +168,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [savingSpecialties, setSavingSpecialties] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showDrillScheduler, setShowDrillScheduler] = useState(false);
 
   const handleRequestPermission = async () => {
     setRequestingPermission(true);
@@ -707,6 +708,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   className="border-primary/30 text-primary hover:bg-primary/10"
                 >
                   Abrir
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Simulacro Clave 100 - Only for Zombie and El Lagarto */}
+        {user && ['7c823685-369d-4f62-8459-80486832ba1a', '0e0d5ee7-628d-4a98-af26-b60ede2536ce'].includes(user.id) && (
+          <Card className="bg-card border-border border-amber-500/30">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                    <Bell className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Simulacro Clave 100</p>
+                    <p className="text-xs text-muted-foreground">
+                      Programar simulacros de emergencia
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDrillScheduler(true)}
+                  className="border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
+                >
+                  Programar
                 </Button>
               </div>
             </CardContent>

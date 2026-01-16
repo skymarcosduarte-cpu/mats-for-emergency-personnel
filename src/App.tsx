@@ -35,6 +35,7 @@ import { InternalMessaging } from '@/components/InternalMessaging';
 import { UnreadMessagesBanner } from '@/components/UnreadMessagesBanner';
 import { Clave100Overlay } from '@/components/Clave100Overlay';
 import { TravelerLocationDialog } from '@/components/TravelerLocationDialog';
+import { DrillAlertBanner } from '@/components/DrillAlertBanner';
 
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
