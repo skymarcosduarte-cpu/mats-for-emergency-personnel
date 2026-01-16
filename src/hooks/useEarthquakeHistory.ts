@@ -255,6 +255,12 @@ interface UseEarthquakeHistoryOptions {
   onMajorSSNQuake?: MajorSSNQuakeCallback;
 }
 
+export interface SSNFetchStatus {
+  available: boolean;
+  lastAttempt: Date | null;
+  errorMessage: string | null;
+}
+
 export function useEarthquakeHistory(
   userPosition: GeoPosition | null,
   options?: UseEarthquakeHistoryOptions
@@ -265,6 +271,11 @@ export function useEarthquakeHistory(
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [rawEarthquakes, setRawEarthquakes] = useState<USGSEarthquake[]>([]);
+  const [ssnStatus, setSsnStatus] = useState<SSNFetchStatus>({
+    available: true,
+    lastAttempt: null,
+    errorMessage: null,
+  });
   
   // Track which major SSN quakes we've already alerted about - load from storage on init
   const alertedMajorQuakesRef = useRef<Set<string>>(getAcknowledgedMajorSSNQuakes());
@@ -329,6 +340,7 @@ export function useEarthquakeHistory(
           }
         } else {
           // Fetch fresh data from both sources in parallel
+          let ssnError: string | null = null;
           const [usgsQuakes, ssnQuakes] = await Promise.all([
             fetchFromUSGS().catch(err => {
               console.warn('Error fetching USGS:', err);
@@ -336,9 +348,17 @@ export function useEarthquakeHistory(
             }),
             parseSSNFeed().catch(err => {
               console.warn('Error fetching SSN:', err);
+              ssnError = err instanceof Error ? err.message : 'Error desconocido';
               return [] as USGSEarthquake[];
             }),
           ]);
+
+          // Update SSN status
+          setSsnStatus({
+            available: ssnQuakes.length > 0,
+            lastAttempt: new Date(),
+            errorMessage: ssnQuakes.length === 0 ? (ssnError || 'SSN no disponible') : null,
+          });
           
           // Merge both sources
           quakes = [...usgsQuakes, ...ssnQuakes];
@@ -468,6 +488,7 @@ export function useEarthquakeHistory(
     error,
     isOffline,
     lastUpdated,
+    ssnStatus,
     refresh: () => fetchEarthquakes(true),
   };
 }
