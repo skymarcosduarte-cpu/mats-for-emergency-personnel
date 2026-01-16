@@ -694,16 +694,20 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <InternalMessagesProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/install" element={<InstallPage />} />
-            <Route path="/trip/:shareToken" element={<SharedTripPage />} />
-            <Route path="/" element={<AppContent />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </InternalMessagesProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public pages - outside of InternalMessagesProvider to avoid auth blocking */}
+          <Route path="/install" element={<InstallPage />} />
+          <Route path="/trip/:shareToken" element={<SharedTripPage />} />
+          {/* Main app with internal messages provider */}
+          <Route path="/" element={
+            <InternalMessagesProvider>
+              <AppContent />
+            </InternalMessagesProvider>
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
       <Toaster />
       <Sonner />
     </TooltipProvider>
