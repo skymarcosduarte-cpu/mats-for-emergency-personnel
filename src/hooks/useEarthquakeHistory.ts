@@ -7,6 +7,7 @@ import type { USGSEarthquake, GeoPosition } from '@/types';
 import { calculateDistance } from '@/hooks/useLocation';
 import { cacheEarthquakes, getCachedEarthquakes, isEarthquakeCacheFresh, updateLastSync } from '@/lib/offlineDataCache';
 import { getSsnNationalAlertMagnitude } from '@/hooks/useAlertSettings';
+import { supabase } from '@/integrations/supabase/client';
 
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
 // Use HTTPS to avoid mixed-content blocking on HTTPS sites
@@ -74,7 +75,7 @@ async function fetchWithCorsProxy(url: string): Promise<Response> {
     try {
       console.log(`[CORS] Trying proxy ${i + 1}/${CORS_PROXIES.length}...`);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
       
       const response = await fetch(proxyUrl, { 
         signal: controller.signal,
@@ -99,101 +100,151 @@ async function fetchWithCorsProxy(url: string): Promise<Response> {
 }
 
 // Parse SSN RSS feed and convert to USGSEarthquake format
+function parseSSNXml(text: string): USGSEarthquake[] {
+  // Validate that we got XML
+  if (!text.includes('<rss') && !text.includes('<item')) {
+    console.warn('[SSN] Response does not appear to be valid RSS XML');
+    return [];
+  }
+
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(text, 'text/xml');
+
+  // Check for parse errors
+  const parseError = xml.querySelector('parsererror');
+  if (parseError) {
+    console.warn('[SSN] XML parse error:', parseError.textContent);
+    return [];
+  }
+
+  const items = xml.querySelectorAll('item');
+  const earthquakes: USGSEarthquake[] = [];
+
+  items.forEach((item) => {
+    try {
+      const title = item.querySelector('title')?.textContent || '';
+      const description = item.querySelector('description')?.textContent || '';
+      const guid = item.querySelector('guid')?.textContent?.trim() || '';
+
+      // Coordinates: prefer namespace lookup, but fall back to tag queries (some parsers/proxies mess with namespaces)
+      const ns = 'http://www.w3.org/2003/01/geo/wgs84_pos#';
+      const latText =
+        item.getElementsByTagNameNS(ns, 'lat')[0]?.textContent ||
+        item.querySelector('geo\\:lat')?.textContent ||
+        item.querySelector('lat')?.textContent ||
+        '0';
+      const lngText =
+        item.getElementsByTagNameNS(ns, 'long')[0]?.textContent ||
+        item.querySelector('geo\\:long')?.textContent ||
+        item.querySelector('long')?.textContent ||
+        '0';
+
+      const lat = parseFloat(latText);
+      const lng = parseFloat(lngText);
+
+      // Parse magnitude from title (e.g., "3.1, 14 km al SUROESTE de ZIHUATANEJO, GRO")
+      const magMatch = title.match(/^([\d.]+)/);
+      const mag = magMatch ? parseFloat(magMatch[1]) : 0;
+
+      // Parse date and depth from description (be tolerant to spacing)
+      const dateMatch = description.match(/Fecha:\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/);
+      const depthMatch = description.match(/Profundidad:\s*([\d.]+)\s*km/i);
+
+      let timestamp = Date.now();
+      if (dateMatch) {
+        // SSN uses Mexico City time (UTC-6)
+        const mexicoTime = new Date(dateMatch[1].replace(' ', 'T') + '-06:00');
+        timestamp = mexicoTime.getTime();
+      }
+
+      const depth = depthMatch ? parseFloat(depthMatch[1]) : 10;
+
+      // Clean up place name
+      const placeMatch = title.match(/,\s*(.+)/);
+      const place = placeMatch ? placeMatch[1].trim() : title;
+
+      // Create a STABLE id so the same SSN quake doesn't re-alert on every refresh/app open.
+      const stableId = guid
+        ? `ssn-${guid}`
+        : `ssn-${timestamp}-${mag.toFixed(1)}-${lat.toFixed(3)}-${lng.toFixed(3)}`;
+
+      earthquakes.push({
+        id: stableId,
+        source: 'SSN',
+        properties: {
+          mag,
+          place,
+          time: timestamp,
+          updated: timestamp,
+          url: 'https://www.ssn.unam.mx/',
+          title: `M ${mag} - ${place}`,
+          alert: null,
+          tsunami: 0,
+          depth,
+        },
+        geometry: {
+          coordinates: [lng, lat, depth],
+        },
+      });
+    } catch (e) {
+      console.warn('Error parsing SSN earthquake item:', e);
+    }
+  });
+
+  return earthquakes;
+}
+
+async function fetchSSNXmlViaBackend(): Promise<string | null> {
+  try {
+    console.log('[SSN] Trying backend RSS fetch (no CORS)...');
+    const { data, error } = await supabase.functions.invoke('fetch-ssn-rss');
+
+    if (error) {
+      console.warn('[SSN] Backend fetch failed:', error);
+      return null;
+    }
+
+    if (!data?.success || typeof data?.xml !== 'string') {
+      console.warn('[SSN] Backend returned invalid payload');
+      return null;
+    }
+
+    return data.xml as string;
+  } catch (err) {
+    console.warn('[SSN] Backend fetch threw:', err);
+    return null;
+  }
+}
+
+// Parse SSN RSS feed and convert to USGSEarthquake format
 async function parseSSNFeed(): Promise<USGSEarthquake[]> {
+  // 1) First try client-side via CORS proxies
   try {
     console.log('[SSN] Fetching SSN feed via CORS proxy...');
     const response = await fetchWithCorsProxy(SSN_FEED_URL);
     const text = await response.text();
     console.log('[SSN] Received response, length:', text.length);
-    
-    // Validate that we got XML
-    if (!text.includes('<rss') && !text.includes('<item')) {
-      console.warn('[SSN] Response does not appear to be valid RSS XML');
-      return [];
+
+    const parsed = parseSSNXml(text);
+    if (parsed.length > 0) {
+      console.log('[SSN] Parsed earthquakes:', parsed.length);
+      return parsed;
     }
-    
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, 'text/xml');
-    
-    // Check for parse errors
-    const parseError = xml.querySelector('parsererror');
-    if (parseError) {
-      console.warn('[SSN] XML parse error:', parseError.textContent);
-      return [];
-    }
-    
-    const items = xml.querySelectorAll('item');
-    const earthquakes: USGSEarthquake[] = [];
-    
-    items.forEach((item) => {
-      try {
-        const title = item.querySelector('title')?.textContent || '';
-        const description = item.querySelector('description')?.textContent || '';
-        const guid = item.querySelector('guid')?.textContent?.trim() || '';
 
-        const lat = parseFloat(
-          item.getElementsByTagNameNS('http://www.w3.org/2003/01/geo/wgs84_pos#', 'lat')[0]?.textContent || '0'
-        );
-        const lng = parseFloat(
-          item.getElementsByTagNameNS('http://www.w3.org/2003/01/geo/wgs84_pos#', 'long')[0]?.textContent || '0'
-        );
-
-        // Parse magnitude from title (e.g., "3.1, 14 km al SUROESTE de ZIHUATANEJO, GRO")
-        const magMatch = title.match(/^([\d.]+)/);
-        const mag = magMatch ? parseFloat(magMatch[1]) : 0;
-
-        // Parse date and depth from description
-        const dateMatch = description.match(/Fecha:(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/);
-        const depthMatch = description.match(/Profundidad:\s*([\d.]+)\s*km/);
-
-        let timestamp = Date.now();
-        if (dateMatch) {
-          // SSN uses Mexico City time (UTC-6)
-          const mexicoTime = new Date(dateMatch[1].replace(' ', 'T') + '-06:00');
-          timestamp = mexicoTime.getTime();
-        }
-
-        const depth = depthMatch ? parseFloat(depthMatch[1]) : 10;
-
-        // Clean up place name
-        const placeMatch = title.match(/,\s*(.+)/);
-        const place = placeMatch ? placeMatch[1].trim() : title;
-
-        // Create a STABLE id so the same SSN quake doesn't re-alert on every refresh/app open.
-        // NOTE: The previous implementation used the RSS item index, which changes as the feed updates.
-        const stableId = guid
-          ? `ssn-${guid}`
-          : `ssn-${timestamp}-${mag.toFixed(1)}-${lat.toFixed(3)}-${lng.toFixed(3)}`;
-
-        earthquakes.push({
-          id: stableId,
-          source: 'SSN',
-          properties: {
-            mag,
-            place,
-            time: timestamp,
-            updated: timestamp,
-            url: 'https://www.ssn.unam.mx/',
-            title: `M ${mag} - ${place}`,
-            alert: null,
-            tsunami: 0,
-            depth,
-          },
-          geometry: {
-            coordinates: [lng, lat, depth],
-          },
-        });
-      } catch (e) {
-        console.warn('Error parsing SSN earthquake item:', e);
-      }
-    });
-    
-    console.log('[SSN] Parsed earthquakes:', earthquakes.length);
-    return earthquakes;
+    console.warn('[SSN] Proxy response parsed 0 items; falling back to backend...');
   } catch (error) {
-    console.error('[SSN] Error fetching SSN feed:', error);
-    return [];
+    console.error('[SSN] Error fetching SSN feed via proxies:', error);
   }
+
+  // 2) Fallback: backend fetch to bypass CORS/proxy instability
+  const backendXml = await fetchSSNXmlViaBackend();
+  if (backendXml) {
+    const parsed = parseSSNXml(backendXml);
+    console.log('[SSN] Parsed earthquakes via backend:', parsed.length);
+    return parsed;
+  }
+
+  return [];
 }
 
 
