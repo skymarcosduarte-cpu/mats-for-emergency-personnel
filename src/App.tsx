@@ -36,6 +36,7 @@ import { UnreadMessagesBanner } from '@/components/UnreadMessagesBanner';
 import { Clave100Overlay } from '@/components/Clave100Overlay';
 import { TravelerLocationDialog } from '@/components/TravelerLocationDialog';
 import { DrillAlertBanner } from '@/components/DrillAlertBanner';
+import { CommunityChat } from '@/components/CommunityChat';
 
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
@@ -211,6 +212,10 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   const [messagingOpen, setMessagingOpen] = useState(false);
   const [messagingUserId, setMessagingUserId] = useState<string | null>(null);
   const [messagingUserName, setMessagingUserName] = useState<string | null>(null);
+  
+  // State for community chat modal
+  const [communityChatOpen, setCommunityChatOpen] = useState(false);
+  const [communityChatContext, setCommunityChatContext] = useState<{ type: 'general' | 'clave100' | 'drill'; id?: string; title?: string }>({ type: 'general' });
   
   // Handler to open messaging with a specific user
   const handleOpenMessaging = useCallback((userId: string, userName: string | null) => {
@@ -563,7 +568,12 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       )}
 
       {/* Drill Alert Banner - shows during active drills */}
-      <DrillAlertBanner />
+      <DrillAlertBanner 
+        onOpenCommunityChat={(drillId) => {
+          setCommunityChatContext({ type: 'drill', id: drillId, title: '🔔 Chat Simulacro' });
+          setCommunityChatOpen(true);
+        }}
+      />
 
       <InstallPrompt />
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS'} disasterMode={disasterMode} messageCount={unreadMessageCount} />
@@ -682,10 +692,20 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
         audioDurationMs={clave100Alert?.audioDurationMs}
         onDismiss={dismissClave100}
         onOpenChat={() => {
-          if (clave100Alert?.senderId) {
-            handleOpenMessaging(clave100Alert.senderId, clave100Alert.senderName);
-          }
+          // Open community chat for Clave 100 instead of individual chat
+          setCommunityChatContext({ type: 'clave100', title: '🚨 Chat CLAVE 100' });
+          setCommunityChatOpen(true);
+          dismissClave100();
         }}
+      />
+      
+      {/* Community Chat - opens during drills and Clave 100 */}
+      <CommunityChat
+        isOpen={communityChatOpen}
+        onClose={() => setCommunityChatOpen(false)}
+        contextType={communityChatContext.type}
+        contextId={communityChatContext.id}
+        title={communityChatContext.title || 'Chat Comunidad'}
       />
 
       {/* Floating Help Button - Always accessible */}
