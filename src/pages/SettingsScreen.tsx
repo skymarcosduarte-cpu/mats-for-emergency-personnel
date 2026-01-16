@@ -1773,6 +1773,49 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   ⚠️ El sonido es muy fuerte - asegúrate de que tu volumen esté bajo
                 </p>
               </div>
+
+              {/* Opt-out from drills */}
+              <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center",
+                      profile?.opt_out_drills ? "bg-muted" : "bg-amber-500/20"
+                    )}>
+                      {profile?.opt_out_drills ? (
+                        <BellOff className="w-5 h-5 text-muted-foreground" />
+                      ) : (
+                        <Bell className="w-5 h-5 text-amber-500" />
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="drill-opt-out" className="text-foreground font-medium">
+                        Participar en simulacros
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Recibir alertas de Simulacro Clave 100
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    id="drill-opt-out"
+                    checked={!profile?.opt_out_drills}
+                    onCheckedChange={async (checked) => {
+                      try {
+                        await updateProfile({ opt_out_drills: !checked });
+                        toast.success(checked 
+                          ? 'Participarás en los próximos simulacros' 
+                          : 'Has cancelado tu participación en simulacros');
+                      } catch {
+                        toast.error('Error al actualizar preferencia');
+                      }
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  💡 Si estás en otro país o zona horaria, puedes desactivar esta opción para no recibir alertas de simulacro.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -578,6 +578,7 @@ export type Database = {
           invite_code_used: string | null
           medical_conditions: string | null
           nickname: string
+          opt_out_drills: boolean
           phone: string
           privacy_consent_at: string | null
           share_location: boolean
@@ -605,6 +606,7 @@ export type Database = {
           invite_code_used?: string | null
           medical_conditions?: string | null
           nickname: string
+          opt_out_drills?: boolean
           phone: string
           privacy_consent_at?: string | null
           share_location?: boolean
@@ -632,6 +634,7 @@ export type Database = {
           invite_code_used?: string | null
           medical_conditions?: string | null
           nickname?: string
+          opt_out_drills?: boolean
           phone?: string
           privacy_consent_at?: string | null
           share_location?: boolean

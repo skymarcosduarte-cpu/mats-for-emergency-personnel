@@ -28,6 +28,7 @@ interface Profile {
   privacy_consent_at: string | null;
   terms_accepted_at: string | null;
   tutorial_disclaimer_accepted_at: string | null;
+  opt_out_drills: boolean;
   created_at: string;
   updated_at: string;
 }
