@@ -83,7 +83,8 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
     if (!user?.id) return;
     
     try {
-      let query = supabase
+      // Use type assertion since community_messages table may not be in generated types yet
+      let query = (supabase as any)
         .from('community_messages')
         .select('*')
         .order('created_at', { ascending: true })
@@ -99,10 +100,10 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
       const { data, error } = await query;
       
       if (error) throw error;
-      setMessages(data || []);
+      setMessages((data as CommunityMessage[]) || []);
       
       // Fetch user names for senders
-      const senderIds = [...new Set((data || []).map(m => m.sender_id))];
+      const senderIds = [...new Set(((data as CommunityMessage[]) || []).map(m => m.sender_id))];
       if (senderIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles_public')
@@ -254,7 +255,8 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
         else if (selectedImage) displayMessage = '📷 Imagen';
       }
       
-      const { error } = await supabase
+      // Use type assertion since community_messages table may not be in generated types yet
+      const { error } = await (supabase as any)
         .from('community_messages')
         .insert({
           sender_id: user.id,
@@ -383,7 +385,8 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
         
         setIsSending(true);
         try {
-          const { error } = await supabase
+          // Use type assertion since community_messages table may not be in generated types yet
+          const { error } = await (supabase as any)
             .from('community_messages')
             .insert({
               sender_id: user!.id,
@@ -410,7 +413,8 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
     if (!deleteMessageId) return;
     
     try {
-      const { error } = await supabase
+      // Use type assertion since community_messages table may not be in generated types yet
+      const { error } = await (supabase as any)
         .from('community_messages')
         .delete()
         .eq('id', deleteMessageId);
