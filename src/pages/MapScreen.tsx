@@ -3213,7 +3213,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         />
       )}
 
-      {/* Active Users Panel - only in comunidad mode */}
+      {/* Active Users Panel - only in comunidad mode, opens automatically */}
       {mapViewMode === 'comunidad' && (
         <ActiveUsersPanel
           users={locations}
@@ -3221,6 +3221,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           onMessageUser={handleMessageUser}
           onOpenChange={setUsersPanelOpen}
           forceCloseSignal={forceCloseMenus}
+          defaultOpen={true}
         />
       )}
 
