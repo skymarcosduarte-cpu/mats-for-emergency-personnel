@@ -268,9 +268,9 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[50000] bg-background">
+    <div className="fixed inset-0 z-[100000] bg-background">
       {/* Header */}
-      <header className="absolute top-0 left-0 right-0 z-[50010] bg-card/95 backdrop-blur-sm border-b border-border p-3 safe-area-inset-top">
+      <header className="absolute top-0 left-0 right-0 z-[100001] bg-card/95 backdrop-blur-sm border-b border-border p-3" style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top, 0px))' }}>
         <div className="flex items-center gap-2 mb-3">
           <button
             onClick={onClose}
@@ -316,7 +316,7 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
 
             {/* Autocomplete dropdown */}
             {showResults && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-[50020] max-h-60 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-[100010] max-h-60 overflow-y-auto">
                 {searchResults.map((result) => (
                   <button
                     key={result.place_id}
@@ -346,7 +346,7 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
       {/* Click overlay to close autocomplete */}
       {showResults && (
         <div 
-          className="absolute inset-0 z-[50005]" 
+          className="absolute inset-0 z-[100005]" 
           onClick={() => setShowResults(false)}
         />
       )}
@@ -354,8 +354,8 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
       {/* Map container */}
       <div ref={mapContainerRef} className="w-full h-full" />
 
-      {/* Selected location info & confirm button */}
-      <footer className="absolute bottom-0 left-0 right-0 z-[50010] bg-card/95 backdrop-blur-sm border-t border-border p-4 safe-area-inset-bottom">
+      {/* Selected location info & confirm button - z-index higher than bottom nav (99999) */}
+      <footer className="absolute bottom-0 left-0 right-0 z-[100001] bg-card/95 backdrop-blur-sm border-t border-border p-4" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
         {selectedLat !== null && selectedLng !== null ? (
           <div className="space-y-3">
             <div className="bg-muted/50 rounded-lg p-3">
@@ -371,16 +371,16 @@ export const LocationPickerMap: React.FC<LocationPickerMapProps> = ({
             </div>
             <Button
               onClick={handleConfirm}
-              className="w-full h-12 bg-panic hover:bg-panic/90 text-white font-semibold"
+              className="w-full h-14 bg-panic hover:bg-panic/90 text-white font-bold text-lg shadow-lg"
             >
-              <Check className="w-5 h-5 mr-2" />
+              <Check className="w-6 h-6 mr-2" />
               Confirmar ubicación
             </Button>
           </div>
         ) : (
-          <div className="text-center py-2">
-            <p className="text-sm text-muted-foreground">
-              Toca el mapa para seleccionar una ubicación
+          <div className="text-center py-4">
+            <p className="text-base text-muted-foreground">
+              👆 Toca el mapa para seleccionar una ubicación
             </p>
           </div>
         )}
