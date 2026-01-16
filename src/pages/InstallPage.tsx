@@ -84,7 +84,7 @@ export default function InstallPage() {
           <p className="text-muted-foreground">
             La aplicación COMUNIDAD SOS ya está instalada en tu dispositivo.
           </p>
-          <Link to="/landing">
+          <Link to="/">
             <Button>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver al inicio
@@ -96,11 +96,11 @@ export default function InstallPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="fixed inset-0 bg-background overflow-y-auto">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Link to="/landing">
+          <Link to="/">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -109,7 +109,7 @@ export default function InstallPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
+      <main className="container mx-auto px-4 py-8 pb-20 max-w-2xl">
         {/* Hero Section */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
