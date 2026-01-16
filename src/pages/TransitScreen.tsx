@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MediaCapture } from '@/components/MediaCapture';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { TripLocationPicker } from '@/components/TripLocationPicker';
+import { LocationPickerMap } from '@/components/LocationPickerMap';
 import TripRouteMap from '@/components/TripRouteMap';
 import MapErrorBoundary from '@/components/MapErrorBoundary';
 import CommunityTripsMap from '@/components/CommunityTripsMap';
@@ -180,11 +181,16 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   });
   const [reportImages, setReportImages] = useState<File[]>([]);
   const [reportAudio, setReportAudio] = useState<{ blob: Blob; duration: number } | null>(null);
+
+  // Report location (can be GPS or manually adjusted)
+  const [reportLocation, setReportLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [reportLocationLabel, setReportLocationLabel] = useState<string>('');
+  const [showReportMapPicker, setShowReportMapPicker] = useState(false);
+
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const [editingReport, setEditingReport] = useState<string | null>(null);
   const [deletingReport, setDeletingReport] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  
   // ETA update state
   const [editingEtaTripId, setEditingEtaTripId] = useState<string | null>(null);
   const [newEta, setNewEta] = useState<string>('');
