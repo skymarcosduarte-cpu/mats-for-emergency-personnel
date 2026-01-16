@@ -6,6 +6,45 @@ const corsHeaders = {
 };
 
 const SSN_URL = 'http://www.ssn.unam.mx/sismicidad/ultimos/';
+const TIMEOUT_MS = 30000; // 30 seconds
+const MAX_RETRIES = 3;
+
+async function fetchWithRetry(url: string, retries = MAX_RETRIES): Promise<Response> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`SSN fetch attempt ${attempt}/${retries}...`);
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; MATSApp/1.0)',
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'es-MX,es;q=0.9',
+        },
+      });
+      
+      if (response.ok) {
+        return response;
+      }
+      
+      console.error(`SSN attempt ${attempt} failed with status: ${response.status}`);
+      
+      if (attempt < retries) {
+        // Wait before retry (exponential backoff)
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+      }
+    } catch (error) {
+      console.error(`SSN attempt ${attempt} error:`, error instanceof Error ? error.message : error);
+      
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+      } else {
+        throw error;
+      }
+    }
+  }
+  
+  throw new Error(`Failed to fetch SSN after ${retries} attempts`);
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -13,26 +52,12 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Fetching SSN latest earthquakes HTML...');
+    console.log('Fetching SSN latest earthquakes...');
 
-    const response = await fetch(SSN_URL, {
-      signal: AbortSignal.timeout(15000),
-      headers: {
-        // Some sites behave better with an explicit UA
-        'User-Agent': 'LovableCloud/1.0 (+https://lovable.dev)',
-      },
-    });
-
-    if (!response.ok) {
-      console.error('SSN fetch error:', response.status, response.statusText);
-      return new Response(
-        JSON.stringify({ success: false, error: `SSN error: ${response.status}` }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
+    const response = await fetchWithRetry(SSN_URL);
     const html = await response.text();
-    console.log(`SSN HTML length: ${html.length}`);
+    
+    console.log(`SSN HTML received: ${html.length} bytes`);
 
     return new Response(
       JSON.stringify({ success: true, html }),
