@@ -2149,69 +2149,21 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
             <div>
               <Label>Categoría *</Label>
-              {isMobile ? (
-                <div className="relative">
-                  <select
-                    value={reportForm.category}
-                    onChange={(e) =>
-                      setReportForm({
-                        ...reportForm,
-                        category: e.target.value as ReportCategory,
-                      })
-                    }
-                    className={cn(
-                      "flex h-10 w-full appearance-none items-center justify-between rounded-md border border-input bg-background px-3 py-2 pr-10 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                      reportForm.category ? "text-foreground" : "text-muted-foreground",
-                    )}
-                  >
-                    <option value="" disabled>
-                      Selecciona categoría
-                    </option>
-                    {REPORT_CATEGORIES.map((cat) => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.emoji} {cat.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                </div>
-              ) : (
-                <Select
-                  value={reportForm.category}
-                  onValueChange={(v) => setReportForm({ ...reportForm, category: v as ReportCategory })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona categoría" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {REPORT_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.emoji} {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            <div>
-              <Label>Severidad: {getSeverityLabel(reportForm.severity)}</Label>
-              <div className="grid grid-cols-4 gap-2 mt-2">
-                {([1, 2, 3, 4] as ReportSeverity[]).map((sev) => (
-                  <Button
-                    key={sev}
-                    variant={reportForm.severity === sev ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setReportForm({ ...reportForm, severity: sev })}
-                    className={cn(
-                      reportForm.severity === sev && getSeverityColor(sev),
-                      'text-xs'
-                    )}
-                  >
-                    {sev}
-                  </Button>
-                ))}
-              </div>
+              <Select
+                value={reportForm.category}
+                onValueChange={(v) => setReportForm({ ...reportForm, category: v as ReportCategory })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona categoría" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {REPORT_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.emoji} {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
