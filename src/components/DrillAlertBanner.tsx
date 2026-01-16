@@ -1,11 +1,12 @@
 // Drill Alert Banner Component
-// Shows when a Clave 100 drill is active
+// Shows when a Clave 100 drill is active with the same alert sound
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, X, Bell } from 'lucide-react';
+import { X, Bell, Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { playClave100Alert, stopClave100Alert } from '@/lib/alertSound';
 
 interface DrillAlertBannerProps {
   onDismiss?: () => void;
@@ -20,6 +21,10 @@ interface ActiveDrill {
 export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss }) => {
   const [activeDrill, setActiveDrill] = useState<ActiveDrill | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [soundPlaying, setSoundPlaying] = useState(false);
+  const [soundMuted, setSoundMuted] = useState(false);
+  const hasPlayedSound = useRef(false);
+  const drillIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Check for active drills
@@ -36,10 +41,19 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss })
         .maybeSingle();
 
       if (data) {
-        setActiveDrill(data as ActiveDrill);
+        const drill = data as ActiveDrill;
+        
+        // Only trigger sound for new drills
+        if (drill.id !== drillIdRef.current) {
+          drillIdRef.current = drill.id;
+          hasPlayedSound.current = false;
+        }
+        
+        setActiveDrill(drill);
         setDismissed(false);
       } else {
         setActiveDrill(null);
+        drillIdRef.current = null;
       }
     };
 
@@ -67,12 +81,55 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss })
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
+      // Stop sound on unmount
+      stopClave100Alert();
     };
   }, []);
 
+  // Play Clave 100 alert sound when drill becomes active
+  useEffect(() => {
+    if (activeDrill && !dismissed && !hasPlayedSound.current && !soundMuted) {
+      hasPlayedSound.current = true;
+      setSoundPlaying(true);
+      
+      // Play the Clave 100 alert sound
+      playClave100Alert().catch(err => {
+        console.warn('[DrillAlertBanner] Failed to play alert:', err);
+      });
+
+      // Stop after 10 seconds for drill (shorter than real emergency)
+      const stopTimeout = setTimeout(() => {
+        stopClave100Alert();
+        setSoundPlaying(false);
+      }, 10000);
+
+      return () => {
+        clearTimeout(stopTimeout);
+      };
+    }
+  }, [activeDrill, dismissed, soundMuted]);
+
   const handleDismiss = () => {
+    stopClave100Alert();
+    setSoundPlaying(false);
     setDismissed(true);
     onDismiss?.();
+  };
+
+  const toggleSound = () => {
+    if (soundPlaying) {
+      stopClave100Alert();
+      setSoundPlaying(false);
+      setSoundMuted(true);
+    } else if (!soundMuted) {
+      setSoundPlaying(true);
+      playClave100Alert().catch(console.warn);
+      // Stop after 10 seconds
+      setTimeout(() => {
+        stopClave100Alert();
+        setSoundPlaying(false);
+      }, 10000);
+    }
   };
 
   if (!activeDrill || dismissed) {
@@ -132,6 +189,15 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss })
                     >
                       🔔 SIMULACRO CLAVE 100
                     </motion.span>
+                    {soundPlaying && (
+                      <motion.span
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 0.5, repeat: Infinity }}
+                        className="text-xs bg-white/20 px-2 py-0.5 rounded-full"
+                      >
+                        🔊 Sonido activo
+                      </motion.span>
+                    )}
                   </div>
                   <p className="text-sm text-amber-100 font-medium">
                     ⚠️ ESTO ES UN SIMULACRO, NO ES UNA EMERGENCIA REAL ⚠️
@@ -139,14 +205,29 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss })
                 </div>
               </div>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-white hover:bg-white/20 flex-shrink-0"
-                onClick={handleDismiss}
-              >
-                <X className="w-5 h-5" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 flex-shrink-0"
+                  onClick={toggleSound}
+                  title={soundPlaying ? 'Silenciar' : 'Reproducir sonido'}
+                >
+                  {soundPlaying ? (
+                    <Volume2 className="w-5 h-5" />
+                  ) : (
+                    <VolumeX className="w-5 h-5" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 flex-shrink-0"
+                  onClick={handleDismiss}
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
