@@ -351,7 +351,7 @@ export const Clave100DrillScheduler: React.FC<Clave100DrillSchedulerProps> = ({
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 z-[9999] bg-popover border border-border" align="start" sideOffset={4}>
                   <Calendar
                     mode="single"
                     selected={selectedDate}
@@ -362,6 +362,7 @@ export const Clave100DrillScheduler: React.FC<Clave100DrillSchedulerProps> = ({
                       return isBefore(date, tomorrow);
                     }}
                     initialFocus
+                    className="p-3 pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
