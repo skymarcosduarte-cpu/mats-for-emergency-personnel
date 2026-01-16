@@ -136,7 +136,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     earthquakes, 
     loading, 
     isOffline, 
-    lastUpdated, 
+    lastUpdated,
+    ssnStatus,
     refresh: loadEarthquakes 
   } = useEarthquakeHistory(position);
 
@@ -588,6 +589,31 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-success text-success">SSN</Badge>
               </div>
             </div>
+
+            {/* SSN unavailable banner */}
+            {!ssnStatus.available && ssnStatus.lastAttempt && (
+              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-warning/10 border border-warning/30 text-xs">
+                <div className="flex items-center gap-2 text-warning">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <div>
+                    <span className="font-medium">SSN México no disponible</span>
+                    <span className="text-muted-foreground ml-1">
+                      — Último intento: {ssnStatus.lastAttempt.toLocaleTimeString()}
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs text-warning hover:text-warning hover:bg-warning/20"
+                  onClick={() => loadEarthquakes()}
+                  disabled={loading}
+                >
+                  {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                  <span className="ml-1">Reintentar</span>
+                </Button>
+              </div>
+            )}
           </div>
 
           {(() => {
