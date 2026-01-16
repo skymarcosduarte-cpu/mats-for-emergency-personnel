@@ -9,7 +9,8 @@ import { cacheEarthquakes, getCachedEarthquakes, isEarthquakeCacheFresh, updateL
 import { getSsnNationalAlertMagnitude } from '@/hooks/useAlertSettings';
 
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
-const SSN_FEED_URL = 'http://www.ssn.unam.mx/rss/ultimos-sismos.xml';
+// Use HTTPS to avoid mixed-content blocking on HTTPS sites
+const SSN_FEED_URL = 'https://www.ssn.unam.mx/rss/ultimos-sismos.xml';
 
 // Storage key for persisting acknowledged major SSN earthquakes
 const ACKNOWLEDGED_MAJOR_SSN_KEY = 'acknowledged_major_ssn_quakes';
@@ -172,7 +173,7 @@ async function parseSSNFeed(): Promise<USGSEarthquake[]> {
             place,
             time: timestamp,
             updated: timestamp,
-            url: 'http://www.ssn.unam.mx/',
+            url: 'https://www.ssn.unam.mx/',
             title: `M ${mag} - ${place}`,
             alert: null,
             tsunami: 0,
