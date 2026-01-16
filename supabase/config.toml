@@ -44,3 +44,9 @@ verify_jwt = false
 
 [functions.fetch-skyalert]
 verify_jwt = false
+
+[functions.send-drill-notifications]
+verify_jwt = false
+
+[functions.trigger-drill-alert]
+verify_jwt = false
