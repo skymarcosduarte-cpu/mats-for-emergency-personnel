@@ -590,174 +590,195 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             </div>
           </div>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : earthquakes.filter(q => earthquakeSourceFilter === 'ALL' || q.source === earthquakeSourceFilter).length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No hay sismos recientes{earthquakeSourceFilter !== 'ALL' ? ` de ${earthquakeSourceFilter}` : ''}</p>
-            </div>
-          ) : (
-            earthquakes
-              .filter(q => earthquakeSourceFilter === 'ALL' || q.source === earthquakeSourceFilter)
-              .map((quake) => (
-              <Card 
-                key={quake.id} 
-                className="bg-card border-border hover:border-primary/30 transition-colors cursor-pointer"
-                onClick={() => { setSelectedQuake(quake); setShowQuakeDetailDialog(true); }}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={cn(
-                          'text-2xl font-bold font-mono',
-                          getMagColor(quake.properties.mag)
-                        )}>
-                          {formatMag(quake.properties.mag)}
-                        </span>
-                        {quake.properties.tsunami === 1 && (
-                          <span className="badge-emergency">TSUNAMI</span>
-                        )}
-                        <Badge variant="outline" className={cn(
-                          "text-[10px] px-1.5 py-0 h-4",
-                          quake.source === 'SSN' 
-                            ? "border-success text-success" 
-                            : "border-primary text-primary"
-                        )}>
-                          {quake.source === 'SSN' ? 'SSN' : 'USGS'}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-foreground font-medium">
-                        {quake.properties.place}
-                      </div>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatTime(quake.properties.time)}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {quake.geometry.coordinates[2].toFixed(0)}km prof.
-                        </span>
-                        {/* Distance from user */}
-                        {quake.distanceKm !== null && (
-                          <>
-                            <span className="flex items-center gap-1 text-primary font-medium">
-                              <Navigation className="w-3 h-3" />
-                              {quake.distanceKm.toFixed(0)} km
-                            </span>
-                            {/* Seismic wave ETA */}
-                            <span className="flex items-center gap-1 text-warning font-medium" title="Tiempo de llegada de ondas sísmicas (P/S)">
-                              ⚡ {formatSeismicTime(calculateSeismicETA(quake.distanceKm).sWaveSeconds)}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  </div>
+          {(() => {
+            const filtered = earthquakes.filter(
+              (q) => earthquakeSourceFilter === 'ALL' || q.source === earthquakeSourceFilter
+            );
 
-                  {/* Quick action buttons with check-in count */}
-                  <div className="flex items-center gap-2 mt-3 justify-between flex-wrap">
-                    {/* Check-in counters with visual prominence based on count */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {/* OK counter */}
-                      {checkinCounts[quake.id]?.ok_count > 0 && (() => {
-                        const count = checkinCounts[quake.id].ok_count;
-                        const isHighCount = count >= 10;
-                        const isMediumCount = count >= 5;
-                        
-                        return (
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "flex items-center gap-1 font-medium transition-all",
-                              isHighCount 
-                                ? "bg-safe text-safe-foreground border-safe animate-pulse shadow-lg shadow-safe/30" 
-                                : isMediumCount 
-                                  ? "bg-safe/20 text-safe border-safe/50" 
-                                  : "text-safe border-safe/30"
-                            )}
-                          >
-                            <Check className={cn("w-3.5 h-3.5", isHighCount && "animate-bounce")} />
-                            <span className={cn(isHighCount && "font-bold")}>
-                              {count} {isHighCount ? "bien!" : "bien"}
-                            </span>
-                          </Badge>
-                        );
-                      })()}
-                      
-                      {/* Damage counter */}
-                      {checkinCounts[quake.id]?.damage_count > 0 && (() => {
-                        const count = checkinCounts[quake.id].damage_count;
-                        const isHighCount = count >= 5;
-                        const isMediumCount = count >= 2;
-                        
-                        return (
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "flex items-center gap-1 font-medium transition-all",
-                              isHighCount 
-                                ? "bg-destructive text-destructive-foreground border-destructive animate-pulse shadow-lg shadow-destructive/40" 
-                                : isMediumCount 
-                                  ? "bg-destructive/20 text-destructive border-destructive/50" 
-                                  : "text-destructive border-destructive/30"
-                            )}
-                          >
-                            <AlertTriangle className={cn("w-3.5 h-3.5", isHighCount && "animate-bounce")} />
-                            <span className={cn(isHighCount && "font-bold")}>
-                              {count} {isHighCount ? "¡reportan daños!" : "daños"}
-                            </span>
-                          </Badge>
-                        );
-                      })()}
-                    </div>
-                    <div className="flex gap-2 ml-auto">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-3 text-xs text-muted-foreground hover:text-safe"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleQuickCheckin(quake);
-                        }}
-                      >
-                        ✓ Todo bien
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-3 text-xs text-destructive/80 hover:text-destructive hover:bg-destructive/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedQuake(quake);
-                          setShowHelp14Dialog(true);
-                        }}
-                      >
-                        Reportar Daños
-                      </Button>
-                    </div>
-                  </div>
+            if (filtered.length === 0) {
+              return loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>
+                    No hay sismos recientes
+                    {earthquakeSourceFilter !== 'ALL' ? ` de ${earthquakeSourceFilter}` : ''}
+                  </p>
+                </div>
+              );
+            }
 
-                  {/* Mini-map for damage reports */}
-                  {checkinCounts[quake.id]?.damage_count >= 2 && (
-                    <DamageReportsMiniMap
-                      eventId={quake.id}
-                      epicenterLat={quake.geometry.coordinates[1]}
-                      epicenterLng={quake.geometry.coordinates[0]}
-                      magnitude={quake.properties.mag}
-                      damageCount={checkinCounts[quake.id].damage_count}
-                      className="mt-3"
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            ))
-          )}
+            return (
+              <>
+                {loading && (
+                  <div className="flex items-center justify-center py-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+
+                {filtered.map((quake) => (
+                  <Card
+                    key={quake.id}
+                    className="bg-card border-border hover:border-primary/30 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setSelectedQuake(quake);
+                      setShowQuakeDetailDialog(true);
+                    }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={cn('text-2xl font-bold font-mono', getMagColor(quake.properties.mag))}>
+                              {formatMag(quake.properties.mag)}
+                            </span>
+                            {quake.properties.tsunami === 1 && (
+                              <span className="badge-emergency">TSUNAMI</span>
+                            )}
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'text-[10px] px-1.5 py-0 h-4',
+                                quake.source === 'SSN'
+                                  ? 'border-success text-success'
+                                  : 'border-primary text-primary'
+                              )}
+                            >
+                              {quake.source === 'SSN' ? 'SSN' : 'USGS'}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-foreground font-medium">{quake.properties.place}</div>
+                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {formatTime(quake.properties.time)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {quake.geometry.coordinates[2].toFixed(0)}km prof.
+                            </span>
+                            {quake.distanceKm !== null && (
+                              <>
+                                <span className="flex items-center gap-1 text-primary font-medium">
+                                  <Navigation className="w-3 h-3" />
+                                  {quake.distanceKm.toFixed(0)} km
+                                </span>
+                                <span
+                                  className="flex items-center gap-1 text-warning font-medium"
+                                  title="Tiempo de llegada de ondas sísmicas (P/S)"
+                                >
+                                  ⚡ {formatSeismicTime(calculateSeismicETA(quake.distanceKm).sWaveSeconds)}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                      </div>
+
+                      {/* Quick action buttons with check-in count */}
+                      <div className="flex items-center gap-2 mt-3 justify-between flex-wrap">
+                        {/* Check-in counters with visual prominence based on count */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* OK counter */}
+                          {checkinCounts[quake.id]?.ok_count > 0 &&
+                            (() => {
+                              const count = checkinCounts[quake.id].ok_count;
+                              const isHighCount = count >= 10;
+                              const isMediumCount = count >= 5;
+
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    'flex items-center gap-1 font-medium transition-all',
+                                    isHighCount
+                                      ? 'bg-safe text-safe-foreground border-safe animate-pulse shadow-lg shadow-safe/40'
+                                      : isMediumCount
+                                      ? 'bg-safe/20 text-safe border-safe/50'
+                                      : 'text-safe border-safe/30'
+                                  )}
+                                >
+                                  <span className={cn(isHighCount && 'font-bold')}>
+                                    {count} {isHighCount ? '✓ reportan bien' : 'bien'}
+                                  </span>
+                                </Badge>
+                              );
+                            })()}
+                          {/* DAMAGE counter */}
+                          {checkinCounts[quake.id]?.damage_count > 0 &&
+                            (() => {
+                              const count = checkinCounts[quake.id].damage_count;
+                              const isHighCount = count >= 5;
+                              const isMediumCount = count >= 2;
+
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    'flex items-center gap-1 font-medium transition-all',
+                                    isHighCount
+                                      ? 'bg-destructive text-destructive-foreground border-destructive animate-pulse shadow-lg shadow-destructive/40'
+                                      : isMediumCount
+                                      ? 'bg-destructive/20 text-destructive border-destructive/50'
+                                      : 'text-destructive border-destructive/30'
+                                  )}
+                                >
+                                  <AlertTriangle className={cn('w-3.5 h-3.5', isHighCount && 'animate-bounce')} />
+                                  <span className={cn(isHighCount && 'font-bold')}>
+                                    {count} {isHighCount ? '¡reportan daños!' : 'daños'}
+                                  </span>
+                                </Badge>
+                              );
+                            })()}
+                        </div>
+                        <div className="flex gap-2 ml-auto">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-3 text-xs text-muted-foreground hover:text-safe"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleQuickCheckin(quake);
+                            }}
+                          >
+                            ✓ Todo bien
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-3 text-xs text-destructive/80 hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedQuake(quake);
+                              setShowHelp14Dialog(true);
+                            }}
+                          >
+                            Reportar Daños
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Mini-map for damage reports */}
+                      {checkinCounts[quake.id]?.damage_count >= 2 && (
+                        <DamageReportsMiniMap
+                          eventId={quake.id}
+                          epicenterLat={quake.geometry.coordinates[1]}
+                          epicenterLng={quake.geometry.coordinates[0]}
+                          magnitude={quake.properties.mag}
+                          damageCount={checkinCounts[quake.id].damage_count}
+                          className="mt-3"
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </>
+            );
+          })()}
         </TabsContent>
 
         {/* Weather Alerts Tab */}
