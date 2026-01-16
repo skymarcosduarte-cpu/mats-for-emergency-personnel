@@ -562,6 +562,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
         />
       )}
 
+      {/* Drill Alert Banner - shows during active drills */}
+      <DrillAlertBanner />
+
       <InstallPrompt />
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS'} disasterMode={disasterMode} messageCount={unreadMessageCount} />
       

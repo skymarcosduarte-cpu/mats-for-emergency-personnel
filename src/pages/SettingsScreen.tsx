@@ -78,6 +78,7 @@ import { cn } from '@/lib/utils';
 import { useUserDataExport } from '@/hooks/useUserDataExport';
 import { Badge } from '@/components/ui/badge';
 import { ComprehensiveTutorial } from '@/components/ComprehensiveTutorial';
+import { Clave100DrillScheduler } from '@/components/Clave100DrillScheduler';
 import QRCode from 'qrcode';
 import { toast } from 'sonner';
 
@@ -2649,6 +2650,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       <AdminPanel
         open={showAdminPanel}
         onClose={() => setShowAdminPanel(false)}
+      />
+
+      {/* Clave 100 Drill Scheduler - Only for authorized users */}
+      <Clave100DrillScheduler
+        open={showDrillScheduler}
+        onClose={() => setShowDrillScheduler(false)}
       />
     </div>
   );
