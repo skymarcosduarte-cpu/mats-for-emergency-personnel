@@ -3,13 +3,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, Volume2, VolumeX } from 'lucide-react';
+import { X, Bell, Volume2, VolumeX, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { playClave100Alert, stopClave100Alert } from '@/lib/alertSound';
 
 interface DrillAlertBannerProps {
   onDismiss?: () => void;
+  onOpenCommunityChat?: (drillId: string) => void;
 }
 
 interface ActiveDrill {
@@ -18,13 +19,14 @@ interface ActiveDrill {
   status: string;
 }
 
-export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss }) => {
+export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, onOpenCommunityChat }) => {
   const [activeDrill, setActiveDrill] = useState<ActiveDrill | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [soundPlaying, setSoundPlaying] = useState(false);
   const [soundMuted, setSoundMuted] = useState(false);
   const hasPlayedSound = useRef(false);
   const drillIdRef = useRef<string | null>(null);
+  const hasAutoOpenedChat = useRef(false);
 
   useEffect(() => {
     // Check for active drills
@@ -43,14 +45,24 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss })
       if (data) {
         const drill = data as ActiveDrill;
         
-        // Only trigger sound for new drills
+        // Only trigger sound and chat for new drills
         if (drill.id !== drillIdRef.current) {
           drillIdRef.current = drill.id;
           hasPlayedSound.current = false;
+          hasAutoOpenedChat.current = false;
         }
         
         setActiveDrill(drill);
         setDismissed(false);
+        
+        // Auto-open community chat for this drill
+        if (!hasAutoOpenedChat.current && onOpenCommunityChat) {
+          hasAutoOpenedChat.current = true;
+          // Small delay to ensure banner is visible first
+          setTimeout(() => {
+            onOpenCommunityChat(drill.id);
+          }, 1500);
+        }
       } else {
         setActiveDrill(null);
         drillIdRef.current = null;
@@ -114,6 +126,12 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss })
     setSoundPlaying(false);
     setDismissed(true);
     onDismiss?.();
+  };
+
+  const handleOpenChat = () => {
+    if (activeDrill && onOpenCommunityChat) {
+      onOpenCommunityChat(activeDrill.id);
+    }
   };
 
   const toggleSound = () => {
@@ -206,6 +224,15 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss })
               </div>
 
               <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 flex-shrink-0"
+                  onClick={handleOpenChat}
+                  title="Chat Comunidad"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

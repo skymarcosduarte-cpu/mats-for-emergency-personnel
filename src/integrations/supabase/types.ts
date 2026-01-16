@@ -164,6 +164,42 @@ export type Database = {
         }
         Relationships: []
       }
+      community_messages: {
+        Row: {
+          audio_duration_ms: number | null
+          audio_url: string | null
+          context_id: string | null
+          context_type: string
+          created_at: string
+          id: string
+          image_url: string | null
+          message: string
+          sender_id: string
+        }
+        Insert: {
+          audio_duration_ms?: number | null
+          audio_url?: string | null
+          context_id?: string | null
+          context_type?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          message: string
+          sender_id: string
+        }
+        Update: {
+          audio_duration_ms?: number | null
+          audio_url?: string | null
+          context_id?: string | null
+          context_type?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          message?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       emergency_contacts: {
         Row: {
           created_at: string
