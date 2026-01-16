@@ -182,8 +182,19 @@ serve(async (req) => {
       );
     }
 
-    const users = authUsers?.users || [];
-    console.log(`[send-drill-notifications] Found ${users.length} users to notify`);
+    // Get users who have opted out of drills
+    const { data: optedOutProfiles } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('opt_out_drills', true);
+    
+    const optedOutUserIds = new Set((optedOutProfiles || []).map(p => p.id));
+    console.log(`[send-drill-notifications] ${optedOutUserIds.size} users have opted out of drills`);
+
+    const allUsers = authUsers?.users || [];
+    // Filter out opted-out users
+    const users = allUsers.filter(u => !optedOutUserIds.has(u.id));
+    console.log(`[send-drill-notifications] Found ${users.length} users to notify (${allUsers.length - users.length} opted out)`);
 
     let emailsSent = 0;
     const emailHtml = generateDrillEmailHtml(scheduled_at, creatorName);
@@ -212,14 +223,17 @@ serve(async (req) => {
       })
       .eq('id', drill_id);
 
-    // Create internal messages for all active users
+    // Create internal messages for all active users (excluding opted-out)
     const { data: activeLocations } = await supabase
       .from('user_locations')
       .select('user_id')
       .gte('updated_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
     if (activeLocations && activeLocations.length > 0) {
-      const messages = activeLocations.map(loc => ({
+      // Filter out opted-out users from internal messages too
+      const eligibleLocations = activeLocations.filter(loc => !optedOutUserIds.has(loc.user_id));
+      
+      const messages = eligibleLocations.map(loc => ({
         sender_id: creator_id,
         receiver_id: loc.user_id,
         content: `🔔 SIMULACRO CLAVE 100 PROGRAMADO\n\n📅 ${new Date(scheduled_at).toLocaleString('es-MX')}\n\n⚠️ Esto es un SIMULACRO, no una emergencia real.\n\nDurante el simulacro recibirás una alerta tipo Clave 100 para practicar tu respuesta.`,
@@ -236,13 +250,15 @@ serve(async (req) => {
       console.log(`[send-drill-notifications] Created ${messages.length} internal messages`);
     }
 
-    console.log(`[send-drill-notifications] Done. Emails sent: ${emailsSent}`);
+    const usersNotified = activeLocations ? activeLocations.filter(loc => !optedOutUserIds.has(loc.user_id)).length : 0;
+    console.log(`[send-drill-notifications] Done. Emails sent: ${emailsSent}, messages: ${usersNotified}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         emails_sent: emailsSent,
-        users_notified: activeLocations?.length || 0
+        users_notified: usersNotified,
+        opted_out: optedOutUserIds.size
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
