@@ -220,7 +220,7 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                 return (
                   <div className="bg-gradient-to-r from-primary/10 to-safe/10 rounded-lg p-2 mb-3">
                     <p className="text-xs font-medium text-center">
-                      👋 ¡Hola{userName ? `, ${userName}` : ''}! Bienvenido al Mapa
+                      👋 ¡Hola{userName ? `, ${userName}` : ''}! Bienvenido a M.A.T.S.
                     </p>
                     <p className="text-[11px] text-muted-foreground text-center mt-1">
                       {activeUsers.length === 0 
@@ -229,6 +229,9 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                           ? '1 miembro de la comunidad está activo'
                           : `${activeUsers.length} miembros activos ahora`
                       }
+                    </p>
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400 text-center mt-1.5">
+                      💡 Recuerda: Forzar Actualización en Ajustes
                     </p>
                   </div>
                 );
