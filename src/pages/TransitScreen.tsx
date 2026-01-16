@@ -2126,6 +2126,10 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         open={showReportDialog} 
         onOpenChange={(open) => {
           setShowReportDialog(open);
+          if (open && !editingReport) {
+            // Auto-fetch GPS when opening dialog for new reports
+            getCurrentPosition();
+          }
           if (!open) {
             setEditingReport(null);
             resetReportForm();
@@ -2229,10 +2233,24 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               </Button>
             </div>
 
-            {!editingReport && !position && (
-              <p className="text-xs text-destructive text-center">
-                Se requiere ubicación GPS para reportar
-              </p>
+            {!editingReport && (
+              <div className="text-xs text-center">
+                {locationLoading ? (
+                  <p className="text-muted-foreground flex items-center justify-center gap-2">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Obteniendo ubicación GPS...
+                  </p>
+                ) : position ? (
+                  <p className="text-green-500 flex items-center justify-center gap-2">
+                    <MapPin className="w-3 h-3" />
+                    Ubicación detectada
+                  </p>
+                ) : locationError ? (
+                  <p className="text-destructive">{locationError}</p>
+                ) : (
+                  <p className="text-destructive">Se requiere ubicación GPS para reportar</p>
+                )}
+              </div>
             )}
           </div>
         </DialogContent>
