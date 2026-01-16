@@ -2,11 +2,11 @@
 // USGS + SSN Mexico earthquakes + "Todo bien" quick report + "14" help + notifications + my alerts history
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, ShoppingBag, WifiOff, Navigation, CloudRain, Flame, Wind, Route, X, CheckCircle2, Map, MessageCircle, Car, Plane } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, WifiOff, Navigation, CloudRain, Route, X, CheckCircle2, Map, MessageCircle, Car, Plane } from 'lucide-react';
 import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
 import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
 import { useMexicoAlerts, TropicalCycloneAlert, FireHotspot } from '@/hooks/useMexicoAlerts';
-import { useGDACSAlerts, GDACSAlert, AEMETAlert } from '@/hooks/useGDACSAlerts';
+import { useGDACSAlerts, GDACSAlert } from '@/hooks/useGDACSAlerts';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { areInternationalRedAlertsEnabled } from '@/hooks/useAlertSettings';
 import { Button } from '@/components/ui/button';
@@ -50,7 +50,7 @@ import { playUrgentAlert } from '@/lib/alertSound';
 import { toast } from 'sonner';
 import { MyAlertsHistory } from '@/components/MyAlertsHistory';
 import { QuakeCheckinMap } from '@/components/QuakeCheckinMap';
-import { CycloneMap } from '@/components/CycloneMap';
+// CycloneMap imported on-demand if needed
 import { SeismicWaveMap } from '@/components/SeismicWaveMap';
 import { SkyAlertTab } from '@/components/SkyAlertTab';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
