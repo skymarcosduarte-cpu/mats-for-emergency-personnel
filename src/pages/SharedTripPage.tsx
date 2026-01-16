@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Car, Plane, Clock, MapPin, Navigation, Loader2, AlertCircle, Route, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,13 @@ export default function SharedTripPage() {
   const [routeHistory, setRouteHistory] = useState<[number, number][]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Hide the native splash screen on mount (for public pages)
+  useLayoutEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).hideNativeSplash) {
+      (window as any).hideNativeSplash();
+    }
+  }, []);
 
   // Fetch trip data
   const fetchTrip = useCallback(async () => {
