@@ -69,22 +69,22 @@ export interface EarthquakeWithDistance extends USGSEarthquake {
 // Try fetching with multiple CORS proxies (fallback mechanism for Android)
 async function fetchWithCorsProxy(url: string): Promise<Response> {
   let lastError: Error | null = null;
-  
+
   for (let i = 0; i < CORS_PROXIES.length; i++) {
     const proxyUrl = CORS_PROXIES[i](url);
     try {
       console.log(`[CORS] Trying proxy ${i + 1}/${CORS_PROXIES.length}...`);
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-      
-      const response = await fetch(proxyUrl, { 
+
+      const response = await fetch(proxyUrl, {
         signal: controller.signal,
         headers: {
           'Accept': 'application/xml, text/xml, */*',
-        }
+        },
       });
       clearTimeout(timeoutId);
-      
+
       if (response.ok) {
         console.log(`[CORS] Proxy ${i + 1} succeeded`);
         return response;
@@ -95,7 +95,7 @@ async function fetchWithCorsProxy(url: string): Promise<Response> {
       lastError = err instanceof Error ? err : new Error(String(err));
     }
   }
-  
+
   throw lastError || new Error('All CORS proxies failed');
 }
 
