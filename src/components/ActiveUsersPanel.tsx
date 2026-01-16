@@ -28,6 +28,7 @@ interface ActiveUsersPanelProps {
   onMessageUser?: (userId: string, displayName: string | null) => void;
   onOpenChange?: (isOpen: boolean) => void;
   forceCloseSignal?: number; // Incremented to force close when map is tapped
+  defaultOpen?: boolean; // If true, panel opens automatically on mount
   className?: string;
 }
 
@@ -37,9 +38,10 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
   onMessageUser,
   onOpenChange,
   forceCloseSignal = 0,
+  defaultOpen = false,
   className,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const { user: currentUser } = useAuth();
 
   // Swipe gesture state
