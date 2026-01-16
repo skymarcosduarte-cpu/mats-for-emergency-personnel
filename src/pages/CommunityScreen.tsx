@@ -335,8 +335,13 @@ export const CommunityScreen: React.FC = () => {
               <TabsTrigger value="tablero" className="text-xs">
                 📋 Tablero
               </TabsTrigger>
-              <TabsTrigger value="noticias" className="text-xs">
-                📰 Últimas Noticias
+              <TabsTrigger 
+                value="noticias" 
+                className="text-xs relative overflow-hidden"
+              >
+                <span className="relative z-10 animate-pulse text-destructive font-semibold drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]">
+                  📰 Últimas Noticias
+                </span>
               </TabsTrigger>
             </TabsList>
           </div>
