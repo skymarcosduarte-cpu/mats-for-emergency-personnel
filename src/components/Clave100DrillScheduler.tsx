@@ -210,8 +210,17 @@ export const Clave100DrillScheduler: React.FC<Clave100DrillSchedulerProps> = ({
   );
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent className="sm:max-w-lg bg-card border-border max-h-[90vh] overflow-y-auto">
+    <Dialog
+      open={open}
+      modal={false}
+      onOpenChange={(isOpen) => !isOpen && handleClose()}
+    >
+      <DialogContent
+        className="sm:max-w-lg bg-card border-border max-h-[90vh] overflow-y-auto"
+        // Evita que el diálogo se cierre/robe el foco al interactuar con el calendario
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-amber-500">
             <Bell className="w-5 h-5" />
