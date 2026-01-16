@@ -120,10 +120,10 @@ export const Clave100DrillScheduler: React.FC<Clave100DrillSchedulerProps> = ({
     const scheduledAt = new Date(selectedDate);
     scheduledAt.setHours(hours, minutes, 0, 0);
 
-    // Validate 24 hours in advance
-    const minScheduleTime = addHours(new Date(), 24);
+    // Validate 6 hours in advance
+    const minScheduleTime = addHours(new Date(), 6);
     if (isBefore(scheduledAt, minScheduleTime)) {
-      toast.error('El simulacro debe programarse con al menos 24 horas de anticipación');
+      toast.error('El simulacro debe programarse con al menos 6 horas de anticipación');
       return;
     }
 
@@ -232,7 +232,7 @@ export const Clave100DrillScheduler: React.FC<Clave100DrillSchedulerProps> = ({
                   <div className="text-sm text-amber-200">
                     <p className="font-medium mb-1">Información</p>
                     <ul className="list-disc list-inside space-y-1 text-amber-200/80">
-                      <li>Los simulacros deben programarse con 24+ horas de anticipación</li>
+                      <li>Los simulacros deben programarse con 6+ horas de anticipación</li>
                       <li>Todos los usuarios recibirán un email y mensaje interno</li>
                       <li>Durante el simulacro, aparecerá un banner especial</li>
                     </ul>
@@ -351,15 +351,15 @@ export const Clave100DrillScheduler: React.FC<Clave100DrillSchedulerProps> = ({
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-[9999] bg-popover border border-border" align="start" sideOffset={4}>
+                <PopoverContent className="w-auto p-0 z-[10050] bg-popover border border-border" align="start" sideOffset={4}>
                   <Calendar
                     mode="single"
                     selected={selectedDate}
                     onSelect={setSelectedDate}
                     disabled={(date) => {
-                      const tomorrow = addHours(new Date(), 24);
-                      tomorrow.setHours(0, 0, 0, 0);
-                      return isBefore(date, tomorrow);
+                      const startOfToday = new Date();
+                      startOfToday.setHours(0, 0, 0, 0);
+                      return isBefore(date, startOfToday);
                     }}
                     initialFocus
                     className="p-3 pointer-events-auto"
