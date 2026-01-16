@@ -351,7 +351,12 @@ export const Clave100DrillScheduler: React.FC<Clave100DrillSchedulerProps> = ({
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-[10050] bg-popover border border-border" align="start" sideOffset={4}>
+                <PopoverContent
+                  className="w-auto p-0 z-[10050] bg-popover border border-border"
+                  style={{ zIndex: 10050 }}
+                  align="start"
+                  sideOffset={4}
+                >
                   <Calendar
                     mode="single"
                     selected={selectedDate}
