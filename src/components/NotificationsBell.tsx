@@ -87,7 +87,7 @@ export const NotificationsBell: React.FC = () => {
         </div>
         
         {/* Notifications List */}
-        <ScrollArea className="max-h-[300px]">
+        <ScrollArea className="max-h-[400px]">
           {loading ? (
             <div className="flex items-center justify-center py-8 text-muted-foreground">
               <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -132,12 +132,17 @@ export const NotificationsBell: React.FC = () => {
                       
                       <div className="flex-1 min-w-0">
                         <p className={cn(
-                          "text-xs line-clamp-2",
+                          "text-xs",
                           !notification.read && "font-medium"
                         )}>
                           {notification.title}
                         </p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {notification.message && (
+                          <p className="text-[11px] text-muted-foreground mt-1 whitespace-pre-line">
+                            {notification.message}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-muted-foreground/70 mt-1">
                           {formatDistanceToNow(new Date(notification.created_at), { 
                             addSuffix: true,
                             locale: es 

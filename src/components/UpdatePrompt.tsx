@@ -12,7 +12,7 @@ import {
 
 // Non-intrusive update notification - uses toast instead of blocking banner
 export function UpdatePrompt() {
-  const { updateAvailable, applyUpdate, dismissUpdate } = useUpdateCheck();
+  const { updateAvailable, latestVersion, releaseNotes, applyUpdate, dismissUpdate } = useUpdateCheck();
   const [hasShownToast, setHasShownToast] = useState(false);
 
   // Show a non-blocking toast when update becomes available
@@ -27,9 +27,15 @@ export function UpdatePrompt() {
 
       // Delay slightly to not interrupt initial page load
       const timer = setTimeout(() => {
-        toast.info('Nueva versión disponible', {
-          description: 'Actualiza para obtener las últimas mejoras',
-          duration: 10000,
+        // Build description with release notes if available
+        const versionText = latestVersion ? `v${latestVersion}` : '';
+        const description = releaseNotes 
+          ? `${versionText ? versionText + ': ' : ''}${releaseNotes}`
+          : `${versionText ? versionText + ' - ' : ''}Actualiza para obtener las últimas mejoras`;
+
+        toast.info('🚀 Nueva versión disponible', {
+          description,
+          duration: 15000, // Show longer to give time to read
           icon: <Sparkles className="h-4 w-4 text-primary" />,
           action: {
             label: 'Actualizar',
@@ -49,7 +55,7 @@ export function UpdatePrompt() {
 
       return () => clearTimeout(timer);
     }
-  }, [updateAvailable, hasShownToast, applyUpdate, dismissUpdate]);
+  }, [updateAvailable, hasShownToast, latestVersion, releaseNotes, applyUpdate, dismissUpdate]);
 
   // Reset toast flag when update is dismissed
   useEffect(() => {
