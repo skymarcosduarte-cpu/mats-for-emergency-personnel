@@ -71,23 +71,32 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 // Keywords to identify emergency news by content (not just source)
+// Using phrases/patterns to reduce false positives
 const EMERGENCY_KEYWORDS = [
-  'accidente', 'emergencia', 'explosión', 'explosion', 'desastre', 
-  'huracán', 'huracan', 'incendio', 'terremoto', 'sismo', 'temblor',
-  'inundación', 'inundacion', 'tornado', 'tsunami', 'evacuación', 'evacuacion',
-  'muertos', 'fallecidos', 'víctimas', 'victimas', 'heridos', 'lesionados',
-  'derrumbe', 'colapso', 'atentado', 'alerta', 'urgente', 'grave',
-  'tormenta', 'ciclón', 'ciclon', 'erupción', 'erupcion', 'volcán', 'volcan',
-  'rescate', 'deslizamiento', 'avalancha', 'sequía', 'sequia',
-  'contaminación', 'contaminacion', 'fuga de gas', 'naufragio', 'secuestro',
-  'asesinato', 'homicidio', 'tragedia', 'catástrofe', 'catastrofe',
-  'blackout', 'apagón', 'apagon', 'crisis', 'epidemia', 'pandemia'
+  'accidente vial', 'accidente de tránsito', 'accidente carretero', 'accidente fatal',
+  'emergencia médica', 'emergencia sanitaria', 'estado de emergencia', 'alerta de emergencia',
+  'explosión', 'explosion', 'desastre natural', 
+  'huracán', 'huracan', 'incendio forestal', 'incendio devastador',
+  'terremoto', 'sismo de magnitud', 'temblor',
+  'inundación', 'inundacion', 'tornado', 'tsunami', 
+  'evacuación masiva', 'evacuacion de emergencia',
+  'derrumbe', 'colapso de edificio', 'atentado',
+  'tormenta tropical', 'ciclón', 'ciclon', 
+  'erupción volcánica', 'erupcion volcanica', 'volcán en erupción',
+  'rescate de víctimas', 'operativo de rescate', 'brigada de rescate',
+  'deslizamiento de tierra', 'avalancha', 
+  'fuga de gas', 'naufragio', 
+  'tragedia en', 'catástrofe', 'catastrofe',
+  'apagón masivo', 'apagon', 'epidemia de', 'pandemia',
+  'alerta sísmica', 'alerta roja', 'alerta por huracán',
+  'muertos por', 'víctimas del', 'heridos en el'
 ];
 
 // Check if a news item matches emergency keywords
 function isEmergencyNews(item: NewsItem): boolean {
   const textToSearch = `${item.title} ${item.description || ''}`.toLowerCase();
-  return EMERGENCY_KEYWORDS.some(keyword => textToSearch.includes(keyword));
+  // Require more specific phrase matching to avoid false positives
+  return EMERGENCY_KEYWORDS.some(keyword => textToSearch.includes(keyword.toLowerCase()));
 }
 
 // Format relative time for news items (only for past dates)
