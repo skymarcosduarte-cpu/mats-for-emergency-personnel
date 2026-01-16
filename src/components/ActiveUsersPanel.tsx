@@ -210,20 +210,29 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
           <div className="flex flex-col h-full max-h-[60vh]">
             {/* Header with Welcome Message */}
             <div className="p-3 border-b border-border">
-              {/* Welcome message */}
-              <div className="bg-gradient-to-r from-primary/10 to-safe/10 rounded-lg p-2 mb-3">
-                <p className="text-xs font-medium text-center">
-                  👋 ¡Bienvenido al Mapa en Vivo!
-                </p>
-                <p className="text-[11px] text-muted-foreground text-center mt-1">
-                  {activeUsers.length === 0 
-                    ? 'No hay usuarios activos en este momento'
-                    : activeUsers.length === 1 
-                      ? '1 miembro de la comunidad está activo ahora'
-                      : `${activeUsers.length} miembros de la comunidad están activos ahora`
-                  }
-                </p>
-              </div>
+              {/* Welcome message - personalized */}
+              {(() => {
+                const currentUserData = users.find(u => u.user_id === currentUser?.id);
+                const userName = currentUserData?.show_name_on_map && currentUserData?.display_name 
+                  ? currentUserData.display_name.split(' ')[0] // First name only
+                  : null;
+                
+                return (
+                  <div className="bg-gradient-to-r from-primary/10 to-safe/10 rounded-lg p-2 mb-3">
+                    <p className="text-xs font-medium text-center">
+                      👋 ¡Hola{userName ? `, ${userName}` : ''}! Bienvenido al Mapa
+                    </p>
+                    <p className="text-[11px] text-muted-foreground text-center mt-1">
+                      {activeUsers.length === 0 
+                        ? 'No hay otros usuarios activos en este momento'
+                        : activeUsers.length === 1 
+                          ? '1 miembro de la comunidad está activo'
+                          : `${activeUsers.length} miembros activos ahora`
+                      }
+                    </p>
+                  </div>
+                );
+              })()}
 
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
