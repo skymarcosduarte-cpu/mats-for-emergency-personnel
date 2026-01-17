@@ -1341,9 +1341,83 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <CardTitle className="flex items-center gap-2 text-base">
               <Bell className="w-5 h-5" />
               Notificaciones
+              {/* Push Status Badge - Prominent display */}
+              {webPushSupported && (
+                <Badge 
+                  variant={webPushSubscribed ? "default" : "destructive"}
+                  className={cn(
+                    "ml-auto text-xs font-bold animate-pulse",
+                    webPushSubscribed 
+                      ? "bg-safe text-safe-foreground" 
+                      : "bg-destructive text-destructive-foreground"
+                  )}
+                >
+                  {webPushSubscribed ? '🔔 PUSH ACTIVO' : '🔕 PUSH NO ACTIVO'}
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Critical Push Status Banner */}
+            {webPushSupported && !webPushSubscribed && (
+              <div className="p-4 rounded-lg bg-destructive/20 border-2 border-destructive animate-pulse">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-destructive/30 flex items-center justify-center">
+                    <BellOff className="w-6 h-6 text-destructive" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-destructive text-lg">
+                      ⚠️ Push NO Activo
+                    </p>
+                    <p className="text-sm text-destructive/80">
+                      No recibirás alertas de emergencia si cierras la app
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="lg"
+                  variant="destructive"
+                  onClick={handleEnableBackgroundNotifications}
+                  disabled={requestingPermission}
+                  className="w-full font-bold text-base"
+                >
+                  {requestingPermission ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      Activando...
+                    </>
+                  ) : (
+                    <>
+                      <Bell className="w-5 h-5 mr-2" />
+                      ACTIVAR PUSH AHORA
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-destructive/70 mt-2 text-center">
+                  Por seguridad, es crítico activar las notificaciones push para emergencias
+                </p>
+              </div>
+            )}
+
+            {/* Push Active Success Banner */}
+            {webPushSupported && webPushSubscribed && (
+              <div className="p-4 rounded-lg bg-safe/20 border-2 border-safe">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-safe/30 flex items-center justify-center">
+                    <Bell className="w-6 h-6 text-safe" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-safe text-lg">
+                      ✅ Push Activo
+                    </p>
+                    <p className="text-sm text-safe/80">
+                      Recibirás alertas de emergencia aunque la app esté cerrada
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <p className="text-sm text-muted-foreground">
               Recibe alertas de sismos cercanos incluso cuando la app está en segundo plano.
             </p>
@@ -1368,7 +1442,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     {!isSupported 
                       ? 'No soportado'
                       : permission === 'granted' 
-                        ? 'Activadas' 
+                        ? 'Permisos concedidos' 
                         : permission === 'denied' 
                           ? 'Bloqueadas' 
                           : 'Sin configurar'}
@@ -1377,10 +1451,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     {!isSupported 
                       ? 'Tu navegador no soporta notificaciones'
                       : permission === 'granted' 
-                        ? 'Recibirás alertas de sismos' 
+                        ? 'Permisos de notificación activos' 
                         : permission === 'denied' 
                           ? 'Habilita en configuración del navegador' 
-                          : 'Activa las notificaciones para alertas'}
+                          : 'Activa los permisos para alertas'}
                   </p>
                 </div>
               </div>
@@ -1418,54 +1492,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <Bell className="w-4 h-4 mr-2" />
                 Probar Notificación
               </Button>
-            )}
-
-            {/* Background notifications status */}
-            {permission === 'granted' && webPushSupported && (
-              <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {webPushSubscribed ? (
-                      <div className="w-10 h-10 rounded-full bg-safe/10 flex items-center justify-center">
-                        <Wifi className="w-5 h-5 text-safe" />
-                      </div>
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
-                        <Wifi className="w-5 h-5 text-warning" />
-                      </div>
-                    )}
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {webPushSubscribed ? 'Segundo plano activo' : 'Segundo plano inactivo'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {webPushSubscribed 
-                          ? 'Recibirás alertas aunque la app esté cerrada'
-                          : 'No recibirás mensajes si sales de la app'}
-                      </p>
-                    </div>
-                  </div>
-                  {!webPushSubscribed && (
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={handleEnableBackgroundNotifications}
-                      disabled={requestingPermission}
-                    >
-                      {requestingPermission ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        'Activar'
-                      )}
-                    </Button>
-                  )}
-                </div>
-                {!webPushSubscribed && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    💡 Para mejor experiencia, instala la app en tu pantalla de inicio (Compartir → Agregar a inicio).
-                  </p>
-                )}
-              </div>
             )}
 
             {/* Sound toggles */}
