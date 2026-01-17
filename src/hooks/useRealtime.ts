@@ -201,12 +201,12 @@ export function useUserLocations() {
         }
       });
 
-    // Fallback polling every 30 seconds to ensure locations stay updated
-    // This handles cases where realtime events might be missed
+    // Fallback polling every 10 seconds for faster location updates
+    // Reduced from 30s to 10s for more responsive map updates
     const pollInterval = setInterval(() => {
       console.log('[useUserLocations] Polling for location updates...');
       fetchLocations();
-    }, 30000);
+    }, 10000);
 
     return () => {
       console.log('[useUserLocations] Cleaning up subscription');
