@@ -71,12 +71,12 @@ const MAX_HISTORY = 10;
 
 // ============ Category Config ============
 export const CATEGORY_CONFIG: Record<ReadingCategory, { label: string; icon: string; description: string }> = {
-  books: { label: 'Libros', icon: '📚', description: 'Open Library' },
-  medical: { label: 'Médico', icon: '🏥', description: 'PubMed' },
+  weather: { label: 'Clima', icon: '🌤️', description: 'OpenWeatherMap' },
+  finance: { label: 'Finanzas', icon: '💱', description: 'Exchange Rates' },
   dictionary: { label: 'Diccionario', icon: '📖', description: 'Free Dictionary' },
   nutrition: { label: 'Nutrición', icon: '🥗', description: 'Open Food Facts' },
-  finance: { label: 'Finanzas', icon: '💱', description: 'Exchange Rates' },
-  weather: { label: 'Clima', icon: '🌤️', description: 'OpenWeatherMap' },
+  medical: { label: 'Médico', icon: '🏥', description: 'PubMed' },
+  books: { label: 'Libros', icon: '📚', description: 'Open Library' },
 };
 
 // ============ API Functions ============
