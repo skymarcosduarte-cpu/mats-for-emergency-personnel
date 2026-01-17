@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, X, GraduationCap, MessageSquarePlus, Send, Loader2, WifiOff } from 'lucide-react';
+import { HelpCircle, X, GraduationCap, MessageSquarePlus, Send, Loader2, WifiOff, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ComprehensiveTutorial } from '@/components/ComprehensiveTutorial';
+import { UpdateTutorial } from '@/components/UpdateTutorial';
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,7 @@ const FEEDBACK_CATEGORIES = [
 export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ className }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showUpdateTutorial, setShowUpdateTutorial] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -95,6 +97,14 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
     setShowTutorial(false);
   };
 
+  const handleOpenUpdateTutorial = () => {
+    setIsExpanded(false);
+    setShowUpdateTutorial(true);
+  };
+
+  const handleCloseUpdateTutorial = () => {
+    setShowUpdateTutorial(false);
+  };
   const handleOpenFeedback = () => {
     setIsExpanded(false);
     setShowFeedbackDialog(true);
@@ -259,6 +269,15 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
                   variant="ghost"
                   size="sm"
                   className="w-full justify-start gap-2 text-left"
+                  onClick={handleOpenUpdateTutorial}
+                >
+                  <RefreshCw className="w-4 h-4 text-safe" />
+                  <span>Cómo Actualizar</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start gap-2 text-left"
                   onClick={handleOpenFeedback}
                 >
                   <MessageSquarePlus className="w-4 h-4 text-primary" />
@@ -313,6 +332,11 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
           onComplete={handleCloseTutorial} 
           onClose={handleCloseTutorial} 
         />
+      )}
+
+      {/* Update Tutorial Modal */}
+      {showUpdateTutorial && (
+        <UpdateTutorial onClose={handleCloseUpdateTutorial} />
       )}
 
       {/* Feedback Dialog */}
