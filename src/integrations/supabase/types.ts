@@ -89,6 +89,44 @@ export type Database = {
         }
         Relationships: []
       }
+      clave100_checkins: {
+        Row: {
+          created_at: string
+          drill_id: string | null
+          id: string
+          lat: number
+          lng: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          drill_id?: string | null
+          id?: string
+          lat: number
+          lng: number
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          drill_id?: string | null
+          id?: string
+          lat?: number
+          lng?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clave100_checkins_drill_id_fkey"
+            columns: ["drill_id"]
+            isOneToOne: false
+            referencedRelation: "clave100_drills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clave100_drills: {
         Row: {
           created_at: string

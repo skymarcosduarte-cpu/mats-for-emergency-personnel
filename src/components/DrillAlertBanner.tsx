@@ -11,6 +11,7 @@ import { playClave100Alert, stopClave100Alert } from '@/lib/alertSound';
 interface DrillAlertBannerProps {
   onDismiss?: () => void;
   onOpenCommunityChat?: (drillId: string) => void;
+  onActiveDrillChange?: (drillId: string | null) => void;
 }
 
 interface ActiveDrill {
@@ -19,7 +20,7 @@ interface ActiveDrill {
   status: string;
 }
 
-export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, onOpenCommunityChat }) => {
+export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, onOpenCommunityChat, onActiveDrillChange }) => {
   const [activeDrill, setActiveDrill] = useState<ActiveDrill | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [soundPlaying, setSoundPlaying] = useState(false);
@@ -55,6 +56,9 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
         setActiveDrill(drill);
         setDismissed(false);
         
+        // Notify parent of active drill
+        onActiveDrillChange?.(drill.id);
+        
         // Auto-open community chat for this drill
         if (!hasAutoOpenedChat.current && onOpenCommunityChat) {
           hasAutoOpenedChat.current = true;
@@ -66,6 +70,7 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
       } else {
         setActiveDrill(null);
         drillIdRef.current = null;
+        onActiveDrillChange?.(null);
       }
     };
 

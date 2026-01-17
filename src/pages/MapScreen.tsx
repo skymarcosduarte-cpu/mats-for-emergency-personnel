@@ -16,6 +16,7 @@ import { useEmergencyResponse } from '@/hooks/useEmergencyResponse';
 import { usePanicResponse } from '@/hooks/usePanicResponse';
 import { usePOIs, type POI } from '@/hooks/usePOIs';
 import { useEmergencyContactsDB } from '@/hooks/useEmergencyContactsDB';
+import { useClave100Checkins } from '@/hooks/useClave100Checkins';
 import { AlertsPanel } from '@/components/AlertsPanel';
 import { AlertDetailModal } from '@/components/AlertDetailModal';
 import { ActiveUsersPanel } from '@/components/ActiveUsersPanel';
@@ -1319,9 +1320,10 @@ interface MapScreenProps {
   className?: string;
   respondersToMyAlerts?: ActiveResponderInfo[];
   onNavigateToSettings?: () => void;
+  activeDrillId?: string | null;
 }
 
-export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyAlerts = [], onNavigateToSettings }) => {
+export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyAlerts = [], onNavigateToSettings, activeDrillId }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -1402,6 +1404,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   } = usePanicResponse();
   const { pois, loading: poisLoading, fetchPOIs } = usePOIs();
   const { hasMinimumContacts, initialized: contactsInitialized } = useEmergencyContactsDB();
+  const { checkins: clave100Checkins, stats: clave100Stats } = useClave100Checkins(activeDrillId || null);
   
   const isRescatista = role === 'SOS_ACTIVO' || role === 'EX_SOS';
   const currentUserId = user?.id;
@@ -2623,7 +2626,95 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     }
   }, [locations, poiVisibility.first_aid_kit, poiVisibility.ambulance, poiVisibility.rescue_unit, poiVisibility.k9_unit, mapReady, helpRequests.length, panicEvents.length]);
 
-  // Update panic event markers - clicking opens detail modal
+  // Update Clave 100 check-in markers during active drills
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady) return;
+    const map = mapInstanceRef.current;
+
+    // Remove old clave100 markers that no longer exist
+    markersRef.current.forEach((marker, key) => {
+      if (key.startsWith('clave100-') && !clave100Checkins.find(c => `clave100-${c.id}` === key)) {
+        map.removeLayer(marker);
+        markersRef.current.delete(key);
+      }
+    });
+
+    // Add/update clave100 check-in markers
+    clave100Checkins.forEach((checkin) => {
+      const key = `clave100-${checkin.id}`;
+      const existingMarker = markersRef.current.get(key);
+      const isOk = checkin.status === 'OK';
+      const displayName = sanitize(checkin.nickname || checkin.full_name || 'Usuario');
+
+      if (existingMarker) {
+        existingMarker.setLatLng([checkin.lat, checkin.lng]);
+      } else {
+        const icon = L.divIcon({
+          className: 'clave100-checkin-marker',
+          html: `
+            <div style="
+              position: relative;
+              width: 36px;
+              height: 44px;
+            ">
+              <div style="
+                width: 32px;
+                height: 32px;
+                background: ${isOk ? '#22c55e' : '#ef4444'};
+                border: 3px solid #fff;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+                ${!isOk ? 'animation: pulse 1.5s ease-in-out infinite;' : ''}
+              ">
+                <span style="font-size: 16px;">${isOk ? '✓' : '⚠'}</span>
+              </div>
+              <div style="
+                position: absolute;
+                bottom: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${isOk ? '#22c55e' : '#ef4444'};
+                color: white;
+                font-size: 9px;
+                font-weight: bold;
+                padding: 1px 4px;
+                border-radius: 4px;
+                white-space: nowrap;
+                max-width: 80px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              ">${displayName}</div>
+            </div>
+          `,
+          iconSize: [36, 44],
+          iconAnchor: [18, 44],
+        });
+
+        const marker = L.marker([checkin.lat, checkin.lng], {
+          icon,
+          zIndexOffset: isOk ? 600 : 700,
+        })
+          .addTo(map)
+          .bindPopup(`
+            <div style="text-align: center; padding: 6px;">
+              <div style="font-size: 16px; font-weight: bold; color: ${isOk ? '#22c55e' : '#ef4444'};">
+                ${isOk ? '✓ ESTÁ BIEN' : '⚠️ NECESITA AYUDA'}
+              </div>
+              <div style="font-size: 14px; font-weight: 500; margin-top: 4px;">${displayName}</div>
+              <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                ${new Date(checkin.created_at).toLocaleTimeString()}
+              </div>
+            </div>
+          `);
+
+        markersRef.current.set(key, marker);
+      }
+    });
+  }, [clave100Checkins, mapReady]);
+
   // Now shows responder count badge and updates when responders change
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
