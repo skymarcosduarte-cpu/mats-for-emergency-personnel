@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 export type ReadingCategory = 
   | 'books' 
   | 'medical' 
-  | 'papers' 
   | 'latam' 
   | 'dictionary' 
   | 'nutrition' 
@@ -73,10 +72,9 @@ const MAX_HISTORY = 10;
 
 // ============ Category Config ============
 export const CATEGORY_CONFIG: Record<ReadingCategory, { label: string; icon: string; description: string }> = {
-  books: { label: 'Libros Gratuitos', icon: '📚', description: 'Open Library' },
-  medical: { label: 'Artículos Médicos', icon: '🏥', description: 'PubMed' },
-  papers: { label: 'Papers Científicos', icon: '📄', description: 'arXiv' },
-  latam: { label: 'Revistas LATAM', icon: '🌎', description: 'SciELO' },
+  books: { label: 'Libros', icon: '📚', description: 'Open Library' },
+  medical: { label: 'Médico', icon: '🏥', description: 'PubMed' },
+  latam: { label: 'LATAM', icon: '🌎', description: 'SciELO' },
   dictionary: { label: 'Diccionario', icon: '📖', description: 'Free Dictionary' },
   nutrition: { label: 'Nutrición', icon: '🥗', description: 'Open Food Facts' },
   finance: { label: 'Finanzas', icon: '💱', description: 'Exchange Rates' },
@@ -202,48 +200,6 @@ async function searchPubMed(query: string, filters: PubMedFilters): Promise<Read
   }
 }
 
-// arXiv - Scientific Papers
-async function searchArxiv(query: string): Promise<ReadingItem[]> {
-  try {
-    const response = await fetch(
-      `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(query)}&max_results=20`
-    );
-    const text = await response.text();
-    
-    // Parse XML
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, 'text/xml');
-    const entries = xml.querySelectorAll('entry');
-    
-    return Array.from(entries).map((entry, index) => {
-      const id = entry.querySelector('id')?.textContent || `arxiv-${index}`;
-      const title = entry.querySelector('title')?.textContent?.replace(/\s+/g, ' ').trim() || 'Sin título';
-      const authors = Array.from(entry.querySelectorAll('author name'))
-        .map(a => a.textContent)
-        .slice(0, 3)
-        .join(', ');
-      const summary = entry.querySelector('summary')?.textContent?.trim().slice(0, 200) || '';
-      const pdfLink = Array.from(entry.querySelectorAll('link'))
-        .find(l => l.getAttribute('title') === 'pdf')
-        ?.getAttribute('href');
-      
-      return {
-        id: `arxiv-${id.split('/').pop()}`,
-        type: 'papers' as ReadingCategory,
-        title,
-        subtitle: authors || 'Autores desconocidos',
-        description: summary + (summary.length >= 200 ? '...' : ''),
-        link: pdfLink || id,
-        metadata: {
-          arxivId: id.split('/').pop(),
-        },
-      };
-    });
-  } catch (error) {
-    console.error('[ReadingRoom] arXiv error:', error);
-    throw new Error('Error al buscar papers científicos');
-  }
-}
 
 // SciELO - Latin American Journals (simplified search via web)
 async function searchScielo(query: string): Promise<ReadingItem[]> {
@@ -546,9 +502,6 @@ export function useReadingRoom() {
           break;
         case 'medical':
           items = await searchPubMed(query, filters || pubmedFilters);
-          break;
-        case 'papers':
-          items = await searchArxiv(query);
           break;
         case 'latam':
           items = await searchScielo(query);

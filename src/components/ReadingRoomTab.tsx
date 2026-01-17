@@ -141,15 +141,15 @@ function CategoryButton({ id, label, icon, isActive, onClick }: CategoryButtonPr
     <button
       onClick={onClick}
       className={cn(
-        'flex flex-col items-center justify-center p-2 rounded-lg transition-all',
-        'min-w-[72px] text-center',
+        'flex flex-col items-center justify-center p-2 rounded-lg transition-all flex-shrink-0',
+        'w-[68px] text-center',
         isActive
           ? 'bg-primary text-primary-foreground shadow-md'
           : 'bg-muted/50 hover:bg-muted text-muted-foreground'
       )}
     >
-      <span className="text-xl">{icon}</span>
-      <span className="text-[10px] font-medium mt-0.5 line-clamp-1">{label}</span>
+      <span className="text-lg">{icon}</span>
+      <span className="text-[9px] font-medium mt-0.5 leading-tight">{label}</span>
     </button>
   );
 }
@@ -204,8 +204,6 @@ export function ReadingRoomTab() {
         return 'Buscar libros por título o autor...';
       case 'medical':
         return 'Buscar artículos médicos (ej: diabetes, trauma)...';
-      case 'papers':
-        return 'Buscar papers científicos...';
       case 'latam':
         return 'Buscar en revistas latinoamericanas...';
       case 'dictionary':
@@ -560,12 +558,6 @@ export function ReadingRoomTab() {
                 <>
                   <p>• Prueba: "trauma care" o "emergency medicine"</p>
                   <p>• Busca protocolos: "CPR guidelines"</p>
-                </>
-              )}
-              {activeCategory === 'papers' && (
-                <>
-                  <p>• Prueba: "machine learning" o "earthquake prediction"</p>
-                  <p>• Busca por tema: "disaster response"</p>
                 </>
               )}
               {activeCategory === 'dictionary' && (
