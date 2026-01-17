@@ -14,11 +14,11 @@ interface BackgroundLocationState {
 }
 
 // Minimum distance to trigger an update (in meters)
-// Reduced from 50m to 20m for more responsive updates on map
-const MIN_DISTANCE_METERS = 20;
+// Reduced from 50m to 15m for more responsive updates on map
+const MIN_DISTANCE_METERS = 15;
 // Minimum time between updates (in ms)
-// Reduced from 10s to 5s for more frequent updates
-const MIN_UPDATE_INTERVAL_MS = 5000;
+// Reduced from 10s to 3s for faster location updates
+const MIN_UPDATE_INTERVAL_MS = 3000;
 
 /**
  * Hook for background location tracking

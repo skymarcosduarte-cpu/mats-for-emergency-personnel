@@ -23,9 +23,11 @@ interface NativeLocationState {
 }
 
 // Minimum distance to trigger an update (in meters)
-const MIN_DISTANCE_METERS = 50;
+// Reduced from 50m to 15m for more responsive map updates
+const MIN_DISTANCE_METERS = 15;
 // Minimum time between updates (in ms)
-const MIN_UPDATE_INTERVAL_MS = 10000;
+// Reduced from 10s to 3s for faster location updates
+const MIN_UPDATE_INTERVAL_MS = 3000;
 
 /**
  * Native location hook that uses Capacitor for native apps
