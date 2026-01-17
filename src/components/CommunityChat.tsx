@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   X, Send, Users, Image, Camera, Mic, MicOff, MapPin, 
-  Play, Pause, Trash2, AlertTriangle, Bell
+  Play, Pause, Trash2, AlertTriangle, Bell, Lock, ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,12 @@ interface CommunityMessage {
   created_at: string;
 }
 
+// Authorized users who can close drill chats
+const AUTHORIZED_DRILL_CLOSERS = [
+  '7c823685-369d-4f62-8459-80486832ba1a', // Zombie
+  '0e0d5ee7-628d-4a98-af26-b60ede2536ce', // El Lagarto
+];
+
 interface CommunityChatProps {
   isOpen: boolean;
   onClose: () => void;
@@ -60,6 +66,8 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [onlineCount, setOnlineCount] = useState(0);
+  const [chatClosed, setChatClosed] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   
   // Media states
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -77,6 +85,9 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Check if current user can close drill chat
+  const canCloseDrillChat = user?.id && AUTHORIZED_DRILL_CLOSERS.includes(user.id) && (contextType === 'drill' || contextType === 'clave100');
 
   // Fetch messages
   const fetchMessages = useCallback(async () => {
@@ -135,12 +146,59 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
     setOnlineCount(count || 0);
   }, []);
 
+  // Check if drill chat is closed
+  const checkDrillChatStatus = useCallback(async () => {
+    if (!contextId || (contextType !== 'drill' && contextType !== 'clave100')) return;
+    
+    const { data } = await supabase
+      .from('clave100_drills')
+      .select('chat_closed_at')
+      .eq('id', contextId)
+      .single();
+    
+    if (data?.chat_closed_at) {
+      setChatClosed(true);
+    }
+  }, [contextId, contextType]);
+
+  // Close drill chat (only for authorized users)
+  const handleCloseDrillChat = async () => {
+    if (!canCloseDrillChat || !contextId) return;
+    
+    try {
+      await supabase
+        .from('clave100_drills')
+        .update({ 
+          chat_closed_at: new Date().toISOString(),
+          chat_closed_by: user?.id
+        })
+        .eq('id', contextId);
+      
+      // Send system message
+      await supabase
+        .from('community_messages')
+        .insert({
+          sender_id: user!.id,
+          message: '📢 El chat del simulacro ha sido cerrado por el coordinador. ¡Gracias por participar!',
+          context_type: contextType,
+          context_id: contextId,
+        });
+      
+      toast.success('Chat del simulacro cerrado');
+      setChatClosed(true);
+      setShowCloseConfirm(false);
+    } catch (err) {
+      toast.error('Error al cerrar el chat');
+    }
+  };
+
   // Subscribe to realtime updates
   useEffect(() => {
     if (!isOpen || !user?.id) return;
     
     fetchMessages();
     fetchOnlineCount();
+    checkDrillChatStatus();
     
     const channel = supabase
       .channel('community-chat')
@@ -474,15 +532,35 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
               <div className="flex items-center gap-2">
                 <h2 className="font-semibold">{title}</h2>
                 {getContextBadge()}
+                {chatClosed && (
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-muted text-muted-foreground rounded-full text-xs">
+                    <Lock className="w-3 h-3" />
+                    Cerrado
+                  </div>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
                 {onlineCount} usuarios conectados
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {/* Close drill chat button - only for authorized users */}
+            {canCloseDrillChat && !chatClosed && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setShowCloseConfirm(true)}
+                className="text-amber-600 hover:bg-amber-100"
+                title="Cerrar chat del simulacro"
+              >
+                <Lock className="w-5 h-5" />
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Messages */}
@@ -627,8 +705,14 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
           </div>
         )}
 
-        {/* Input Area */}
+        {/* Input Area - disabled when chat is closed */}
         <div className="p-3 border-t bg-background">
+          {chatClosed ? (
+            <div className="flex items-center justify-center gap-2 text-muted-foreground py-2">
+              <Lock className="w-4 h-4" />
+              <span className="text-sm">Este chat ha sido cerrado por el coordinador</span>
+            </div>
+          ) : (
           <div className="flex items-center gap-2">
             {/* Media buttons */}
             <input
@@ -717,6 +801,7 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
               </Button>
             )}
           </div>
+          )}
         </div>
       </div>
 
@@ -733,6 +818,28 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteMessage} className="bg-destructive">
               Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Close Drill Chat Confirmation */}
+      <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-amber-600" />
+              ¿Cerrar el chat del simulacro?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Al cerrar el chat, los usuarios aún podrán ver los mensajes pero no podrán enviar nuevos mensajes. 
+              Esta acción notificará a todos los participantes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCloseDrillChat} className="bg-amber-600 hover:bg-amber-700">
+              Cerrar Chat
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

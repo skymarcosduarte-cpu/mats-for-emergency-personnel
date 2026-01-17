@@ -129,6 +129,8 @@ export type Database = {
       }
       clave100_drills: {
         Row: {
+          chat_closed_at: string | null
+          chat_closed_by: string | null
           created_at: string
           creator_id: string
           id: string
@@ -138,6 +140,8 @@ export type Database = {
           status: string
         }
         Insert: {
+          chat_closed_at?: string | null
+          chat_closed_by?: string | null
           created_at?: string
           creator_id: string
           id?: string
@@ -147,6 +151,8 @@ export type Database = {
           status?: string
         }
         Update: {
+          chat_closed_at?: string | null
+          chat_closed_by?: string | null
           created_at?: string
           creator_id?: string
           id?: string
