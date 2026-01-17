@@ -83,7 +83,7 @@ export const SpecialtyFilter: React.FC<SpecialtyFilterProps> = ({
         >
           <Users className="w-4 h-4 text-primary" />
           <span className="text-xs font-medium text-foreground">
-            {hasFilters ? `Filtro: ${selectedSpecialties.length}` : 'Especialistas'}
+            {hasFilters ? `Filtro: ${selectedSpecialties.length}` : 'Especialidades'}
           </span>
           {hasFilters && (
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 ml-auto">
