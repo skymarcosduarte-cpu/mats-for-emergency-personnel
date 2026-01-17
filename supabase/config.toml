@@ -50,3 +50,15 @@ verify_jwt = false
 
 [functions.trigger-drill-alert]
 verify_jwt = false
+
+[functions.force-update-email]
+verify_jwt = false
+
+[functions.fetch-ssn-rss]
+verify_jwt = false
+
+[functions.push-overdue-trips]
+verify_jwt = false
+
+[functions.send-welcome-email]
+verify_jwt = false
