@@ -87,7 +87,12 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   
   // Check if current user can close drill chat
-  const canCloseDrillChat = user?.id && AUTHORIZED_DRILL_CLOSERS.includes(user.id) && (contextType === 'drill' || contextType === 'clave100');
+  // IMPORTANT: requires a contextId (a specific drill/event) otherwise the close action can't be applied.
+  const canCloseDrillChat =
+    !!user?.id &&
+    AUTHORIZED_DRILL_CLOSERS.includes(user.id) &&
+    !!contextId &&
+    (contextType === 'drill' || contextType === 'clave100');
 
   // Fetch messages
   const fetchMessages = useCallback(async () => {
@@ -163,31 +168,41 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
 
   // Close drill chat (only for authorized users)
   const handleCloseDrillChat = async () => {
-    if (!canCloseDrillChat || !contextId) return;
+    if (!canCloseDrillChat || !contextId || !user?.id) return;
     
     try {
-      await supabase
+      const { error: updateError } = await supabase
         .from('clave100_drills')
         .update({ 
           chat_closed_at: new Date().toISOString(),
-          chat_closed_by: user?.id
+          chat_closed_by: user.id,
         })
         .eq('id', contextId);
+
+      if (updateError) throw updateError;
       
-      // Send system message
-      await supabase
+      const systemMessage =
+        contextType === 'drill'
+          ? '📢 El chat del simulacro ha sido cerrado por el coordinador. ¡Gracias por participar!'
+          : '📢 El chat de CLAVE 100 ha sido cerrado por el coordinador.';
+
+      const { error: insertError } = await (supabase as any)
         .from('community_messages')
         .insert({
-          sender_id: user!.id,
-          message: '📢 El chat del simulacro ha sido cerrado por el coordinador. ¡Gracias por participar!',
+          sender_id: user.id,
+          message: systemMessage,
           context_type: contextType,
           context_id: contextId,
         });
+
+      if (insertError) throw insertError;
       
-      toast.success('Chat del simulacro cerrado');
+      toast.success('Chat cerrado');
       setChatClosed(true);
       setShowCloseConfirm(false);
+      onClose();
     } catch (err) {
+      console.error('Error closing drill chat:', err);
       toast.error('Error al cerrar el chat');
     }
   };
