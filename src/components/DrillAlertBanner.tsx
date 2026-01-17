@@ -4,12 +4,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, Volume2, VolumeX, MessageCircle } from 'lucide-react';
+import { X, Bell, Volume2, VolumeX, MessageCircle, Ban } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { playClave100Alert, stopClave100Alert } from '@/lib/alertSound';
 import { DrillStatsPanel } from './DrillStatsPanel';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 interface DrillAlertBannerProps {
   onDismiss?: () => void;
@@ -19,9 +20,17 @@ interface DrillAlertBannerProps {
 
 interface ActiveDrill {
   id: string;
+  creator_id?: string | null;
   scheduled_at: string;
   status: string;
+  chat_closed_at?: string | null;
 }
+
+// Authorized users who can cancel drills (keep in sync with CommunityChat)
+const AUTHORIZED_DRILL_CANCELLERS = [
+  '7c823685-369d-4f62-8459-80486832ba1a', // Zombie
+  '0e0d5ee7-628d-4a98-af26-b60ede2536ce', // El Lagarto
+];
 
 export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, onOpenCommunityChat, onActiveDrillChange }) => {
   const { user, profile } = useAuth();
@@ -277,9 +286,48 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
     onDismissRef.current?.();
   };
 
+  const handleCancelDrill = async () => {
+    if (!activeDrill?.id || !user?.id) return;
+
+    const allowed =
+      AUTHORIZED_DRILL_CANCELLERS.includes(user.id) || user.id === activeDrill.creator_id;
+
+    if (!allowed) {
+      toast.error('No tienes permisos para cancelar el simulacro');
+      return;
+    }
+
+    try {
+      await supabase
+        .from('clave100_drills')
+        .update({
+          status: 'completed',
+          chat_closed_at: new Date().toISOString(),
+          chat_closed_by: user.id,
+        })
+        .eq('id', activeDrill.id);
+
+      toast.success('Simulacro cancelado');
+
+      // Clear local state immediately (backend realtime/poll will also confirm)
+      setActiveDrill(null);
+      drillIdRef.current = null;
+      dismissedDrillIdRef.current = null;
+      lastNotifiedDrillIdRef.current = null;
+      setStatsExpanded(false);
+      setDismissed(false);
+      stopClave100Alert();
+      setSoundPlaying(false);
+      onActiveDrillChangeRef.current?.(null);
+    } catch (e) {
+      console.error('[DrillAlertBanner] Failed to cancel drill:', e);
+      toast.error('No se pudo cancelar el simulacro');
+    }
+  };
+
   const handleOpenChat = () => {
-    if (activeDrill && onOpenCommunityChat) {
-      onOpenCommunityChat(activeDrill.id);
+    if (activeDrill?.id && onOpenCommunityChatRef.current) {
+      onOpenCommunityChatRef.current(activeDrill.id);
     }
   };
 
@@ -383,6 +431,20 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
                 >
                   <MessageCircle className="w-5 h-5" />
                 </Button>
+
+                {/* Cancel drill (authorized only) */}
+                {(AUTHORIZED_DRILL_CANCELLERS.includes(user?.id || '') || user?.id === activeDrill.creator_id) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-white hover:bg-white/20 flex-shrink-0"
+                    onClick={handleCancelDrill}
+                    title="Cancelar simulacro"
+                  >
+                    <Ban className="w-5 h-5" />
+                  </Button>
+                )}
+
                 <Button
                   variant="ghost"
                   size="icon"

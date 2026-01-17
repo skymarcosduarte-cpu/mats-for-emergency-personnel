@@ -517,13 +517,19 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-[100] bg-background flex flex-col">
+      <div
+        className="fixed inset-0 z-[30000] bg-background flex flex-col pointer-events-auto"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
         {/* Header */}
-        <div className={cn(
-          "flex items-center justify-between p-3 border-b",
-          contextType === 'clave100' && "bg-destructive/10",
-          contextType === 'drill' && "bg-amber-500/10"
-        )}>
+        <div
+          className={cn(
+            "flex items-center justify-between p-3 border-b",
+            contextType === 'clave100' && "bg-destructive/10",
+            contextType === 'drill' && "bg-amber-500/10"
+          )}
+          style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top, 0px))' }}
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <Users className="w-5 h-5 text-primary" />
