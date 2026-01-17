@@ -128,7 +128,7 @@ export function MapControlsMenu({
               <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-safe animate-ping opacity-75" />
             </div>
             <span className="text-sm font-medium text-foreground">
-              {activeUsersCount} {activeUsersCount === 1 ? 'activo' : 'activos'}
+              {activeUsersCount} {activeUsersCount === 1 ? 'miembro' : 'miembros'}
             </span>
           </div>
         </div>
