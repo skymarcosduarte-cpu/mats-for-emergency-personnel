@@ -432,9 +432,9 @@ html, body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Fix: Ensure Radix portals appear above Leaflet map layers */
+/* Fix: Ensure Radix portals appear above dialogs, maps, header/footer */
 [data-radix-popper-content-wrapper] {
-  z-index: 9999 !important;
+  z-index: 100100 !important;
 }
 
 /* When chat modal is open, prevent any interaction with the Leaflet map behind it */
