@@ -83,7 +83,7 @@ export function useLocation(options: UseLocationOptions = {}) {
     syncPositionToDb(geoPos);
   }, [syncPositionToDb]);
 
-  // Handle error
+  // Handle error with automatic retry for timeout
   const handleError = useCallback((err: GeolocationPositionError) => {
     // Spec-defined codes: 1=PERMISSION_DENIED, 2=POSITION_UNAVAILABLE, 3=TIMEOUT
     // iOS Safari doesn't reliably expose the PERMISSION_DENIED constants on the error instance.
@@ -97,8 +97,10 @@ export function useLocation(options: UseLocationOptions = {}) {
         errorMessage = 'No se pudo obtener la ubicación. Verifica tu conexión GPS.';
         break;
       case 3:
-        errorMessage = 'La solicitud de ubicación expiró. Intenta de nuevo.';
-        break;
+        // For timeout, don't show error - just log and the watcher will retry
+        console.warn('[useLocation] GPS timeout - watcher will continue trying');
+        // Don't update error state for timeouts to avoid alarming the user
+        return;
       default:
         errorMessage = 'Error al obtener la ubicación.';
     }
@@ -218,11 +220,27 @@ export function useLocation(options: UseLocationOptions = {}) {
     }
   }, [markOffline]);
 
-  // Auto-watch on mount
+  // Auto-watch on mount with periodic forced refresh
   useEffect(() => {
     if (opts.autoWatch) {
       startWatching();
     }
+
+    // Force a getCurrentPosition every 15 seconds as backup
+    // This helps when watchPosition stops working (common on iOS)
+    const forceRefreshInterval = setInterval(() => {
+      if (watchIdRef.current !== null && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          handlePosition,
+          () => {}, // Silently ignore errors for backup refresh
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 5000,
+          }
+        );
+      }
+    }, 15000);
 
     // Mark offline when page unloads
     const handleUnload = () => {
@@ -233,10 +251,11 @@ export function useLocation(options: UseLocationOptions = {}) {
 
     return () => {
       stopWatching();
+      clearInterval(forceRefreshInterval);
       window.removeEventListener('beforeunload', handleUnload);
       window.removeEventListener('pagehide', handleUnload);
     };
-  }, [opts.autoWatch, startWatching, stopWatching, markOffline]);
+  }, [opts.autoWatch, startWatching, stopWatching, markOffline, handlePosition]);
 
   // Request permission (for UI purposes)
   const requestPermission = useCallback(async () => {
