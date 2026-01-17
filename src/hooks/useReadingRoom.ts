@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 export type ReadingCategory = 
   | 'books' 
   | 'medical' 
-  | 'latam' 
   | 'dictionary' 
   | 'nutrition' 
   | 'finance' 
@@ -74,7 +73,6 @@ const MAX_HISTORY = 10;
 export const CATEGORY_CONFIG: Record<ReadingCategory, { label: string; icon: string; description: string }> = {
   books: { label: 'Libros', icon: '📚', description: 'Open Library' },
   medical: { label: 'Médico', icon: '🏥', description: 'PubMed' },
-  latam: { label: 'LATAM', icon: '🌎', description: 'SciELO' },
   dictionary: { label: 'Diccionario', icon: '📖', description: 'Free Dictionary' },
   nutrition: { label: 'Nutrición', icon: '🥗', description: 'Open Food Facts' },
   finance: { label: 'Finanzas', icon: '💱', description: 'Exchange Rates' },
@@ -200,28 +198,6 @@ async function searchPubMed(query: string, filters: PubMedFilters): Promise<Read
   }
 }
 
-
-// SciELO - Latin American Journals (simplified search via web)
-async function searchScielo(query: string): Promise<ReadingItem[]> {
-  try {
-    // SciELO doesn't have a simple public API, we'll create placeholder results
-    // that link to SciELO search
-    const searchUrl = `https://search.scielo.org/?q=${encodeURIComponent(query)}&lang=es`;
-    
-    return [{
-      id: 'scielo-search',
-      type: 'latam' as ReadingCategory,
-      title: `Buscar "${query}" en SciELO`,
-      subtitle: 'Revistas científicas de América Latina',
-      description: 'Haz clic para buscar en SciELO - Scientific Electronic Library Online',
-      link: searchUrl,
-      metadata: { isSearchLink: true },
-    }];
-  } catch (error) {
-    console.error('[ReadingRoom] SciELO error:', error);
-    throw new Error('Error al buscar en SciELO');
-  }
-}
 
 // Free Dictionary
 async function searchDictionary(word: string): Promise<ReadingItem[]> {
@@ -502,9 +478,6 @@ export function useReadingRoom() {
           break;
         case 'medical':
           items = await searchPubMed(query, filters || pubmedFilters);
-          break;
-        case 'latam':
-          items = await searchScielo(query);
           break;
         case 'dictionary':
           items = await searchDictionary(query);
