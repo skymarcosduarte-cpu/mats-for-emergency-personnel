@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import DOMPurify from 'dompurify';
-import { ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame, AlertTriangle, Users, Radio } from 'lucide-react';
+import { ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame, AlertTriangle, Users, Radio, MessageCircle } from 'lucide-react';
 import { GpsStatusBanner } from '@/components/GpsStatusBanner';
 import { MapControlsMenu } from '@/components/MapControlsMenu';
 import { ImOkButton } from '@/components/ImOkButton';
@@ -1343,9 +1343,10 @@ interface MapScreenProps {
   respondersToMyAlerts?: ActiveResponderInfo[];
   onNavigateToSettings?: () => void;
   activeDrillId?: string | null;
+  onOpenDrillChat?: (drillId: string) => void;
 }
 
-export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyAlerts = [], onNavigateToSettings, activeDrillId }) => {
+export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyAlerts = [], onNavigateToSettings, activeDrillId, onOpenDrillChat }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -3391,6 +3392,18 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         onUpdateTransport={handleUpdateTransport}
         onOpenMessaging={handleMessageUser}
       />
+
+      {/* Floating Clave 100 Chat Button - shows when drill is active */}
+      {activeDrillId && onOpenDrillChat && (
+        <button
+          onClick={() => onOpenDrillChat(activeDrillId)}
+          className="fixed bottom-36 right-4 z-[1500] flex items-center gap-2 px-4 py-3 bg-warning text-warning-foreground rounded-full shadow-lg animate-pulse hover:scale-105 transition-transform"
+          aria-label="Abrir chat Clave 100"
+        >
+          <MessageCircle className="w-5 h-5" />
+          <span className="font-semibold text-sm">Chat Clave 100</span>
+        </button>
+      )}
     </div>
   );
 };
