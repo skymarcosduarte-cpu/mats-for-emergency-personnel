@@ -73,9 +73,9 @@ function generateWelcomeEmailHtml(nickname: string, fullName: string): string {
     
     <!-- Tutorial CTA -->
     <div style="text-align: center; margin-bottom: 32px;">
-      <p style="color: #9ca3af; font-size: 14px; margin-bottom: 16px;">Te recomendamos ver nuestro tutorial completo:</p>
-      <a href="https://mats.lovable.app" style="display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000000; font-weight: bold; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-size: 18px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);">
-        📚 Ver Tutorial Completo
+      <p style="color: #9ca3af; font-size: 14px; margin-bottom: 16px;">Te recomendamos ver nuestro tutorial de instalación:</p>
+      <a href="https://safe-guard-link.lovable.app/install" style="display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000000; font-weight: bold; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-size: 18px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);">
+        📲 Instalar M.A.T.S.
       </a>
     </div>
     
@@ -203,7 +203,7 @@ function generateWelcomeEmailHtml(nickname: string, fullName: string): string {
     
     <!-- CTA Button -->
     <div style="text-align: center; margin-bottom: 24px;">
-      <a href="https://mats.lovable.app" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; font-weight: bold; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-size: 16px; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);">
+      <a href="https://safe-guard-link.lovable.app" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; font-weight: bold; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-size: 16px; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);">
         🚀 Abrir M.A.T.S.
       </a>
     </div>
