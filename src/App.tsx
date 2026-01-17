@@ -55,6 +55,7 @@ import { useMyAlertResponders } from '@/hooks/useMyAlertResponders';
 import { useMyPanicResponders } from '@/hooks/useMyPanicResponders';
 import { useTestMode } from '@/hooks/useTestMode';
 import { useBackgroundSync } from '@/hooks/useBackgroundSync';
+import { useAutoUpdate } from '@/hooks/useAutoUpdate';
 import { useOverdueTrips } from '@/hooks/useOverdueTrips';
 import { useDelayedTripChecker } from '@/hooks/useDelayedTripChecker';
 import { useInactiveDelayedTripsAlert } from '@/hooks/useInactiveDelayedTripsAlert';
@@ -76,6 +77,9 @@ import type { UserRole, USGSEarthquake, PanicType } from '@/types';
 const queryClient = new QueryClient();
 
 function AppContent() {
+  // Auto-update on app entry
+  useAutoUpdate();
+  
   const [showSplash, setShowSplash] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showComprehensiveTutorial, setShowComprehensiveTutorial] = useState(false);
