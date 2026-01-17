@@ -518,8 +518,10 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
   return (
     <>
       <div
-        className="fixed inset-0 z-[100200] bg-background flex flex-col pointer-events-auto"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        className="fixed inset-0 z-[100300] bg-background flex flex-col"
+        style={{ 
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
       >
         {/* Header */}
         <div
@@ -550,20 +552,26 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 pointer-events-auto">
             {/* Close drill chat button - only for authorized users */}
             {canCloseDrillChat && !chatClosed && (
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={() => setShowCloseConfirm(true)}
-                className="text-amber-600 hover:bg-amber-100"
+                className="text-amber-600 hover:bg-amber-100 min-w-[44px] min-h-[44px]"
                 title="Cerrar chat del simulacro"
               >
                 <Lock className="w-5 h-5" />
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onClose}
+              className="min-w-[44px] min-h-[44px]"
+              aria-label="Cerrar chat"
+            >
               <X className="w-5 h-5" />
             </Button>
           </div>
