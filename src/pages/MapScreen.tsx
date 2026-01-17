@@ -1128,11 +1128,11 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
         <button 
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex-1 flex items-center justify-between p-2.5 hover:bg-accent/50 transition-colors"
-          aria-label={isExpanded ? 'Ocultar leyenda' : 'Mostrar leyenda'}
+          aria-label={isExpanded ? 'Ocultar ubicaciones' : 'Mostrar ubicaciones'}
         >
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <Info className="w-3.5 h-3.5" />
-            <span>Leyenda</span>
+            <span>Ubicaciones</span>
             {poisLoading && <span className="text-[10px] text-primary animate-pulse">Cargando...</span>}
           </div>
           {isExpanded ? (
@@ -1344,18 +1344,37 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   const [selectedMapAlertType, setSelectedMapAlertType] = useState<'panic' | 'help' | null>(null);
   const [isDeletingMapAlert, setIsDeletingMapAlert] = useState(false);
 
-  // POI visibility state
-  const [poiVisibility, setPoiVisibility] = useState<POIVisibility>({
-    hospital: false,
-    gas_station: false,
-    pharmacy: false,
-    police: false,
-    fire_station: false,
-    first_aid_kit: false,
-    ambulance: false,
-    rescue_unit: false,
-    k9_unit: false,
+  // POI visibility state - persist to localStorage
+  const [poiVisibility, setPoiVisibility] = useState<POIVisibility>(() => {
+    try {
+      const saved = localStorage.getItem('mats-poi-visibility');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn('Failed to load POI visibility from localStorage');
+    }
+    return {
+      hospital: false,
+      gas_station: false,
+      pharmacy: false,
+      police: false,
+      fire_station: false,
+      first_aid_kit: false,
+      ambulance: false,
+      rescue_unit: false,
+      k9_unit: false,
+    };
   });
+
+  // Save POI visibility to localStorage when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('mats-poi-visibility', JSON.stringify(poiVisibility));
+    } catch (e) {
+      console.warn('Failed to save POI visibility to localStorage');
+    }
+  }, [poiVisibility]);
 
   // Specialty filter state
   const [selectedSpecialtyFilters, setSelectedSpecialtyFilters] = useState<string[]>([]);
