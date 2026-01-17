@@ -3251,7 +3251,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       <div ref={mapRef} className="w-full h-full map-container" />
 
       {/* Map View Toggle - Comunidad / En Vivo */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[1001] pointer-events-auto">
+      <div className="fixed top-[calc(var(--app-header-height)+8px)] left-1/2 -translate-x-1/2 z-[1002] pointer-events-auto">
         <div className="bg-background/95 backdrop-blur-sm rounded-full shadow-lg border border-border p-0.5 flex">
           <button
             onClick={() => setMapViewMode('comunidad')}
