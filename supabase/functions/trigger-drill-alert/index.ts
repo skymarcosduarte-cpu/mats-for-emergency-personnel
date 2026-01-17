@@ -6,6 +6,38 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface PushPayload {
+  title: string;
+  body: string;
+  icon?: string;
+  badge?: string;
+  tag?: string;
+  alertType?: string;
+  data?: Record<string, unknown>;
+}
+
+async function sendPushNotification(
+  subscription: { endpoint: string; p256dh: string; auth: string },
+  payload: PushPayload
+): Promise<{ success: boolean; status?: number }> {
+  try {
+    const response = await fetch(subscription.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'TTL': '86400',
+        'Urgency': 'high',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    return { success: response.ok, status: response.status };
+  } catch (error) {
+    console.error('[trigger-drill-alert] Push error:', error);
+    return { success: false };
+  }
+}
+
 // This function is called by a cron job to trigger scheduled drills
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -65,22 +97,32 @@ serve(async (req) => {
 
       const creatorName = creator?.nickname || creator?.full_name || 'Coordinador';
 
-      // Get all active users
+      // Get users who have opted out of drills
+      const { data: optedOutProfiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('opt_out_drills', true);
+      
+      const optedOutUserIds = new Set((optedOutProfiles || []).map(p => p.id));
+
+      // Get all active users (active in last 24 hours)
       const { data: activeLocations } = await supabase
         .from('user_locations')
         .select('user_id')
         .gte('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
 
-      if (activeLocations && activeLocations.length > 0) {
+      // Filter out opted-out users
+      const eligibleUsers = (activeLocations || []).filter(loc => !optedOutUserIds.has(loc.user_id));
+
+      if (eligibleUsers.length > 0) {
         const drillMessage = `🔔 SIMULACRO CLAVE 100 🔔\n\n⚠️ ESTO ES UN SIMULACRO, NO ES UNA EMERGENCIA REAL ⚠️\n\nEste es un ejercicio de práctica para familiarizarte con las alertas de emergencia.\n\nOrganizado por: ${creatorName}`;
 
-        // Create drill alert messages for all active users
-        const messages = activeLocations.map(loc => ({
+        // Create drill alert messages for all eligible users
+        const messages = eligibleUsers.map(loc => ({
           sender_id: drill.creator_id,
           receiver_id: loc.user_id,
-          content: drillMessage,
-          is_read: false,
-          is_clave100: true // Special flag for drill alerts
+          message: drillMessage,
+          read: false
         }));
 
         // Insert messages in batches
@@ -91,15 +133,47 @@ serve(async (req) => {
         }
 
         console.log(`[trigger-drill-alert] Sent drill alert to ${messages.length} users`);
+
+        // Send Web Push notifications to ALL users with push subscriptions (except opted-out)
+        const userIds = eligibleUsers.map(loc => loc.user_id);
+        const { data: subscriptions } = await supabase
+          .from('push_subscriptions')
+          .select('*')
+          .in('user_id', userIds);
+
+        if (subscriptions && subscriptions.length > 0) {
+          const pushPayload: PushPayload = {
+            title: '🔔 SIMULACRO CLAVE 100',
+            body: '⚠️ ESTO ES UN SIMULACRO, NO ES UNA EMERGENCIA REAL ⚠️',
+            icon: '/icon-192.png',
+            badge: '/icon-192.png',
+            tag: `drill-${drill.id}`,
+            alertType: 'DRILL',
+            data: { drillId: drill.id, type: 'drill' },
+          };
+
+          let pushSent = 0;
+          for (const sub of subscriptions) {
+            const result = await sendPushNotification(
+              { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
+              pushPayload
+            );
+            if (result.success) pushSent++;
+            
+            // Remove invalid subscriptions
+            if (!result.success && (result.status === 404 || result.status === 410)) {
+              await supabase.from('push_subscriptions').delete().eq('id', sub.id);
+            }
+          }
+          
+          console.log(`[trigger-drill-alert] Sent ${pushSent}/${subscriptions.length} push notifications`);
+        }
       }
 
-      // Mark drill as completed after 5 minutes
-      setTimeout(async () => {
-        await supabase
-          .from('clave100_drills')
-          .update({ status: 'completed' })
-          .eq('id', drill.id);
-      }, 5 * 60 * 1000);
+      // Note: setTimeout doesn't work reliably in edge functions
+      // The drill will remain active and front-end can check status
+      // We'll mark it as completed after 30 minutes via another check
+      console.log(`[trigger-drill-alert] Drill ${drill.id} is now active`);
     }
 
     return new Response(
