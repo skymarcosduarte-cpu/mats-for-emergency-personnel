@@ -1090,32 +1090,25 @@ interface MapLegendProps {
   onTogglePOI: (type: keyof POIVisibility) => void;
   poisLoading?: boolean;
   isNavigating?: boolean;
+  forceCloseSignal?: number;
 }
 
-const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisLoading, isNavigating = false }) => {
+const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisLoading, isNavigating = false, forceCloseSignal = 0 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isHidden, setIsHidden] = useState(false);
 
-  // Auto-hide when navigating (viewing an alert/user)
+  // Auto-close when navigating (viewing an alert/user)
   React.useEffect(() => {
     if (isNavigating) {
-      setIsHidden(true);
       setIsExpanded(false);
     }
   }, [isNavigating]);
 
-  // If hidden, show only a small restore button
-  if (isHidden) {
-    return (
-      <button
-        onClick={() => setIsHidden(false)}
-        className="fixed left-4 bottom-36 z-[1200] bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border p-2 hover:bg-accent/50 transition-colors"
-        aria-label="Mostrar leyenda"
-      >
-        <Info className="w-4 h-4 text-muted-foreground" />
-      </button>
-    );
-  }
+  // Close expanded content when map is clicked
+  React.useEffect(() => {
+    if (forceCloseSignal > 0) {
+      setIsExpanded(false);
+    }
+  }, [forceCloseSignal]);
 
   const poiItems: { type: keyof POIVisibility; label: string; color: string; emoji: string }[] = [
     { type: 'first_aid_kit', label: 'Botiquines', color: '#22c55e', emoji: '🩹' },
@@ -1147,13 +1140,6 @@ const MapLegend: React.FC<MapLegendProps> = ({ poiVisibility, onTogglePOI, poisL
           ) : (
             <ChevronUp className="w-4 h-4 text-muted-foreground" />
           )}
-        </button>
-        <button
-          onClick={() => setIsHidden(true)}
-          className="p-2 hover:bg-accent/50 transition-colors border-l border-border"
-          aria-label="Minimizar leyenda"
-        >
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground rotate-90" />
         </button>
       </div>
       
@@ -3200,6 +3186,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           onTogglePOI={handleTogglePOI}
           poisLoading={poisLoading}
           isNavigating={!!selectedMapAlert || usersPanelOpen}
+          forceCloseSignal={forceCloseMenus}
         />
       )}
 
