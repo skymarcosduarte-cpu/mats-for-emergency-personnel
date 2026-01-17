@@ -1,12 +1,13 @@
 // Community Events Screen for COMUNIDAD EX SOS
-// Message board for birthdays, health notices, hospital support, announcements + Breaking News
+// Message board for birthdays, health notices, hospital support, announcements + Breaking News + Reading Room
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, BookOpen
 } from 'lucide-react';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
+import { ReadingRoomTab } from '@/components/ReadingRoomTab';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -331,7 +332,7 @@ export const CommunityScreen: React.FC = () => {
           </div>
 
           <div className="mt-3">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="tablero" className="text-xs">
                 📋 Tablero
               </TabsTrigger>
@@ -340,8 +341,12 @@ export const CommunityScreen: React.FC = () => {
                 className="text-xs relative overflow-hidden"
               >
                 <span className="relative z-10 animate-pulse text-destructive font-semibold drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]">
-                  📰 Últimas Noticias
+                  📰 Noticias
                 </span>
+              </TabsTrigger>
+              <TabsTrigger value="lectura" className="text-xs">
+                <BookOpen className="w-3.5 h-3.5 mr-1" />
+                Lectura
               </TabsTrigger>
             </TabsList>
           </div>
@@ -665,6 +670,11 @@ export const CommunityScreen: React.FC = () => {
 
           {/* Breaking News Section */}
           <BreakingNewsSection />
+        </TabsContent>
+
+        {/* Reading Room Tab */}
+        <TabsContent value="lectura" className="mt-4">
+          <ReadingRoomTab />
         </TabsContent>
       </Tabs>
 
