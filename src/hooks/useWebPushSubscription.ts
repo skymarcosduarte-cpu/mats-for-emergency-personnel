@@ -331,8 +331,6 @@ export function useWebPushSubscription() {
           console.log('[WebPush] No push subscription found - prompting user');
           localStorage.setItem('push_prompt_shown_at', now.toString());
           
-          // Import toast dynamically to avoid circular deps
-          const { toast } = await import('sonner');
           toast.warning('⚠️ Notificaciones Push NO activas', {
             description: 'Por tu seguridad, activa las notificaciones push en Ajustes para recibir alertas de emergencia.',
             duration: 10000,
