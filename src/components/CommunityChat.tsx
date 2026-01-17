@@ -599,7 +599,7 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
                     </Avatar>
                     
                     <div className={cn(
-                      "max-w-[75%] rounded-lg p-2",
+                      "max-w-[80%] rounded-lg p-3",
                       isMine 
                         ? "bg-primary text-primary-foreground" 
                         : "bg-muted"
@@ -644,8 +644,8 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
                         </div>
                       )}
                       
-                      {/* Message text */}
-                      <p className="text-sm whitespace-pre-wrap break-words">
+                      {/* Message text - with proper word-breaking for long messages */}
+                      <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                         {msg.message}
                       </p>
                       
