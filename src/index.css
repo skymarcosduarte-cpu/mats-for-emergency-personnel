@@ -235,60 +235,50 @@
     @apply w-full h-full rounded-lg overflow-hidden;
   }
 
-  /* Bottom Navigation - iOS Keyboard Fix */
+  /* Bottom Navigation - Fixed at bottom */
   .bottom-nav {
     @apply bg-card/95 backdrop-blur-xl border-t border-border;
-    /* Position fixed with explicit bottom: 0 */
+    /* Force fixed positioning */
     position: fixed !important;
     bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
+    width: 100% !important;
     /* Safe area for notch devices */
     padding-bottom: env(safe-area-inset-bottom, 0);
     padding-bottom: constant(safe-area-inset-bottom);
     /* High z-index to stay above everything */
-    z-index: 99999;
+    z-index: 99999 !important;
     /* GPU acceleration for smooth positioning */
-    transform: translate3d(0, 0, 0);
-    -webkit-transform: translate3d(0, 0, 0);
-    will-change: transform;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    /* Prevent iOS visual viewport issues */
-    contain: layout style;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    /* Ensure it's always rendered in its own layer */
+    isolation: isolate;
+    /* Prevent any containment issues on Android */
+    contain: none;
   }
 
-  /* iOS-specific: Use visual viewport positioning */
-  @supports (-webkit-touch-callout: none) {
-    .bottom-nav {
-      /* On iOS, stick to the visual viewport bottom */
-      position: fixed !important;
-      bottom: 0 !important;
-      /* Use transform to compensate for keyboard */
-      transition: none;
-    }
-  }
-
-  /* App Header */
+  /* App Header - Fixed at top */
   .app-header {
     @apply flex items-center justify-between px-4 py-2 bg-card/95 backdrop-blur-xl border-b border-border;
+    /* Force fixed positioning */
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
+    width: 100% !important;
     padding-top: calc(8px + env(safe-area-inset-top, 0));
     min-height: var(--app-header-height);
     overflow: hidden;
     /* High z-index to stay above everything */
-    z-index: 99999;
-    /* GPU acceleration for smooth positioning during zoom */
-    transform: translate3d(0, 0, 0);
-    -webkit-transform: translate3d(0, 0, 0);
-    will-change: transform;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    /* Prevent visual viewport issues */
-    contain: layout style;
+    z-index: 99999 !important;
+    /* GPU acceleration */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    /* Ensure it's always rendered in its own layer */
+    isolation: isolate;
+    /* Prevent any containment issues on Android */
+    contain: none;
   }
 
   /* Main content wrapper - scrollable area between fixed header/footer */
