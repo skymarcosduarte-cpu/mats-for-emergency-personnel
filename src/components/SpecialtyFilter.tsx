@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -38,6 +38,7 @@ interface SpecialtyFilterProps {
   onSpecialtiesChange: (specialties: string[]) => void;
   availableSpecialties?: string[];
   specialistCounts?: Record<string, number>;
+  forceCollapseSignal?: number; // Increment to force collapse
 }
 
 export const SpecialtyFilter: React.FC<SpecialtyFilterProps> = ({
@@ -45,8 +46,16 @@ export const SpecialtyFilter: React.FC<SpecialtyFilterProps> = ({
   onSpecialtiesChange,
   availableSpecialties,
   specialistCounts = {},
+  forceCollapseSignal = 0,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Auto-collapse when map is interacted with
+  useEffect(() => {
+    if (forceCollapseSignal > 0 && isExpanded) {
+      setIsExpanded(false);
+    }
+  }, [forceCollapseSignal]);
 
   const toggleSpecialty = (specialty: string) => {
     if (selectedSpecialties.includes(specialty)) {
