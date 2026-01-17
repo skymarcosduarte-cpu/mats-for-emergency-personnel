@@ -40,6 +40,7 @@ import { CommunityChat } from '@/components/CommunityChat';
 
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
 import { Clave100CheckinPrompt } from '@/components/Clave100CheckinPrompt';
+import { ReopenCheckinButton } from '@/components/ReopenCheckinButton';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import { ComprehensiveTutorial } from '@/components/ComprehensiveTutorial';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
@@ -597,6 +598,14 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
           drillId={activeDrillId}
           isDrill={true}
           onClose={() => setShowClave100Checkin(false)}
+        />
+      )}
+
+      {/* Floating button to reopen check-in prompt if closed during active drill */}
+      {!showClave100Checkin && activeDrillId && (
+        <ReopenCheckinButton
+          isDrill={true}
+          onClick={() => setShowClave100Checkin(true)}
         />
       )}
 
