@@ -518,7 +518,7 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
   return (
     <>
       <div
-        className="fixed inset-0 z-[30000] bg-background flex flex-col pointer-events-auto"
+        className="fixed inset-0 z-[100200] bg-background flex flex-col pointer-events-auto"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         {/* Header */}

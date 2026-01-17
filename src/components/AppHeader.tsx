@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useState } from 'react';
 import { MatsLogo } from './MatsLogo';
-import { AlertTriangle, Phone, MessageCircle, Sun, SunDim } from 'lucide-react';
+import { AlertTriangle, Phone, MessageCircle, Sun, SunDim, Bell } from 'lucide-react';
 import { playUrgentSound } from '@/lib/alertSound';
 import { toast } from 'sonner';
 import {
@@ -19,6 +19,7 @@ interface AppHeaderProps {
   onPanicClick: () => void;
   unreadMessageCount: number;
   onOpenMessages: () => void;
+  onOpenClave100Chat: () => void;
   wakeLockStatus?: {
     isSupported: boolean;
     isActive: boolean;
@@ -30,6 +31,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onPanicClick,
   unreadMessageCount,
   onOpenMessages,
+  onOpenClave100Chat,
   wakeLockStatus,
 }) => {
   const lastActivatedAtRef = useRef(0);
@@ -169,6 +171,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         <div className="flex items-center gap-2">
           {/* Notifications bell */}
           <NotificationsBell />
+
+          {/* Clave 100 community chat */}
+          <button
+            onClick={onOpenClave100Chat}
+            className="relative p-2 rounded-full hover:bg-muted/50 transition-colors"
+            aria-label="Chat Clave 100"
+            title="Chat Clave 100"
+          >
+            <Bell className="w-5 h-5 text-warning" />
+            <span className="absolute -top-0.5 -right-0.5 px-1.5 h-4 bg-warning text-warning-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+              100
+            </span>
+          </button>
           
           {/* Messages button with badge */}
           <button

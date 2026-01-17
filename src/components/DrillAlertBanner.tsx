@@ -184,6 +184,8 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
         // Users can open the chat from the banner button or from the map floating button.
       } else {
         console.log('[DrillAlertBanner] No active drill found');
+        stopClave100Alert();
+        setSoundPlaying(false);
         setActiveDrill(null);
         drillIdRef.current = null;
         dismissedDrillIdRef.current = null;
