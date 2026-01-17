@@ -222,12 +222,17 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
     // Check more frequently (every 10 seconds) for responsive drill detection
     const interval = window.setInterval(checkActiveDrill, 10000);
 
-    // Also check when app becomes visible (user returns to tab)
+    // Check when app changes visibility
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         console.log('[DrillAlertBanner] App visible, checking for drills');
         checkActiveDrill();
+        return;
       }
+
+      // If app goes to background/hidden, stop any alert sound to avoid it getting "stuck"
+      stopClave100Alert();
+      setSoundPlaying(false);
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
