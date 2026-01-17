@@ -187,7 +187,8 @@ export function useLocation(options: UseLocationOptions = {}) {
       {
         enableHighAccuracy: opts.enableHighAccuracy,
         timeout: opts.timeout,
-        maximumAge: opts.maximumAge,
+        // Use at least 2000ms maximumAge to get more frequent updates
+        maximumAge: Math.min(opts.maximumAge ?? 0, 2000),
       }
     );
   }, [opts.enableHighAccuracy, opts.timeout, opts.maximumAge, handlePosition, handleError]);
