@@ -3,10 +3,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, Volume2, VolumeX, MessageCircle } from 'lucide-react';
+import { X, Bell, Volume2, VolumeX, MessageCircle, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { playClave100Alert, stopClave100Alert } from '@/lib/alertSound';
+import { DrillStatsPanel } from './DrillStatsPanel';
 
 interface DrillAlertBannerProps {
   onDismiss?: () => void;
@@ -25,6 +26,7 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
   const [dismissed, setDismissed] = useState(false);
   const [soundPlaying, setSoundPlaying] = useState(false);
   const [soundMuted, setSoundMuted] = useState(false);
+  const [statsExpanded, setStatsExpanded] = useState(false);
   const hasPlayedSound = useRef(false);
   const drillIdRef = useRef<string | null>(null);
   const hasAutoOpenedChat = useRef(false);
@@ -262,6 +264,14 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
               </div>
             </div>
           </div>
+
+          {/* Real-time Statistics Panel */}
+          <DrillStatsPanel
+            drillId={activeDrill.id}
+            drillStartTime={activeDrill.scheduled_at}
+            isExpanded={statsExpanded}
+            onToggleExpand={() => setStatsExpanded(!statsExpanded)}
+          />
         </div>
       </motion.div>
     </AnimatePresence>
