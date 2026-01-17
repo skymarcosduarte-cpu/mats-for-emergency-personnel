@@ -34,22 +34,31 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
   useEffect(() => {
     // Check for active drills
     const checkActiveDrill = async () => {
-      const now = new Date();
-      const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-      const fiveMinutesAhead = new Date(now.getTime() + 5 * 60 * 1000);
-
-      const { data } = await supabase
+      // Simply check for any drill with 'active' status
+      const { data, error } = await supabase
         .from('clave100_drills')
         .select('*')
         .eq('status', 'active')
-        .or(`scheduled_at.gte.${fiveMinutesAgo.toISOString()},scheduled_at.lte.${fiveMinutesAhead.toISOString()}`)
+        .is('chat_closed_at', null)
+        .order('scheduled_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
+
+      if (error) {
+        console.error('[DrillAlertBanner] Error fetching drill:', error);
+        return;
+      }
+
+      console.log('[DrillAlertBanner] Drill check result:', data);
 
       if (data) {
         const drill = data as ActiveDrill;
         
+        console.log('[DrillAlertBanner] Active drill found:', drill.id, 'status:', drill.status);
+        
         // Only trigger sound and chat for new drills
         if (drill.id !== drillIdRef.current) {
+          console.log('[DrillAlertBanner] New drill detected, resetting refs');
           drillIdRef.current = drill.id;
           hasPlayedSound.current = false;
           hasAutoOpenedChat.current = false;
@@ -59,17 +68,20 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
         setDismissed(false);
         
         // Notify parent of active drill
+        console.log('[DrillAlertBanner] Notifying parent of active drill');
         onActiveDrillChange?.(drill.id);
         
         // Auto-open community chat for this drill
         if (!hasAutoOpenedChat.current && onOpenCommunityChat) {
           hasAutoOpenedChat.current = true;
+          console.log('[DrillAlertBanner] Auto-opening community chat in 1.5s');
           // Small delay to ensure banner is visible first
           setTimeout(() => {
             onOpenCommunityChat(drill.id);
           }, 1500);
         }
       } else {
+        console.log('[DrillAlertBanner] No active drill found');
         setActiveDrill(null);
         drillIdRef.current = null;
         onActiveDrillChange?.(null);
@@ -94,12 +106,22 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
       )
       .subscribe();
 
-    // Check periodically
-    const interval = setInterval(checkActiveDrill, 30000);
+    // Check more frequently (every 10 seconds) for responsive drill detection
+    const interval = setInterval(checkActiveDrill, 10000);
+    
+    // Also check when app becomes visible (user returns to tab)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[DrillAlertBanner] App visible, checking for drills');
+        checkActiveDrill();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
       // Stop sound on unmount
       stopClave100Alert();
     };
