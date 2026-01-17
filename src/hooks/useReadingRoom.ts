@@ -6,7 +6,6 @@ export type ReadingCategory =
   | 'medical' 
   | 'papers' 
   | 'latam' 
-  | 'bestsellers' 
   | 'dictionary' 
   | 'nutrition' 
   | 'finance' 
@@ -39,7 +38,6 @@ export const CATEGORY_CONFIG: Record<ReadingCategory, { label: string; icon: str
   medical: { label: 'Artículos Médicos', icon: '🏥', description: 'PubMed' },
   papers: { label: 'Papers Científicos', icon: '📄', description: 'arXiv' },
   latam: { label: 'Revistas LATAM', icon: '🌎', description: 'SciELO' },
-  bestsellers: { label: 'Bestsellers', icon: '⭐', description: 'NY Times' },
   dictionary: { label: 'Diccionario', icon: '📖', description: 'Free Dictionary' },
   nutrition: { label: 'Nutrición', icon: '🥗', description: 'Open Food Facts' },
   finance: { label: 'Finanzas', icon: '💱', description: 'Exchange Rates' },
@@ -385,19 +383,6 @@ async function getWeather(city: string = 'Ciudad de México'): Promise<ReadingIt
   }
 }
 
-// NY Times Bestsellers (requires API key - will show message if not configured)
-async function getBestsellers(): Promise<ReadingItem[]> {
-  // This requires an API key, so we'll show a helpful message
-  return [{
-    id: 'nyt-info',
-    type: 'bestsellers' as ReadingCategory,
-    title: 'NY Times Bestsellers',
-    subtitle: 'Requiere API Key de NY Times',
-    description: 'Para ver los bestsellers, configura tu API key gratuita de NY Times en los ajustes.',
-    link: 'https://developer.nytimes.com/get-started',
-    metadata: { requiresApiKey: true },
-  }];
-}
 
 // ============ Main Hook ============
 export function useReadingRoom() {
@@ -486,9 +471,6 @@ export function useReadingRoom() {
           break;
         case 'weather':
           items = await getWeather(query || 'Ciudad de México');
-          break;
-        case 'bestsellers':
-          items = await getBestsellers();
           break;
       }
 
