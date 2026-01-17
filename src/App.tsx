@@ -39,6 +39,7 @@ import { DrillAlertBanner } from '@/components/DrillAlertBanner';
 import { CommunityChat } from '@/components/CommunityChat';
 
 import { StatusCheckinPrompt } from '@/components/StatusCheckinPrompt';
+import { Clave100CheckinPrompt } from '@/components/Clave100CheckinPrompt';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import { ComprehensiveTutorial } from '@/components/ComprehensiveTutorial';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
@@ -216,6 +217,10 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   // State for community chat modal
   const [communityChatOpen, setCommunityChatOpen] = useState(false);
   const [communityChatContext, setCommunityChatContext] = useState<{ type: 'general' | 'clave100' | 'drill'; id?: string; title?: string }>({ type: 'general' });
+  
+  // State for active Clave 100 drill (for check-in prompt and map markers)
+  const [activeDrillId, setActiveDrillId] = useState<string | null>(null);
+  const [showClave100Checkin, setShowClave100Checkin] = useState(false);
   
   // Handler to open messaging with a specific user
   const handleOpenMessaging = useCallback((userId: string, userName: string | null) => {
@@ -505,7 +510,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 
   const renderScreen = () => {
     const screens: Record<string, React.ReactNode> = {
-      map: <MapScreen className="h-[calc(100vh-120px)]" respondersToMyAlerts={respondersToMyAlerts} onNavigateToSettings={() => setActiveTab('settings')} />,
+      map: <MapScreen className="h-[calc(100vh-120px)]" respondersToMyAlerts={respondersToMyAlerts} onNavigateToSettings={() => setActiveTab('settings')} activeDrillId={activeDrillId} />,
       transit: <TransitScreen userRole={userRole} />,
       alerts: <AlertsScreen userRole={userRole} />,
       community: <CommunityScreen />,
@@ -573,7 +578,23 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
           setCommunityChatContext({ type: 'drill', id: drillId, title: '🔔 Chat Simulacro' });
           setCommunityChatOpen(true);
         }}
+        onActiveDrillChange={(drillId) => {
+          setActiveDrillId(drillId);
+          if (drillId) {
+            // Show check-in prompt when drill becomes active
+            setShowClave100Checkin(true);
+          }
+        }}
       />
+
+      {/* Clave 100 Check-in Prompt - shows during drills */}
+      {showClave100Checkin && activeDrillId && (
+        <Clave100CheckinPrompt
+          drillId={activeDrillId}
+          isDrill={true}
+          onClose={() => setShowClave100Checkin(false)}
+        />
+      )}
 
       <InstallPrompt />
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS'} disasterMode={disasterMode} messageCount={unreadMessageCount} />
