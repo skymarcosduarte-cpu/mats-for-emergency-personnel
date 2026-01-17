@@ -189,7 +189,7 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: -100, opacity: 0 }}
-        className="fixed top-0 left-0 right-0 z-[9999] pointer-events-auto"
+        className="fixed left-0 right-0 top-[var(--app-header-height)] z-[9999] pointer-events-auto"
       >
         <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 text-white shadow-lg">
           {/* Animated stripes */}
