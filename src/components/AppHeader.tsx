@@ -1,7 +1,7 @@
 import React, { useRef, useCallback, useState } from 'react';
 import { MatsLogo } from './MatsLogo';
 import { AlertTriangle, Phone, MessageCircle, Sun, SunDim, Bell } from 'lucide-react';
-import { playUrgentSound } from '@/lib/alertSound';
+import { playUrgentSound, playSubtleSound } from '@/lib/alertSound';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -148,7 +148,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
           {/* Clave 100 community chat - prominent on left side */}
           <button
-            onClick={onOpenClave100Chat}
+            onClick={() => {
+              // Play short notification sound when opening chat
+              playSubtleSound();
+              onOpenClave100Chat();
+            }}
             className="relative p-2 rounded-full bg-warning/20 hover:bg-warning/30 transition-all shadow-[0_0_12px_hsl(var(--warning)/0.6)] animate-pulse"
             aria-label="Chat Clave 100"
             title="Chat Clave 100"
