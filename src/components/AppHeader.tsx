@@ -146,6 +146,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <MatsLogo size={36} showText className="min-w-0" />
 
+          {/* Clave 100 community chat - prominent on left side */}
+          <button
+            onClick={onOpenClave100Chat}
+            className="relative p-2 rounded-full bg-warning/20 hover:bg-warning/30 transition-all shadow-[0_0_12px_hsl(var(--warning)/0.6)] animate-pulse"
+            aria-label="Chat Clave 100"
+            title="Chat Clave 100"
+          >
+            <Bell className="w-5 h-5 text-warning drop-shadow-[0_0_6px_hsl(var(--warning)/0.8)]" />
+            <span className="absolute -top-0.5 -right-0.5 px-1.5 h-4 bg-warning text-warning-foreground text-[10px] font-bold rounded-full flex items-center justify-center shadow-[0_0_8px_hsl(var(--warning)/0.7)]">
+              100
+            </span>
+          </button>
+
           {/* Wake Lock Status Chip */}
           {wakeLockStatus && (
             <div
@@ -171,19 +184,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         <div className="flex items-center gap-2">
           {/* Notifications bell */}
           <NotificationsBell />
-
-          {/* Clave 100 community chat */}
-          <button
-            onClick={onOpenClave100Chat}
-            className="relative p-2 rounded-full hover:bg-muted/50 transition-colors"
-            aria-label="Chat Clave 100"
-            title="Chat Clave 100"
-          >
-            <Bell className="w-5 h-5 text-warning" />
-            <span className="absolute -top-0.5 -right-0.5 px-1.5 h-4 bg-warning text-warning-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
-              100
-            </span>
-          </button>
           
           {/* Messages button with badge */}
           <button
