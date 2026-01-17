@@ -141,15 +141,15 @@ function CategoryButton({ id, label, icon, isActive, onClick }: CategoryButtonPr
     <button
       onClick={onClick}
       className={cn(
-        'flex flex-col items-center justify-center p-2 rounded-lg transition-all flex-shrink-0',
-        'w-[68px] text-center',
+        'flex flex-col items-center justify-center p-1.5 rounded-lg transition-all flex-1',
+        'min-w-0 text-center',
         isActive
           ? 'bg-primary text-primary-foreground shadow-md'
           : 'bg-muted/50 hover:bg-muted text-muted-foreground'
       )}
     >
       <span className="text-lg">{icon}</span>
-      <span className="text-[9px] font-medium mt-0.5 leading-tight">{label}</span>
+      <span className="text-[8px] font-medium mt-0.5 leading-tight truncate w-full">{label}</span>
     </button>
   );
 }
@@ -204,8 +204,6 @@ export function ReadingRoomTab() {
         return 'Buscar libros por título o autor...';
       case 'medical':
         return 'Buscar artículos médicos (ej: diabetes, trauma)...';
-      case 'latam':
-        return 'Buscar en revistas latinoamericanas...';
       case 'dictionary':
         return 'Buscar palabra en inglés...';
       case 'nutrition':
@@ -232,21 +230,19 @@ export function ReadingRoomTab() {
         </CardHeader>
       </Card>
 
-      {/* Category Selector - Horizontal scroll */}
-      <ScrollArea className="w-full pb-2">
-        <div className="flex gap-2 px-1">
-          {categories.map((cat) => (
-            <CategoryButton
-              key={cat.id}
-              id={cat.id}
-              label={cat.label}
-              icon={cat.icon}
-              isActive={activeCategory === cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-            />
-          ))}
-        </div>
-      </ScrollArea>
+      {/* Category Selector - Grid for mobile */}
+      <div className="grid grid-cols-6 gap-1.5">
+        {categories.map((cat) => (
+          <CategoryButton
+            key={cat.id}
+            id={cat.id}
+            label={cat.label}
+            icon={cat.icon}
+            isActive={activeCategory === cat.id}
+            onClick={() => setActiveCategory(cat.id)}
+          />
+        ))}
+      </div>
 
       {/* Search Bar */}
       <div className="relative">
