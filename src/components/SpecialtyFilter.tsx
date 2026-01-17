@@ -69,7 +69,7 @@ export const SpecialtyFilter: React.FC<SpecialtyFilterProps> = ({
   const totalFiltered = selectedSpecialties.reduce((sum, s) => sum + (specialistCounts[s] || 0), 0);
 
   return (
-    <div className="fixed left-4 top-52 sm:top-56 z-[1200] max-w-[calc(100vw-2rem)]">
+    <div className="fixed left-4 top-[calc(var(--app-header-height)+100px)] sm:top-[calc(var(--app-header-height)+110px)] z-[900] max-w-[calc(100vw-2rem)]">
       {/* Collapsed view - always visible */}
       <div 
         className={cn(
