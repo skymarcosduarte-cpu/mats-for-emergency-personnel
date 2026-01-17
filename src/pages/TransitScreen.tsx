@@ -2128,8 +2128,9 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       </Dialog>
 
       {/* Report Incident Dialog */}
-      <Dialog 
-        open={showReportDialog} 
+      <Dialog
+        modal={false}
+        open={showReportDialog}
         onOpenChange={(open) => {
           setShowReportDialog(open);
           if (open && !editingReport) {
