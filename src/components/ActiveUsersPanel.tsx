@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { UpdateTutorial } from '@/components/UpdateTutorial';
 
 export interface UserLocationSummary {
   user_id: string;
@@ -42,6 +43,7 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
   className,
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [showUpdateTutorial, setShowUpdateTutorial] = useState(false);
   const { user: currentUser } = useAuth();
 
   // Swipe gesture state
@@ -230,9 +232,12 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                           : `${activeUsers.length} miembros activos ahora`
                       }
                     </p>
-                    <p className="text-[10px] text-amber-600 dark:text-amber-400 text-center mt-1.5">
+                    <button 
+                      onClick={() => setShowUpdateTutorial(true)}
+                      className="text-[10px] text-amber-600 dark:text-amber-400 text-center mt-1.5 hover:underline cursor-pointer w-full transition-colors hover:text-amber-500"
+                    >
                       💡 Recuerda: Forzar Actualización en Ajustes
-                    </p>
+                    </button>
                   </div>
                 );
               })()}
@@ -349,6 +354,11 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
           </div>
         )}
       </div>
+
+      {/* Update Tutorial Modal */}
+      {showUpdateTutorial && (
+        <UpdateTutorial onClose={() => setShowUpdateTutorial(false)} />
+      )}
     </div>
   );
 };
