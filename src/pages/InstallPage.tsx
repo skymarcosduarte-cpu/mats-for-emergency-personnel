@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -26,6 +26,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import QRCode from "qrcode";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -39,6 +40,28 @@ export default function InstallPage() {
   const [isStandalone, setIsStandalone] = useState(false);
   const [detectedPlatform, setDetectedPlatform] = useState<Platform>("windows");
   const [installing, setInstalling] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Generate QR code
+  useEffect(() => {
+    const generateQR = async () => {
+      try {
+        const url = await QRCode.toDataURL("https://mats-app.com/install", {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: "#000000",
+            light: "#ffffff",
+          },
+        });
+        setQrCodeUrl(url);
+      } catch (err) {
+        console.error("Error generating QR code:", err);
+      }
+    };
+    generateQR();
+  }, []);
 
   // Hide the native splash screen on mount (for public pages that don't go through SplashScreen)
   useLayoutEffect(() => {
@@ -163,6 +186,25 @@ export default function InstallPage() {
             <Smartphone className="h-4 w-4" />
             Detectamos: {getPlatformLabel(detectedPlatform)}
           </div>
+
+          {/* QR Code Section */}
+          {qrCodeUrl && (
+            <div className="mt-8 flex flex-col items-center">
+              <div className="p-4 bg-white rounded-2xl shadow-lg border border-border">
+                <img 
+                  src={qrCodeUrl} 
+                  alt="Código QR para instalar la app" 
+                  className="w-40 h-40 md:w-48 md:h-48"
+                />
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Escanea el código QR para abrir esta página en otro dispositivo
+              </p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                mats-app.com/install
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Quick Install Button (when available) */}
