@@ -388,81 +388,103 @@ const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bo
 });
 
 // Transit icon for users with active road trips (orange/amber color with car icon)
-const createTransitIcon = (isCurrentUser: boolean = false, updatedAgo?: string) => L.divIcon({
-  className: `mats-marker transit-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
-  html: `
-    <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : (updatedAgo ? '48px' : '32px')};">
-      ${isCurrentUser ? `
+// Now includes speed display when user is moving
+const createTransitIcon = (isCurrentUser: boolean = false, updatedAgo?: string, speedKmh?: number | null) => {
+  const hasSpeed = speedKmh && speedKmh > 3; // Only show if moving faster than 3 km/h
+  const speedText = hasSpeed ? `${Math.round(speedKmh!)} km/h` : null;
+  
+  return L.divIcon({
+    className: `mats-marker transit-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
+    html: `
+      <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : (hasSpeed ? '56px' : (updatedAgo ? '48px' : '32px'))};">
+        ${isCurrentUser ? `
+          <div style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 32px;
+            height: 32px;
+            background: rgba(251, 191, 36, 0.4);
+            border-radius: 50%;
+            animation: pulse-current-user 1.5s ease-out infinite;
+          "></div>
+        ` : ''}
         <div style="
           position: absolute;
           top: 0;
           left: 0;
           width: 32px;
           height: 32px;
-          background: rgba(251, 191, 36, 0.4);
+          background: #f59e0b;
+          border: 2px solid ${isCurrentUser ? '#fbbf24' : '#0a0a0a'};
           border-radius: 50%;
-          animation: pulse-current-user 1.5s ease-out infinite;
-        "></div>
-      ` : ''}
-      <div style="
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 32px;
-        height: 32px;
-        background: #f59e0b;
-        border: 2px solid ${isCurrentUser ? '#fbbf24' : '#0a0a0a'};
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)'};
-        animation: pulse-transit 2s ease-in-out infinite;
-      ">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.3 1 12.1 1 13v3c0 .6.4 1 1 1h2"/>
-          <circle cx="7" cy="17" r="2"/>
-          <circle cx="17" cy="17" r="2"/>
-        </svg>
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)'};
+          animation: pulse-transit 2s ease-in-out infinite;
+        ">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.3 1 12.1 1 13v3c0 .6.4 1 1 1h2"/>
+            <circle cx="7" cy="17" r="2"/>
+            <circle cx="17" cy="17" r="2"/>
+          </svg>
+        </div>
+        ${hasSpeed ? `
+          <div style="
+            position: absolute;
+            top: -6px;
+            right: -8px;
+            background: #16a34a;
+            color: #fff;
+            font-size: 8px;
+            font-weight: 700;
+            padding: 2px 4px;
+            border-radius: 4px;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            border: 1px solid #fff;
+          ">${speedText}</div>
+        ` : ''}
+        ${isCurrentUser ? `
+          <div style="
+            position: absolute;
+            bottom: ${hasSpeed ? '16px' : (updatedAgo ? '16px' : '0')};
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fbbf24;
+            color: #000;
+            font-size: 8px;
+            font-weight: 800;
+            padding: 1px 4px;
+            border-radius: 3px;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+          ">TÚ</div>
+        ` : ''}
+        ${!isCurrentUser && !hasSpeed && updatedAgo ? `
+          <div style="
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            font-size: 8px;
+            font-weight: 600;
+            padding: 1px 4px;
+            border-radius: 3px;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+          ">${updatedAgo}</div>
+        ` : ''}
       </div>
-      ${isCurrentUser ? `
-        <div style="
-          position: absolute;
-          bottom: ${updatedAgo ? '16px' : '0'};
-          left: 50%;
-          transform: translateX(-50%);
-          background: #fbbf24;
-          color: #000;
-          font-size: 8px;
-          font-weight: 800;
-          padding: 1px 4px;
-          border-radius: 3px;
-          white-space: nowrap;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-        ">TÚ</div>
-      ` : ''}
-      ${!isCurrentUser && updatedAgo ? `
-        <div style="
-          position: absolute;
-          bottom: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(0, 0, 0, 0.75);
-          color: #fff;
-          font-size: 8px;
-          font-weight: 600;
-          padding: 1px 4px;
-          border-radius: 3px;
-          white-space: nowrap;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-        ">${updatedAgo}</div>
-      ` : ''}
-    </div>
-  `,
-  iconSize: [32, isCurrentUser ? 40 : (updatedAgo && !isCurrentUser ? 48 : 32)],
-  iconAnchor: [16, isCurrentUser ? 20 : (updatedAgo && !isCurrentUser ? 24 : 16)],
-  popupAnchor: [0, isCurrentUser ? -20 : (updatedAgo && !isCurrentUser ? -24 : -16)],
-});
+    `,
+    iconSize: [32, isCurrentUser ? 40 : (hasSpeed ? 56 : (updatedAgo && !isCurrentUser ? 48 : 32))],
+    iconAnchor: [16, isCurrentUser ? 20 : (hasSpeed ? 28 : (updatedAgo && !isCurrentUser ? 24 : 16))],
+    popupAnchor: [0, isCurrentUser ? -20 : (hasSpeed ? -28 : (updatedAgo && !isCurrentUser ? -24 : -16))],
+  });
+};
 
 // Ambulance icon for users with ambulance - with emergency pulsing animation
 const createAmbulanceIcon = (hasEmergencyNearby: boolean = false) => L.divIcon({
@@ -1833,8 +1855,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       let bgColor;
       let badgeColor;
       
+      // Calculate speed in km/h (speed is in m/s from geolocation API)
+      const speedKmh = loc.speed ? loc.speed * 3.6 : null;
+      
       if (isInTransit) {
-        icon = createTransitIcon(isMe, isMe ? undefined : updatedAgo);
+        icon = createTransitIcon(isMe, isMe ? undefined : updatedAgo, speedKmh);
         roleLabel = 'En tránsito';
         bgColor = '#f59e0b';
         badgeColor = '#f59e0b';
@@ -1857,6 +1882,12 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       }
       
       const displayName = loc.display_name ? sanitize(loc.display_name) : null;
+      
+      // Speed info for users in transit or moving
+      const speedInfo = speedKmh && speedKmh > 3
+        ? `<div style="font-size: 10px; color: #16a34a; margin-top: 4px;">🚀 ${Math.round(speedKmh)} km/h</div>`
+        : '';
+      
       const transitInfo = isInTransit && loc.transit_destination 
         ? `<div style="font-size: 10px; color: #f59e0b; margin-top: 4px;">🚗 → ${sanitize(loc.transit_destination)}</div>`
         : '';
@@ -1904,6 +1935,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           </div>
           ${specialtiesInfo}
           ${medicalInfo}
+          ${speedInfo}
           ${transitInfo}
           ${updatedInfo}
         </div>
