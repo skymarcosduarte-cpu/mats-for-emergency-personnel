@@ -155,6 +155,16 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
           setStatsExpanded(false);
         }
 
+        // Restore dismissal across navigation/reload
+        try {
+          if (localStorage.getItem(`mats-drill-dismissed:${drill.id}`) === 'true') {
+            dismissedDrillIdRef.current = drill.id;
+            setDismissed(true);
+          }
+        } catch {
+          // ignore
+        }
+
         setActiveDrill(drill);
 
         // Notify parent ONLY when drill changes (prevents noisy loops)
@@ -164,22 +174,14 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
           onActiveDrillChangeRef.current?.(drill.id);
         }
 
-        // If user dismissed this drill banner, do not auto-open chat
+        // If user dismissed this drill banner, do not do anything else for this drill
         if (dismissedDrillIdRef.current === drill.id) {
           return;
         }
 
-        // Auto-open community chat for this drill (once)
-        if (!hasScheduledAutoOpenChat.current && onOpenCommunityChatRef.current) {
-          hasScheduledAutoOpenChat.current = true;
-          console.log('[DrillAlertBanner] Auto-opening community chat in 1.5s');
-          clearAutoOpen();
-          autoOpenChatTimeoutRef.current = window.setTimeout(() => {
-            if (dismissedDrillIdRef.current === drill.id) return;
-            hasAutoOpenedChat.current = true;
-            onOpenCommunityChatRef.current?.(drill.id);
-          }, 1500);
-        }
+        // NOTE: We intentionally do NOT auto-open chat.
+        // Auto-opening was causing a black-screen lock when overlays stacked.
+        // Users can open the chat from the banner button or from the map floating button.
       } else {
         console.log('[DrillAlertBanner] No active drill found');
         setActiveDrill(null);
@@ -272,10 +274,16 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
     stopClave100Alert();
     setSoundPlaying(false);
 
-    // Persist dismissal for this drill (prevents auto-reopen loops)
+    // Persist dismissal for this drill (prevents reappearing after remount/navigation)
     if (activeDrill?.id) {
       dismissedDrillIdRef.current = activeDrill.id;
+      try {
+        localStorage.setItem(`mats-drill-dismissed:${activeDrill.id}`, 'true');
+      } catch {
+        // ignore
+      }
     }
+
     if (autoOpenChatTimeoutRef.current) {
       window.clearTimeout(autoOpenChatTimeoutRef.current);
       autoOpenChatTimeoutRef.current = null;
