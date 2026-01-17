@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, X, GraduationCap, MessageSquarePlus, Send, Loader2, WifiOff, RefreshCw } from 'lucide-react';
+import { HelpCircle, X, GraduationCap, MessageSquarePlus, Send, Loader2, WifiOff, RefreshCw, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ComprehensiveTutorial } from '@/components/ComprehensiveTutorial';
 import { UpdateTutorial } from '@/components/UpdateTutorial';
+import { InstallTutorial } from '@/components/InstallTutorial';
 import {
   Dialog,
   DialogContent,
@@ -60,6 +61,7 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
   const [isExpanded, setIsExpanded] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showUpdateTutorial, setShowUpdateTutorial] = useState(false);
+  const [showInstallTutorial, setShowInstallTutorial] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -105,6 +107,16 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
   const handleCloseUpdateTutorial = () => {
     setShowUpdateTutorial(false);
   };
+
+  const handleOpenInstallTutorial = () => {
+    setIsExpanded(false);
+    setShowInstallTutorial(true);
+  };
+
+  const handleCloseInstallTutorial = () => {
+    setShowInstallTutorial(false);
+  };
+
   const handleOpenFeedback = () => {
     setIsExpanded(false);
     setShowFeedbackDialog(true);
@@ -278,6 +290,15 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
                   variant="ghost"
                   size="sm"
                   className="w-full justify-start gap-2 text-left"
+                  onClick={handleOpenInstallTutorial}
+                >
+                  <Download className="w-4 h-4 text-accent" />
+                  <span>Cómo Descargar la App</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start gap-2 text-left"
                   onClick={handleOpenFeedback}
                 >
                   <MessageSquarePlus className="w-4 h-4 text-primary" />
@@ -337,6 +358,11 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
       {/* Update Tutorial Modal */}
       {showUpdateTutorial && (
         <UpdateTutorial onClose={handleCloseUpdateTutorial} />
+      )}
+
+      {/* Install Tutorial Modal */}
+      {showInstallTutorial && (
+        <InstallTutorial onClose={handleCloseInstallTutorial} />
       )}
 
       {/* Feedback Dialog */}
