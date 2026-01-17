@@ -537,6 +537,15 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <AppHeader
         onPanicClick={() => setPanicOpen(true)}
         unreadMessageCount={unreadMessageCount}
+        onOpenClave100Chat={() => {
+          // If a drill is active, default to drill chat; otherwise open the permanent Clave 100 room
+          if (activeDrillId) {
+            setCommunityChatContext({ type: 'drill', id: activeDrillId, title: '🔔 Chat Simulacro' });
+          } else {
+            setCommunityChatContext({ type: 'clave100', title: '🚨 Chat CLAVE 100' });
+          }
+          setCommunityChatOpen(true);
+        }}
         onOpenMessages={() => {
           setMessagingUserId(null);
           setMessagingUserName(null);
