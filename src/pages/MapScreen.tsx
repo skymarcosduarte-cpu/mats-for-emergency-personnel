@@ -3340,6 +3340,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           onSpecialtiesChange={setSelectedSpecialtyFilters}
           availableSpecialties={availableSpecialties}
           specialistCounts={specialistCounts}
+          forceCollapseSignal={forceCloseMenus}
         />
       )}
 
