@@ -33,7 +33,28 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
   const [userWasActive, setUserWasActive] = useState<boolean | null>(null); // null = checking, true/false = result
   const hasPlayedSound = useRef(false);
   const drillIdRef = useRef<string | null>(null);
+  const dismissedDrillIdRef = useRef<string | null>(null);
+  const lastNotifiedDrillIdRef = useRef<string | null>(null);
   const hasAutoOpenedChat = useRef(false);
+  const hasScheduledAutoOpenChat = useRef(false);
+  const autoOpenChatTimeoutRef = useRef<number | null>(null);
+
+  // Keep latest callback props in refs so our polling/subscription effect does not restart every render
+  const onOpenCommunityChatRef = useRef<typeof onOpenCommunityChat>(onOpenCommunityChat);
+  const onActiveDrillChangeRef = useRef<typeof onActiveDrillChange>(onActiveDrillChange);
+  const onDismissRef = useRef<typeof onDismiss>(onDismiss);
+
+  useEffect(() => {
+    onOpenCommunityChatRef.current = onOpenCommunityChat;
+  }, [onOpenCommunityChat]);
+
+  useEffect(() => {
+    onActiveDrillChangeRef.current = onActiveDrillChange;
+  }, [onActiveDrillChange]);
+
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+  }, [onDismiss]);
 
   // Check if user was active in the last 24 hours before showing drill alerts
   useEffect(() => {
@@ -78,7 +99,14 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
     if (userWasActive !== true) {
       return;
     }
-    
+
+    const clearAutoOpen = () => {
+      if (autoOpenChatTimeoutRef.current) {
+        window.clearTimeout(autoOpenChatTimeoutRef.current);
+        autoOpenChatTimeoutRef.current = null;
+      }
+    };
+
     // Check for active drills
     const checkActiveDrill = async () => {
       // Simply check for any drill with 'active' status
@@ -100,38 +128,65 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
 
       if (data) {
         const drill = data as ActiveDrill;
-        
         console.log('[DrillAlertBanner] Active drill found:', drill.id, 'status:', drill.status);
-        
-        // Only trigger sound and chat for new drills
-        if (drill.id !== drillIdRef.current) {
-          console.log('[DrillAlertBanner] New drill detected, resetting refs');
+
+        const isNewDrill = drill.id !== drillIdRef.current;
+
+        // Only reset state for a NEW drill (so closing the banner stays closed for the same drill)
+        if (isNewDrill) {
+          console.log('[DrillAlertBanner] New drill detected, resetting refs/state');
           drillIdRef.current = drill.id;
+          dismissedDrillIdRef.current = null;
+          lastNotifiedDrillIdRef.current = null;
           hasPlayedSound.current = false;
           hasAutoOpenedChat.current = false;
+          hasScheduledAutoOpenChat.current = false;
+          clearAutoOpen();
+          setDismissed(false);
+          setStatsExpanded(false);
         }
-        
+
         setActiveDrill(drill);
-        setDismissed(false);
-        
-        // Notify parent of active drill
-        console.log('[DrillAlertBanner] Notifying parent of active drill');
-        onActiveDrillChange?.(drill.id);
-        
-        // Auto-open community chat for this drill
-        if (!hasAutoOpenedChat.current && onOpenCommunityChat) {
-          hasAutoOpenedChat.current = true;
+
+        // Notify parent ONLY when drill changes (prevents noisy loops)
+        if (lastNotifiedDrillIdRef.current !== drill.id) {
+          lastNotifiedDrillIdRef.current = drill.id;
+          console.log('[DrillAlertBanner] Notifying parent of active drill');
+          onActiveDrillChangeRef.current?.(drill.id);
+        }
+
+        // If user dismissed this drill banner, do not auto-open chat
+        if (dismissedDrillIdRef.current === drill.id) {
+          return;
+        }
+
+        // Auto-open community chat for this drill (once)
+        if (!hasScheduledAutoOpenChat.current && onOpenCommunityChatRef.current) {
+          hasScheduledAutoOpenChat.current = true;
           console.log('[DrillAlertBanner] Auto-opening community chat in 1.5s');
-          // Small delay to ensure banner is visible first
-          setTimeout(() => {
-            onOpenCommunityChat(drill.id);
+          clearAutoOpen();
+          autoOpenChatTimeoutRef.current = window.setTimeout(() => {
+            if (dismissedDrillIdRef.current === drill.id) return;
+            hasAutoOpenedChat.current = true;
+            onOpenCommunityChatRef.current?.(drill.id);
           }, 1500);
         }
       } else {
         console.log('[DrillAlertBanner] No active drill found');
         setActiveDrill(null);
         drillIdRef.current = null;
-        onActiveDrillChange?.(null);
+        dismissedDrillIdRef.current = null;
+        hasPlayedSound.current = false;
+        hasAutoOpenedChat.current = false;
+        hasScheduledAutoOpenChat.current = false;
+        clearAutoOpen();
+        setDismissed(false);
+        setStatsExpanded(false);
+
+        if (lastNotifiedDrillIdRef.current !== null) {
+          lastNotifiedDrillIdRef.current = null;
+          onActiveDrillChangeRef.current?.(null);
+        }
       }
     };
 
@@ -145,17 +200,17 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
         {
           event: '*',
           schema: 'public',
-          table: 'clave100_drills'
+          table: 'clave100_drills',
         },
         () => {
           checkActiveDrill();
-        }
+        },
       )
       .subscribe();
 
     // Check more frequently (every 10 seconds) for responsive drill detection
-    const interval = setInterval(checkActiveDrill, 10000);
-    
+    const interval = window.setInterval(checkActiveDrill, 10000);
+
     // Also check when app becomes visible (user returns to tab)
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
@@ -166,11 +221,12 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
+      clearAutoOpen();
       supabase.removeChannel(channel);
-      clearInterval(interval);
+      window.clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [userWasActive, onActiveDrillChange, onOpenCommunityChat]);
+  }, [userWasActive]);
   
   // Cleanup sound on unmount
   useEffect(() => {
@@ -206,8 +262,19 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
   const handleDismiss = () => {
     stopClave100Alert();
     setSoundPlaying(false);
+
+    // Persist dismissal for this drill (prevents auto-reopen loops)
+    if (activeDrill?.id) {
+      dismissedDrillIdRef.current = activeDrill.id;
+    }
+    if (autoOpenChatTimeoutRef.current) {
+      window.clearTimeout(autoOpenChatTimeoutRef.current);
+      autoOpenChatTimeoutRef.current = null;
+    }
+
+    setStatsExpanded(false);
     setDismissed(true);
-    onDismiss?.();
+    onDismissRef.current?.();
   };
 
   const handleOpenChat = () => {
