@@ -28,6 +28,45 @@ export interface SearchHistory {
   timestamp: number;
 }
 
+// PubMed Filter Types
+export type PubMedDateFilter = 'all' | '1week' | '1month' | '1year' | '5years';
+export type PubMedStudyType = 'all' | 'clinical_trial' | 'review' | 'meta_analysis' | 'case_report' | 'randomized_controlled_trial';
+export type PubMedCategory = 'all' | 'trauma' | 'emergency' | 'critical_care' | 'protocols' | 'surgery' | 'cardiology' | 'neurology';
+
+export interface PubMedFilters {
+  dateFilter: PubMedDateFilter;
+  studyType: PubMedStudyType;
+  category: PubMedCategory;
+}
+
+export const PUBMED_DATE_OPTIONS: { value: PubMedDateFilter; label: string }[] = [
+  { value: 'all', label: 'Todo el tiempo' },
+  { value: '1week', label: 'Última semana' },
+  { value: '1month', label: 'Último mes' },
+  { value: '1year', label: 'Último año' },
+  { value: '5years', label: 'Últimos 5 años' },
+];
+
+export const PUBMED_STUDY_OPTIONS: { value: PubMedStudyType; label: string }[] = [
+  { value: 'all', label: 'Todos los tipos' },
+  { value: 'clinical_trial', label: 'Ensayo clínico' },
+  { value: 'randomized_controlled_trial', label: 'Ensayo controlado aleatorio' },
+  { value: 'review', label: 'Revisión' },
+  { value: 'meta_analysis', label: 'Meta-análisis' },
+  { value: 'case_report', label: 'Reporte de caso' },
+];
+
+export const PUBMED_CATEGORY_OPTIONS: { value: PubMedCategory; label: string }[] = [
+  { value: 'all', label: 'Todas las categorías' },
+  { value: 'trauma', label: 'Trauma' },
+  { value: 'emergency', label: 'Emergencias' },
+  { value: 'critical_care', label: 'Cuidados Intensivos' },
+  { value: 'protocols', label: 'Protocolos' },
+  { value: 'surgery', label: 'Cirugía' },
+  { value: 'cardiology', label: 'Cardiología' },
+  { value: 'neurology', label: 'Neurología' },
+];
+
 const FAVORITES_KEY = 'reading_room_favorites';
 const HISTORY_KEY = 'reading_room_history';
 const MAX_HISTORY = 10;
@@ -76,12 +115,56 @@ async function searchOpenLibrary(query: string): Promise<ReadingItem[]> {
   }
 }
 
-// PubMed - Medical Articles
-async function searchPubMed(query: string): Promise<ReadingItem[]> {
+// PubMed - Medical Articles with filters
+async function searchPubMed(query: string, filters: PubMedFilters): Promise<ReadingItem[]> {
   try {
+    // Build the search term with filters
+    let searchTerm = encodeURIComponent(query);
+    
+    // Add category filter
+    if (filters.category !== 'all') {
+      const categoryTerms: Record<PubMedCategory, string> = {
+        all: '',
+        trauma: 'trauma[MeSH Terms]',
+        emergency: 'emergency medicine[MeSH Terms]',
+        critical_care: 'critical care[MeSH Terms]',
+        protocols: 'clinical protocols[MeSH Terms]',
+        surgery: 'surgery[MeSH Terms]',
+        cardiology: 'cardiology[MeSH Terms]',
+        neurology: 'neurology[MeSH Terms]',
+      };
+      searchTerm += `+AND+${encodeURIComponent(categoryTerms[filters.category])}`;
+    }
+    
+    // Add study type filter
+    if (filters.studyType !== 'all') {
+      const studyTypeTerms: Record<PubMedStudyType, string> = {
+        all: '',
+        clinical_trial: 'Clinical Trial[pt]',
+        randomized_controlled_trial: 'Randomized Controlled Trial[pt]',
+        review: 'Review[pt]',
+        meta_analysis: 'Meta-Analysis[pt]',
+        case_report: 'Case Reports[pt]',
+      };
+      searchTerm += `+AND+${encodeURIComponent(studyTypeTerms[filters.studyType])}`;
+    }
+    
+    // Add date filter
+    let dateParam = '';
+    if (filters.dateFilter !== 'all') {
+      const dateRanges: Record<PubMedDateFilter, string> = {
+        all: '',
+        '1week': '&datetype=pdat&reldate=7',
+        '1month': '&datetype=pdat&reldate=30',
+        '1year': '&datetype=pdat&reldate=365',
+        '5years': '&datetype=pdat&reldate=1825',
+      };
+      dateParam = dateRanges[filters.dateFilter];
+    }
+    
     // First get IDs
     const searchResponse = await fetch(
-      `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retmode=json&retmax=20`
+      `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${searchTerm}&retmode=json&retmax=20${dateParam}`
     );
     const searchData = await searchResponse.json();
     const ids = searchData.esearchresult?.idlist || [];
@@ -96,6 +179,8 @@ async function searchPubMed(query: string): Promise<ReadingItem[]> {
     
     return ids.map((id: string) => {
       const article = summaryData.result?.[id] || {};
+      const pubTypes = article.pubtype || [];
+      
       return {
         id: `pm-${id}`,
         type: 'medical' as ReadingCategory,
@@ -107,6 +192,7 @@ async function searchPubMed(query: string): Promise<ReadingItem[]> {
           journal: article.source,
           date: article.pubdate,
           pmid: id,
+          pubTypes: pubTypes,
         },
       };
     });
@@ -394,6 +480,13 @@ export function useReadingRoom() {
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [searchHistory, setSearchHistory] = useState<SearchHistory[]>([]);
+  
+  // PubMed filters
+  const [pubmedFilters, setPubmedFilters] = useState<PubMedFilters>({
+    dateFilter: 'all',
+    studyType: 'all',
+    category: 'all',
+  });
 
   // Load favorites and history from localStorage
   useEffect(() => {
@@ -435,8 +528,8 @@ export function useReadingRoom() {
   }, [searchQuery]);
 
   // Search function
-  const performSearch = useCallback(async (query: string, category: ReadingCategory) => {
-    if (!query.trim() && !['finance', 'weather', 'bestsellers'].includes(category)) {
+  const performSearch = useCallback(async (query: string, category: ReadingCategory, filters?: PubMedFilters) => {
+    if (!query.trim() && !['finance', 'weather'].includes(category)) {
       setResults([]);
       return;
     }
@@ -452,7 +545,7 @@ export function useReadingRoom() {
           items = await searchOpenLibrary(query);
           break;
         case 'medical':
-          items = await searchPubMed(query);
+          items = await searchPubMed(query, filters || pubmedFilters);
           break;
         case 'papers':
           items = await searchArxiv(query);
@@ -490,12 +583,12 @@ export function useReadingRoom() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [pubmedFilters]);
 
-  // Auto-search when debounced query or category changes
+  // Auto-search when debounced query, category or pubmed filters change
   useEffect(() => {
-    performSearch(debouncedQuery, activeCategory);
-  }, [debouncedQuery, activeCategory, performSearch]);
+    performSearch(debouncedQuery, activeCategory, pubmedFilters);
+  }, [debouncedQuery, activeCategory, performSearch, pubmedFilters]);
 
   // Toggle favorite
   const toggleFavorite = useCallback((itemId: string) => {
@@ -543,10 +636,13 @@ export function useReadingRoom() {
     isFavorite,
     clearHistory,
     removeFromHistory,
-    refresh: () => performSearch(debouncedQuery, activeCategory),
+    refresh: () => performSearch(debouncedQuery, activeCategory, pubmedFilters),
     categories: Object.entries(CATEGORY_CONFIG).map(([key, config]) => ({
       id: key as ReadingCategory,
       ...config,
     })),
+    // PubMed filters
+    pubmedFilters,
+    setPubmedFilters,
   };
 }
