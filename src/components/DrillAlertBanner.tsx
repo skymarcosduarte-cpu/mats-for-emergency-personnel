@@ -1,13 +1,15 @@
 // Drill Alert Banner Component
 // Shows when a Clave 100 drill is active with the same alert sound
+// ONLY shows to users who were active within the last 24 hours
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, Volume2, VolumeX, MessageCircle, BarChart3 } from 'lucide-react';
+import { X, Bell, Volume2, VolumeX, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { playClave100Alert, stopClave100Alert } from '@/lib/alertSound';
 import { DrillStatsPanel } from './DrillStatsPanel';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DrillAlertBannerProps {
   onDismiss?: () => void;
@@ -22,16 +24,61 @@ interface ActiveDrill {
 }
 
 export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, onOpenCommunityChat, onActiveDrillChange }) => {
+  const { user, profile } = useAuth();
   const [activeDrill, setActiveDrill] = useState<ActiveDrill | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [soundPlaying, setSoundPlaying] = useState(false);
   const [soundMuted, setSoundMuted] = useState(false);
   const [statsExpanded, setStatsExpanded] = useState(false);
+  const [userWasActive, setUserWasActive] = useState<boolean | null>(null); // null = checking, true/false = result
   const hasPlayedSound = useRef(false);
   const drillIdRef = useRef<string | null>(null);
   const hasAutoOpenedChat = useRef(false);
 
+  // Check if user was active in the last 24 hours before showing drill alerts
   useEffect(() => {
+    const checkUserActivity = async () => {
+      if (!user?.id) {
+        setUserWasActive(false);
+        return;
+      }
+      
+      // Check if user has opted out of drills
+      if (profile?.opt_out_drills) {
+        console.log('[DrillAlertBanner] User has opted out of drills');
+        setUserWasActive(false);
+        return;
+      }
+
+      // Check if user has a location update in the last 24 hours
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from('user_locations')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .gte('updated_at', twentyFourHoursAgo)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('[DrillAlertBanner] Error checking user activity:', error);
+        setUserWasActive(false);
+        return;
+      }
+      
+      const wasActive = !!data;
+      console.log('[DrillAlertBanner] User active in last 24h:', wasActive);
+      setUserWasActive(wasActive);
+    };
+    
+    checkUserActivity();
+  }, [user?.id, profile?.opt_out_drills]);
+
+  useEffect(() => {
+    // Only check for drills if user was active
+    if (userWasActive !== true) {
+      return;
+    }
+    
     // Check for active drills
     const checkActiveDrill = async () => {
       // Simply check for any drill with 'active' status
@@ -122,6 +169,12 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
       supabase.removeChannel(channel);
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [userWasActive, onActiveDrillChange, onOpenCommunityChat]);
+  
+  // Cleanup sound on unmount
+  useEffect(() => {
+    return () => {
       // Stop sound on unmount
       stopClave100Alert();
     };
@@ -179,7 +232,8 @@ export const DrillAlertBanner: React.FC<DrillAlertBannerProps> = ({ onDismiss, o
     }
   };
 
-  if (!activeDrill || dismissed) {
+  // Don't show if user wasn't active, or no active drill, or dismissed
+  if (userWasActive !== true || !activeDrill || dismissed) {
     return null;
   }
 
