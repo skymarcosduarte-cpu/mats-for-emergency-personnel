@@ -587,8 +587,8 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
         }}
       />
 
-      {/* Clave 100 Check-in Prompt - shows during drills */}
-      {showClave100Checkin && activeDrillId && (
+      {/* Clave 100 Check-in Prompt - shows during drills (hidden when community chat is open) */}
+      {showClave100Checkin && activeDrillId && !communityChatOpen && (
         <Clave100CheckinPrompt
           drillId={activeDrillId}
           isDrill={true}
