@@ -306,6 +306,53 @@ export function useWebPushSubscription() {
     }
   }, [user?.id, state.isSupported, state.permission, state.isSubscribed, state.registration, saveSubscription]);
 
+  // Force push subscription prompt for emergency app - show toast if not subscribed
+  useEffect(() => {
+    // Only run after initial check is complete and user is logged in
+    if (!user?.id || !state.isSupported || !state.registration) return;
+    
+    // Check if we've already shown the prompt recently (avoid spamming)
+    const lastPromptTime = localStorage.getItem('push_prompt_shown_at');
+    const now = Date.now();
+    const ONE_DAY = 24 * 60 * 60 * 1000;
+    
+    if (lastPromptTime && (now - parseInt(lastPromptTime, 10)) < ONE_DAY) {
+      return; // Don't show again within 24 hours
+    }
+
+    // After a short delay, check if push is not active and prompt user
+    const timer = setTimeout(async () => {
+      // Re-check current subscription status
+      try {
+        const currentSub = await state.registration?.pushManager.getSubscription();
+        
+        if (!currentSub && state.permission !== 'denied') {
+          // User doesn't have push subscription - this is critical for emergency app
+          console.log('[WebPush] No push subscription found - prompting user');
+          localStorage.setItem('push_prompt_shown_at', now.toString());
+          
+          // Import toast dynamically to avoid circular deps
+          const { toast } = await import('sonner');
+          toast.warning('⚠️ Notificaciones Push NO activas', {
+            description: 'Por tu seguridad, activa las notificaciones push en Ajustes para recibir alertas de emergencia.',
+            duration: 10000,
+            action: {
+              label: 'Ir a Ajustes',
+              onClick: () => {
+                // This will be handled by parent component
+                window.dispatchEvent(new CustomEvent('open-settings-for-push'));
+              },
+            },
+          });
+        }
+      } catch (err) {
+        console.warn('[WebPush] Error checking subscription for prompt:', err);
+      }
+    }, 5000); // Wait 5 seconds after app load
+
+    return () => clearTimeout(timer);
+  }, [user?.id, state.isSupported, state.permission, state.registration]);
+
   return {
     isSupported: state.isSupported,
     isSubscribed: state.isSubscribed,
