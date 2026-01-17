@@ -199,6 +199,31 @@ export const UpdateTutorial: React.FC<UpdateTutorialProps> = ({ onClose }) => {
                 </p>
               </div>
             )}
+
+            {/* Force Update Button - Always visible */}
+            <div className="pt-2">
+              <Button
+                onClick={() => {
+                  // Force hard refresh - clears cache and reloads
+                  if ('caches' in window) {
+                    caches.keys().then((names) => {
+                      names.forEach((name) => {
+                        caches.delete(name);
+                      });
+                    });
+                  }
+                  // Use location.reload with cache bypass
+                  window.location.reload();
+                }}
+                className="w-full h-14 bg-safe hover:bg-safe/90 text-white font-bold text-lg shadow-lg gap-2"
+              >
+                <RefreshCw className="w-5 h-5" />
+                Forzar Actualización Ahora
+              </Button>
+              <p className="text-[10px] text-muted-foreground text-center mt-2">
+                Este botón recarga la app y limpia el caché automáticamente
+              </p>
+            </div>
           </motion.div>
         </AnimatePresence>
       </div>
