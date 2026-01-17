@@ -248,7 +248,7 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                     <div className="w-2.5 h-2.5 rounded-full bg-safe" />
                     <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-safe animate-ping opacity-75" />
                   </div>
-                  <span className="font-semibold text-sm">{activeUsers.length} activos</span>
+                  <span className="font-semibold text-sm">{activeUsers.length} en línea</span>
                 </div>
                 {/* Close Button */}
                 <Button
