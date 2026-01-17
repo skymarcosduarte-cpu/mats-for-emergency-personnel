@@ -10,19 +10,34 @@ import {
   X,
   AlertCircle,
   Trash2,
+  Filter,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { 
   useReadingRoom, 
   ReadingCategory, 
   ReadingItem, 
-  CATEGORY_CONFIG 
+  CATEGORY_CONFIG,
+  PUBMED_DATE_OPTIONS,
+  PUBMED_STUDY_OPTIONS,
+  PUBMED_CATEGORY_OPTIONS,
+  PubMedDateFilter,
+  PubMedStudyType,
+  PubMedCategory,
 } from '@/hooks/useReadingRoom';
 
 // ============ Result Card Component ============
@@ -156,12 +171,31 @@ export function ReadingRoomTab() {
     removeFromHistory,
     refresh,
     categories,
+    pubmedFilters,
+    setPubmedFilters,
   } = useReadingRoom();
 
   const [showHistory, setShowHistory] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const currentCategoryConfig = CATEGORY_CONFIG[activeCategory];
-  const needsSearch = !['finance', 'weather', 'bestsellers'].includes(activeCategory);
+  const needsSearch = !['finance', 'weather'].includes(activeCategory);
+  
+  // Check if any PubMed filter is active
+  const hasActiveFilters = activeCategory === 'medical' && (
+    pubmedFilters.dateFilter !== 'all' ||
+    pubmedFilters.studyType !== 'all' ||
+    pubmedFilters.category !== 'all'
+  );
+  
+  // Reset filters
+  const resetFilters = () => {
+    setPubmedFilters({
+      dateFilter: 'all',
+      studyType: 'all',
+      category: 'all',
+    });
+  };
   
   // Get placeholder text based on category
   const getPlaceholder = () => {
@@ -290,7 +324,7 @@ export function ReadingRoomTab() {
       </div>
 
       {/* Active Category Info */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Badge variant="secondary" className="text-xs">
           {currentCategoryConfig.icon} {currentCategoryConfig.label}
         </Badge>
@@ -302,7 +336,143 @@ export function ReadingRoomTab() {
             Carga automática
           </Badge>
         )}
+        
+        {/* Filter toggle for medical */}
+        {activeCategory === 'medical' && (
+          <Button
+            variant={hasActiveFilters ? "default" : "outline"}
+            size="sm"
+            className="h-7 text-xs ml-auto"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="h-3 w-3 mr-1" />
+            Filtros
+            {hasActiveFilters && (
+              <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-[10px] rounded-full">
+                {[pubmedFilters.dateFilter, pubmedFilters.studyType, pubmedFilters.category]
+                  .filter(f => f !== 'all').length}
+              </Badge>
+            )}
+            {showFilters ? (
+              <ChevronUp className="h-3 w-3 ml-1" />
+            ) : (
+              <ChevronDown className="h-3 w-3 ml-1" />
+            )}
+          </Button>
+        )}
       </div>
+
+      {/* PubMed Filters Panel */}
+      {activeCategory === 'medical' && showFilters && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium flex items-center gap-1">
+                <Filter className="h-4 w-4" /> Filtros Avanzados
+              </h4>
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs"
+                  onClick={resetFilters}
+                >
+                  <X className="h-3 w-3 mr-1" /> Limpiar
+                </Button>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Date Filter */}
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Fecha de publicación</label>
+                <Select
+                  value={pubmedFilters.dateFilter}
+                  onValueChange={(value: PubMedDateFilter) => 
+                    setPubmedFilters(prev => ({ ...prev, dateFilter: value }))
+                  }
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Seleccionar fecha" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PUBMED_DATE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value} className="text-xs">
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Study Type Filter */}
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Tipo de estudio</label>
+                <Select
+                  value={pubmedFilters.studyType}
+                  onValueChange={(value: PubMedStudyType) => 
+                    setPubmedFilters(prev => ({ ...prev, studyType: value }))
+                  }
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Seleccionar tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PUBMED_STUDY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value} className="text-xs">
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Category Filter */}
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Categoría médica</label>
+                <Select
+                  value={pubmedFilters.category}
+                  onValueChange={(value: PubMedCategory) => 
+                    setPubmedFilters(prev => ({ ...prev, category: value }))
+                  }
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Seleccionar categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PUBMED_CATEGORY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value} className="text-xs">
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {hasActiveFilters && (
+              <div className="flex flex-wrap gap-1 pt-1">
+                <span className="text-xs text-muted-foreground">Filtros activos:</span>
+                {pubmedFilters.dateFilter !== 'all' && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {PUBMED_DATE_OPTIONS.find(o => o.value === pubmedFilters.dateFilter)?.label}
+                  </Badge>
+                )}
+                {pubmedFilters.studyType !== 'all' && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {PUBMED_STUDY_OPTIONS.find(o => o.value === pubmedFilters.studyType)?.label}
+                  </Badge>
+                )}
+                {pubmedFilters.category !== 'all' && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {PUBMED_CATEGORY_OPTIONS.find(o => o.value === pubmedFilters.category)?.label}
+                  </Badge>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Loading State */}
       {loading && (
