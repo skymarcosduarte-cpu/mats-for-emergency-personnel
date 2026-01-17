@@ -21,6 +21,8 @@ export interface Clave100CheckinStats {
   total: number;
   ok: number;
   help: number;
+  avgResponseTimeSeconds?: number;
+  fastestResponseSeconds?: number;
 }
 
 export function useClave100Checkins(drillId: string | null) {
@@ -29,15 +31,34 @@ export function useClave100Checkins(drillId: string | null) {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<Clave100CheckinStats | null>(null);
 
-  const calculateStats = useCallback((data: Clave100Checkin[]) => {
+  const calculateStats = useCallback((data: Clave100Checkin[], drillScheduledAt?: string) => {
     if (data.length === 0) {
       setStats(null);
       return;
     }
+    
+    let avgResponseTimeSeconds: number | undefined;
+    let fastestResponseSeconds: number | undefined;
+    
+    if (drillScheduledAt) {
+      const drillStart = new Date(drillScheduledAt).getTime();
+      const responseTimes = data.map(c => {
+        const checkinTime = new Date(c.created_at).getTime();
+        return Math.max(0, (checkinTime - drillStart) / 1000);
+      });
+      
+      if (responseTimes.length > 0) {
+        avgResponseTimeSeconds = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+        fastestResponseSeconds = Math.min(...responseTimes);
+      }
+    }
+    
     setStats({
       total: data.length,
       ok: data.filter(c => c.status === 'OK').length,
       help: data.filter(c => c.status === 'HELP').length,
+      avgResponseTimeSeconds,
+      fastestResponseSeconds,
     });
   }, []);
 
@@ -52,6 +73,15 @@ export function useClave100Checkins(drillId: string | null) {
     setError(null);
 
     try {
+      // Fetch drill info first to get scheduled_at
+      const { data: drillData } = await supabase
+        .from('clave100_drills')
+        .select('scheduled_at')
+        .eq('id', drillId)
+        .single();
+
+      const drillScheduledAt = drillData?.scheduled_at;
+
       // Fetch checkins
       const { data: checkinsData, error: fetchError } = await supabase
         .from('clave100_checkins')
@@ -89,7 +119,7 @@ export function useClave100Checkins(drillId: string | null) {
       }));
 
       setCheckins(enrichedCheckins);
-      calculateStats(enrichedCheckins);
+      calculateStats(enrichedCheckins, drillScheduledAt);
     } catch (err) {
       console.error('Error fetching clave100 checkins:', err);
       setError('Error al cargar reportes');
