@@ -123,7 +123,7 @@ export const Clave100CheckinPrompt: React.FC<Clave100CheckinPromptProps> = ({
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 100, opacity: 0 }}
-        className="fixed bottom-20 left-4 right-4 z-[9998] pointer-events-auto"
+        className="fixed bottom-20 left-4 right-4 z-[100010] pointer-events-auto"
       >
         <div className={`rounded-xl shadow-2xl border-2 overflow-hidden ${
           isDrill 
