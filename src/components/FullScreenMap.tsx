@@ -14,6 +14,10 @@ interface FullScreenMapProps {
   userLng?: number;
   isOpen: boolean;
   onClose: () => void;
+  /** If true, centers on main location instead of fitting bounds to both markers */
+  focusOnMain?: boolean;
+  /** Custom initial zoom level (default: 16) */
+  initialZoom?: number;
 }
 
 // Calculate distance between two coordinates in km (Haversine formula)
@@ -74,7 +78,9 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
   userLat,
   userLng,
   isOpen,
-  onClose 
+  onClose,
+  focusOnMain = false,
+  initialZoom = 16,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -96,11 +102,17 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
     const timer = setTimeout(() => {
       if (!mapContainerRef.current || mapRef.current) return;
 
-      // Initialize map
+      // Initialize map with touch support enabled
       const map = L.map(mapContainerRef.current, {
         center: [lat, lng],
-        zoom: 16,
+        zoom: initialZoom,
         zoomControl: false,
+        // Enable all touch interactions for mobile
+        dragging: true,
+        touchZoom: true,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        boxZoom: true,
       });
 
       mapRef.current = map;
@@ -125,12 +137,14 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
           .bindPopup('<strong>Tu ubicación</strong>');
         userMarkerRef.current = userMarker;
 
-        // Fit bounds to show both markers on initial load
-        const bounds = L.latLngBounds([
-          [lat, lng],
-          [userLat, userLng]
-        ]);
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+        // Only fit bounds if not focusing on main location
+        if (!focusOnMain) {
+          const bounds = L.latLngBounds([
+            [lat, lng],
+            [userLat, userLng]
+          ]);
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+        }
       }
 
       // Force resize after a moment
@@ -194,7 +208,7 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
   };
 
   const handleRecenter = () => {
-    mapRef.current?.setView([lat, lng], 16, { animate: true });
+    mapRef.current?.setView([lat, lng], initialZoom, { animate: true });
   };
 
   if (!isOpen) return null;
