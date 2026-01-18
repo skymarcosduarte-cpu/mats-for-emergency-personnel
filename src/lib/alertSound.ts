@@ -916,3 +916,145 @@ export async function playSkyAlertSevereAlert(): Promise<void> {
     stopSkyAlertAlert();
   }, 60000);
 }
+
+/**
+ * Play PANIC EMERGENCY alert sound - for when someone in the community triggers a panic
+ * Distinctive two-tone alarm that grabs attention immediately
+ * Different from Clave100 (which is for mass alerts)
+ */
+export function playPanicEmergencySound(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
+
+  const now = ctx.currentTime;
+  
+  // Create a compressor for loudness
+  const compressor = ctx.createDynamicsCompressor();
+  compressor.threshold.value = -30;
+  compressor.knee.value = 30;
+  compressor.ratio.value = 8;
+  compressor.attack.value = 0;
+  compressor.release.value = 0.1;
+  compressor.connect(ctx.destination);
+  
+  // Distinctive "wee-woo" emergency sound - 4 cycles
+  const emergencyCycles = [
+    // Cycle 1
+    { freqStart: 800, freqEnd: 1200, delay: 0, duration: 0.25 },
+    { freqStart: 1200, freqEnd: 800, delay: 0.25, duration: 0.25 },
+    // Cycle 2
+    { freqStart: 850, freqEnd: 1300, delay: 0.55, duration: 0.25 },
+    { freqStart: 1300, freqEnd: 850, delay: 0.8, duration: 0.25 },
+    // Cycle 3 - louder
+    { freqStart: 900, freqEnd: 1400, delay: 1.1, duration: 0.25 },
+    { freqStart: 1400, freqEnd: 900, delay: 1.35, duration: 0.25 },
+    // Cycle 4 - loudest with hold
+    { freqStart: 950, freqEnd: 1500, delay: 1.65, duration: 0.3 },
+    { freqStart: 1500, freqEnd: 950, delay: 1.95, duration: 0.35 },
+  ];
+  
+  emergencyCycles.forEach(({ freqStart, freqEnd, delay, duration }, index) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(compressor);
+    
+    const startTime = now + delay;
+    const volume = 0.5 + (index * 0.05); // Gradually louder
+    
+    // Sweep frequency
+    osc.frequency.setValueAtTime(freqStart, startTime);
+    osc.frequency.linearRampToValueAtTime(freqEnd, startTime + duration);
+    
+    // Use sawtooth for more urgent sound
+    osc.type = 'sawtooth';
+    
+    // Envelope
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(Math.min(volume, 0.8), startTime + 0.02);
+    gain.gain.setValueAtTime(Math.min(volume, 0.8), startTime + duration - 0.05);
+    gain.gain.linearRampToValueAtTime(0, startTime + duration);
+    
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  });
+  
+  // Add final attention-grabbing beeps
+  const finalBeeps = [
+    { freq: 1800, delay: 2.4, duration: 0.1 },
+    { freq: 1800, delay: 2.55, duration: 0.1 },
+    { freq: 2200, delay: 2.7, duration: 0.15 },
+  ];
+  
+  finalBeeps.forEach(({ freq, delay, duration }) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    osc.type = 'square';
+    const startTime = now + delay;
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(0.7, startTime + 0.01);
+    gain.gain.setValueAtTime(0.7, startTime + duration - 0.02);
+    gain.gain.linearRampToValueAtTime(0, startTime + duration);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  });
+}
+
+/**
+ * Trigger panic emergency vibration pattern
+ * SOS-like pattern that's impossible to ignore
+ */
+export function triggerPanicEmergencyVibration(): void {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate([
+        // SOS pattern: ... --- ...
+        100, 50, 100, 50, 100,  // S (3 short)
+        200,
+        300, 100, 300, 100, 300, // O (3 long)
+        200,
+        100, 50, 100, 50, 100,  // S (3 short)
+        400,
+        // Extra attention
+        200, 50, 200, 50, 200, 50, 200,
+        200,
+        // Final pulse
+        500
+      ]);
+    } catch (e) {
+      console.warn('Vibration not supported');
+    }
+  }
+}
+
+/**
+ * Play full panic emergency alert (sound + vibration)
+ * For incoming panic events from other community members
+ */
+export function playPanicEmergencyAlert(): void {
+  const ctx = getAudioContext();
+  
+  // Try to resume context if suspended
+  if (ctx && ctx.state === 'suspended') {
+    console.log('🔊 [AlertSound] Resuming audio for panic emergency...');
+    ctx.resume().then(() => {
+      playPanicEmergencySound();
+      triggerPanicEmergencyVibration();
+    }).catch((e) => {
+      console.warn('🔇 [AlertSound] Failed to resume for panic:', e);
+      // Still vibrate even if audio fails
+      triggerPanicEmergencyVibration();
+    });
+  } else {
+    console.log('🚨 [AlertSound] Playing panic emergency alert');
+    playPanicEmergencySound();
+    triggerPanicEmergencyVibration();
+  }
+}
