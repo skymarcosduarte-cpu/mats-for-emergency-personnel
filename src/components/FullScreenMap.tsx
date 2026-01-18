@@ -36,6 +36,38 @@ const formatDistance = (distanceKm: number): string => {
   return `${distanceKm.toFixed(1)} km`;
 };
 
+// Create custom red marker icon for alert/traveler location
+const createRedIcon = () => L.divIcon({
+  className: 'custom-marker',
+  html: `
+    <div class="relative">
+      <div class="w-10 h-10 bg-destructive rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+      </div>
+      <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-destructive rotate-45 -z-10"></div>
+    </div>
+  `,
+  iconSize: [40, 48],
+  iconAnchor: [20, 48],
+});
+
+// Create user location icon
+const createUserIcon = () => L.divIcon({
+  className: 'user-location-marker',
+  html: `
+    <div class="relative flex items-center justify-center">
+      <div class="absolute w-8 h-8 bg-blue-500/30 rounded-full animate-ping"></div>
+      <div class="absolute w-6 h-6 bg-blue-500/20 rounded-full animate-pulse"></div>
+      <div class="relative w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg"></div>
+    </div>
+  `,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
 export const FullScreenMap: React.FC<FullScreenMapProps> = ({ 
   lat, 
   lng, 
@@ -46,6 +78,9 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const mainMarkerRef = useRef<L.Marker | null>(null);
+  const userMarkerRef = useRef<L.Marker | null>(null);
+  const hasInitializedRef = useRef(false);
 
   // Calculate distance between user and alert
   const distance = useMemo(() => {
@@ -53,6 +88,7 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
     return calculateDistanceKm(userLat, userLng, lat, lng);
   }, [lat, lng, userLat, userLng]);
 
+  // Initialize map only once when opened
   useEffect(() => {
     if (!isOpen || !mapContainerRef.current) return;
 
@@ -68,6 +104,7 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
       });
 
       mapRef.current = map;
+      hasInitializedRef.current = true;
 
       // Add tile layer
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -75,50 +112,20 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
         attribution: '© OpenStreetMap contributors',
       }).addTo(map);
 
-      // Create custom red marker icon for alert location
-      const redIcon = L.divIcon({
-        className: 'custom-marker',
-        html: `
-          <div class="relative">
-            <div class="w-10 h-10 bg-destructive rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-                <circle cx="12" cy="10" r="3"/>
-              </svg>
-            </div>
-            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-destructive rotate-45 -z-10"></div>
-          </div>
-        `,
-        iconSize: [40, 48],
-        iconAnchor: [20, 48],
-      });
-
-      // Add alert marker with popup
-      L.marker([lat, lng], { icon: redIcon })
+      // Add main marker
+      const mainMarker = L.marker([lat, lng], { icon: createRedIcon() })
         .addTo(map)
-        .bindPopup(`<strong>Ubicación de la alerta</strong><br/>Lat: ${lat.toFixed(6)}<br/>Lng: ${lng.toFixed(6)}`)
-        .openPopup();
+        .bindPopup(`<strong>Ubicación</strong><br/>Lat: ${lat.toFixed(6)}<br/>Lng: ${lng.toFixed(6)}`);
+      mainMarkerRef.current = mainMarker;
 
       // Add user location marker if available
       if (userLat !== undefined && userLng !== undefined) {
-        const userIcon = L.divIcon({
-          className: 'user-location-marker',
-          html: `
-            <div class="relative flex items-center justify-center">
-              <div class="absolute w-8 h-8 bg-blue-500/30 rounded-full animate-ping"></div>
-              <div class="absolute w-6 h-6 bg-blue-500/20 rounded-full animate-pulse"></div>
-              <div class="relative w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg"></div>
-            </div>
-          `,
-          iconSize: [32, 32],
-          iconAnchor: [16, 16],
-        });
-
-        L.marker([userLat, userLng], { icon: userIcon })
+        const userMarker = L.marker([userLat, userLng], { icon: createUserIcon() })
           .addTo(map)
           .bindPopup('<strong>Tu ubicación</strong>');
+        userMarkerRef.current = userMarker;
 
-        // Fit bounds to show both markers
+        // Fit bounds to show both markers on initial load
         const bounds = L.latLngBounds([
           [lat, lng],
           [userLat, userLng]
@@ -130,15 +137,53 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
       setTimeout(() => map.invalidateSize(), 100);
     }, 50);
 
-    // Cleanup
+    // Cleanup only when closed
     return () => {
       clearTimeout(timer);
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
     };
-  }, [isOpen, lat, lng, userLat, userLng]);
+  }, [isOpen]); // Only depend on isOpen, not coordinates
+
+  // Cleanup map when dialog closes
+  useEffect(() => {
+    if (!isOpen && mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+      mainMarkerRef.current = null;
+      userMarkerRef.current = null;
+      hasInitializedRef.current = false;
+    }
+  }, [isOpen]);
+
+  // Update marker position when coordinates change (without resetting view)
+  useEffect(() => {
+    if (!isOpen || !mapRef.current || !hasInitializedRef.current) return;
+
+    // Update main marker position
+    if (mainMarkerRef.current) {
+      mainMarkerRef.current.setLatLng([lat, lng]);
+      mainMarkerRef.current.setPopupContent(
+        `<strong>Ubicación</strong><br/>Lat: ${lat.toFixed(6)}<br/>Lng: ${lng.toFixed(6)}`
+      );
+    }
+  }, [lat, lng, isOpen]);
+
+  // Update user marker position when it changes
+  useEffect(() => {
+    if (!isOpen || !mapRef.current || !hasInitializedRef.current) return;
+
+    if (userLat !== undefined && userLng !== undefined) {
+      if (userMarkerRef.current) {
+        // Update existing marker
+        userMarkerRef.current.setLatLng([userLat, userLng]);
+      } else {
+        // Create new marker if it doesn't exist
+        const userMarker = L.marker([userLat, userLng], { icon: createUserIcon() })
+          .addTo(mapRef.current)
+          .bindPopup('<strong>Tu ubicación</strong>');
+        userMarkerRef.current = userMarker;
+      }
+    }
+  }, [userLat, userLng, isOpen]);
 
   const handleZoomIn = () => {
     mapRef.current?.zoomIn();
