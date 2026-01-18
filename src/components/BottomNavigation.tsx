@@ -4,7 +4,7 @@ import React from 'react';
 import { 
   Map, 
   Car, 
-  Bell, 
+  Activity, 
   Settings,
   ShoppingBag,
   Users,
@@ -44,7 +44,7 @@ const StarOfLifeIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'map', label: 'Mapa', icon: <Map className="w-5 h-5" /> },
-  { id: 'alerts', label: 'Sismos', icon: <Bell className="w-5 h-5" /> },
+  { id: 'alerts', label: 'Sismos', icon: <Activity className="w-5 h-5" /> },
   { id: 'transit', label: 'Tránsito', icon: <Car className="w-5 h-5" /> },
   { id: 'resources', label: 'RecurSOS', icon: <BookOpen className="w-5 h-5" /> },
   { 
