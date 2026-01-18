@@ -26,19 +26,57 @@ import {
   Share2,
   Download,
   Printer,
-  ArrowUp
+  ArrowUp,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatsLogo } from '@/components/MatsLogo';
 import { APP_VERSION } from '@/lib/versionCheck';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function UserGuidePage() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!contentRef.current) return;
+    
+    setIsGeneratingPdf(true);
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      
+      const options = {
+        margin: [10, 10, 10, 10],
+        filename: `MATS_Guia_Usuario_v${APP_VERSION}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          logging: false 
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait' 
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      await html2pdf().set(options).from(contentRef.current).save();
+      toast.success('PDF descargado correctamente');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Error al generar el PDF. Intenta usar la opción de imprimir.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const scrollToTop = () => {
@@ -59,11 +97,23 @@ export default function UserGuidePage() {
 
   return (
     <div ref={containerRef} className="min-h-screen h-screen bg-background overflow-y-auto">
-      {/* Print Button - Hidden when printing */}
-      <div className="fixed top-4 right-4 z-50 print:hidden flex gap-2">
-        <Button onClick={handlePrint} className="shadow-lg">
+      {/* Action Buttons - Hidden when printing */}
+      <div className="fixed top-4 right-4 z-50 print:hidden flex gap-2 flex-wrap justify-end">
+        <Button 
+          onClick={handleDownloadPdf} 
+          className="shadow-lg"
+          disabled={isGeneratingPdf}
+        >
+          {isGeneratingPdf ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Download className="w-4 h-4 mr-2" />
+          )}
+          {isGeneratingPdf ? 'Generando...' : 'Descargar PDF'}
+        </Button>
+        <Button onClick={handlePrint} variant="outline" className="shadow-lg">
           <Printer className="w-4 h-4 mr-2" />
-          Imprimir / Guardar PDF
+          Imprimir
         </Button>
         <Button variant="outline" onClick={() => window.history.back()}>
           Volver
@@ -71,7 +121,7 @@ export default function UserGuidePage() {
       </div>
 
       {/* Document Content */}
-      <div className="max-w-4xl mx-auto p-8 print:p-4 print:max-w-none">
+      <div ref={contentRef} className="max-w-4xl mx-auto p-8 print:p-4 print:max-w-none bg-background">
         
         {/* Cover Page */}
         <header className="text-center mb-16 print:mb-8 page-break-after">
