@@ -1,10 +1,10 @@
 // Full-screen interactive map overlay
 // Shows an interactive map with the alert location and user's current position
 
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { X, ZoomIn, ZoomOut, Locate, Navigation } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, Locate, Navigation, Crosshair } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface FullScreenMapProps {
@@ -87,6 +87,7 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
   const mainMarkerRef = useRef<L.Marker | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const hasInitializedRef = useRef(false);
+  const [isFollowing, setIsFollowing] = useState(true); // Auto-follow enabled by default
 
   // Calculate distance between user and alert
   const distance = useMemo(() => {
@@ -168,7 +169,7 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
     }
   }, [isOpen]);
 
-  // Update marker position when coordinates change (without resetting view)
+  // Update marker position when coordinates change (follow if enabled)
   useEffect(() => {
     if (!isOpen || !mapRef.current || !hasInitializedRef.current) return;
 
@@ -178,8 +179,13 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
       mainMarkerRef.current.setPopupContent(
         `<strong>Ubicación</strong><br/>Lat: ${lat.toFixed(6)}<br/>Lng: ${lng.toFixed(6)}`
       );
+      
+      // Auto-pan to new position if following is enabled
+      if (isFollowing) {
+        mapRef.current.panTo([lat, lng], { animate: true, duration: 0.5 });
+      }
     }
-  }, [lat, lng, isOpen]);
+  }, [lat, lng, isOpen, isFollowing]);
 
   // Update user marker position when it changes
   useEffect(() => {
@@ -209,6 +215,15 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
 
   const handleRecenter = () => {
     mapRef.current?.setView([lat, lng], initialZoom, { animate: true });
+    setIsFollowing(true); // Re-enable following when recentering
+  };
+
+  const toggleFollow = () => {
+    setIsFollowing(prev => !prev);
+    if (!isFollowing && mapRef.current) {
+      // When enabling follow, immediately center on current position
+      mapRef.current.panTo([lat, lng], { animate: true });
+    }
   };
 
   if (!isOpen) return null;
@@ -261,7 +276,30 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
           >
             <Locate className="w-4 h-4" />
           </Button>
+          <Button
+            variant={isFollowing ? "default" : "secondary"}
+            size="icon"
+            onClick={toggleFollow}
+            className={`shadow-lg backdrop-blur-sm ${
+              isFollowing 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-card/95'
+            }`}
+            title={isFollowing ? 'Siguiendo posición' : 'Seguir posición'}
+          >
+            <Crosshair className={`w-4 h-4 ${isFollowing ? 'animate-pulse' : ''}`} />
+          </Button>
         </div>
+
+        {/* Follow indicator */}
+        {isFollowing && (
+          <div className="absolute right-4 top-[200px] bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-lg z-[1000]">
+            <p className="text-xs font-medium text-primary-foreground flex items-center gap-1.5">
+              <Crosshair className="w-3 h-3" />
+              Siguiendo
+            </p>
+          </div>
+        )}
 
         {/* Distance Indicator */}
         {distance !== null && (
