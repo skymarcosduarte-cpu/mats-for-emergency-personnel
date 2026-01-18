@@ -540,24 +540,51 @@ export default function UserGuidePage() {
             </div>
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Categorías Disponibles</h3>
-            <div className="grid gap-3 md:grid-cols-2 print:grid-cols-2">
+            <div className="grid gap-2 md:grid-cols-3 print:grid-cols-3 text-sm">
               <div className="flex items-center gap-2 text-gray-700">
-                <span>🌤️</span><span>Clima y Fenómenos Naturales</span>
+                <span>🩹</span><span>Primeros Auxilios</span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
-                <span>💰</span><span>Finanzas y Economía</span>
+                <span>🚨</span><span>Evacuación</span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
-                <span>📖</span><span>Diccionario de Emergencias</span>
+                <span>🛡️</span><span>Seguridad</span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
-                <span>🥗</span><span>Nutrición</span>
+                <span>🏠</span><span>Preparación</span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
-                <span>⚕️</span><span>Información Médica</span>
+                <span>📞</span><span>Comunicación</span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
-                <span>📚</span><span>Libros y Manuales</span>
+                <span>⚠️</span><span>Amenazas</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <span>🏥</span><span>Salud Pública</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <span>🧠</span><span>Salud Mental</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <span>🚑</span><span>Trauma</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <span>⚕️</span><span>Médico</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <span>🏕️</span><span>Refugio</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <span>🏷️</span><span>Triage</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <span>👶</span><span>Protección Vulnerable</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <span>🆘</span><span>Violencia/Crisis</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <span>🦺</span><span>Seguridad Operativa</span>
               </div>
             </div>
 
