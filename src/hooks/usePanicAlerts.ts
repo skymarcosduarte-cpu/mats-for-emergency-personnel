@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
-import { playUrgentAlert, playSubtleAlert } from '@/lib/alertSound';
+import { playUrgentAlert, playSubtleAlert, playPanicEmergencyAlert } from '@/lib/alertSound';
 interface PanicEvent {
   id: string;
   user_id: string;
@@ -104,13 +104,15 @@ export function usePanicAlerts() {
     }
   }, []);
 
-  // Play alert sound - use Web Audio API sounds
+  // Play alert sound - use new panic emergency sound for panic events
   const playPanicAlertSound = useCallback(() => {
-    playUrgentAlert();
+    console.log('🚨 [usePanicAlerts] Playing PANIC EMERGENCY sound');
+    playPanicEmergencyAlert();
   }, []);
 
   const playHelpAlertSound = useCallback(() => {
-    playSubtleAlert();
+    console.log('🔔 [usePanicAlerts] Playing help alert sound');
+    playUrgentAlert();
   }, []);
 
   // Format Google Maps link
