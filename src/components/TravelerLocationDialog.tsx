@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { MapPin, Navigation, Clock, Loader2, X, MessageCircle, ExternalLink } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { MapPin, Navigation, Clock, Loader2, X, MessageCircle, ExternalLink, Route } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -33,6 +33,8 @@ interface TravelerLocationDialogProps {
   onClose: () => void;
   userId: string;
   onSendMessage?: () => void;
+  /** Optional trip ID for showing route history */
+  tripId?: string;
 }
 
 export function TravelerLocationDialog({
@@ -40,11 +42,35 @@ export function TravelerLocationDialog({
   onClose,
   userId,
   onSendMessage,
+  tripId: propTripId,
 }: TravelerLocationDialogProps) {
   const [location, setLocation] = useState<TravelerLocation | null>(null);
   const [profile, setProfile] = useState<TravelerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
+  const [activeTripId, setActiveTripId] = useState<string | null>(null);
+
+  // Fetch route history for a trip
+  const fetchRouteHistory = useCallback(async (tripId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('trip_position_history')
+        .select('lat, lng, recorded_at')
+        .eq('trip_id', tripId)
+        .order('recorded_at', { ascending: true });
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const coords: [number, number][] = data.map(pos => [pos.lat, pos.lng]);
+        setRouteCoordinates(coords);
+        console.log(`[TravelerLocationDialog] Loaded ${coords.length} route points`);
+      }
+    } catch (err) {
+      console.error('[TravelerLocationDialog] Error fetching route history:', err);
+    }
+  }, []);
 
   // Fetch initial data
   useEffect(() => {
@@ -53,10 +79,11 @@ export function TravelerLocationDialog({
     const fetchData = async () => {
       setLoading(true);
       setError(null);
+      setRouteCoordinates([]);
 
       try {
-        // Fetch location and profile in parallel
-        const [locationResult, profileResult] = await Promise.all([
+        // Fetch location, profile, and active trip in parallel
+        const [locationResult, profileResult, tripResult] = await Promise.all([
           supabase
             .from('user_locations')
             .select('lat, lng, updated_at, speed, heading, is_online')
@@ -66,6 +93,14 @@ export function TravelerLocationDialog({
             .from('profiles_public')
             .select('nickname')
             .eq('user_id', userId)
+            .maybeSingle(),
+          // Get active trip for this user
+          propTripId ? Promise.resolve({ data: { id: propTripId }, error: null }) :
+          supabase
+            .from('transit_trips')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('status', 'active')
             .maybeSingle(),
         ]);
 
@@ -83,6 +118,13 @@ export function TravelerLocationDialog({
             full_name: profileResult.data.nickname || 'Usuario' 
           });
         }
+
+        // Fetch route history if we have a trip
+        const tripId = propTripId || tripResult.data?.id;
+        if (tripId) {
+          setActiveTripId(tripId);
+          await fetchRouteHistory(tripId);
+        }
       } catch (err) {
         console.error('[TravelerLocationDialog] Error fetching data:', err);
         setError('Error al cargar la ubicación');
@@ -92,9 +134,9 @@ export function TravelerLocationDialog({
     };
 
     fetchData();
-  }, [isOpen, userId]);
+  }, [isOpen, userId, propTripId, fetchRouteHistory]);
 
-  // Subscribe to real-time location updates
+  // Subscribe to real-time location updates and add to route
   useEffect(() => {
     if (!isOpen || !userId) return;
 
@@ -111,6 +153,18 @@ export function TravelerLocationDialog({
         (payload) => {
           const newLocation = payload.new as TravelerLocation;
           setLocation(newLocation);
+          
+          // Add new position to route coordinates
+          if (newLocation.lat && newLocation.lng) {
+            setRouteCoordinates(prev => {
+              // Avoid duplicates
+              const lastPos = prev[prev.length - 1];
+              if (lastPos && lastPos[0] === newLocation.lat && lastPos[1] === newLocation.lng) {
+                return prev;
+              }
+              return [...prev, [newLocation.lat, newLocation.lng]];
+            });
+          }
         }
       )
       .subscribe();
@@ -203,9 +257,19 @@ export function TravelerLocationDialog({
                     lat={location.lat}
                     lng={location.lng}
                     zoom={15}
+                    routeCoordinates={routeCoordinates}
+                    title={`Viaje de ${profile?.nickname || 'Viajero'}`}
                   />
                 </MapErrorBoundary>
               </div>
+
+              {/* Route info */}
+              {routeCoordinates.length > 1 && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+                  <Route className="w-3.5 h-3.5 text-blue-500" />
+                  <span>{routeCoordinates.length} puntos de ruta registrados</span>
+                </div>
+              )}
 
               {/* Location details */}
               <div className="grid grid-cols-2 gap-3">
