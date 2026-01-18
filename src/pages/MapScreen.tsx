@@ -788,14 +788,14 @@ interface ResponderInfo {
 }
 
 const createPanicIcon = (panicType: string, responderInfos: ResponderInfo[] = []) => {
-  const typeConfig: Record<string, { color: string; emoji: string }> = {
-    'AMBULANCIA_PROPIA': { color: '#ef4444', emoji: '🚑' },
-    'AMBULANCIA_TERCERO': { color: '#ef4444', emoji: '🚑' },
-    'PATRULLA': { color: '#3b82f6', emoji: '🚔' },
-    'MECANICO': { color: '#eab308', emoji: '🔧' },
-    'PROTECCION_CIVIL': { color: '#f97316', emoji: '🆘' },
+  const typeConfig: Record<string, { color: string; emoji: string; label: string }> = {
+    'AMBULANCIA_PROPIA': { color: '#ef4444', emoji: '🚑', label: 'AMBULANCIA' },
+    'AMBULANCIA_TERCERO': { color: '#ef4444', emoji: '🚑', label: 'AMBULANCIA' },
+    'PATRULLA': { color: '#3b82f6', emoji: '🚔', label: 'PATRULLA' },
+    'MECANICO': { color: '#eab308', emoji: '🔧', label: 'MECÁNICO' },
+    'PROTECCION_CIVIL': { color: '#f97316', emoji: '🆘', label: 'PROTECCIÓN' },
   };
-  const config = typeConfig[panicType] || { color: '#ef4444', emoji: '🆘' };
+  const config = typeConfig[panicType] || { color: '#ef4444', emoji: '🆘', label: 'SOS' };
   
   // Transport mode emojis
   const transportEmojis: Record<string, string> = {
@@ -827,36 +827,40 @@ const createPanicIcon = (panicType: string, responderInfos: ResponderInfo[] = []
     responderBadge = `
       <div style="
         position: absolute;
-        top: -8px;
+        top: -10px;
         left: 50%;
         transform: translateX(-50%);
         min-width: 50px;
         max-width: 120px;
-        height: 20px;
+        height: 22px;
         background: ${badgeColor};
         border: 2px solid white;
-        border-radius: 10px;
+        border-radius: 11px;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 2px;
-        font-size: 9px;
+        font-size: 10px;
         font-weight: bold;
         color: white;
         z-index: 10;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        padding: 0 6px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        padding: 0 8px;
         white-space: nowrap;
       ">${transportEmoji}${displayName}${statusText ? ' ' + statusText : ''}${extraCount}</div>
     `;
   }
   
+  // Larger, more dramatic emergency icon
+  const baseSize = 60;
+  const pulseSize = 80;
+  
   return L.divIcon({
-    className: 'panic-marker',
+    className: 'panic-marker-emergency',
     html: `
       <div style="
-        width: 44px;
-        height: ${responderInfos.length > 0 ? '56px' : '44px'};
+        width: ${pulseSize}px;
+        height: ${responderInfos.length > 0 ? pulseSize + 16 : pulseSize}px;
         position: relative;
         display: flex;
         align-items: ${responderInfos.length > 0 ? 'flex-end' : 'center'};
@@ -866,39 +870,82 @@ const createPanicIcon = (panicType: string, responderInfos: ResponderInfo[] = []
         <div style="
           position: ${responderInfos.length > 0 ? 'absolute' : 'relative'};
           bottom: 0;
-          width: 44px;
-          height: 44px;
+          width: ${pulseSize}px;
+          height: ${pulseSize}px;
           display: flex;
           align-items: center;
           justify-content: center;
         ">
+          <!-- Outer pulsing ring -->
           <div style="
             position: absolute;
-            width: 44px;
-            height: 44px;
-            background: ${config.color}40;
+            width: ${pulseSize}px;
+            height: ${pulseSize}px;
+            background: transparent;
+            border: 4px solid ${config.color};
             border-radius: 50%;
             animation: pulsePanic 1s infinite;
+            opacity: 0.6;
           "></div>
+          <!-- Inner pulsing glow -->
           <div style="
-            width: 32px;
-            height: 32px;
-            background: ${config.color};
-            border: 3px solid white;
+            position: absolute;
+            width: ${baseSize + 10}px;
+            height: ${baseSize + 10}px;
+            background: ${config.color}50;
+            border-radius: 50%;
+            animation: pulsePanic 1.2s infinite 0.2s;
+          "></div>
+          <!-- Main icon container -->
+          <div style="
+            width: ${baseSize}px;
+            height: ${baseSize}px;
+            background: linear-gradient(135deg, ${config.color}, ${config.color}dd);
+            border: 4px solid white;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            font-size: 24px;
+            box-shadow: 0 4px 20px ${config.color}99, 0 0 30px ${config.color}66;
+          ">
+            <span style="line-height: 1;">${config.emoji}</span>
+            <span style="
+              font-size: 8px;
+              font-weight: 900;
+              color: white;
+              text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+              margin-top: 1px;
+              letter-spacing: 0.5px;
+            ">SOS</span>
+          </div>
+          <!-- Alert badge -->
+          <div style="
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 22px;
+            height: 22px;
+            background: #fff;
+            border: 2px solid ${config.color};
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1;
-            font-size: 16px;
-            box-shadow: 0 2px 8px ${config.color}80;
-          ">${config.emoji}</div>
+            z-index: 3;
+            animation: pulse-glow 0.8s infinite;
+            color: ${config.color};
+          ">
+            <span style="font-size: 12px;">⚠</span>
+          </div>
         </div>
       </div>
     `,
-    iconSize: [44, responderInfos.length > 0 ? 56 : 44],
-    iconAnchor: [22, responderInfos.length > 0 ? 44 : 22],
-    popupAnchor: [0, responderInfos.length > 0 ? -44 : -22],
+    iconSize: [pulseSize, responderInfos.length > 0 ? pulseSize + 16 : pulseSize],
+    iconAnchor: [pulseSize / 2, responderInfos.length > 0 ? pulseSize + 8 : pulseSize / 2],
+    popupAnchor: [0, responderInfos.length > 0 ? -(pulseSize / 2 + 8) : -pulseSize / 2],
   });
 };
 
