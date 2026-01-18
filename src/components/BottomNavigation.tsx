@@ -65,6 +65,7 @@ interface BottomNavigationProps {
   disasterMode?: boolean;
   alertCount?: number;
   messageCount?: number;
+  hasActiveSeismicAlert?: boolean;
 }
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({
@@ -74,6 +75,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   disasterMode = false,
   alertCount = 0,
   messageCount = 0,
+  hasActiveSeismicAlert = false,
 }) => {
   const updateAvailable = useUpdateAvailable();
   
@@ -102,7 +104,10 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
               )}
               aria-current={isActive ? 'page' : undefined}
             >
-              <div className="relative">
+              <div className={cn(
+                "relative",
+                item.id === 'alerts' && hasActiveSeismicAlert && "animate-pulse text-destructive"
+              )}>
                 {item.icon}
                 
                 {/* Alert badge */}

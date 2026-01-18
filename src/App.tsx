@@ -47,6 +47,7 @@ import { FloatingHelpButton } from '@/components/FloatingHelpButton';
 import { useAppState } from '@/hooks/useRealtime';
 import { useLocation } from '@/hooks/useLocation';
 import { useEarthquakeDetection } from '@/hooks/useEarthquakeDetection';
+import { useSkyAlertAlerts } from '@/hooks/useSkyAlertAlerts';
 import { useEarthquakeHistory } from '@/hooks/useEarthquakeHistory';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useStatusCheckin } from '@/hooks/useStatusCheckin';
@@ -443,6 +444,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     handleEarthquakeDetected
   );
 
+  // SkyAlert monitoring for bottom navigation animation
+  const { isActive: hasSkyAlertActive } = useSkyAlertAlerts();
+
   // Handle check-in prompt actions
   const handleConfirmSafe = () => {
     confirmSafe();
@@ -625,7 +629,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       )}
 
       <InstallPrompt />
-      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS'} disasterMode={disasterMode} messageCount={unreadMessageCount} />
+      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS'} disasterMode={disasterMode} messageCount={unreadMessageCount} hasActiveSeismicAlert={hasSkyAlertActive} />
       
       {/* Seismic Alert Dialog - ONLY for SSN earthquakes ≥6.0 */}
       {majorSSNQuake && position && (
