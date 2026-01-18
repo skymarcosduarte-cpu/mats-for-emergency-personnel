@@ -37,7 +37,7 @@ export default function UserGuidePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen h-screen bg-background overflow-y-auto">
       {/* Print Button - Hidden when printing */}
       <div className="fixed top-4 right-4 z-50 print:hidden flex gap-2">
         <Button onClick={handlePrint} className="shadow-lg">
