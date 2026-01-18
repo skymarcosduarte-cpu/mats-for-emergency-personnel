@@ -112,6 +112,8 @@ export const MiniMap: React.FC<MiniMapProps> = ({
         userLng={userLng}
         isOpen={isExpanded}
         onClose={() => setIsExpanded(false)}
+        focusOnMain={true}
+        initialZoom={zoom}
       />
     </>
   );
