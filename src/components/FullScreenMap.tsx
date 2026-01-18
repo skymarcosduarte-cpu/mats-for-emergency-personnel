@@ -103,6 +103,18 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
     return calculateDistanceKm(userLat, userLng, lat, lng);
   }, [lat, lng, userLat, userLng]);
 
+  // Route stroke color (design token)
+  const routeStrokeColor = useMemo(() => {
+    try {
+      const v = getComputedStyle(document.documentElement)
+        .getPropertyValue('--primary')
+        .trim();
+      return v ? `hsl(${v})` : 'hsl(var(--primary))';
+    } catch {
+      return 'hsl(var(--primary))';
+    }
+  }, []);
+
   // Initialize map only once when opened
   useEffect(() => {
     if (!isOpen || !mapContainerRef.current) return;
@@ -127,6 +139,10 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
       mapRef.current = map;
       hasInitializedRef.current = true;
 
+      // If the user starts interacting (drag/zoom), stop auto-follow
+      map.on('dragstart', () => setIsFollowing(false));
+      map.on('zoomstart', () => setIsFollowing(false));
+
       // Add tile layer
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -142,7 +158,7 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
       // Draw route polyline if coordinates provided
       if (routeCoordinates.length > 1) {
         const routeLine = L.polyline(routeCoordinates, {
-          color: '#3b82f6', // Blue color
+          color: routeStrokeColor,
           weight: 4,
           opacity: 0.8,
           smoothFactor: 1,
@@ -204,7 +220,7 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
     // Draw new route if coordinates provided and showRoute is enabled
     if (routeCoordinates.length > 1 && showRoute) {
       const routeLine = L.polyline(routeCoordinates, {
-        color: '#3b82f6',
+        color: routeStrokeColor,
         weight: 4,
         opacity: 0.8,
         smoothFactor: 1,
@@ -260,7 +276,8 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
   };
 
   const handleRecenter = () => {
-    mapRef.current?.setView([lat, lng], initialZoom, { animate: true });
+    const currentZoom = mapRef.current?.getZoom() ?? initialZoom;
+    mapRef.current?.setView([lat, lng], currentZoom, { animate: true });
     setIsFollowing(true); // Re-enable following when recentering
   };
 
@@ -341,8 +358,8 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
               size="icon"
               onClick={() => setShowRoute(prev => !prev)}
               className={`shadow-lg backdrop-blur-sm ${
-                showRoute 
-                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                showRoute
+                  ? 'bg-primary text-primary-foreground'
                   : 'bg-card/95'
               }`}
               title={showRoute ? 'Ocultar ruta' : 'Mostrar ruta'}

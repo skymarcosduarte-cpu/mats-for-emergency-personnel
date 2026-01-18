@@ -266,7 +266,7 @@ export function TravelerLocationDialog({
               {/* Route info */}
               {routeCoordinates.length > 1 && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-                  <Route className="w-3.5 h-3.5 text-blue-500" />
+                  <Route className="w-3.5 h-3.5 text-primary" />
                   <span>{routeCoordinates.length} puntos de ruta registrados</span>
                 </div>
               )}
