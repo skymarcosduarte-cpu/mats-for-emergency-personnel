@@ -1,5 +1,5 @@
 // M.A.T.S. User Guide - Printable/PDF documentation
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Shield, 
   Map, 
@@ -25,19 +25,40 @@ import {
   Eye,
   Share2,
   Download,
-  Printer
+  Printer,
+  ArrowUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatsLogo } from '@/components/MatsLogo';
 import { APP_VERSION } from '@/lib/versionCheck';
+import { cn } from '@/lib/utils';
 
 export default function UserGuidePage() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
   const handlePrint = () => {
     window.print();
   };
 
+  const scrollToTop = () => {
+    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      setShowScrollTop(container.scrollTop > 300);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <div className="min-h-screen h-screen bg-background overflow-y-auto">
+    <div ref={containerRef} className="min-h-screen h-screen bg-background overflow-y-auto">
       {/* Print Button - Hidden when printing */}
       <div className="fixed top-4 right-4 z-50 print:hidden flex gap-2">
         <Button onClick={handlePrint} className="shadow-lg">
@@ -694,6 +715,19 @@ export default function UserGuidePage() {
           }
         }
       `}</style>
+
+      {/* Scroll to Top Button */}
+      <Button
+        onClick={scrollToTop}
+        className={cn(
+          "fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 p-0 shadow-lg transition-all duration-300 print:hidden",
+          showScrollTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+        )}
+        size="icon"
+        aria-label="Volver al inicio"
+      >
+        <ArrowUp className="w-5 h-5" />
+      </Button>
     </div>
   );
 }
