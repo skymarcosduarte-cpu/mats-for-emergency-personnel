@@ -2709,19 +2709,32 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   // Auto-center map on active alerts (panic events or help requests)
   // This helps users see where emergencies are happening
   const lastCenteredAlertRef = useRef<string | null>(null);
+  const hasInitialCenteredRef = useRef<boolean>(false);
   
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
     const map = mapInstanceRef.current;
 
-    // Prioritize user's own alerts first
-    const myPanicEvent = panicEvents.find(e => e.user_id === currentUserId);
-    const myHelpRequest = helpRequests.find(r => r.user_id === currentUserId && !r.resolved);
+    console.log('[MapScreen] Auto-center check - panicEvents:', panicEvents.length, 'helpRequests:', helpRequests.length, 'currentUserId:', currentUserId);
     
-    // Check for any active alerts
+    // Check for any active alerts (panic events are always active, help requests only if not resolved)
     const allAlerts = [
-      ...panicEvents.map(e => ({ id: e.id, lat: e.lat, lng: e.lng, isOwn: e.user_id === currentUserId, createdAt: e.created_at })),
-      ...helpRequests.filter(r => !r.resolved).map(r => ({ id: r.id, lat: r.lat, lng: r.lng, isOwn: r.user_id === currentUserId, createdAt: r.created_at }))
+      ...panicEvents.map(e => ({ 
+        id: e.id, 
+        lat: e.lat, 
+        lng: e.lng, 
+        isOwn: e.user_id === currentUserId, 
+        createdAt: e.created_at || new Date().toISOString(),
+        type: 'panic' as const
+      })),
+      ...helpRequests.filter(r => !r.resolved).map(r => ({ 
+        id: r.id, 
+        lat: r.lat, 
+        lng: r.lng, 
+        isOwn: r.user_id === currentUserId, 
+        createdAt: r.created_at || new Date().toISOString(),
+        type: 'help' as const
+      }))
     ].sort((a, b) => {
       // Prioritize own alerts, then by creation time (newest first)
       if (a.isOwn && !b.isOwn) return -1;
@@ -2729,29 +2742,42 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
+    console.log('[MapScreen] allAlerts after filter:', allAlerts.length, allAlerts.map(a => ({ id: a.id, isOwn: a.isOwn, type: a.type })));
+
     if (allAlerts.length > 0) {
       const alertToCenter = allAlerts[0];
       
-      // Only center if we haven't centered on this alert yet (avoid repeated centering)
-      if (lastCenteredAlertRef.current !== alertToCenter.id) {
+      // Center on first load OR when a new alert appears
+      const shouldCenter = !hasInitialCenteredRef.current || lastCenteredAlertRef.current !== alertToCenter.id;
+      
+      console.log('[MapScreen] shouldCenter:', shouldCenter, 'hasInitialCentered:', hasInitialCenteredRef.current, 'lastCenteredId:', lastCenteredAlertRef.current, 'alertId:', alertToCenter.id);
+      
+      if (shouldCenter) {
+        hasInitialCenteredRef.current = true;
         lastCenteredAlertRef.current = alertToCenter.id;
         
         // Center and zoom to the alert location
+        console.log('[MapScreen] Centering map on alert:', alertToCenter.id, 'at', alertToCenter.lat, alertToCenter.lng);
         map.setView([alertToCenter.lat, alertToCenter.lng], 15, { animate: true });
         
-        // Open the popup for the marker if it exists
-        const markerKey = panicEvents.find(e => e.id === alertToCenter.id) 
+        // Open the popup for the marker if it exists (with delay to ensure marker is rendered)
+        const markerKey = alertToCenter.type === 'panic' 
           ? `panic-${alertToCenter.id}` 
           : `help-${alertToCenter.id}`;
-        const marker = markersRef.current.get(markerKey);
-        if (marker) {
-          setTimeout(() => marker.openPopup(), 500);
-        }
         
-        console.log('[MapScreen] Auto-centered on alert:', alertToCenter.id, 'isOwn:', alertToCenter.isOwn);
+        setTimeout(() => {
+          const marker = markersRef.current.get(markerKey);
+          console.log('[MapScreen] Looking for marker:', markerKey, 'found:', !!marker);
+          if (marker) {
+            marker.openPopup();
+          }
+        }, 800);
+        
+        console.log('[MapScreen] Auto-centered on alert:', alertToCenter.id, 'isOwn:', alertToCenter.isOwn, 'type:', alertToCenter.type);
       }
     } else {
-      // No active alerts - reset tracking
+      // No active alerts - reset tracking for next time
+      hasInitialCenteredRef.current = false;
       lastCenteredAlertRef.current = null;
     }
   }, [panicEvents, helpRequests, mapReady, currentUserId]);
