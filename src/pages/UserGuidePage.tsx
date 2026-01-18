@@ -112,11 +112,11 @@ export default function UserGuidePage() {
           )}
           {isGeneratingPdf ? 'Generando...' : 'Descargar PDF'}
         </Button>
-        <Button onClick={handlePrint} variant="outline" className="shadow-lg border-gray-300 text-gray-700 hover:bg-gray-100">
+        <Button onClick={handlePrint} variant="outline" className="shadow-lg bg-white border-2 border-gray-400 text-gray-800 hover:bg-gray-100 hover:border-gray-500">
           <Printer className="w-4 h-4 mr-2" />
           Imprimir
         </Button>
-        <Button variant="outline" onClick={() => window.history.back()} className="border-gray-300 text-gray-700 hover:bg-gray-100">
+        <Button variant="outline" onClick={() => window.history.back()} className="shadow-lg bg-white border-2 border-gray-400 text-gray-800 hover:bg-gray-100 hover:border-gray-500">
           Volver
         </Button>
       </div>
@@ -727,8 +727,38 @@ export default function UserGuidePage() {
           </div>
         </section>
 
+        {/* QR Code Download Section */}
+        <section className="mt-16 pt-8 border-t border-gray-200 page-break-before">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-2">
+              <Download className="w-6 h-6 text-orange-500" />
+              Descarga la Aplicación
+            </h2>
+            <p className="text-gray-700 mb-6">
+              Escanea el código QR con tu teléfono para instalar M.A.T.S.
+            </p>
+            <div className="flex flex-col items-center gap-4">
+              <div className="bg-white p-4 border-2 border-gray-300 rounded-xl shadow-sm">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://mats-app.com/install&bgcolor=ffffff&color=000000`}
+                  alt="QR Code para descargar M.A.T.S."
+                  className="w-48 h-48"
+                />
+              </div>
+              <a 
+                href="https://mats-app.com/install" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium text-lg underline underline-offset-2"
+              >
+                https://mats-app.com/install
+              </a>
+            </div>
+          </div>
+        </section>
+
         {/* Footer */}
-        <footer className="mt-16 pt-8 border-t border-gray-200 text-center">
+        <footer className="mt-12 pt-8 border-t border-gray-200 text-center">
           <div className="flex justify-center mb-4">
             <MatsLogo size={48} />
           </div>
