@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useMemo, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { X, ZoomIn, ZoomOut, Locate, Navigation, Crosshair } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, Locate, Navigation, Crosshair, Route } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface FullScreenMapProps {
@@ -18,6 +18,10 @@ interface FullScreenMapProps {
   focusOnMain?: boolean;
   /** Custom initial zoom level (default: 16) */
   initialZoom?: number;
+  /** Route coordinates to draw as a polyline [[lat, lng], ...] */
+  routeCoordinates?: [number, number][];
+  /** Title for the header */
+  title?: string;
 }
 
 // Calculate distance between two coordinates in km (Haversine formula)
@@ -81,13 +85,17 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
   onClose,
   focusOnMain = false,
   initialZoom = 16,
+  routeCoordinates = [],
+  title = 'Ubicación',
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const mainMarkerRef = useRef<L.Marker | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
+  const routeLineRef = useRef<L.Polyline | null>(null);
   const hasInitializedRef = useRef(false);
   const [isFollowing, setIsFollowing] = useState(true); // Auto-follow enabled by default
+  const [showRoute, setShowRoute] = useState(true); // Show route by default
 
   // Calculate distance between user and alert
   const distance = useMemo(() => {
@@ -131,6 +139,19 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
         .bindPopup(`<strong>Ubicación</strong><br/>Lat: ${lat.toFixed(6)}<br/>Lng: ${lng.toFixed(6)}`);
       mainMarkerRef.current = mainMarker;
 
+      // Draw route polyline if coordinates provided
+      if (routeCoordinates.length > 1) {
+        const routeLine = L.polyline(routeCoordinates, {
+          color: '#3b82f6', // Blue color
+          weight: 4,
+          opacity: 0.8,
+          smoothFactor: 1,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(map);
+        routeLineRef.current = routeLine;
+      }
+
       // Add user location marker if available
       if (userLat !== undefined && userLng !== undefined) {
         const userMarker = L.marker([userLat, userLng], { icon: createUserIcon() })
@@ -165,9 +186,34 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
       mapRef.current = null;
       mainMarkerRef.current = null;
       userMarkerRef.current = null;
+      routeLineRef.current = null;
       hasInitializedRef.current = false;
     }
   }, [isOpen]);
+
+  // Update route when coordinates change
+  useEffect(() => {
+    if (!isOpen || !mapRef.current || !hasInitializedRef.current) return;
+
+    // Remove existing route line
+    if (routeLineRef.current) {
+      routeLineRef.current.remove();
+      routeLineRef.current = null;
+    }
+
+    // Draw new route if coordinates provided and showRoute is enabled
+    if (routeCoordinates.length > 1 && showRoute) {
+      const routeLine = L.polyline(routeCoordinates, {
+        color: '#3b82f6',
+        weight: 4,
+        opacity: 0.8,
+        smoothFactor: 1,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(mapRef.current);
+      routeLineRef.current = routeLine;
+    }
+  }, [routeCoordinates, isOpen, showRoute]);
 
   // Update marker position when coordinates change (follow if enabled)
   useEffect(() => {
@@ -232,7 +278,7 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
     <div className="fixed inset-0 z-[4000] bg-background flex flex-col animate-in fade-in duration-200">
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b border-border bg-card/95 backdrop-blur-sm sticky top-0 z-10">
-        <h1 className="font-semibold text-foreground">Ubicación de la Alerta</h1>
+        <h1 className="font-semibold text-foreground">{title}</h1>
         <Button 
           variant="ghost" 
           size="icon" 
@@ -289,6 +335,21 @@ export const FullScreenMap: React.FC<FullScreenMapProps> = ({
           >
             <Crosshair className={`w-4 h-4 ${isFollowing ? 'animate-pulse' : ''}`} />
           </Button>
+          {routeCoordinates.length > 1 && (
+            <Button
+              variant={showRoute ? "default" : "secondary"}
+              size="icon"
+              onClick={() => setShowRoute(prev => !prev)}
+              className={`shadow-lg backdrop-blur-sm ${
+                showRoute 
+                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  : 'bg-card/95'
+              }`}
+              title={showRoute ? 'Ocultar ruta' : 'Mostrar ruta'}
+            >
+              <Route className="w-4 h-4" />
+            </Button>
+          )}
         </div>
 
         {/* Follow indicator */}

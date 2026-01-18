@@ -14,6 +14,10 @@ interface MiniMapProps {
   userLng?: number;
   className?: string;
   zoom?: number;
+  /** Route coordinates to display [[lat, lng], ...] */
+  routeCoordinates?: [number, number][];
+  /** Title for the fullscreen map */
+  title?: string;
 }
 
 export const MiniMap: React.FC<MiniMapProps> = ({ 
@@ -22,7 +26,9 @@ export const MiniMap: React.FC<MiniMapProps> = ({
   userLat,
   userLng,
   className = '',
-  zoom = 15 
+  zoom = 15,
+  routeCoordinates = [],
+  title = 'Ubicación',
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -114,6 +120,8 @@ export const MiniMap: React.FC<MiniMapProps> = ({
         onClose={() => setIsExpanded(false)}
         focusOnMain={true}
         initialZoom={zoom}
+        routeCoordinates={routeCoordinates}
+        title={title}
       />
     </>
   );
