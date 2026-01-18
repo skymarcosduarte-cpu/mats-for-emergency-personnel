@@ -2659,6 +2659,56 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
     }
   }, [locations, poiVisibility.first_aid_kit, poiVisibility.ambulance, poiVisibility.rescue_unit, poiVisibility.k9_unit, mapReady, helpRequests.length, panicEvents.length]);
 
+  // Auto-center map on active alerts (panic events or help requests)
+  // This helps users see where emergencies are happening
+  const lastCenteredAlertRef = useRef<string | null>(null);
+  
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady) return;
+    const map = mapInstanceRef.current;
+
+    // Prioritize user's own alerts first
+    const myPanicEvent = panicEvents.find(e => e.user_id === currentUserId);
+    const myHelpRequest = helpRequests.find(r => r.user_id === currentUserId && !r.resolved);
+    
+    // Check for any active alerts
+    const allAlerts = [
+      ...panicEvents.map(e => ({ id: e.id, lat: e.lat, lng: e.lng, isOwn: e.user_id === currentUserId, createdAt: e.created_at })),
+      ...helpRequests.filter(r => !r.resolved).map(r => ({ id: r.id, lat: r.lat, lng: r.lng, isOwn: r.user_id === currentUserId, createdAt: r.created_at }))
+    ].sort((a, b) => {
+      // Prioritize own alerts, then by creation time (newest first)
+      if (a.isOwn && !b.isOwn) return -1;
+      if (!a.isOwn && b.isOwn) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    if (allAlerts.length > 0) {
+      const alertToCenter = allAlerts[0];
+      
+      // Only center if we haven't centered on this alert yet (avoid repeated centering)
+      if (lastCenteredAlertRef.current !== alertToCenter.id) {
+        lastCenteredAlertRef.current = alertToCenter.id;
+        
+        // Center and zoom to the alert location
+        map.setView([alertToCenter.lat, alertToCenter.lng], 15, { animate: true });
+        
+        // Open the popup for the marker if it exists
+        const markerKey = panicEvents.find(e => e.id === alertToCenter.id) 
+          ? `panic-${alertToCenter.id}` 
+          : `help-${alertToCenter.id}`;
+        const marker = markersRef.current.get(markerKey);
+        if (marker) {
+          setTimeout(() => marker.openPopup(), 500);
+        }
+        
+        console.log('[MapScreen] Auto-centered on alert:', alertToCenter.id, 'isOwn:', alertToCenter.isOwn);
+      }
+    } else {
+      // No active alerts - reset tracking
+      lastCenteredAlertRef.current = null;
+    }
+  }, [panicEvents, helpRequests, mapReady, currentUserId]);
+
   // Update Clave 100 check-in markers during active drills
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
