@@ -485,7 +485,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 
     try {
       // Always save to panic_events for SOS alerts (with or without context)
-      const { error } = await supabase.from('panic_events').insert({
+      const { data: insertedEvent, error } = await supabase.from('panic_events').insert({
         user_id: user.id,
         panic_type: type,
         lat,
@@ -494,7 +494,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
         audio_url: audioUrl || null,
         audio_duration_ms: audioDurationMs || null,
         resolved: false,
-      });
+      }).select('id').single();
 
       if (error) {
         console.error('Error saving panic event:', error);
@@ -515,6 +515,47 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
         
         // Notify emergency contacts via WhatsApp
         notifyEmergencyContacts(type, lat, lng, message);
+        
+        // Broadcast push notification to all registered users
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('nickname, full_name')
+            .eq('id', user.id)
+            .single();
+          
+          const creatorName = profile?.nickname || profile?.full_name || null;
+          
+          const { data: session } = await supabase.auth.getSession();
+          if (session?.session?.access_token && insertedEvent?.id) {
+            fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-panic-broadcast`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.session.access_token}`,
+              },
+              body: JSON.stringify({
+                panicEventId: insertedEvent.id,
+                panicType: type,
+                creatorName,
+                message,
+                lat,
+                lng,
+              }),
+            }).then(res => {
+              if (res.ok) {
+                console.log('[handlePanicTriggered] Push broadcast sent successfully');
+              } else {
+                console.warn('[handlePanicTriggered] Push broadcast failed:', res.status);
+              }
+            }).catch(err => {
+              console.warn('[handlePanicTriggered] Push broadcast error:', err);
+            });
+          }
+        } catch (pushErr) {
+          console.warn('[handlePanicTriggered] Error sending push broadcast:', pushErr);
+          // Don't fail the main flow if push fails
+        }
       }
     } catch (err) {
       console.error('Failed to save alert:', err);
