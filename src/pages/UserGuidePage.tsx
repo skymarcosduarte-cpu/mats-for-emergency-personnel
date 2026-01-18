@@ -526,11 +526,20 @@ export default function UserGuidePage() {
           </h2>
           <div className="prose prose-slate max-w-none">
             <p className="text-gray-700 leading-relaxed mb-4">
-              RecurSOS es una biblioteca de recursos de emergencia, médicos y educativos 
-              organizados por categorías para fácil acceso.
+              RecurSOS es una colección de <strong className="text-gray-900">tarjetas informativas con protocolos y acciones rápidas</strong> para 
+              usar en caso de emergencia. Cada tarjeta contiene pasos claros y concisos para actuar correctamente 
+              ante diferentes situaciones de crisis.
             </p>
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 print:bg-amber-50">
+              <p className="text-amber-800 text-sm flex items-start gap-2">
+                <span className="text-amber-600 font-bold">⚠️</span>
+                <span><strong>Importante:</strong> RecurSOS NO sustituye la capacitación formal ni la certificación profesional. 
+                Es una herramienta de referencia rápida para situaciones de emergencia.</span>
+              </p>
+            </div>
 
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Categorías</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Categorías Disponibles</h3>
             <div className="grid gap-3 md:grid-cols-2 print:grid-cols-2">
               <div className="flex items-center gap-2 text-gray-700">
                 <span>🌤️</span><span>Clima y Fenómenos Naturales</span>
@@ -556,19 +565,19 @@ export default function UserGuidePage() {
             <ul className="space-y-2 text-gray-700">
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
-                <span>Búsqueda por texto y voz</span>
+                <span><strong className="text-gray-900">Búsqueda por texto y voz:</strong> Útil cuando tienes las manos ocupadas en una emergencia</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
-                <span>Filtros por categoría, audiencia y nivel</span>
+                <span><strong className="text-gray-900">Filtros por categoría, audiencia y nivel:</strong> Encuentra rápidamente lo que necesitas</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
-                <span>Favoritos para acceso rápido</span>
+                <span><strong className="text-gray-900">Favoritos:</strong> Guarda las tarjetas más importantes para acceso instantáneo</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
-                <span>Historial de recursos vistos</span>
+                <span><strong className="text-gray-900">Historial de recursos vistos:</strong> Accede rápidamente a tarjetas consultadas recientemente</span>
               </li>
             </ul>
           </div>
