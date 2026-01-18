@@ -46,7 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'map', label: 'Mapa', icon: <Map className="w-5 h-5" /> },
   { id: 'alerts', label: 'Alertas', icon: <Bell className="w-5 h-5" /> },
   { id: 'transit', label: 'Tránsito', icon: <Car className="w-5 h-5" /> },
-  { id: 'resources', label: 'Recursos', icon: <BookOpen className="w-5 h-5" /> },
+  { id: 'resources', label: 'RecurSOS', icon: <BookOpen className="w-5 h-5" /> },
   { 
     id: 'market', 
     label: 'Market', 
