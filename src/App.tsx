@@ -69,6 +69,7 @@ import { useWebPushSubscription } from '@/hooks/useWebPushSubscription';
 import { useBackgroundConnection } from '@/hooks/useBackgroundConnection';
 import { useAutoWakeLock } from '@/hooks/useWakeLock';
 import { useBackgroundLocation } from '@/hooks/useBackgroundLocation';
+import { useAppLifecycle } from '@/hooks/useAppLifecycle';
 import { usePrefetch } from '@/hooks/usePrefetch';
 import { useIOSKeyboardFix } from '@/hooks/useIOSKeyboardFix';
 import { supabase } from '@/integrations/supabase/client';
@@ -193,8 +194,13 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   // iOS keyboard fix - prevents footer from moving when keyboard opens
   useIOSKeyboardFix();
   
+  // App lifecycle - handles pause/resume on native (Android/iOS)
+  // This ensures session and connections are restored when returning to the app
+  const { isActive: isAppActive, lastResumeAt } = useAppLifecycle();
+  
   // Prefetch critical data in parallel as soon as user is authenticated
-  usePrefetch(user?.id);
+  // Re-prefetch when app resumes from background
+  usePrefetch(user?.id, lastResumeAt);
   // Test mode for simulating panic alerts
   const { testAlert, simulatePanicAlert, clearTestAlert } = useTestMode();
   

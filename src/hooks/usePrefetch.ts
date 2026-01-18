@@ -13,16 +13,25 @@ import {
 /**
  * Hook to prefetch and cache critical app data in parallel
  * This runs once on mount and preloads data that multiple components need
+ * @param userId - Current user ID
+ * @param refreshTrigger - Optional date to trigger re-prefetch (e.g., when app resumes)
  */
-export function usePrefetch(userId: string | undefined) {
+export function usePrefetch(userId: string | undefined, refreshTrigger?: Date | null) {
   const prefetchedRef = useRef(false);
+  const lastRefreshRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!userId || prefetchedRef.current) return;
+    if (!userId) return;
+    
+    // Allow re-prefetch if refreshTrigger changed (app resumed from background)
+    const triggerKey = refreshTrigger?.toISOString() || 'initial';
+    if (prefetchedRef.current && lastRefreshRef.current === triggerKey) return;
+    
     prefetchedRef.current = true;
+    lastRefreshRef.current = triggerKey;
 
     const prefetchData = async () => {
-      console.log('[usePrefetch] Starting parallel prefetch...');
+      console.log('[usePrefetch] Starting parallel prefetch...', triggerKey !== 'initial' ? '(app resumed)' : '');
       const startTime = performance.now();
 
       try {
@@ -61,7 +70,7 @@ export function usePrefetch(userId: string | undefined) {
 
     // Start prefetch immediately
     prefetchData();
-  }, [userId]);
+  }, [userId, refreshTrigger]);
 }
 
 /**
