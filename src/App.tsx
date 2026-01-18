@@ -439,13 +439,16 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   });
   
   // USGS earthquake detection by distance - only for notifications (no report dialog)
-  const { dismissAlert: dismissUSGSAlert } = useEarthquakeDetection(
+  const { dismissAlert: dismissUSGSAlert, nearbyQuake } = useEarthquakeDetection(
     position,
     handleEarthquakeDetected
   );
 
   // SkyAlert monitoring for bottom navigation animation
   const { isActive: hasSkyAlertActive } = useSkyAlertAlerts();
+  
+  // Combine all seismic alert sources for bottom nav animation
+  const hasActiveSeismicAlert = hasSkyAlertActive || !!majorSSNQuake || !!nearbyQuake;
 
   // Handle check-in prompt actions
   const handleConfirmSafe = () => {
@@ -629,7 +632,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       )}
 
       <InstallPrompt />
-      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS'} disasterMode={disasterMode} messageCount={unreadMessageCount} hasActiveSeismicAlert={hasSkyAlertActive} />
+      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} isRescatista={userRole === 'SOS_ACTIVO' || userRole === 'EX_SOS'} disasterMode={disasterMode} messageCount={unreadMessageCount} hasActiveSeismicAlert={hasActiveSeismicAlert} />
       
       {/* Seismic Alert Dialog - ONLY for SSN earthquakes ≥6.0 */}
       {majorSSNQuake && position && (
