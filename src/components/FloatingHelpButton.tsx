@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, X, GraduationCap, MessageSquarePlus, Send, Loader2, WifiOff, RefreshCw, Download } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { HelpCircle, X, GraduationCap, MessageSquarePlus, Send, Loader2, WifiOff, RefreshCw, Download, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -58,6 +59,7 @@ const FEEDBACK_CATEGORIES = [
 ];
 
 export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ className }) => {
+  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showUpdateTutorial, setShowUpdateTutorial] = useState(false);
@@ -125,6 +127,11 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
   const handleCloseFeedback = () => {
     setShowFeedbackDialog(false);
     setFeedbackForm({ category: '', name: '', email: '', message: '' });
+  };
+
+  const handleOpenUserGuide = () => {
+    setIsExpanded(false);
+    navigate('/guia');
   };
 
   const submitFeedback = async () => {
@@ -294,6 +301,15 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
                 >
                   <Download className="w-4 h-4 text-accent" />
                   <span>Cómo Descargar la App</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start gap-2 text-left"
+                  onClick={handleOpenUserGuide}
+                >
+                  <BookOpen className="w-4 h-4 text-warning" />
+                  <span>Guía de Usuario</span>
                 </Button>
                 <Button
                   variant="ghost"
