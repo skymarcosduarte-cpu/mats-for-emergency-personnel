@@ -45,12 +45,13 @@ export function useActiveTrips() {
     try {
       // Only show loading on initial fetch, not background refreshes
       if (!isBackground) {
-        // Try to load from cache first for instant display
+        // Try to load from cache first for instant display, but validate it
         const cached = await getCachedCommunityTrips<ActiveTrip>();
         if (cached.isCached && cached.data.length > 0) {
+          // Only use cache temporarily - will be replaced by fresh data
           setTrips(cached.data);
           setLoading(false);
-          console.log('[useActiveTrips] Loaded from cache:', cached.data.length, 'trips');
+          console.log('[useActiveTrips] Loaded from cache:', cached.data.length, 'trips (will refresh)');
         }
       }
       setError(null);
@@ -82,8 +83,11 @@ export function useActiveTrips() {
 
       if (tripsError) throw tripsError;
 
+      // If no active trips, clear state and cache immediately
       if (!tripsData || tripsData.length === 0) {
         setTrips([]);
+        await cacheCommunityTrips([]); // Clear cache when no active trips
+        console.log('[useActiveTrips] No active trips, cleared cache');
         return;
       }
 
@@ -190,8 +194,10 @@ export function useActiveTrips() {
           schema: 'public',
           table: 'transit_trips',
         },
-        () => {
-          fetchActiveTrips(true); // Background refresh
+        (payload) => {
+          console.log('[useActiveTrips] Trip changed:', payload.eventType, payload.new);
+          // Immediately refetch to ensure we have latest state
+          fetchActiveTrips(true);
         }
       )
       .subscribe();
