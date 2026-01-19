@@ -53,7 +53,8 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
     setPrimaryContact,
     getWhatsAppUrl,
     canAddMore,
-    hasMinimumContacts
+    hasMinimumContacts,
+    refresh,
   } = useEmergencyContactsDB();
   const { profile } = useAuth();
   const { position } = useLocation();
@@ -261,6 +262,27 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Loading error */}
+          {error && (
+            <div className="flex items-start justify-between gap-3 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <div className="font-medium">No se pudieron cargar tus contactos</div>
+                  <div className="text-xs opacity-90">{error}</div>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0"
+                onClick={() => refresh()}
+              >
+                Reintentar
+              </Button>
+            </div>
+          )}
+
           {/* Warning if no minimum contacts */}
           {!hasMinimumContacts && (
             <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">

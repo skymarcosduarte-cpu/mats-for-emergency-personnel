@@ -27,31 +27,88 @@ export function useEmergencyContactsDB() {
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const AUTH_TIMEOUT_MS = 8000;
+  const FETCH_TIMEOUT_MS = 12000;
+
+  const withTimeout = <T,>(
+    promise: PromiseLike<T>,
+    ms: number,
+    label: string
+  ): Promise<T> => {
+    return new Promise<T>((resolve, reject) => {
+      const t = setTimeout(() => {
+        reject(new Error(`timeout:${label}`));
+      }, ms);
+
+      Promise.resolve(promise).then(
+        (value) => {
+          clearTimeout(t);
+          resolve(value);
+        },
+        (err) => {
+          clearTimeout(t);
+          reject(err);
+        }
+      );
+    });
+  };
+
   // Fetch contacts
   const fetchContacts = useCallback(async () => {
+    // Clear previous error on new attempt
+    setError(null);
+
+    // Fast fail when offline to avoid infinite spinner on flaky networks
+    if (typeof navigator !== 'undefined' && 'onLine' in navigator && !navigator.onLine) {
+      setContacts([]);
+      setError('Sin conexión. Revisa tu internet y vuelve a intentar.');
+      setInitialized(true);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: authData, error: authError } = await withTimeout(
+        supabase.auth.getUser(),
+        AUTH_TIMEOUT_MS,
+        'auth'
+      );
+
+      if (authError) throw authError;
+
+      const user = authData.user;
       if (!user) {
         setContacts([]);
-        setLoading(false);
         setInitialized(true);
         return;
       }
 
-      const { data, error: fetchError } = await supabase
-        .from('emergency_contacts')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('sort_order', { ascending: true });
+      const { data, error: fetchError } = await withTimeout(
+        supabase
+          .from('emergency_contacts')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('sort_order', { ascending: true }),
+        FETCH_TIMEOUT_MS,
+        'fetch_contacts'
+      );
 
       if (fetchError) throw fetchError;
-      
+
       setContacts((data || []) as EmergencyContactDB[]);
       setInitialized(true);
     } catch (err) {
       console.error('Error fetching contacts:', err);
-      setError('Error al cargar contactos');
+      const msg = err instanceof Error ? err.message : String(err);
+
+      if (msg.startsWith('timeout:')) {
+        setError('Tiempo de espera al cargar contactos. Revisa tu conexión y reintenta.');
+      } else {
+        setError('Error al cargar contactos');
+      }
+
       setInitialized(true);
     } finally {
       setLoading(false);
