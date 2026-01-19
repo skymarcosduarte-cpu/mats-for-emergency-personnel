@@ -31,7 +31,7 @@ export function ImOkButton({ position, className }: ImOkButtonProps) {
     return message;
   }, [position, getGoogleMapsLink]);
 
-  const handleSendToContact = useCallback((contact: EmergencyContactDB, includeLocation: boolean) => {
+  const handleSendToContact = useCallback((contact: { id: string; name: string; phone: string; whatsapp: string | null }, includeLocation: boolean) => {
     setSendingTo(contact.id);
     const message = buildMessage(includeLocation);
     const url = getWhatsAppUrl(contact, message);
