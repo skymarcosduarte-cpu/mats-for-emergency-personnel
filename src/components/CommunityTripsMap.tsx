@@ -22,42 +22,66 @@ function createTravelerMarker(trip: ActiveTrip): L.DivIcon {
   const initial = nickname.charAt(0).toUpperCase();
   const emoji = trip.transit_type === 'FLIGHT' ? '✈️' : '🚗';
   
-  // Check if location is stale (older than 5 minutes)
-  let isLocationStale = false;
+  // Check if location is stale
   let staleMinutes = 0;
   if (trip.location_updated_at) {
     const updatedDate = new Date(trip.location_updated_at);
     const now = new Date();
     const diffMs = now.getTime() - updatedDate.getTime();
     staleMinutes = Math.floor(diffMs / (1000 * 60));
-    isLocationStale = staleMinutes >= 5;
   }
+  
+  // Stale status levels
+  const isLocationStale = staleMinutes >= 5;
+  const isSignalLost = staleMinutes >= 10;
+  const isCriticallyStale = staleMinutes >= 30;
   
   // Only show speed if location is fresh
   const rawSpeedKmh = trip.current_speed ? Math.round(trip.current_speed * 3.6) : 0;
   const speedKmh = isLocationStale ? 0 : rawSpeedKmh;
   const isMoving = !isLocationStale && speedKmh > 5;
   
-  // Color: green if moving, amber if stopped/stale, orange if very stale
+  // Color based on status
   let bgColor = isMoving ? '#22c55e' : '#f59e0b';
-  if (isLocationStale && staleMinutes >= 30) {
-    bgColor = '#f97316'; // Orange for very stale
+  let borderColor = 'white';
+  let animation = '';
+  
+  if (isCriticallyStale) {
+    bgColor = '#ef4444'; // Red for critical
+    borderColor = '#fca5a5';
+    animation = 'animation: pulse-signal-lost 1s ease-in-out infinite;';
+  } else if (isSignalLost) {
+    bgColor = '#f97316'; // Orange for signal lost
+    borderColor = '#fdba74';
+    animation = 'animation: pulse-signal-warning 1.5s ease-in-out infinite;';
   }
   
-  // Speed badge content - show warning if stale
-  const speedBadgeContent = isLocationStale 
-    ? `⚠️ ${staleMinutes >= 60 ? `${Math.floor(staleMinutes / 60)}h` : `${staleMinutes}m`}` 
-    : `${speedKmh} km/h`;
+  // Badge content
+  const speedBadgeContent = isSignalLost 
+    ? `📡 ${staleMinutes >= 60 ? `${Math.floor(staleMinutes / 60)}h` : `${staleMinutes}m`}` 
+    : (isLocationStale ? `⏱ ${staleMinutes}m` : `${speedKmh} km/h`);
   
   return L.divIcon({
-    className: 'custom-traveler-marker',
+    className: `custom-traveler-marker ${isSignalLost ? 'signal-lost' : ''}`,
     html: `
       <div style="
         display: flex;
         flex-direction: column;
         align-items: center;
         transform: translate(-50%, -100%);
+        position: relative;
       ">
+        ${isSignalLost ? `
+          <div style="
+            position: absolute;
+            top: 24px;
+            width: 52px;
+            height: 52px;
+            background: ${isCriticallyStale ? 'rgba(239, 68, 68, 0.3)' : 'rgba(249, 115, 22, 0.3)'};
+            border-radius: 50%;
+            animation: pulse-signal-lost-outer 1.2s ease-out infinite;
+          "></div>
+        ` : ''}
         <div style="
           background: ${bgColor};
           color: white;
@@ -66,8 +90,10 @@ function createTravelerMarker(trip: ActiveTrip): L.DivIcon {
           font-size: 10px;
           font-weight: bold;
           white-space: nowrap;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          box-shadow: ${isSignalLost ? `0 0 12px ${bgColor}` : '0 2px 8px rgba(0,0,0,0.3)'};
           margin-bottom: 4px;
+          border: ${isSignalLost ? `2px solid ${borderColor}` : 'none'};
+          ${isSignalLost ? 'animation: pulse-badge 1s ease-in-out infinite;' : ''}
         ">
           ${speedBadgeContent}
         </div>
@@ -75,14 +101,15 @@ function createTravelerMarker(trip: ActiveTrip): L.DivIcon {
           width: 36px;
           height: 36px;
           background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
-          border: 3px solid white;
+          border: 3px solid ${borderColor};
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 16px;
-          box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-          ${isLocationStale ? 'opacity: 0.7;' : ''}
+          box-shadow: ${isSignalLost ? `0 0 15px ${bgColor}` : '0 3px 10px rgba(0,0,0,0.3)'};
+          ${isLocationStale && !isSignalLost ? 'opacity: 0.7;' : ''}
+          ${animation}
         ">
           ${emoji}
         </div>
@@ -102,12 +129,27 @@ function createTravelerMarker(trip: ActiveTrip): L.DivIcon {
         ">
           ${nickname}
         </div>
+        ${isSignalLost ? `
+          <div style="
+            position: absolute;
+            bottom: -16px;
+            background: ${isCriticallyStale ? '#ef4444' : '#f97316'};
+            color: white;
+            font-size: 8px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          ">
+            ${isCriticallyStale ? '⚠️ Sin señal' : '📡 Señal débil'}
+          </div>
+        ` : ''}
       </div>
     `,
-    iconSize: [80, 80],
-    iconAnchor: [40, 80],
+    iconSize: [80, isSignalLost ? 120 : 80],
+    iconAnchor: [40, isSignalLost ? 100 : 80],
   });
-}
 
 // Create destination marker
 function createDestinationMarker(): L.DivIcon {
