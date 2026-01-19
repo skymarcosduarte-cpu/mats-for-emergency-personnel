@@ -3,17 +3,20 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Car, Plane, Navigation, Clock, Gauge, MapPin, Users, RefreshCw } from 'lucide-react';
+import { Car, Plane, Navigation, Clock, Gauge, MapPin, Users, RefreshCw, Crosshair } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { type ActiveTrip } from '@/hooks/useActiveTrips';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import type { GeoPosition } from '@/types';
 
 interface CommunityTripsMapProps {
   trips: ActiveTrip[];
   loading?: boolean;
   onRefresh?: () => void;
+  /** Current user's location to show on the map */
+  userLocation?: GeoPosition | null;
 }
 
 // Create custom marker for each traveler
@@ -171,15 +174,64 @@ function createDestinationMarker(): L.DivIcon {
   });
 }
 
+// Create current user location marker
+function createCurrentLocationMarker(): L.DivIcon {
+  return L.divIcon({
+    className: 'custom-current-location-marker',
+    html: `
+      <div style="
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transform: translate(-50%, -50%);
+      ">
+        <div style="
+          width: 20px;
+          height: 20px;
+          background: #3b82f6;
+          border: 3px solid white;
+          border-radius: 50%;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3), 0 2px 8px rgba(0,0,0,0.3);
+          animation: pulse-location 2s ease-in-out infinite;
+        "></div>
+        <div style="
+          background: #3b82f6;
+          color: white;
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: bold;
+          margin-top: 4px;
+          white-space: nowrap;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        ">
+          📍 Yo
+        </div>
+      </div>
+      <style>
+        @keyframes pulse-location {
+          0%, 100% { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3), 0 2px 8px rgba(0,0,0,0.3); }
+          50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.2), 0 2px 8px rgba(0,0,0,0.3); }
+        }
+      </style>
+    `,
+    iconSize: [60, 50],
+    iconAnchor: [30, 25],
+  });
+}
+
 export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
   trips,
   loading = false,
   onRefresh,
+  userLocation,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const linesRef = useRef<Map<string, L.Polyline>>(new Map());
+  const userLocationMarkerRef = useRef<L.Marker | null>(null);
+  const userAccuracyCircleRef = useRef<L.Circle | null>(null);
 
   // Filter trips that have current location
   const tripsWithLocation = useMemo(() => {
@@ -330,18 +382,84 @@ export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
     });
 
     // Fit bounds to show all markers if there are trips
-    if (tripsWithLocation.length > 0) {
-      const bounds = L.latLngBounds(
-        tripsWithLocation
-          .filter(t => t.current_lat && t.current_lng)
-          .map(t => [t.current_lat!, t.current_lng!] as L.LatLngTuple)
-      );
+    // Include user location in bounds if available
+    const allPoints: L.LatLngTuple[] = tripsWithLocation
+      .filter(t => t.current_lat && t.current_lng)
+      .map(t => [t.current_lat!, t.current_lng!] as L.LatLngTuple);
+    
+    if (userLocation) {
+      allPoints.push([userLocation.lat, userLocation.lng]);
+    }
+    
+    if (allPoints.length > 0) {
+      const bounds = L.latLngBounds(allPoints);
       
       if (bounds.isValid()) {
         mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
       }
     }
-  }, [tripsWithLocation]);
+  }, [tripsWithLocation, userLocation]);
+
+  // Update user location marker
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    if (userLocation) {
+      const position: L.LatLngExpression = [userLocation.lat, userLocation.lng];
+      
+      // Update or create marker
+      if (userLocationMarkerRef.current) {
+        userLocationMarkerRef.current.setLatLng(position);
+      } else {
+        userLocationMarkerRef.current = L.marker(position, {
+          icon: createCurrentLocationMarker(),
+          zIndexOffset: 1000, // Keep user marker on top
+        })
+          .bindPopup(`
+            <div style="text-align: center; font-family: system-ui, sans-serif;">
+              <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">
+                📍 Tu ubicación actual
+              </div>
+              <div style="font-size: 11px; color: #666;">
+                Precisión: ${userLocation.accuracy ? `±${Math.round(userLocation.accuracy)}m` : 'Desconocida'}
+              </div>
+            </div>
+          `)
+          .addTo(mapRef.current);
+      }
+      
+      // Update or create accuracy circle
+      if (userLocation.accuracy && userLocation.accuracy < 500) {
+        if (userAccuracyCircleRef.current) {
+          userAccuracyCircleRef.current.setLatLng(position);
+          userAccuracyCircleRef.current.setRadius(userLocation.accuracy);
+        } else {
+          userAccuracyCircleRef.current = L.circle(position, {
+            radius: userLocation.accuracy,
+            color: '#3b82f6',
+            fillColor: '#3b82f6',
+            fillOpacity: 0.1,
+            weight: 1,
+          }).addTo(mapRef.current);
+        }
+      }
+      
+      // If no trips visible but we have user location, center on user
+      if (tripsWithLocation.length === 0) {
+        mapRef.current.setView(position, 14);
+      }
+    } else {
+      // Remove user location marker if no location
+      if (userLocationMarkerRef.current) {
+        userLocationMarkerRef.current.remove();
+        userLocationMarkerRef.current = null;
+      }
+      if (userAccuracyCircleRef.current) {
+        userAccuracyCircleRef.current.remove();
+        userAccuracyCircleRef.current = null;
+      }
+    }
+  }, [userLocation, tripsWithLocation.length]);
 
   return (
     <div className="flex flex-col h-full">
