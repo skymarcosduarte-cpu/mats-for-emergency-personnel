@@ -273,16 +273,26 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     return myTrips.some(trip => trip.status === 'ACTIVE');
   }, [myTrips]);
 
-  // Auto-enable GPS tracking when there are active trips
+  // Auto-enable GPS tracking when there are active trips OR when viewing the map tab
+  const shouldTrackLocation = hasActiveTrips || activeTab === 'map';
+  
   useEffect(() => {
-    if (hasActiveTrips && !watching) {
-      console.log('[TransitScreen] Active trips detected, starting GPS tracking');
+    if (shouldTrackLocation && !watching) {
+      console.log('[TransitScreen] Starting GPS tracking (active trips or map view)');
       startWatching();
-    } else if (!hasActiveTrips && watching) {
-      console.log('[TransitScreen] No active trips, stopping GPS tracking');
+    } else if (!shouldTrackLocation && watching) {
+      console.log('[TransitScreen] Stopping GPS tracking');
       stopWatching();
     }
-  }, [hasActiveTrips, watching, startWatching, stopWatching]);
+  }, [shouldTrackLocation, watching, startWatching, stopWatching]);
+  
+  // Get current position immediately when opening map tab
+  useEffect(() => {
+    if (activeTab === 'map' && !position) {
+      console.log('[TransitScreen] Map tab opened, fetching current position');
+      getCurrentPosition();
+    }
+  }, [activeTab, position, getCurrentPosition]);
 
   // Get current user ID
   useEffect(() => {
@@ -1535,6 +1545,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               <CommunityTripsMap 
                 trips={communityTrips}
                 loading={communityTripsLoading}
+                userLocation={position}
                 onRefresh={() => {
                   // Trigger a refresh of community trips
                   // The hook already handles this via realtime subscriptions
