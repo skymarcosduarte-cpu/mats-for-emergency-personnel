@@ -48,10 +48,13 @@ export function useActiveTrips() {
         // Try to load from cache first for instant display, but validate it
         const cached = await getCachedCommunityTrips<ActiveTrip>();
         if (cached.isCached && cached.data.length > 0) {
-          // Only use cache temporarily - will be replaced by fresh data
-          setTrips(cached.data);
-          setLoading(false);
-          console.log('[useActiveTrips] Loaded from cache:', cached.data.length, 'trips (will refresh)');
+          // Validate cache has required data (nickname should not be null for cached trips)
+          const validCachedTrips = cached.data.filter(t => t.nickname !== null);
+          if (validCachedTrips.length > 0) {
+            setTrips(cached.data);
+            setLoading(false);
+            console.log('[useActiveTrips] Loaded from cache:', cached.data.length, 'trips (will refresh)');
+          }
         }
       }
       setError(null);
