@@ -9,10 +9,6 @@ const corsHeaders = {
 // Delay threshold in minutes before sending push
 const OVERDUE_THRESHOLD_MINUTES = 30;
 
-// Web Push configuration
-const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY');
-const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY');
-
 interface OverdueTrip {
   id: string;
   user_id: string;
@@ -20,33 +16,15 @@ interface OverdueTrip {
   destination: string;
   eta: string;
   minutes_overdue: number;
+  traveler_nickname?: string;
+  traveler_phone?: string;
 }
 
-// Simple web push sender without external library
-async function sendWebPush(
-  subscription: { endpoint: string; p256dh: string; auth: string },
-  payload: object
-): Promise<boolean> {
-  try {
-    // For actual web push, we'd use the web-push library
-    // Since Deno has limitations, we use the Supabase broadcast as fallback
-    console.log(`[push-overdue-trips] Push to ${subscription.endpoint.slice(0, 50)}...`);
-    
-    // Make HTTP request to push endpoint (simplified - in production use proper VAPID signing)
-    const response = await fetch(subscription.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'TTL': '86400',
-      },
-      body: JSON.stringify(payload),
-    }).catch(() => null);
-
-    return response?.ok ?? false;
-  } catch (error) {
-    console.error('[push-overdue-trips] Web push error:', error);
-    return false;
-  }
+interface EmergencyContact {
+  user_id: string;
+  name: string;
+  phone: string;
+  whatsapp?: string;
 }
 
 serve(async (req) => {
@@ -78,48 +56,56 @@ serve(async (req) => {
     if (!overdueTrips || overdueTrips.length === 0) {
       console.log('[push-overdue-trips] No overdue trips found');
       return new Response(
-        JSON.stringify({ success: true, overdueCount: 0, pushSent: 0 }),
+        JSON.stringify({ success: true, overdueCount: 0, pushSent: 0, contactsNotified: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const now = Date.now();
-    const tripsWithDelay: OverdueTrip[] = overdueTrips.map(trip => ({
-      ...trip,
-      minutes_overdue: Math.floor((now - new Date(trip.eta).getTime()) / 60000)
-    }));
+    const userIds = [...new Set(overdueTrips.map(t => t.user_id))];
+
+    // Fetch traveler profiles for nicknames
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, nickname, phone')
+      .in('id', userIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.id, { nickname: p.nickname, phone: p.phone }]) || []);
+
+    const tripsWithDelay: OverdueTrip[] = overdueTrips.map(trip => {
+      const profile = profileMap.get(trip.user_id);
+      return {
+        ...trip,
+        minutes_overdue: Math.floor((now - new Date(trip.eta).getTime()) / 60000),
+        traveler_nickname: profile?.nickname || 'Viajero',
+        traveler_phone: profile?.phone,
+      };
+    });
 
     console.log(`[push-overdue-trips] Found ${tripsWithDelay.length} overdue trips`);
 
-    // Check which users have been notified recently (last 4 hours) to avoid spam
+    // Check which trips have been notified recently (last 4 hours) to avoid spam
     const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
     
-    const { data: recentPushNotifications } = await supabase
+    const { data: recentNotifications } = await supabase
       .from('notifications')
-      .select('user_id')
-      .eq('type', 'overdue_push_reminder')
+      .select('user_id, type')
+      .in('type', ['overdue_push_reminder', 'overdue_contact_alert'])
       .gte('created_at', fourHoursAgo);
 
-    const recentlyPushedUsers = new Set(recentPushNotifications?.map(n => n.user_id) || []);
+    const recentlyNotifiedTravelers = new Set(
+      recentNotifications?.filter(n => n.type === 'overdue_push_reminder').map(n => n.user_id) || []
+    );
+    const recentlyNotifiedContacts = new Set(
+      recentNotifications?.filter(n => n.type === 'overdue_contact_alert').map(n => n.user_id) || []
+    );
 
-    // Filter out trips for users already notified
-    const tripsToNotify = tripsWithDelay.filter(trip => !recentlyPushedUsers.has(trip.user_id));
-
-    if (tripsToNotify.length === 0) {
-      console.log('[push-overdue-trips] All overdue trip owners already notified recently');
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          overdueCount: overdueTrips.length, 
-          pushSent: 0,
-          skippedRecent: overdueTrips.length 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Filter trips for traveler notifications
+    const tripsToNotifyTraveler = tripsWithDelay.filter(trip => !recentlyNotifiedTravelers.has(trip.user_id));
+    // Filter trips for contact notifications (we still notify contacts even if traveler was notified)
+    const tripsToNotifyContacts = tripsWithDelay.filter(trip => !recentlyNotifiedContacts.has(trip.user_id));
 
     // Get push subscriptions for trip owners
-    const userIds = tripsToNotify.map(t => t.user_id);
     const { data: pushSubscriptions } = await supabase
       .from('push_subscriptions')
       .select('user_id, endpoint, p256dh, auth')
@@ -134,7 +120,48 @@ serve(async (req) => {
       });
     });
 
-    let pushSent = 0;
+    // Get emergency contacts for all overdue travelers
+    const { data: emergencyContacts } = await supabase
+      .from('emergency_contacts')
+      .select('user_id, name, phone, whatsapp')
+      .in('user_id', userIds)
+      .eq('is_primary', true);
+
+    const contactsByUser = new Map<string, EmergencyContact[]>();
+    emergencyContacts?.forEach(contact => {
+      const existing = contactsByUser.get(contact.user_id) || [];
+      existing.push(contact);
+      contactsByUser.set(contact.user_id, existing);
+    });
+
+    // Also get push subscriptions for emergency contacts (if they have accounts)
+    // We'll use the phone number to try to match them to user accounts
+    const contactPhones = emergencyContacts?.map(c => c.phone) || [];
+    const { data: contactProfiles } = await supabase
+      .from('profiles')
+      .select('id, phone')
+      .in('phone', contactPhones);
+
+    const phoneToUserId = new Map(contactProfiles?.map(p => [p.phone, p.id]) || []);
+
+    // Get push subscriptions for contacts who are also app users
+    const contactUserIds = [...new Set(contactProfiles?.map(p => p.id) || [])];
+    const { data: contactPushSubscriptions } = await supabase
+      .from('push_subscriptions')
+      .select('user_id, endpoint, p256dh, auth')
+      .in('user_id', contactUserIds);
+
+    const contactSubscriptionMap = new Map<string, { endpoint: string; p256dh: string; auth: string }>();
+    contactPushSubscriptions?.forEach(sub => {
+      contactSubscriptionMap.set(sub.user_id, {
+        endpoint: sub.endpoint,
+        p256dh: sub.p256dh,
+        auth: sub.auth,
+      });
+    });
+
+    let pushSentTravelers = 0;
+    let pushSentContacts = 0;
     const notificationsToInsert: Array<{
       user_id: string;
       type: string;
@@ -143,14 +170,13 @@ serve(async (req) => {
       read: boolean;
     }> = [];
 
-    // Send push to each trip owner
-    for (const trip of tripsToNotify) {
+    // Send push to each traveler
+    for (const trip of tripsToNotifyTraveler) {
       const subscription = subscriptionMap.get(trip.user_id);
       
       const title = '📍 ¿Ya llegaste?';
       const message = `Tu viaje a ${trip.destination} está retrasado ${trip.minutes_overdue} min. Abre MATS para confirmar tu llegada.`;
 
-      // Record the notification attempt
       notificationsToInsert.push({
         user_id: trip.user_id,
         type: 'overdue_push_reminder',
@@ -161,7 +187,6 @@ serve(async (req) => {
 
       if (subscription) {
         try {
-          // Use Supabase realtime broadcast as reliable fallback
           await supabase.channel('push-notifications').send({
             type: 'broadcast',
             event: 'push_notification',
@@ -177,14 +202,73 @@ serve(async (req) => {
               },
             },
           });
-
-          pushSent++;
-          console.log(`[push-overdue-trips] Sent push reminder to user ${trip.user_id} for trip ${trip.id}`);
+          pushSentTravelers++;
+          console.log(`[push-overdue-trips] Sent push reminder to traveler ${trip.user_id}`);
         } catch (pushError) {
-          console.error(`[push-overdue-trips] Error sending push to ${trip.user_id}:`, pushError);
+          console.error(`[push-overdue-trips] Error sending push to traveler:`, pushError);
         }
-      } else {
-        console.log(`[push-overdue-trips] No push subscription for user ${trip.user_id}`);
+      }
+    }
+
+    // Send push notifications to emergency contacts
+    for (const trip of tripsToNotifyContacts) {
+      const contacts = contactsByUser.get(trip.user_id) || [];
+      
+      for (const contact of contacts) {
+        const contactUserId = phoneToUserId.get(contact.phone);
+        const contactSubscription = contactUserId ? contactSubscriptionMap.get(contactUserId) : null;
+        
+        const title = '⚠️ Viajero Atrasado';
+        const message = `${trip.traveler_nickname} no ha confirmado llegada a ${trip.destination}. Atrasado ${trip.minutes_overdue} min.`;
+
+        // Only create notification if contact is an app user
+        if (contactUserId) {
+          notificationsToInsert.push({
+            user_id: contactUserId,
+            type: 'overdue_contact_alert',
+            title,
+            message,
+            read: false,
+          });
+
+          if (contactSubscription) {
+            try {
+              await supabase.channel('push-notifications').send({
+                type: 'broadcast',
+                event: 'push_notification',
+                payload: {
+                  user_id: contactUserId,
+                  title,
+                  body: message,
+                  alertType: 'TRIP_OVERDUE_CONTACT',
+                  data: {
+                    tripId: trip.id,
+                    travelerId: trip.user_id,
+                    travelerName: trip.traveler_nickname,
+                    travelerPhone: trip.traveler_phone,
+                    destination: trip.destination,
+                    minutesOverdue: trip.minutes_overdue,
+                  },
+                },
+              });
+              pushSentContacts++;
+              console.log(`[push-overdue-trips] Sent alert to emergency contact ${contact.name} for traveler ${trip.traveler_nickname}`);
+            } catch (pushError) {
+              console.error(`[push-overdue-trips] Error sending push to contact:`, pushError);
+            }
+          }
+        }
+      }
+
+      // Mark that contacts were notified for this traveler
+      if (contacts.length > 0) {
+        notificationsToInsert.push({
+          user_id: trip.user_id,
+          type: 'overdue_contact_alert',
+          title: 'Contactos notificados',
+          message: `Tus contactos de emergencia fueron notificados de tu retraso a ${trip.destination}`,
+          read: false,
+        });
       }
     }
 
@@ -199,15 +283,18 @@ serve(async (req) => {
       }
     }
 
-    console.log(`[push-overdue-trips] Completed. Overdue: ${overdueTrips.length}, Push sent: ${pushSent}`);
+    console.log(`[push-overdue-trips] Completed. Overdue: ${overdueTrips.length}, Traveler push: ${pushSentTravelers}, Contact push: ${pushSentContacts}`);
 
     return new Response(
       JSON.stringify({ 
         success: true,
         overdueCount: overdueTrips.length,
-        pushSent,
-        tripsNotified: tripsToNotify.map(t => ({
+        pushSentTravelers,
+        pushSentContacts,
+        notificationsCreated: notificationsToInsert.length,
+        tripsNotified: tripsWithDelay.map(t => ({
           id: t.id,
+          traveler: t.traveler_nickname,
           destination: t.destination,
           minutesOverdue: t.minutes_overdue,
         })),
