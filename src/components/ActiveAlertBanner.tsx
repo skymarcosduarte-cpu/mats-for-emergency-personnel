@@ -3,7 +3,8 @@
 // Also supports test mode for simulating alerts without database
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, AlertTriangle, Loader2, FlaskConical, Navigation, Users, MessageCircle } from 'lucide-react';
+import { X, AlertTriangle, Loader2, FlaskConical, Navigation, Users, MessageCircle, Share2 } from 'lucide-react';
+import { ShareToWhatsAppGroupButton } from './ShareToWhatsAppGroupButton';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,6 +17,9 @@ interface ActiveAlert {
   type: 'panic' | 'help';
   alert_type: string; // panic_type or kind
   created_at: string;
+  lat?: number;
+  lng?: number;
+  message?: string | null;
 }
 
 const PANIC_TYPE_LABELS: Record<string, { label: string; emoji: string }> = {
@@ -64,7 +68,7 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
       // Check panic_events first
       const { data: panicData, error: panicError } = await supabase
         .from('panic_events')
-        .select('id, panic_type, created_at')
+        .select('id, panic_type, created_at, lat, lng, message')
         .eq('user_id', user.id)
         .eq('resolved', false)
         .order('created_at', { ascending: false })
@@ -81,6 +85,9 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
           type: 'panic',
           alert_type: panicData.panic_type,
           created_at: panicData.created_at,
+          lat: panicData.lat,
+          lng: panicData.lng,
+          message: panicData.message,
         });
         return;
       }
@@ -88,7 +95,7 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
       // Check help_requests if no panic event found
       const { data: helpData, error: helpError } = await supabase
         .from('help_requests')
-        .select('id, kind, created_at')
+        .select('id, kind, created_at, lat, lng, message')
         .eq('user_id', user.id)
         .eq('resolved', false)
         .order('created_at', { ascending: false })
@@ -105,6 +112,9 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
           type: 'help',
           alert_type: helpData.kind,
           created_at: helpData.created_at,
+          lat: helpData.lat,
+          lng: helpData.lng,
+          message: helpData.message,
         });
       } else {
         setActiveAlert(null);
@@ -379,6 +389,17 @@ export const ActiveAlertBanner: React.FC<ActiveAlertBannerProps> = ({
 
       {/* Buttons */}
       <div className="flex gap-2 flex-shrink-0">
+        {/* WhatsApp share button - always show when there's location */}
+        {activeAlert?.lat && activeAlert?.lng && !isTestAlert && (
+          <ShareToWhatsAppGroupButton
+            alertType={activeAlert.alert_type}
+            lat={activeAlert.lat}
+            lng={activeAlert.lng}
+            message={activeAlert.message || undefined}
+            size="sm"
+            className="px-2"
+          />
+        )}
         {/* Chat button - only show if there are responders */}
         {responderCount > 0 && onMessageResponder && responders.length > 0 && !isTestAlert && (
           <Button

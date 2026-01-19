@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { AlertTriangle, X, MapPin, Phone, Navigation, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { ShareToWhatsAppGroupButton } from './ShareToWhatsAppGroupButton';
 
 interface EmergencyAlert {
   id: string;
@@ -212,6 +213,17 @@ export const EmergencyAlertOverlay: React.FC<EmergencyAlertOverlayProps> = ({
               <span>Enviar mensaje</span>
             </Button>
           )}
+          
+          {/* Share to WhatsApp button */}
+          <ShareToWhatsAppGroupButton
+            alertType={alert.panicType || alert.kind || 'otro'}
+            lat={alert.lat}
+            lng={alert.lng}
+            message={alert.message || undefined}
+            userName={alert.creatorName || undefined}
+            className="w-full h-12"
+            size="default"
+          />
           
           <Button
             variant="ghost"
