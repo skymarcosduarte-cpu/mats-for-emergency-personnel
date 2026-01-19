@@ -119,6 +119,8 @@ export function useEmergencyContactsDB() {
     fetchContacts();
   }, [fetchContacts]);
 
+  const MUTATION_TIMEOUT_MS = 15000;
+
   // Add contact
   const addContact = useCallback(async (contact: {
     name: string;
@@ -132,52 +134,76 @@ export function useEmergencyContactsDB() {
       throw new Error(`Máximo ${MAX_EMERGENCY_CONTACTS} contactos permitidos`);
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError) {
-      console.error('Auth error when adding contact:', authError);
-      throw new Error('Error de autenticación. Por favor, cierra sesión y vuelve a iniciar.');
-    }
-    if (!user) {
-      throw new Error('Debes iniciar sesión para agregar contactos de emergencia');
+    // Fast fail when offline
+    if (typeof navigator !== 'undefined' && 'onLine' in navigator && !navigator.onLine) {
+      throw new Error('Sin conexión. Revisa tu internet y vuelve a intentar.');
     }
 
-    // Validate required fields
-    const cleanName = contact.name?.trim();
-    const cleanPhone = contact.phone?.trim();
-    
-    if (!cleanName || cleanName.length < 2) {
-      throw new Error('El nombre debe tener al menos 2 caracteres');
-    }
-    if (!cleanPhone || cleanPhone.length < 8) {
-      throw new Error('El teléfono debe tener al menos 8 dígitos');
-    }
+    try {
+      const { data: authData, error: authError } = await withTimeout(
+        supabase.auth.getUser(),
+        AUTH_TIMEOUT_MS,
+        'auth_add'
+      );
 
-    const { data, error: insertError } = await supabase
-      .from('emergency_contacts')
-      .insert({
-        user_id: user.id,
-        name: cleanName,
-        phone: cleanPhone,
-        email: contact.email?.trim() || null,
-        whatsapp: contact.whatsapp?.trim() || cleanPhone, // Default to phone if not provided
-        relationship: contact.relationship?.trim() || null,
-        is_primary: contact.is_primary || contacts.length === 0, // First contact is primary
-        sort_order: contacts.length,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error('Insert error:', insertError);
-      if (insertError.code === '42501') {
-        throw new Error('No tienes permisos para agregar contactos. Intenta cerrar sesión y volver a iniciar.');
+      if (authError) {
+        console.error('Auth error when adding contact:', authError);
+        throw new Error('Error de autenticación. Por favor, cierra sesión y vuelve a iniciar.');
       }
-      throw new Error(insertError.message || 'Error al guardar el contacto');
+
+      const user = authData.user;
+      if (!user) {
+        throw new Error('Debes iniciar sesión para agregar contactos de emergencia');
+      }
+
+      // Validate required fields
+      const cleanName = contact.name?.trim();
+      const cleanPhone = contact.phone?.trim();
+      
+      if (!cleanName || cleanName.length < 2) {
+        throw new Error('El nombre debe tener al menos 2 caracteres');
+      }
+      if (!cleanPhone || cleanPhone.length < 8) {
+        throw new Error('El teléfono debe tener al menos 8 dígitos');
+      }
+
+      const { data, error: insertError } = await withTimeout(
+        supabase
+          .from('emergency_contacts')
+          .insert({
+            user_id: user.id,
+            name: cleanName,
+            phone: cleanPhone,
+            email: contact.email?.trim() || null,
+            whatsapp: contact.whatsapp?.trim() || cleanPhone, // Default to phone if not provided
+            relationship: contact.relationship?.trim() || null,
+            is_primary: contact.is_primary || contacts.length === 0, // First contact is primary
+            sort_order: contacts.length,
+          })
+          .select()
+          .single(),
+        MUTATION_TIMEOUT_MS,
+        'insert_contact'
+      );
+
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        if (insertError.code === '42501') {
+          throw new Error('No tienes permisos para agregar contactos. Intenta cerrar sesión y volver a iniciar.');
+        }
+        throw new Error(insertError.message || 'Error al guardar el contacto');
+      }
+      
+      await fetchContacts();
+      return data;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.startsWith('timeout:')) {
+        throw new Error('Tiempo de espera agotado. Revisa tu conexión e intenta de nuevo.');
+      }
+      throw err;
     }
-    
-    await fetchContacts();
-    return data;
-  }, [contacts, fetchContacts]);
+  }, [contacts, fetchContacts, withTimeout]);
 
   // Update contact
   const updateContact = useCallback(async (id: string, updates: Partial<{
@@ -189,50 +215,110 @@ export function useEmergencyContactsDB() {
     is_primary: boolean;
     sort_order: number;
   }>) => {
-    const { error: updateError } = await supabase
-      .from('emergency_contacts')
-      .update(updates)
-      .eq('id', id);
+    if (typeof navigator !== 'undefined' && 'onLine' in navigator && !navigator.onLine) {
+      throw new Error('Sin conexión. Revisa tu internet y vuelve a intentar.');
+    }
 
-    if (updateError) throw updateError;
-    
-    await fetchContacts();
-  }, [fetchContacts]);
+    try {
+      const { error: updateError } = await withTimeout(
+        supabase
+          .from('emergency_contacts')
+          .update(updates)
+          .eq('id', id),
+        MUTATION_TIMEOUT_MS,
+        'update_contact'
+      );
+
+      if (updateError) throw updateError;
+      
+      await fetchContacts();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.startsWith('timeout:')) {
+        throw new Error('Tiempo de espera agotado. Revisa tu conexión e intenta de nuevo.');
+      }
+      throw err;
+    }
+  }, [fetchContacts, withTimeout]);
 
   // Delete contact
   const deleteContact = useCallback(async (id: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    if (typeof navigator !== 'undefined' && 'onLine' in navigator && !navigator.onLine) {
+      throw new Error('Sin conexión. Revisa tu internet y vuelve a intentar.');
+    }
 
-    const { error: deleteError } = await supabase
-      .from('emergency_contacts')
-      .delete()
-      .eq('id', id);
+    try {
+      const { data: authData } = await withTimeout(
+        supabase.auth.getUser(),
+        AUTH_TIMEOUT_MS,
+        'auth_delete'
+      );
+      if (!authData.user) throw new Error('Not authenticated');
 
-    if (deleteError) throw deleteError;
-    
-    await fetchContacts();
-  }, [fetchContacts]);
+      const { error: deleteError } = await withTimeout(
+        supabase
+          .from('emergency_contacts')
+          .delete()
+          .eq('id', id),
+        MUTATION_TIMEOUT_MS,
+        'delete_contact'
+      );
+
+      if (deleteError) throw deleteError;
+      
+      await fetchContacts();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.startsWith('timeout:')) {
+        throw new Error('Tiempo de espera agotado. Revisa tu conexión e intenta de nuevo.');
+      }
+      throw err;
+    }
+  }, [fetchContacts, withTimeout]);
 
   // Set primary contact
   const setPrimaryContact = useCallback(async (id: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    if (typeof navigator !== 'undefined' && 'onLine' in navigator && !navigator.onLine) {
+      throw new Error('Sin conexión. Revisa tu internet y vuelve a intentar.');
+    }
 
-    // First, unset all as primary
-    await supabase
-      .from('emergency_contacts')
-      .update({ is_primary: false })
-      .eq('user_id', user.id);
+    try {
+      const { data: authData } = await withTimeout(
+        supabase.auth.getUser(),
+        AUTH_TIMEOUT_MS,
+        'auth_primary'
+      );
+      if (!authData.user) throw new Error('Not authenticated');
 
-    // Then set the selected one as primary
-    await supabase
-      .from('emergency_contacts')
-      .update({ is_primary: true })
-      .eq('id', id);
+      // First, unset all as primary
+      await withTimeout(
+        supabase
+          .from('emergency_contacts')
+          .update({ is_primary: false })
+          .eq('user_id', authData.user.id),
+        MUTATION_TIMEOUT_MS,
+        'unset_primary'
+      );
 
-    await fetchContacts();
-  }, [fetchContacts]);
+      // Then set the selected one as primary
+      await withTimeout(
+        supabase
+          .from('emergency_contacts')
+          .update({ is_primary: true })
+          .eq('id', id),
+        MUTATION_TIMEOUT_MS,
+        'set_primary'
+      );
+
+      await fetchContacts();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.startsWith('timeout:')) {
+        throw new Error('Tiempo de espera agotado. Revisa tu conexión e intenta de nuevo.');
+      }
+      throw err;
+    }
+  }, [fetchContacts, withTimeout]);
 
   // Format phone for WhatsApp
   const formatPhoneForWhatsApp = (phone: string): string => {
