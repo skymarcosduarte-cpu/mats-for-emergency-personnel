@@ -150,6 +150,7 @@ function createTravelerMarker(trip: ActiveTrip): L.DivIcon {
     iconSize: [80, isSignalLost ? 120 : 80],
     iconAnchor: [40, isSignalLost ? 100 : 80],
   });
+}
 
 // Create destination marker
 function createDestinationMarker(): L.DivIcon {
