@@ -75,25 +75,48 @@ export function useEmergencyContactsDB() {
       throw new Error(`Máximo ${MAX_EMERGENCY_CONTACTS} contactos permitidos`);
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError) {
+      console.error('Auth error when adding contact:', authError);
+      throw new Error('Error de autenticación. Por favor, cierra sesión y vuelve a iniciar.');
+    }
+    if (!user) {
+      throw new Error('Debes iniciar sesión para agregar contactos de emergencia');
+    }
+
+    // Validate required fields
+    const cleanName = contact.name?.trim();
+    const cleanPhone = contact.phone?.trim();
+    
+    if (!cleanName || cleanName.length < 2) {
+      throw new Error('El nombre debe tener al menos 2 caracteres');
+    }
+    if (!cleanPhone || cleanPhone.length < 8) {
+      throw new Error('El teléfono debe tener al menos 8 dígitos');
+    }
 
     const { data, error: insertError } = await supabase
       .from('emergency_contacts')
       .insert({
         user_id: user.id,
-        name: contact.name,
-        phone: contact.phone,
-        email: contact.email || null,
-        whatsapp: contact.whatsapp || contact.phone, // Default to phone if not provided
-        relationship: contact.relationship || null,
+        name: cleanName,
+        phone: cleanPhone,
+        email: contact.email?.trim() || null,
+        whatsapp: contact.whatsapp?.trim() || cleanPhone, // Default to phone if not provided
+        relationship: contact.relationship?.trim() || null,
         is_primary: contact.is_primary || contacts.length === 0, // First contact is primary
         sort_order: contacts.length,
       })
       .select()
       .single();
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      console.error('Insert error:', insertError);
+      if (insertError.code === '42501') {
+        throw new Error('No tienes permisos para agregar contactos. Intenta cerrar sesión y volver a iniciar.');
+      }
+      throw new Error(insertError.message || 'Error al guardar el contacto');
+    }
     
     await fetchContacts();
     return data;
