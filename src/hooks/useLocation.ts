@@ -226,8 +226,9 @@ export function useLocation(options: UseLocationOptions = {}) {
       startWatching();
     }
 
-    // Force a getCurrentPosition every 15 seconds as backup
+    // Force a getCurrentPosition every 5 seconds as backup
     // This helps when watchPosition stops working (common on iOS)
+    // and provides more real-time location updates
     const forceRefreshInterval = setInterval(() => {
       if (watchIdRef.current !== null && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -235,12 +236,12 @@ export function useLocation(options: UseLocationOptions = {}) {
           () => {}, // Silently ignore errors for backup refresh
           {
             enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 5000,
+            timeout: 8000,
+            maximumAge: 2000,
           }
         );
       }
-    }, 15000);
+    }, 5000);
 
     // Mark offline when page unloads
     const handleUnload = () => {
