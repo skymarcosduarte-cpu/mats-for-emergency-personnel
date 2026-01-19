@@ -388,16 +388,57 @@ const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bo
 });
 
 // Transit icon for users with active road trips (orange/amber color with car icon)
-// Now includes speed display when user is moving
-const createTransitIcon = (isCurrentUser: boolean = false, updatedAgo?: string, speedKmh?: number | null) => {
+// Now includes speed display when user is moving and stale signal warning
+const createTransitIcon = (
+  isCurrentUser: boolean = false, 
+  updatedAgo?: string, 
+  speedKmh?: number | null,
+  staleMinutes?: number
+) => {
   const hasSpeed = speedKmh && speedKmh > 3; // Only show if moving faster than 3 km/h
   const speedText = hasSpeed ? `${Math.round(speedKmh!)} km/h` : null;
   
+  // Determine stale status levels
+  const isSignalLost = staleMinutes !== undefined && staleMinutes >= 10;
+  const isCriticallyStale = staleMinutes !== undefined && staleMinutes >= 30;
+  
+  // Colors based on signal status
+  let bgColor = '#f59e0b'; // Normal amber
+  let borderColor = isCurrentUser ? '#fbbf24' : '#0a0a0a';
+  let animation = 'pulse-transit 2s ease-in-out infinite';
+  
+  if (isCriticallyStale) {
+    bgColor = '#ef4444'; // Red for critically stale
+    borderColor = '#fca5a5';
+    animation = 'pulse-signal-lost 1s ease-in-out infinite';
+  } else if (isSignalLost) {
+    bgColor = '#f97316'; // Orange for signal lost
+    borderColor = '#fdba74';
+    animation = 'pulse-signal-warning 1.5s ease-in-out infinite';
+  }
+  
+  // Stale warning badge content
+  const staleText = staleMinutes !== undefined && staleMinutes >= 5
+    ? (staleMinutes >= 60 ? `${Math.floor(staleMinutes / 60)}h` : `${staleMinutes}m`)
+    : null;
+  
   return L.divIcon({
-    className: `mats-marker transit-marker ${isCurrentUser ? 'current-user-marker' : ''}`,
+    className: `mats-marker transit-marker ${isCurrentUser ? 'current-user-marker' : ''} ${isSignalLost ? 'signal-lost' : ''}`,
     html: `
-      <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : (hasSpeed ? '56px' : (updatedAgo ? '48px' : '32px'))};">
-        ${isCurrentUser ? `
+      <div style="position: relative; width: ${isSignalLost ? '44px' : '32px'}; height: ${isCurrentUser ? '52px' : (hasSpeed || isSignalLost ? '64px' : (updatedAgo ? '48px' : '32px'))};">
+        ${isSignalLost ? `
+          <div style="
+            position: absolute;
+            top: ${isSignalLost ? '6px' : '0'};
+            left: ${isSignalLost ? '6px' : '0'};
+            width: 44px;
+            height: 44px;
+            background: ${isCriticallyStale ? 'rgba(239, 68, 68, 0.3)' : 'rgba(249, 115, 22, 0.3)'};
+            border-radius: 50%;
+            animation: pulse-signal-lost-outer 1.2s ease-out infinite;
+          "></div>
+        ` : ''}
+        ${isCurrentUser && !isSignalLost ? `
           <div style="
             position: absolute;
             top: 0;
@@ -411,18 +452,18 @@ const createTransitIcon = (isCurrentUser: boolean = false, updatedAgo?: string, 
         ` : ''}
         <div style="
           position: absolute;
-          top: 0;
-          left: 0;
+          top: ${isSignalLost ? '6px' : '0'};
+          left: ${isSignalLost ? '6px' : '0'};
           width: 32px;
           height: 32px;
-          background: #f59e0b;
-          border: 2px solid ${isCurrentUser ? '#fbbf24' : '#0a0a0a'};
+          background: ${bgColor};
+          border: 2px solid ${borderColor};
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)'};
-          animation: pulse-transit 2s ease-in-out infinite;
+          box-shadow: ${isSignalLost ? `0 0 12px ${bgColor}, 0 2px 8px rgba(0,0,0,0.3)` : (isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)')};
+          animation: ${animation};
         ">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.3 1 12.1 1 13v3c0 .6.4 1 1 1h2"/>
@@ -430,7 +471,30 @@ const createTransitIcon = (isCurrentUser: boolean = false, updatedAgo?: string, 
             <circle cx="17" cy="17" r="2"/>
           </svg>
         </div>
-        ${hasSpeed ? `
+        ${isSignalLost ? `
+          <div style="
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: ${isCriticallyStale ? '#ef4444' : '#f97316'};
+            color: #fff;
+            font-size: 8px;
+            font-weight: 700;
+            padding: 2px 5px;
+            border-radius: 8px;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            border: 2px solid #fff;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            animation: pulse-badge 1s ease-in-out infinite;
+          ">
+            <span style="font-size: 10px;">📡</span>
+            <span>${staleText}</span>
+          </div>
+        ` : ''}
+        ${hasSpeed && !isSignalLost ? `
           <div style="
             position: absolute;
             top: -6px;
@@ -449,7 +513,7 @@ const createTransitIcon = (isCurrentUser: boolean = false, updatedAgo?: string, 
         ${isCurrentUser ? `
           <div style="
             position: absolute;
-            bottom: ${hasSpeed ? '16px' : (updatedAgo ? '16px' : '0')};
+            bottom: ${hasSpeed || isSignalLost ? '16px' : (updatedAgo ? '16px' : '0')};
             left: 50%;
             transform: translateX(-50%);
             background: #fbbf24;
@@ -462,7 +526,7 @@ const createTransitIcon = (isCurrentUser: boolean = false, updatedAgo?: string, 
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
           ">TÚ</div>
         ` : ''}
-        ${!isCurrentUser && !hasSpeed && updatedAgo ? `
+        ${!isCurrentUser && !hasSpeed && !isSignalLost && updatedAgo ? `
           <div style="
             position: absolute;
             bottom: 0;
@@ -480,9 +544,9 @@ const createTransitIcon = (isCurrentUser: boolean = false, updatedAgo?: string, 
         ` : ''}
       </div>
     `,
-    iconSize: [32, isCurrentUser ? 40 : (hasSpeed ? 56 : (updatedAgo && !isCurrentUser ? 48 : 32))],
-    iconAnchor: [16, isCurrentUser ? 20 : (hasSpeed ? 28 : (updatedAgo && !isCurrentUser ? 24 : 16))],
-    popupAnchor: [0, isCurrentUser ? -20 : (hasSpeed ? -28 : (updatedAgo && !isCurrentUser ? -24 : -16))],
+    iconSize: [isSignalLost ? 44 : 32, isCurrentUser ? 52 : (hasSpeed || isSignalLost ? 64 : (updatedAgo && !isCurrentUser ? 48 : 32))],
+    iconAnchor: [isSignalLost ? 22 : 16, isCurrentUser ? 26 : (hasSpeed || isSignalLost ? 32 : (updatedAgo && !isCurrentUser ? 24 : 16))],
+    popupAnchor: [0, isCurrentUser ? -26 : (hasSpeed || isSignalLost ? -32 : (updatedAgo && !isCurrentUser ? -24 : -16))],
   });
 };
 
@@ -1914,10 +1978,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const speedKmh = isLocationStale ? null : rawSpeedKmh;
       
       if (isInTransit) {
-        icon = createTransitIcon(isMe, isMe ? undefined : updatedAgo, speedKmh);
+        icon = createTransitIcon(isMe, isMe ? undefined : updatedAgo, speedKmh, diffMin);
         roleLabel = 'En tránsito';
-        bgColor = '#f59e0b';
-        badgeColor = '#f59e0b';
+        bgColor = diffMin >= 30 ? '#ef4444' : (diffMin >= 10 ? '#f97316' : '#f59e0b');
+        badgeColor = bgColor;
       } else if (primarySpecialty) {
         // Use specialty-based icon if user has a specialty - with highlight if filtered
         icon = createSpecialistIcon(primarySpecialty, isMe, hasFirstAidKit, isMe ? undefined : updatedAgo, isHighlighted);
