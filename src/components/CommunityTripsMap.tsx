@@ -1,6 +1,6 @@
 // Real-time map displaying all active community trips with current speed
 
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Car, Plane, Navigation, Clock, Gauge, MapPin, Users, RefreshCw, Crosshair } from 'lucide-react';
@@ -232,6 +232,10 @@ export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
   const linesRef = useRef<Map<string, L.Polyline>>(new Map());
   const userLocationMarkerRef = useRef<L.Marker | null>(null);
   const userAccuracyCircleRef = useRef<L.Circle | null>(null);
+  const hasInitializedBounds = useRef(false);
+  
+  // Track if user is manually interacting with the map
+  const [isUserInteracting, setIsUserInteracting] = useState(false);
 
   // Filter trips that have current location
   const tripsWithLocation = useMemo(() => {
@@ -245,25 +249,37 @@ export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
     // Center on Mexico by default
     const defaultCenter: L.LatLngExpression = [23.6345, -102.5528];
     
-    mapRef.current = L.map(mapContainerRef.current, {
+    const map = L.map(mapContainerRef.current, {
       center: defaultCenter,
       zoom: 5,
       zoomControl: false,
     });
+    
+    mapRef.current = map;
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap',
       maxZoom: 18,
-    }).addTo(mapRef.current);
+    }).addTo(map);
 
     // Add zoom control to bottom right
-    L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    
+    // Detect user interaction to prevent auto-centering
+    map.on('dragstart', () => {
+      setIsUserInteracting(true);
+    });
+    
+    map.on('zoomstart', () => {
+      setIsUserInteracting(true);
+    });
 
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
+      hasInitializedBounds.current = false;
     };
   }, []);
 
@@ -381,24 +397,26 @@ export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
       }
     });
 
-    // Fit bounds to show all markers if there are trips
-    // Include user location in bounds if available
-    const allPoints: L.LatLngTuple[] = tripsWithLocation
-      .filter(t => t.current_lat && t.current_lng)
-      .map(t => [t.current_lat!, t.current_lng!] as L.LatLngTuple);
-    
-    if (userLocation) {
-      allPoints.push([userLocation.lat, userLocation.lng]);
-    }
-    
-    if (allPoints.length > 0) {
-      const bounds = L.latLngBounds(allPoints);
+    // Only fit bounds on initial load, not on every update (to preserve user zoom/pan)
+    if (!hasInitializedBounds.current && !isUserInteracting) {
+      const allPoints: L.LatLngTuple[] = tripsWithLocation
+        .filter(t => t.current_lat && t.current_lng)
+        .map(t => [t.current_lat!, t.current_lng!] as L.LatLngTuple);
       
-      if (bounds.isValid()) {
-        mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+      if (userLocation) {
+        allPoints.push([userLocation.lat, userLocation.lng]);
+      }
+      
+      if (allPoints.length > 0) {
+        const bounds = L.latLngBounds(allPoints);
+        
+        if (bounds.isValid()) {
+          mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+          hasInitializedBounds.current = true;
+        }
       }
     }
-  }, [tripsWithLocation, userLocation]);
+  }, [tripsWithLocation, userLocation, isUserInteracting]);
 
   // Update user location marker
   useEffect(() => {
@@ -444,9 +462,10 @@ export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
         }
       }
       
-      // If no trips visible but we have user location, center on user
-      if (tripsWithLocation.length === 0) {
+      // If no trips visible but we have user location, center on user (only on initial load)
+      if (tripsWithLocation.length === 0 && !hasInitializedBounds.current && !isUserInteracting) {
         mapRef.current.setView(position, 14);
+        hasInitializedBounds.current = true;
       }
     } else {
       // Remove user location marker if no location
@@ -459,7 +478,7 @@ export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
         userAccuracyCircleRef.current = null;
       }
     }
-  }, [userLocation, tripsWithLocation.length]);
+  }, [userLocation, tripsWithLocation.length, isUserInteracting]);
 
   return (
     <div className="flex flex-col h-full">
