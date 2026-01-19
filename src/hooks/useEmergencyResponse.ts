@@ -414,7 +414,7 @@ export function useEmergencyResponse() {
               speed: position.coords.speed,
               is_online: true,
               updated_at: new Date().toISOString(),
-            });
+            }, { onConflict: 'user_id' });
           
           if (locationError) {
             console.warn('[useEmergencyResponse] Error updating user_locations (non-fatal):', locationError);

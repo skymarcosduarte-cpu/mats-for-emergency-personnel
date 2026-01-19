@@ -18,13 +18,36 @@ interface CommunityTripsMapProps {
 
 // Create custom marker for each traveler
 function createTravelerMarker(trip: ActiveTrip): L.DivIcon {
-  const speedKmh = trip.current_speed ? Math.round(trip.current_speed * 3.6) : 0;
-  const isMoving = speedKmh > 5;
   const nickname = trip.nickname || 'Viajero';
   const initial = nickname.charAt(0).toUpperCase();
   const emoji = trip.transit_type === 'FLIGHT' ? '✈️' : '🚗';
   
-  const bgColor = isMoving ? '#22c55e' : '#f59e0b'; // green if moving, amber if stopped
+  // Check if location is stale (older than 5 minutes)
+  let isLocationStale = false;
+  let staleMinutes = 0;
+  if (trip.location_updated_at) {
+    const updatedDate = new Date(trip.location_updated_at);
+    const now = new Date();
+    const diffMs = now.getTime() - updatedDate.getTime();
+    staleMinutes = Math.floor(diffMs / (1000 * 60));
+    isLocationStale = staleMinutes >= 5;
+  }
+  
+  // Only show speed if location is fresh
+  const rawSpeedKmh = trip.current_speed ? Math.round(trip.current_speed * 3.6) : 0;
+  const speedKmh = isLocationStale ? 0 : rawSpeedKmh;
+  const isMoving = !isLocationStale && speedKmh > 5;
+  
+  // Color: green if moving, amber if stopped/stale, orange if very stale
+  let bgColor = isMoving ? '#22c55e' : '#f59e0b';
+  if (isLocationStale && staleMinutes >= 30) {
+    bgColor = '#f97316'; // Orange for very stale
+  }
+  
+  // Speed badge content - show warning if stale
+  const speedBadgeContent = isLocationStale 
+    ? `⚠️ ${staleMinutes >= 60 ? `${Math.floor(staleMinutes / 60)}h` : `${staleMinutes}m`}` 
+    : `${speedKmh} km/h`;
   
   return L.divIcon({
     className: 'custom-traveler-marker',
@@ -46,7 +69,7 @@ function createTravelerMarker(trip: ActiveTrip): L.DivIcon {
           box-shadow: 0 2px 8px rgba(0,0,0,0.3);
           margin-bottom: 4px;
         ">
-          ${speedKmh} km/h
+          ${speedBadgeContent}
         </div>
         <div style="
           width: 36px;
@@ -59,6 +82,7 @@ function createTravelerMarker(trip: ActiveTrip): L.DivIcon {
           justify-content: center;
           font-size: 16px;
           box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+          ${isLocationStale ? 'opacity: 0.7;' : ''}
         ">
           ${emoji}
         </div>

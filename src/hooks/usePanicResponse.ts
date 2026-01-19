@@ -464,7 +464,7 @@ export function usePanicResponse() {
               speed: position.coords.speed,
               is_online: true,
               updated_at: new Date().toISOString(),
-            });
+            }, { onConflict: 'user_id' });
           
           if (locationError) {
             console.warn('[usePanicResponse] Error updating user_locations (non-fatal):', locationError);
