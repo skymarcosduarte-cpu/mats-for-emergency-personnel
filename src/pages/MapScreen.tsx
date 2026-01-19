@@ -1880,13 +1880,18 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       
       // Calculate time since last update FIRST (needed for icon badge)
       let updatedAgo = '';
+      let diffMin = 0;
+      let isLocationStale = false;
       if (loc.updated_at) {
         const updatedDate = new Date(loc.updated_at);
         const now = new Date();
         const diffMs = now.getTime() - updatedDate.getTime();
         const diffSec = Math.floor(diffMs / 1000);
-        const diffMin = Math.floor(diffSec / 60);
+        diffMin = Math.floor(diffSec / 60);
         const diffHrs = Math.floor(diffMin / 60);
+        
+        // Location is stale if older than 5 minutes
+        isLocationStale = diffMin >= 5;
         
         if (diffSec < 60) {
           updatedAgo = `${diffSec}s`;
@@ -1904,7 +1909,9 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       let badgeColor;
       
       // Calculate speed in km/h (speed is in m/s from geolocation API)
-      const speedKmh = loc.speed ? loc.speed * 3.6 : null;
+      // Only show speed if location is fresh (less than 5 minutes old)
+      const rawSpeedKmh = loc.speed ? loc.speed * 3.6 : null;
+      const speedKmh = isLocationStale ? null : rawSpeedKmh;
       
       if (isInTransit) {
         icon = createTransitIcon(isMe, isMe ? undefined : updatedAgo, speedKmh);
@@ -1931,9 +1938,14 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       
       const displayName = loc.display_name ? sanitize(loc.display_name) : null;
       
-      // Speed info for users in transit or moving
+      // Speed info for users in transit or moving - only show if location is fresh
       const speedInfo = speedKmh && speedKmh > 3
         ? `<div style="font-size: 10px; color: #16a34a; margin-top: 4px;">🚀 ${Math.round(speedKmh)} km/h</div>`
+        : '';
+      
+      // Show stale location warning for transit users
+      const staleWarning = isInTransit && isLocationStale
+        ? `<div style="font-size: 10px; color: #f97316; margin-top: 4px;">⚠️ Última señal: hace ${updatedAgo}</div>`
         : '';
       
       const transitInfo = isInTransit && loc.transit_destination 
@@ -1985,7 +1997,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           ${medicalInfo}
           ${speedInfo}
           ${transitInfo}
-          ${updatedInfo}
+          ${staleWarning}
+          ${!isLocationStale ? updatedInfo : ''}
         </div>
       `;
 
