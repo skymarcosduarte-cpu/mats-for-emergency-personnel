@@ -2,7 +2,7 @@
 // Manage emergency contacts in database for WhatsApp integration
 
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Trash2, MessageCircle, Edit2, Check, X, Phone, Users, Star, Mail, AlertCircle, Loader2, Contact } from 'lucide-react';
+import { UserPlus, Trash2, MessageCircle, Edit2, Check, X, Phone, Users, Star, Mail, AlertCircle, Loader2, Contact, CloudOff, Cloud, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useEmergencyContactsDB, EmergencyContactDB, MAX_EMERGENCY_CONTACTS, MIN_EMERGENCY_CONTACTS } from '@/hooks/useEmergencyContactsDB';
+import { useEmergencyContactsDB, EmergencyContactDB, MAX_EMERGENCY_CONTACTS, MIN_EMERGENCY_CONTACTS, type PendingContact } from '@/hooks/useEmergencyContactsDB';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,6 +47,9 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
     contacts, 
     loading, 
     error,
+    isOffline,
+    pendingSync,
+    syncing,
     addContact, 
     updateContact, 
     deleteContact, 
@@ -55,6 +58,7 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
     canAddMore,
     hasMinimumContacts,
     refresh,
+    syncNow,
   } = useEmergencyContactsDB();
   const { profile } = useAuth();
   const { position } = useLocation();
@@ -158,7 +162,12 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
     }
   };
 
-  const startEditing = (contact: EmergencyContactDB) => {
+  const startEditing = (contact: EmergencyContactDB | { id: string; name: string; phone: string; email: string | null; whatsapp: string | null; relationship: string | null }) => {
+    // Don't allow editing pending contacts
+    if ('_pending' in contact) {
+      toast({ title: 'Pendiente', description: 'Este contacto aún no se ha sincronizado', variant: 'destructive' });
+      return;
+    }
     setEditingId(contact.id);
     setFormData({
       name: contact.name,
@@ -199,7 +208,7 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
     }
   };
 
-  const testWhatsApp = (contact: EmergencyContactDB) => {
+  const testWhatsApp = (contact: { name: string; phone: string; whatsapp: string | null }) => {
     const userName = profile?.full_name || profile?.nickname || 'Usuario';
     let message = `🧪 *PRUEBA DE CONTACTO DE EMERGENCIA*\n\n`;
     message += `👤 De: ${userName}\n`;
@@ -283,6 +292,40 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
             </div>
           )}
 
+          {/* Offline / Pending sync indicator */}
+          {(isOffline || pendingSync > 0) && (
+            <div className={cn(
+              "flex items-center justify-between gap-3 p-3 rounded-lg text-sm",
+              isOffline 
+                ? "bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400" 
+                : "bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400"
+            )}>
+              <div className="flex items-center gap-2">
+                {isOffline ? (
+                  <CloudOff className="w-4 h-4 shrink-0" />
+                ) : (
+                  <Cloud className="w-4 h-4 shrink-0" />
+                )}
+                <span>
+                  {isOffline 
+                    ? 'Sin conexión. Los cambios se guardarán localmente.' 
+                    : `${pendingSync} cambio(s) pendiente(s) de sincronizar`}
+                </span>
+              </div>
+              {!isOffline && pendingSync > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={() => syncNow()}
+                  disabled={syncing}
+                >
+                  {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                </Button>
+              )}
+            </div>
+          )}
+
           {/* Warning if no minimum contacts */}
           {!hasMinimumContacts && (
             <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
@@ -320,14 +363,23 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
             </div>
           ) : (
             <div className="space-y-2">
-              {contacts.map((contact) => (
+              {contacts.map((contact) => {
+                const isPending = '_pending' in contact;
+                return (
                 <div
                   key={contact.id}
                   className={cn(
-                    "flex items-center gap-3 p-3 rounded-lg",
-                    contact.is_primary ? "bg-primary/10 border border-primary/30" : "bg-muted/30"
+                    "flex items-center gap-3 p-3 rounded-lg relative",
+                    contact.is_primary ? "bg-primary/10 border border-primary/30" : "bg-muted/30",
+                    isPending && "opacity-70 border-dashed"
                   )}
                 >
+                  {isPending && (
+                    <div className="absolute top-1 right-1 flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                      <CloudOff className="w-3 h-3" />
+                      Pendiente
+                    </div>
+                  )}
                   {editingId === contact.id ? (
                     <div className="flex-1 space-y-2">
                       <Input
@@ -460,7 +512,8 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
                     </>
                   )}
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
         </CardContent>
