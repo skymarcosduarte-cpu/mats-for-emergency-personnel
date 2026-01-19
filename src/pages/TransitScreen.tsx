@@ -2,7 +2,7 @@
 // Road + Flight transit tracking with incident reports
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge, Mic, MicOff } from 'lucide-react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge, Mic, MicOff, MessageCircle } from 'lucide-react';
 import { GpsStatusBanner } from '@/components/GpsStatusBanner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -104,6 +104,7 @@ const VoiceDictationButton: React.FC<{
 
 interface TransitScreenProps {
   userRole?: UserRole;
+  onOpenMessaging?: (userId: string, userName: string | null) => void;
 }
 
 interface TransitTrip {
@@ -132,7 +133,8 @@ interface TransitTrip {
 }
 
 export const TransitScreen: React.FC<TransitScreenProps> = ({
-  userRole = 'RESCATISTA'
+  userRole = 'RESCATISTA',
+  onOpenMessaging
 }) => {
   const isMobile = useIsMobile();
 
@@ -1516,16 +1518,26 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                               </div>
                             </div>
 
-                            <div className="mt-3">
+                            <div className="mt-3 flex gap-2">
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="w-full text-xs gap-2"
+                                className="flex-1 text-xs gap-2"
                                 onClick={() => setSelectedCommunityTrip(trip)}
                               >
                                 <Map className="w-3.5 h-3.5" />
                                 Ver en mapa
                               </Button>
+                              {onOpenMessaging && trip.user_id !== currentUserId && (
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="text-xs gap-2"
+                                  onClick={() => onOpenMessaging(trip.user_id, displayName)}
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
                             </div>
                           </CardContent>
                         </Card>
@@ -2338,13 +2350,28 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                 </MapErrorBoundary>
               </div>
 
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setSelectedCommunityTrip(null)}
-              >
-                Cerrar
-              </Button>
+              <div className="flex gap-2">
+                {onOpenMessaging && selectedCommunityTrip.user_id !== currentUserId && (
+                  <Button
+                    variant="default"
+                    className="flex-1 gap-2"
+                    onClick={() => {
+                      onOpenMessaging(selectedCommunityTrip.user_id, selectedCommunityTrip.nickname || null);
+                      setSelectedCommunityTrip(null);
+                    }}
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Enviar mensaje
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  className={onOpenMessaging && selectedCommunityTrip.user_id !== currentUserId ? '' : 'w-full'}
+                  onClick={() => setSelectedCommunityTrip(null)}
+                >
+                  Cerrar
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

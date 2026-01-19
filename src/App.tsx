@@ -571,7 +571,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   const renderScreen = () => {
     const screens: Record<string, React.ReactNode> = {
       map: <MapScreen className="h-[calc(100vh-120px)]" respondersToMyAlerts={respondersToMyAlerts} onNavigateToSettings={() => setActiveTab('settings')} activeDrillId={activeDrillId} onOpenDrillChat={(drillId) => { setCommunityChatContext({ type: 'drill', id: drillId, title: '🔔 Chat Clave 100' }); setCommunityChatOpen(true); }} />,
-      transit: <TransitScreen userRole={userRole} />,
+      transit: <TransitScreen userRole={userRole} onOpenMessaging={handleOpenMessaging} />,
       alerts: <AlertsScreen userRole={userRole} />,
       community: <CommunityScreen />,
       market: <MarketScreen userRole={userRole} />,
