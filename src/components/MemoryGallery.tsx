@@ -4,7 +4,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   ImagePlus, Loader2, Trash2, X, Upload, Camera, 
-  ArrowLeft, RefreshCw, ZoomIn, Heart, MessageCircle, Calendar, Send, Filter, User
+  ArrowLeft, RefreshCw, ZoomIn, Heart, MessageCircle, Calendar, Send, Filter, User,
+  Download, Share2, Copy, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,6 +32,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface MemoryGalleryProps {
   onBack: () => void;
@@ -233,6 +235,54 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
 
   const getUserNickname = (userId: string) => {
     return users.find(u => u.id === userId)?.nickname || 'Usuario';
+  };
+
+  // Download photo
+  const handleDownload = async (photo: MemoryPhoto) => {
+    try {
+      const response = await fetch(photo.image_url);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `recuerdo_${photo.photo_date || format(new Date(photo.created_at), 'yyyy-MM-dd')}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Foto descargada');
+    } catch (err) {
+      console.error('Download error:', err);
+      toast.error('Error al descargar');
+    }
+  };
+
+  // Share photo
+  const handleShare = async (photo: MemoryPhoto) => {
+    const shareData = {
+      title: 'Galería del Recuerdo',
+      text: photo.caption || 'Mira esta foto del recuerdo 📸',
+      url: photo.image_url,
+    };
+
+    // Try Web Share API first
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        // User cancelled or share failed, try clipboard fallback
+        if ((err as Error).name === 'AbortError') return;
+      }
+    }
+
+    // Fallback: copy link to clipboard
+    try {
+      await navigator.clipboard.writeText(photo.image_url);
+      toast.success('Enlace copiado al portapapeles');
+    } catch (err) {
+      toast.error('No se pudo copiar el enlace');
+    }
   };
 
   return (
@@ -582,11 +632,31 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
                       {selectedPhoto.comments_count || 0}
                     </span>
                   </div>
-                  {selectedPhoto.user_id === user?.id && (
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(selectedPhoto)}>
-                      <Trash2 className="w-4 h-4 text-destructive" />
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={() => handleDownload(selectedPhoto)}
+                      title="Descargar"
+                    >
+                      <Download className="w-4 h-4" />
                     </Button>
-                  )}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={() => handleShare(selectedPhoto)}
+                      title="Compartir"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </Button>
+                    {selectedPhoto.user_id === user?.id && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(selectedPhoto)}>
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Caption & Date */}
