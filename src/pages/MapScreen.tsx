@@ -1455,6 +1455,7 @@ interface MapScreenProps {
   onNavigateToSettings?: () => void;
   activeDrillId?: string | null;
   onOpenDrillChat?: (drillId: string) => void;
+  onGoHome?: () => void;
 }
 
 export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyAlerts = [], onNavigateToSettings, activeDrillId, onOpenDrillChat }) => {

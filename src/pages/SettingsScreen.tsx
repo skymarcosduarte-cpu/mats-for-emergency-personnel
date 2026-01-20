@@ -84,6 +84,7 @@ import { toast } from 'sonner';
 
 interface SettingsScreenProps {
   onLogout?: () => void;
+  onGoHome?: () => void;
 }
 
 const SPECIALTIES = [

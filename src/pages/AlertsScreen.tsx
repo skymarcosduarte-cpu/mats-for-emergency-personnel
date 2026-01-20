@@ -84,10 +84,12 @@ function formatSeismicTime(seconds: number): string {
 
 interface AlertsScreenProps {
   userRole?: UserRole;
+  onGoHome?: () => void;
 }
 
 export const AlertsScreen: React.FC<AlertsScreenProps> = ({ 
-  userRole = 'SOS_ACTIVO' 
+  userRole = 'SOS_ACTIVO',
+  onGoHome
 }) => {
   // Landing view state - shows big buttons before entering tabs
   const [showLanding, setShowLanding] = useState(true);
@@ -450,7 +452,20 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       <div className="flex-1 overflow-auto pb-20">
         {/* Header */}
         <div className="p-4 space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">Sismos</h1>
+          <div className="flex items-center gap-2">
+            {onGoHome && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onGoHome}
+                className="h-8 w-8 shrink-0"
+                title="Volver a Inicio"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            )}
+            <h1 className="text-2xl font-bold text-foreground">Sismos</h1>
+          </div>
           <p className="text-sm text-muted-foreground">Alertas sísmicas y fenómenos naturales</p>
         </div>
 

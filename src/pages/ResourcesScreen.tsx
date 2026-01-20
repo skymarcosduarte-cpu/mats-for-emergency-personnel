@@ -44,7 +44,11 @@ import { getCategoryLabel, getCategoryIcon, getCategoryCounts } from '@/lib/reso
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-export default function ResourcesScreen() {
+interface ResourcesScreenProps {
+  onGoHome?: () => void;
+}
+
+export default function ResourcesScreen({ onGoHome }: ResourcesScreenProps) {
   const {
     pack,
     loading,
