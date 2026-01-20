@@ -4,9 +4,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play, Pencil
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play, Pencil, Camera
 } from 'lucide-react';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
+import { MemoryGallery } from '@/components/MemoryGallery';
 import { MarketScreen } from '@/pages/MarketScreen';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,7 +86,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   
   // Landing view state - shows big buttons before entering a subsection
   const [showLanding, setShowLanding] = useState(true);
-  const [activeSection, setActiveSection] = useState<'tablero' | 'noticias' | 'market'>('tablero');
+  const [activeSection, setActiveSection] = useState<'tablero' | 'noticias' | 'market' | 'galeria'>('tablero');
   
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CommunityEvent | null>(null);
@@ -439,7 +440,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   };
 
   // Handler to enter a specific section from landing
-  const handleEnterSection = (section: 'tablero' | 'noticias' | 'market') => {
+  const handleEnterSection = (section: 'tablero' | 'noticias' | 'market' | 'galeria') => {
     setActiveSection(section);
     setShowLanding(false);
   };
@@ -450,9 +451,15 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
       case 'tablero': return 'Avisos';
       case 'noticias': return 'Últimas Noticias';
       case 'market': return 'Marketplace';
+      case 'galeria': return 'Galería del Recuerdo';
       default: return 'Comunidad';
     }
   };
+
+  // Render Memory Gallery as its own full screen
+  if (activeSection === 'galeria' && !showLanding) {
+    return <MemoryGallery onBack={() => setShowLanding(true)} />;
+  }
 
   // Landing view with large buttons
   if (showLanding) {
@@ -533,13 +540,35 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
               "transition-all duration-200"
             )}
           >
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-pink-500/20 text-pink-400">
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-accent/20 text-accent-foreground">
               <ShoppingBag className="w-8 h-8" />
             </div>
             <div className="flex-1 text-left min-w-0">
               <h3 className="font-semibold text-foreground text-base">Marketplace</h3>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 Compra y vende productos en la comunidad
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+          </button>
+
+          {/* Galería del Recuerdo Button */}
+          <button
+            onClick={() => handleEnterSection('galeria')}
+            className={cn(
+              "w-full flex items-center gap-4 p-4 rounded-xl",
+              "bg-card border border-border/50",
+              "hover:bg-muted/50 active:scale-[0.98]",
+              "transition-all duration-200"
+            )}
+          >
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-amber-500/20 text-amber-400">
+              <Camera className="w-8 h-8" />
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <h3 className="font-semibold text-foreground text-base">Galería del Recuerdo</h3>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                Comparte fotos nostálgicas de la comunidad
               </p>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
