@@ -43,50 +43,50 @@ const SECTIONS: SectionItem[] = [
   { 
     id: 'map', 
     label: 'Mapa', 
-    icon: <Map className="w-12 h-12" strokeWidth={2.5} />,
+    icon: <Map className="w-10 h-10" strokeWidth={2.5} />,
     description: 'Ver ubicaciones en tiempo real',
-    gradient: 'bg-card section-card-map',
-    iconBg: 'section-icon-map'
+    gradient: 'home-section-map',
+    iconBg: 'home-section-icon-map'
   },
   { 
     id: 'alerts', 
     label: 'Sismos', 
-    icon: <Activity className="w-12 h-12" strokeWidth={2.5} />,
+    icon: <Activity className="w-10 h-10" strokeWidth={2.5} />,
     description: 'Alertas sísmicas y reportes',
-    gradient: 'bg-card section-card-alerts',
-    iconBg: 'section-icon-alerts'
+    gradient: 'home-section-alerts',
+    iconBg: 'home-section-icon-alerts'
   },
   { 
     id: 'transit', 
     label: 'Tránsito Seguro', 
-    icon: <Car className="w-12 h-12" strokeWidth={2.5} />,
+    icon: <Car className="w-10 h-10" strokeWidth={2.5} />,
     description: 'Registrar y monitorear viajes',
-    gradient: 'bg-card section-card-transit',
-    iconBg: 'section-icon-transit'
+    gradient: 'home-section-transit',
+    iconBg: 'home-section-icon-transit'
   },
   { 
     id: 'resources', 
     label: 'RecurSOS', 
-    icon: <HeartPulse className="w-12 h-12" strokeWidth={2.5} />,
+    icon: <HeartPulse className="w-10 h-10" strokeWidth={2.5} />,
     description: 'Recursos de emergencia',
-    gradient: 'bg-card section-card-resources',
-    iconBg: 'section-icon-resources'
+    gradient: 'home-section-resources',
+    iconBg: 'home-section-icon-resources'
   },
   { 
     id: 'community', 
     label: 'Comunidad', 
-    icon: <Users className="w-12 h-12" strokeWidth={2.5} />,
+    icon: <Users className="w-10 h-10" strokeWidth={2.5} />,
     description: 'Tablero y noticias',
-    gradient: 'bg-card section-card-community',
-    iconBg: 'section-icon-community'
+    gradient: 'home-section-community',
+    iconBg: 'home-section-icon-community'
   },
   { 
     id: 'settings', 
     label: 'Ajustes', 
-    icon: <Settings className="w-12 h-12" strokeWidth={2.5} />,
+    icon: <Settings className="w-10 h-10" strokeWidth={2.5} />,
     description: 'Configuración y perfil',
-    gradient: 'bg-card section-card-settings',
-    iconBg: 'section-icon-settings'
+    gradient: 'home-section-settings',
+    iconBg: 'home-section-icon-settings'
   },
 ];
 
@@ -465,21 +465,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="space-y-4">
-                  {/* Icon - Larger with solid color background */}
+                  {/* Icon - White container with colored icon */}
                   <div className={cn(
-                    "w-20 h-20 rounded-2xl flex items-center justify-center shadow-md",
+                    "w-16 h-16 rounded-2xl flex items-center justify-center shadow-md",
                     "transition-transform duration-300 hover:scale-110",
                     section.iconBg
                   )}>
                     {section.icon}
                   </div>
                   
-                  {/* Label - Larger text */}
+                  {/* Label - White text for contrast */}
                   <div>
-                    <h3 className="font-bold text-foreground text-xl leading-tight">
+                    <h3 className="font-bold text-white text-xl leading-tight drop-shadow-sm">
                       {section.label}
                     </h3>
-                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
+                    <p className="text-sm text-white/90 line-clamp-2 mt-1 leading-relaxed">
                       {section.description}
                     </p>
                   </div>
