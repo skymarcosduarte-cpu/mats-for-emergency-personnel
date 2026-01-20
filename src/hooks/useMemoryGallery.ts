@@ -97,7 +97,7 @@ export function useMemoryGallery() {
     }
   }, []);
 
-  // Upload multiple photos (max 20)
+  // Upload multiple photos (max 20 per upload, max 100 total per user)
   const uploadPhotos = useCallback(async (
     files: File[], 
     caption?: string,
@@ -111,6 +111,26 @@ export function useMemoryGallery() {
 
     if (files.length > 20) {
       toast.error('Máximo 20 fotos por carga');
+      return false;
+    }
+
+    // Check user's current photo count (max 100 per user)
+    const { count: currentCount } = await supabase
+      .from('memory_gallery')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+
+    const userPhotoCount = currentCount || 0;
+    const maxPhotosPerUser = 100;
+    const remainingSlots = maxPhotosPerUser - userPhotoCount;
+
+    if (remainingSlots <= 0) {
+      toast.error(`Has alcanzado el límite de ${maxPhotosPerUser} fotos`);
+      return false;
+    }
+
+    if (files.length > remainingSlots) {
+      toast.error(`Solo puedes subir ${remainingSlots} foto${remainingSlots !== 1 ? 's' : ''} más (límite: ${maxPhotosPerUser})`);
       return false;
     }
 
