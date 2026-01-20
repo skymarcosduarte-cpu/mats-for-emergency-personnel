@@ -12,6 +12,7 @@ export interface SectionLandingItem {
   description: string;
   icon: React.ReactNode;
   iconBg: string;
+  borderColor?: string; // Optional border color class
   onClick: () => void;
 }
 
@@ -29,27 +30,30 @@ export const SectionLanding: React.FC<SectionLandingProps> = ({
   return (
     <div className="flex-1 overflow-auto pb-20">
       {/* Header */}
-      <div className="p-4 space-y-1">
-        <h1 className="text-2xl font-bold text-foreground">{title}</h1>
-        <p className="text-sm text-muted-foreground">{subtitle}</p>
+      <div className="p-4 space-y-2">
+        <h1 className="text-3xl font-bold text-foreground">{title}</h1>
+        <p className="text-base text-muted-foreground">{subtitle}</p>
       </div>
 
       {/* Large Button Cards */}
-      <div className="px-4 space-y-3">
-        {items.map((item) => (
+      <div className="px-4 space-y-4">
+        {items.map((item, index) => (
           <button
             key={item.id}
             onClick={item.onClick}
             className={cn(
-              "w-full flex items-center gap-4 p-4 rounded-xl",
-              "bg-card border border-border/50",
-              "hover:bg-muted/50 active:scale-[0.98]",
-              "transition-all duration-200"
+              "w-full flex items-center gap-4 p-5 rounded-2xl",
+              "bg-card border-2 shadow-sm",
+              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
+              "transition-all duration-200 animate-fade-in",
+              item.borderColor || "border-border"
             )}
+            style={{ animationDelay: `${index * 50}ms` }}
           >
             {/* Icon */}
             <div className={cn(
-              "w-14 h-14 rounded-xl flex items-center justify-center shrink-0",
+              "w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
+              "transition-transform duration-300 hover:scale-105",
               item.iconBg
             )}>
               {item.icon}
@@ -57,16 +61,16 @@ export const SectionLanding: React.FC<SectionLandingProps> = ({
 
             {/* Text */}
             <div className="flex-1 text-left min-w-0">
-              <h3 className="font-semibold text-foreground text-base">
+              <h3 className="font-bold text-foreground text-xl">
                 {item.label}
               </h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">
+              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
                 {item.description}
               </p>
             </div>
 
             {/* Chevron */}
-            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
           </button>
         ))}
       </div>

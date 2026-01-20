@@ -451,90 +451,96 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     return (
       <div className="flex-1 overflow-auto pb-20">
         {/* Header */}
-        <div className="p-4 space-y-1">
+        <div className="p-4 space-y-2">
           <div className="flex items-center gap-2">
             {onGoHome && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={onGoHome}
-                className="h-8 w-8 shrink-0"
+                className="h-10 w-10 shrink-0"
                 title="Volver a Inicio"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-6 h-6" />
               </Button>
             )}
-            <h1 className="text-2xl font-bold text-foreground">Sismos</h1>
+            <h1 className="text-3xl font-bold text-foreground">Sismos</h1>
           </div>
-          <p className="text-sm text-muted-foreground">Alertas sísmicas y fenómenos naturales</p>
+          <p className="text-base text-muted-foreground">Alertas sísmicas y fenómenos naturales</p>
         </div>
 
         {/* Large Button Cards */}
-        <div className="px-4 space-y-3">
+        <div className="px-4 space-y-4">
           {/* SkyAlert Button */}
           <button
             onClick={() => handleEnterTab('skyalert')}
             className={cn(
-              "w-full flex items-center gap-4 p-4 rounded-xl",
-              "bg-card border border-border/50",
-              "hover:bg-muted/50 active:scale-[0.98]",
-              "transition-all duration-200"
+              "w-full flex items-center gap-4 p-5 rounded-2xl",
+              "bg-card border-2 shadow-sm",
+              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
+              "transition-all duration-200 animate-fade-in",
+              "subsection-card-skyalert"
             )}
+            style={{ animationDelay: '0ms' }}
           >
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-primary/20 text-primary">
-              <Radio className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-skyalert">
+              <Radio className="w-10 h-10" strokeWidth={2.5} />
             </div>
             <div className="flex-1 text-left min-w-0">
-              <h3 className="font-semibold text-foreground text-base">SkyAlert</h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">
+              <h3 className="font-bold text-foreground text-xl">SkyAlert</h3>
+              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
                 Alertas sísmicas en tiempo real
               </p>
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
           </button>
 
           {/* Sismos Recientes Button */}
           <button
             onClick={() => handleEnterTab('earthquakes')}
             className={cn(
-              "w-full flex items-center gap-4 p-4 rounded-xl",
-              "bg-card border border-border/50",
-              "hover:bg-muted/50 active:scale-[0.98]",
-              "transition-all duration-200"
+              "w-full flex items-center gap-4 p-5 rounded-2xl",
+              "bg-card border-2 shadow-sm",
+              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
+              "transition-all duration-200 animate-fade-in",
+              "subsection-card-sismos"
             )}
+            style={{ animationDelay: '50ms' }}
           >
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-orange-500/20 text-orange-400">
-              <Activity className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-sismos">
+              <Activity className="w-10 h-10" strokeWidth={2.5} />
             </div>
             <div className="flex-1 text-left min-w-0">
-              <h3 className="font-semibold text-foreground text-base">Sismos Recientes</h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">
+              <h3 className="font-bold text-foreground text-xl">Sismos Recientes</h3>
+              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
                 SSN México - últimos eventos
               </p>
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
           </button>
 
           {/* Otros Fenómenos Button */}
           <button
             onClick={() => handleEnterTab('otros')}
             className={cn(
-              "w-full flex items-center gap-4 p-4 rounded-xl",
-              "bg-card border border-border/50",
-              "hover:bg-muted/50 active:scale-[0.98]",
-              "transition-all duration-200"
+              "w-full flex items-center gap-4 p-5 rounded-2xl",
+              "bg-card border-2 shadow-sm",
+              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
+              "transition-all duration-200 animate-fade-in",
+              "subsection-card-otros"
             )}
+            style={{ animationDelay: '100ms' }}
           >
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-destructive/20 text-destructive">
-              <AlertTriangle className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-otros">
+              <AlertTriangle className="w-10 h-10" strokeWidth={2.5} />
             </div>
             <div className="flex-1 text-left min-w-0">
-              <h3 className="font-semibold text-foreground text-base">Otros Fenómenos</h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">
+              <h3 className="font-bold text-foreground text-xl">Otros Fenómenos</h3>
+              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
                 Ciclones, incendios y alertas internacionales
               </p>
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
           </button>
         </div>
       </div>
