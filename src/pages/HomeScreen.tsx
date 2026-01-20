@@ -13,12 +13,15 @@ import {
   AlertTriangle,
   MapPin,
   Navigation,
-  X
+  X,
+  MapPinned
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useLocation } from '@/hooks/useLocation';
+import { useCurrentWeather } from '@/hooks/useCurrentWeather';
 import { supabase } from '@/integrations/supabase/client';
 import type { TabId } from '@/components/BottomNavigation';
 import { Button } from '@/components/ui/button';
@@ -119,6 +122,11 @@ const HELP_LABELS: Record<string, { label: string; emoji: string }> = {
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   const { profile, user } = useAuth();
+  const { position } = useLocation();
+  const { weather, loading: weatherLoading } = useCurrentWeather(
+    position?.lat ?? null,
+    position?.lng ?? null
+  );
   const [onlineCount, setOnlineCount] = useState<number>(0);
   const [emergencyAlerts, setEmergencyAlerts] = useState<EmergencyAlert[]>([]);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
@@ -392,6 +400,36 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
           </h1>
           <p className="text-sm text-muted-foreground capitalize">{todayDate}</p>
         </div>
+
+        {/* Weather Card */}
+        {(weather || weatherLoading) && (
+          <div className="bg-card/50 border border-border rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <MapPinned className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-muted-foreground truncate">
+                {weather?.locationName || 'Obteniendo ubicación...'}
+              </span>
+            </div>
+            {weather && (
+              <div className="flex items-center gap-3 mt-2">
+                <span className="text-3xl">{weather.icon}</span>
+                <div>
+                  <p className="text-3xl font-bold text-foreground">{weather.temperature}°</p>
+                  <p className="text-sm text-muted-foreground">{weather.description}</p>
+                </div>
+              </div>
+            )}
+            {weatherLoading && !weather && (
+              <div className="flex items-center gap-2 mt-2">
+                <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+                <div className="space-y-1.5">
+                  <div className="w-16 h-6 bg-muted animate-pulse rounded" />
+                  <div className="w-24 h-4 bg-muted animate-pulse rounded" />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Online Users Indicator */}
         <div className="bg-card/50 border border-border rounded-xl p-4">
