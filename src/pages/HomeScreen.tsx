@@ -12,6 +12,7 @@ import {
   ChevronRight,
   AlertTriangle,
   MapPin,
+  Navigation,
   X
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -274,6 +275,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
     window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
   };
 
+  const navigateToLocation = (lat: number, lng: number) => {
+    // Use Google Maps navigation URL for directions
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`, '_blank');
+  };
+
   const getAlertInfo = (alert: EmergencyAlert) => {
     if (alert.type === 'panic') {
       const info = PANIC_LABELS[alert.panicType || 'other'] || PANIC_LABELS.other;
@@ -340,8 +346,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => openGoogleMaps(alert.lat, alert.lng)}
+                        title="Ver ubicación"
                       >
                         <MapPin className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-primary"
+                        onClick={() => navigateToLocation(alert.lat, alert.lng)}
+                        title="Navegar"
+                      >
+                        <Navigation className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
