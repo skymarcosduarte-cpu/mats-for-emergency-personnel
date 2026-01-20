@@ -127,21 +127,20 @@ export function SkyAlertTab() {
       </div>
 
       {/* Info banner */}
-      <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border/50">
-        <Radio className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-        <div className="flex-1 text-sm">
-          <p className="text-muted-foreground">
-            SkyAlert es el sistema de alertamiento sísmico más avanzado de México. 
-            Recibirás notificaciones en tiempo real cuando se detecte un sismo.
+      <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 border-2 border-border">
+        <Radio className="w-6 h-6 text-primary mt-0.5 flex-shrink-0" />
+        <div className="flex-1 text-base">
+          <p className="text-muted-foreground leading-relaxed">
+            Recibirás notificaciones en tiempo real cuando descargues la app SkyAlert en tu dispositivo, esta función solo toma Alertas de la cuenta de X de SkyAlert.
           </p>
           <a 
             href="https://www.skyalert.mx/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-primary hover:underline mt-1"
+            className="inline-flex items-center gap-1 text-primary hover:underline mt-2 font-medium text-base"
           >
-            App de Alerta Sísmica en México | SkyAlert App
-            <ExternalLink className="w-3 h-3" />
+            Descargar App SkyAlert
+            <ExternalLink className="w-4 h-4" />
           </a>
         </div>
       </div>
