@@ -361,10 +361,16 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
       {/* Stats overlay */}
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
         <div className="flex items-center gap-3 text-white text-xs">
-          <span className="flex items-center gap-1">
-            <Heart className={cn("w-3 h-3", photo.user_has_liked && "fill-current text-destructive")} />
+          <button 
+            onClick={(e) => handleLike(photo, e)}
+            className="flex items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+          >
+            <Heart className={cn(
+              "w-4 h-4 transition-colors", 
+              photo.user_has_liked ? "fill-destructive text-destructive" : ""
+            )} />
             {photo.likes_count || 0}
-          </span>
+          </button>
           <span className="flex items-center gap-1">
             <MessageCircle className="w-3 h-3" />
             {photo.comments_count || 0}
