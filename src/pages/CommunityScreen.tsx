@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play, Pencil, Camera
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingCart, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play, Pencil, Camera
 } from 'lucide-react';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
 import { MemoryGallery } from '@/components/MemoryGallery';
@@ -541,7 +541,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
             )}
           >
             <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-accent/20 text-accent-foreground">
-              <ShoppingBag className="w-8 h-8" />
+              <ShoppingCart className="w-8 h-8" />
             </div>
             <div className="flex-1 text-left min-w-0">
               <h3 className="font-semibold text-foreground text-base">Marketplace</h3>
