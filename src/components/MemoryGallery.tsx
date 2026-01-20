@@ -1,10 +1,10 @@
 // Memory Gallery Component - "Galería del Recuerdo"
-// Displays community nostalgic photos with upload capability
+// Displays community nostalgic photos with likes, comments, and date
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   ImagePlus, Loader2, Trash2, X, Upload, Camera, 
-  ArrowLeft, RefreshCw, ZoomIn 
+  ArrowLeft, RefreshCw, ZoomIn, Heart, MessageCircle, Calendar, Send
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,9 +17,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
-import { useMemoryGallery, MemoryPhoto } from '@/hooks/useMemoryGallery';
+import { useMemoryGallery, MemoryPhoto, PhotoComment } from '@/hooks/useMemoryGallery';
 import { useAuth } from '@/hooks/useAuth';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -29,21 +29,44 @@ interface MemoryGalleryProps {
 
 export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
   const { user } = useAuth();
-  const { photos, loading, uploading, uploadPhotos, deletePhoto, refresh } = useMemoryGallery();
+  const { 
+    photos, loading, uploading, uploadPhotos, deletePhoto, 
+    toggleLike, getComments, addComment, deleteComment, refresh 
+  } = useMemoryGallery();
   
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [caption, setCaption] = useState('');
+  const [photoDate, setPhotoDate] = useState('');
   const [viewerImages, setViewerImages] = useState<{ images: string[]; index: number } | null>(null);
   
+  // Photo detail/comments dialog
+  const [selectedPhoto, setSelectedPhoto] = useState<MemoryPhoto | null>(null);
+  const [comments, setComments] = useState<PhotoComment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load comments when photo is selected
+  useEffect(() => {
+    if (selectedPhoto) {
+      setLoadingComments(true);
+      getComments(selectedPhoto.id).then(data => {
+        setComments(data);
+        setLoadingComments(false);
+      });
+    } else {
+      setComments([]);
+    }
+  }, [selectedPhoto, getComments]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Limit to 20 files
     if (selectedFiles.length + files.length > 20) {
       alert('Máximo 20 fotos por carga');
       return;
@@ -75,12 +98,13 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
     setSelectedFiles([]);
     setPreviews([]);
     setCaption('');
+    setPhotoDate('');
   };
 
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
     
-    const success = await uploadPhotos(selectedFiles, caption);
+    const success = await uploadPhotos(selectedFiles, caption, photoDate || undefined);
     if (success) {
       handleClearAll();
       setShowUploadDialog(false);
@@ -90,11 +114,43 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
   const handleDelete = async (photo: MemoryPhoto) => {
     if (!confirm('¿Eliminar esta foto?')) return;
     await deletePhoto(photo.id);
+    if (selectedPhoto?.id === photo.id) {
+      setSelectedPhoto(null);
+    }
+  };
+
+  const handleLike = async (photo: MemoryPhoto, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    await toggleLike(photo.id);
+  };
+
+  const handleSubmitComment = async () => {
+    if (!selectedPhoto || !newComment.trim()) return;
+    
+    setSubmittingComment(true);
+    const success = await addComment(selectedPhoto.id, newComment.trim());
+    if (success) {
+      setNewComment('');
+      // Refresh comments
+      const updated = await getComments(selectedPhoto.id);
+      setComments(updated);
+    }
+    setSubmittingComment(false);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!selectedPhoto) return;
+    await deleteComment(commentId, selectedPhoto.id);
+    setComments(prev => prev.filter(c => c.id !== commentId));
   };
 
   const openViewer = (index: number) => {
     const allImages = photos.map(p => p.image_url);
     setViewerImages({ images: allImages, index });
+  };
+
+  const openPhotoDetail = (photo: MemoryPhoto) => {
+    setSelectedPhoto(photo);
   };
 
   return (
@@ -148,40 +204,33 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
             {photos.map((photo, index) => (
               <div
                 key={photo.id}
-                className="relative aspect-square group rounded-lg overflow-hidden bg-muted"
+                className="relative aspect-square group rounded-lg overflow-hidden bg-muted cursor-pointer"
+                onClick={() => openPhotoDetail(photo)}
               >
                 <img
                   src={photo.image_url}
                   alt={photo.caption || 'Foto del recuerdo'}
-                  className="w-full h-full object-cover cursor-pointer transition-transform group-hover:scale-105"
-                  onClick={() => openViewer(index)}
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
                   loading="lazy"
                 />
-                {/* Overlay on hover */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => openViewer(index)}
-                  >
-                    <ZoomIn className="w-4 h-4" />
-                  </Button>
-                  {photo.user_id === user?.id && (
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleDelete(photo)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
+                {/* Stats overlay */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                  <div className="flex items-center gap-3 text-white text-xs">
+                    <span className="flex items-center gap-1">
+                      <Heart className={cn("w-3 h-3", photo.user_has_liked && "fill-current text-destructive")} />
+                      {photo.likes_count || 0}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageCircle className="w-3 h-3" />
+                      {photo.comments_count || 0}
+                    </span>
+                  </div>
                 </div>
-                {/* Caption */}
-                {photo.caption && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                    <p className="text-white text-xs truncate">{photo.caption}</p>
+                {/* Date badge */}
+                {photo.photo_date && (
+                  <div className="absolute top-1 left-1 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <Calendar className="w-2.5 h-2.5" />
+                    {format(new Date(photo.photo_date), 'yyyy')}
                   </div>
                 )}
               </div>
@@ -254,6 +303,20 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
               </div>
             )}
 
+            {/* Photo Date */}
+            <div>
+              <Label htmlFor="photoDate" className="text-sm font-medium">
+                Fecha de la foto (opcional)
+              </Label>
+              <Input
+                id="photoDate"
+                type="date"
+                value={photoDate}
+                onChange={(e) => setPhotoDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+
             {/* Caption */}
             <div>
               <Label htmlFor="caption" className="text-sm font-medium">
@@ -287,6 +350,132 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
               )}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Photo Detail Dialog */}
+      <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
+        <DialogContent className="sm:max-w-lg bg-card border-border max-h-[90vh] overflow-y-auto p-0">
+          {selectedPhoto && (
+            <>
+              {/* Image */}
+              <div className="relative">
+                <img
+                  src={selectedPhoto.image_url}
+                  alt={selectedPhoto.caption || 'Foto'}
+                  className="w-full max-h-[50vh] object-contain bg-black cursor-pointer"
+                  onClick={() => openViewer(photos.findIndex(p => p.id === selectedPhoto.id))}
+                />
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="absolute top-2 right-2 h-8 w-8"
+                  onClick={() => openViewer(photos.findIndex(p => p.id === selectedPhoto.id))}
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="p-4 space-y-4">
+                {/* Actions */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => handleLike(selectedPhoto)}
+                      className="flex items-center gap-1.5 text-sm"
+                    >
+                      <Heart className={cn(
+                        "w-5 h-5 transition-colors",
+                        selectedPhoto.user_has_liked ? "fill-destructive text-destructive" : "text-muted-foreground"
+                      )} />
+                      <span>{selectedPhoto.likes_count || 0}</span>
+                    </button>
+                    <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <MessageCircle className="w-5 h-5" />
+                      {selectedPhoto.comments_count || 0}
+                    </span>
+                  </div>
+                  {selectedPhoto.user_id === user?.id && (
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(selectedPhoto)}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+
+                {/* Caption & Date */}
+                {(selectedPhoto.caption || selectedPhoto.photo_date) && (
+                  <div className="space-y-1">
+                    {selectedPhoto.caption && (
+                      <p className="text-sm text-foreground">{selectedPhoto.caption}</p>
+                    )}
+                    {selectedPhoto.photo_date && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {format(new Date(selectedPhoto.photo_date), "d 'de' MMMM, yyyy", { locale: es })}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Comments Section */}
+                <div className="border-t border-border pt-4 space-y-3">
+                  <h4 className="text-sm font-medium">Comentarios</h4>
+                  
+                  {loadingComments ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : comments.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-2">
+                      Sin comentarios aún
+                    </p>
+                  ) : (
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {comments.map(comment => (
+                        <div key={comment.id} className="flex gap-2 text-sm">
+                          <span className="font-medium text-primary shrink-0">
+                            @{comment.author_nickname}
+                          </span>
+                          <span className="text-foreground flex-1">{comment.comment}</span>
+                          {comment.user_id === user?.id && (
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="text-muted-foreground hover:text-destructive shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add Comment */}
+                  <div className="flex gap-2">
+                    <Input
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Escribe un comentario..."
+                      maxLength={200}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
+                    />
+                    <Button
+                      size="icon"
+                      onClick={handleSubmitComment}
+                      disabled={!newComment.trim() || submittingComment}
+                    >
+                      {submittingComment ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Máximo 200 caracteres</p>
+                </div>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

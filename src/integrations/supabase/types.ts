@@ -510,6 +510,7 @@ export type Database = {
           created_at: string
           id: string
           image_url: string
+          photo_date: string | null
           user_id: string
         }
         Insert: {
@@ -517,6 +518,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url: string
+          photo_date?: string | null
           user_id: string
         }
         Update: {
@@ -524,9 +526,71 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string
+          photo_date?: string | null
           user_id?: string
         }
         Relationships: []
+      }
+      memory_gallery_comments: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          photo_id: string
+          user_id: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          id?: string
+          photo_id: string
+          user_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          photo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_gallery_comments_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "memory_gallery"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memory_gallery_likes: {
+        Row: {
+          created_at: string
+          id: string
+          photo_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          photo_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          photo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_gallery_likes_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "memory_gallery"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
