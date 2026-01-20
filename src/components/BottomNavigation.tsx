@@ -2,20 +2,18 @@
 
 import React from 'react';
 import { 
+  Home,
   Map, 
   Car, 
   Activity, 
   Settings,
-  ShoppingBag,
   Users,
-  Star,
-  Cross,
   BookOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUpdateAvailable } from '@/hooks/useUpdateCheck';
 
-export type TabId = 'map' | 'transit' | 'alerts' | 'community' | 'market' | 'resources' | 'settings';
+export type TabId = 'home' | 'map' | 'transit' | 'alerts' | 'community' | 'resources' | 'settings';
 
 interface NavItem {
   id: TabId;
@@ -43,17 +41,10 @@ const StarOfLifeIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 const NAV_ITEMS: NavItem[] = [
+  { id: 'home', label: 'Inicio', icon: <Home className="w-5 h-5" /> },
   { id: 'map', label: 'Mapa', icon: <Map className="w-5 h-5" /> },
   { id: 'alerts', label: 'Sismos', icon: <Activity className="w-5 h-5" /> },
   { id: 'transit', label: 'Tránsito', icon: <Car className="w-5 h-5" /> },
-  { id: 'resources', label: 'RecurSOS', icon: <BookOpen className="w-5 h-5" /> },
-  { 
-    id: 'market', 
-    label: 'Market', 
-    icon: <ShoppingBag className="w-5 h-5" />,
-    requiresRescatista: true,
-    hideInDisaster: true,
-  },
   { id: 'community', label: 'Comunidad', icon: <Users className="w-5 h-5" /> },
   { id: 'settings', label: 'Ajustes', icon: <Settings className="w-5 h-5" /> },
 ];

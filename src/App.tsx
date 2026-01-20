@@ -14,6 +14,7 @@ import { TransitScreen } from '@/pages/TransitScreen';
 import { AlertsScreen } from '@/pages/AlertsScreen';
 import { StatusScreen } from '@/pages/StatusScreen';
 import { MarketScreen } from '@/pages/MarketScreen';
+import { HomeScreen } from '@/pages/HomeScreen';
 import { SettingsScreen } from '@/pages/SettingsScreen';
 import { CommunityScreen } from '@/pages/CommunityScreen';
 import ResourcesScreen from '@/pages/ResourcesScreen';
@@ -88,7 +89,7 @@ function AppContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showComprehensiveTutorial, setShowComprehensiveTutorial] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabId>('map');
+  const [activeTab, setActiveTab] = useState<TabId>('home');
   const [userRole] = useState<UserRole>('SOS_ACTIVO');
   
   // Use the auth hook to check for existing session
@@ -570,11 +571,11 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 
   const renderScreen = () => {
     const screens: Record<string, React.ReactNode> = {
+      home: <HomeScreen onNavigate={setActiveTab} />,
       map: <MapScreen className="h-[calc(100vh-120px)]" respondersToMyAlerts={respondersToMyAlerts} onNavigateToSettings={() => setActiveTab('settings')} activeDrillId={activeDrillId} onOpenDrillChat={(drillId) => { setCommunityChatContext({ type: 'drill', id: drillId, title: '🔔 Chat Clave 100' }); setCommunityChatOpen(true); }} />,
       transit: <TransitScreen userRole={userRole} onOpenMessaging={handleOpenMessaging} />,
       alerts: <AlertsScreen userRole={userRole} />,
-      community: <CommunityScreen />,
-      market: <MarketScreen userRole={userRole} />,
+      community: <CommunityScreen userRole={userRole} />,
       resources: <ResourcesScreen />,
       status: <StatusScreen userRole={userRole} />,
       settings: <SettingsScreen onLogout={handleLogout} />,
@@ -582,7 +583,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
 
     return (
       <div key={activeTab} className="animate-fade-in h-full">
-        {screens[activeTab] || screens.map}
+        {screens[activeTab] || screens.home}
       </div>
     );
   };
