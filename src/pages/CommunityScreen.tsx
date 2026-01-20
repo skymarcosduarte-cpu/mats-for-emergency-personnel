@@ -56,6 +56,50 @@ const EVENT_TYPES: { value: CommunityEventType; label: string }[] = [
   { value: 'OTHER', label: '📝 Otro' },
 ];
 
+// Helper function to render message text with clickable links
+const renderMessageWithLinks = (message: string): React.ReactNode => {
+  // URL regex pattern
+  const urlPattern = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/gi;
+  const parts = message.split(urlPattern);
+  
+  return parts.map((part, index) => {
+    if (!part) return null;
+    
+    // Check if this part is a URL
+    if (part.match(/^https?:\/\//i)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline inline-flex items-center gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+          <ExternalLink className="w-3 h-3 inline-block" />
+        </a>
+      );
+    } else if (part.match(/^www\./i)) {
+      return (
+        <a
+          key={index}
+          href={`https://${part}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline inline-flex items-center gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+          <ExternalLink className="w-3 h-3 inline-block" />
+        </a>
+      );
+    }
+    
+    return <span key={index}>{part}</span>;
+  });
+};
+
 interface CommunityScreenProps {
   userRole?: UserRole;
   onGoHome?: () => void;
@@ -799,7 +843,9 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
                         </div>
                         <h3 className="font-medium text-foreground">{event.title}</h3>
                         {event.message && (
-                          <p className="text-sm text-muted-foreground mt-1">{event.message}</p>
+                          <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                            {renderMessageWithLinks(event.message)}
+                          </p>
                         )}
                         
                         {/* Link URL */}
