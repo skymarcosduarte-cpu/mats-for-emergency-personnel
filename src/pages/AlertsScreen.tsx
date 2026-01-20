@@ -488,8 +488,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             </div>
             <div className="flex-1 text-left min-w-0">
               <h3 className="font-bold text-foreground text-xl">SkyAlert</h3>
-              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
-                Alertas sísmicas en tiempo real
+              <p className="text-base text-muted-foreground line-clamp-3 leading-relaxed">
+                Esta función toma las alertas emitidas en la cuenta de SkyAlert, no es la aplicación en tiempo real.
               </p>
             </div>
             <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
