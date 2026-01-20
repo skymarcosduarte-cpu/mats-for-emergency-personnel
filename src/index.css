@@ -7,94 +7,104 @@
 
 @layer base {
   :root {
-    /* Emergency Dark Theme */
-    --background: 0 0% 4%;
-    --foreground: 0 0% 95%;
+    /* Accessible Light Theme - High Contrast for Elderly Users */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
 
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 95%;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 10%;
 
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
 
-    /* Emergency Orange/Red - Panic Actions */
-    --primary: 15 95% 55%;
+    /* Emergency Orange/Red - Panic Actions - More vivid */
+    --primary: 15 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    /* Safety Green - OK States */
-    --secondary: 142 70% 45%;
+    /* Safety Green - OK States - More vivid */
+    --secondary: 142 80% 40%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Muted Dark Grays */
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 60%;
+    /* Muted Light Grays - Better contrast */
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 35%;
 
-    /* Info Blue - Alerts */
-    --accent: 210 90% 55%;
+    /* Info Blue - Alerts - More vivid */
+    --accent: 210 100% 50%;
     --accent-foreground: 0 0% 100%;
 
-    /* Destructive - Critical Alerts */
-    --destructive: 0 85% 60%;
+    /* Destructive - Critical Alerts - More vivid */
+    --destructive: 0 90% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    /* UI Elements */
-    --border: 0 0% 18%;
-    --input: 0 0% 12%;
-    --ring: 15 95% 55%;
+    /* UI Elements - Higher contrast borders */
+    --border: 0 0% 80%;
+    --input: 0 0% 96%;
+    --ring: 15 100% 50%;
  
     --radius: 0.75rem;
 
     /* Layout tokens */
     --app-header-height: calc(64px + env(safe-area-inset-top, 0px));
  
-    /* Custom Emergency Colors */
-    --panic: 15 95% 55%;
-    --panic-glow: 15 100% 60%;
-    --safe: 142 70% 45%;
-    --safe-glow: 142 80% 50%;
-    --warning: 45 95% 55%;
-    --warning-glow: 45 100% 60%;
-    --help-14: 0 90% 55%;
-    --help-14-glow: 0 100% 65%;
-    --mats-green: 142 65% 40%;
+    /* Custom Emergency Colors - More vivid for visibility */
+    --panic: 15 100% 50%;
+    --panic-glow: 15 100% 55%;
+    --safe: 142 80% 40%;
+    --safe-glow: 142 90% 45%;
+    --warning: 45 100% 50%;
+    --warning-glow: 45 100% 55%;
+    --help-14: 0 95% 50%;
+    --help-14-glow: 0 100% 60%;
+    --mats-green: 142 70% 35%;
 
-    /* Gradients */
-    --gradient-panic: linear-gradient(135deg, hsl(15 95% 55%) 0%, hsl(0 85% 50%) 100%);
-    --gradient-safe: linear-gradient(135deg, hsl(142 70% 45%) 0%, hsl(160 60% 40%) 100%);
-    --gradient-dark: linear-gradient(180deg, hsl(0 0% 7%) 0%, hsl(0 0% 4%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 9%) 0%, hsl(0 0% 6%) 100%);
+    /* Section Colors - Vivid for elderly visibility */
+    --section-map: 210 100% 50%;
+    --section-alerts: 25 100% 50%;
+    --section-transit: 142 80% 40%;
+    --section-resources: 0 90% 50%;
+    --section-community: 320 90% 50%;
+    --section-settings: 220 15% 45%;
 
-    /* Shadows */
-    --shadow-panic: 0 0 30px hsl(15 95% 55% / 0.4);
-    --shadow-safe: 0 0 20px hsl(142 70% 45% / 0.3);
-    --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.5);
-    --shadow-glow: 0 0 40px hsl(15 100% 60% / 0.5);
+    /* Gradients - Lighter for white background */
+    --gradient-panic: linear-gradient(135deg, hsl(15 100% 50%) 0%, hsl(0 90% 45%) 100%);
+    --gradient-safe: linear-gradient(135deg, hsl(142 80% 40%) 0%, hsl(160 70% 35%) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
+
+    /* Shadows - Softer for light theme */
+    --shadow-panic: 0 4px 20px hsl(15 100% 50% / 0.25);
+    --shadow-safe: 0 4px 16px hsl(142 80% 40% / 0.2);
+    --shadow-card: 0 2px 12px hsl(0 0% 0% / 0.08);
+    --shadow-glow: 0 4px 24px hsl(15 100% 55% / 0.3);
 
     /* Animations */
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    /* Sidebar - Emergency Theme */
-    --sidebar-background: 0 0% 6%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 15 95% 55%;
+    /* Sidebar - Light Theme */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 15%;
+    --sidebar-primary: 15 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 15 95% 55%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 88%;
+    --sidebar-ring: 15 100% 50%;
   }
 
-  /* Light mode override - minimal, still dark-leaning */
-  .light {
-    --background: 0 0% 98%;
-    --foreground: 0 0% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
-    --muted: 0 0% 94%;
-    --muted-foreground: 0 0% 45%;
-    --border: 0 0% 88%;
-    --input: 0 0% 94%;
+  /* Dark mode override - for users who prefer dark */
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 95%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
+    --border: 0 0% 18%;
+    --input: 0 0% 12%;
   }
 }
 
@@ -382,6 +392,44 @@
   .no-select {
     -webkit-user-select: none;
     user-select: none;
+  }
+
+  /* Section Card Styles - Accessible for elderly */
+  .section-card-map {
+    @apply border-[hsl(210,100%,50%)] hover:bg-[hsl(210,100%,97%)];
+  }
+  .section-icon-map {
+    @apply bg-[hsl(210,100%,50%)] text-white;
+  }
+  .section-card-alerts {
+    @apply border-[hsl(25,100%,50%)] hover:bg-[hsl(25,100%,97%)];
+  }
+  .section-icon-alerts {
+    @apply bg-[hsl(25,100%,50%)] text-white;
+  }
+  .section-card-transit {
+    @apply border-[hsl(142,80%,35%)] hover:bg-[hsl(142,80%,97%)];
+  }
+  .section-icon-transit {
+    @apply bg-[hsl(142,80%,35%)] text-white;
+  }
+  .section-card-resources {
+    @apply border-[hsl(0,90%,50%)] hover:bg-[hsl(0,90%,97%)];
+  }
+  .section-icon-resources {
+    @apply bg-[hsl(0,90%,50%)] text-white;
+  }
+  .section-card-community {
+    @apply border-[hsl(320,90%,50%)] hover:bg-[hsl(320,90%,97%)];
+  }
+  .section-icon-community {
+    @apply bg-[hsl(320,90%,50%)] text-white;
+  }
+  .section-card-settings {
+    @apply border-[hsl(220,15%,45%)] hover:bg-[hsl(220,15%,97%)];
+  }
+  .section-icon-settings {
+    @apply bg-[hsl(220,15%,45%)] text-white;
   }
 }
 
