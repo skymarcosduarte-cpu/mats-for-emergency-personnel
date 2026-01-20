@@ -10,9 +10,20 @@ export interface MemoryPhoto {
   user_id: string;
   image_url: string;
   caption: string | null;
+  photo_date: string | null;
   created_at: string;
-  // Joined
-  author_name?: string;
+  // Aggregated data
+  likes_count?: number;
+  user_has_liked?: boolean;
+  comments_count?: number;
+}
+
+export interface PhotoComment {
+  id: string;
+  photo_id: string;
+  user_id: string;
+  comment: string;
+  created_at: string;
   author_nickname?: string;
 }
 
@@ -21,18 +32,63 @@ export function useMemoryGallery() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  // Fetch all photos
+  // Fetch all photos with likes count
   const fetchPhotos = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
+
+      // Fetch photos
+      const { data: photosData, error: photosError } = await supabase
         .from('memory_gallery')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(200);
 
-      if (error) throw error;
-      setPhotos((data || []) as MemoryPhoto[]);
+      if (photosError) throw photosError;
+
+      // Fetch all likes counts
+      const { data: likesData } = await supabase
+        .from('memory_gallery_likes')
+        .select('photo_id');
+
+      // Fetch all comments counts
+      const { data: commentsData } = await supabase
+        .from('memory_gallery_comments')
+        .select('photo_id');
+
+      // Fetch user's likes if logged in
+      let userLikes: string[] = [];
+      if (userId) {
+        const { data: userLikesData } = await supabase
+          .from('memory_gallery_likes')
+          .select('photo_id')
+          .eq('user_id', userId);
+        userLikes = (userLikesData || []).map(l => l.photo_id);
+      }
+
+      // Count likes and comments per photo
+      const likesCount: Record<string, number> = {};
+      const commentsCount: Record<string, number> = {};
+      
+      (likesData || []).forEach(l => {
+        likesCount[l.photo_id] = (likesCount[l.photo_id] || 0) + 1;
+      });
+      
+      (commentsData || []).forEach(c => {
+        commentsCount[c.photo_id] = (commentsCount[c.photo_id] || 0) + 1;
+      });
+
+      // Merge data
+      const enrichedPhotos: MemoryPhoto[] = (photosData || []).map(photo => ({
+        ...photo,
+        likes_count: likesCount[photo.id] || 0,
+        user_has_liked: userLikes.includes(photo.id),
+        comments_count: commentsCount[photo.id] || 0,
+      }));
+
+      setPhotos(enrichedPhotos);
     } catch (err) {
       console.error('[useMemoryGallery] Error fetching photos:', err);
       toast.error('Error al cargar la galería');
@@ -42,7 +98,11 @@ export function useMemoryGallery() {
   }, []);
 
   // Upload multiple photos (max 20)
-  const uploadPhotos = useCallback(async (files: File[], caption?: string): Promise<boolean> => {
+  const uploadPhotos = useCallback(async (
+    files: File[], 
+    caption?: string,
+    photoDate?: string
+  ): Promise<boolean> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error('Debes iniciar sesión');
@@ -59,17 +119,9 @@ export function useMemoryGallery() {
 
     try {
       for (const file of files) {
-        // Validate file
-        if (!file.type.startsWith('image/')) {
-          console.warn('Skipping non-image file:', file.name);
-          continue;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-          console.warn('Skipping large file:', file.name);
-          continue;
-        }
+        if (!file.type.startsWith('image/')) continue;
+        if (file.size > 5 * 1024 * 1024) continue;
 
-        // Upload to storage
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
 
@@ -77,30 +129,22 @@ export function useMemoryGallery() {
           .from('community_images')
           .upload(fileName, file, { upsert: true });
 
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          continue;
-        }
+        if (uploadError) continue;
 
-        // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('community_images')
           .getPublicUrl(fileName);
 
-        // Insert into database
         const { error: insertError } = await supabase
           .from('memory_gallery')
           .insert({
             user_id: user.id,
             image_url: publicUrl,
             caption: caption || null,
+            photo_date: photoDate || null,
           });
 
-        if (insertError) {
-          console.error('Insert error:', insertError);
-          continue;
-        }
-
+        if (insertError) continue;
         successCount++;
       }
 
@@ -130,7 +174,6 @@ export function useMemoryGallery() {
         .eq('id', id);
 
       if (error) throw error;
-
       toast.success('Foto eliminada');
       await fetchPhotos();
       return true;
@@ -141,17 +184,158 @@ export function useMemoryGallery() {
     }
   }, [fetchPhotos]);
 
+  // Toggle like on a photo
+  const toggleLike = useCallback(async (photoId: string): Promise<boolean> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Debes iniciar sesión');
+      return false;
+    }
+
+    try {
+      // Check if already liked
+      const { data: existing } = await supabase
+        .from('memory_gallery_likes')
+        .select('id')
+        .eq('photo_id', photoId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        // Unlike
+        await supabase
+          .from('memory_gallery_likes')
+          .delete()
+          .eq('id', existing.id);
+      } else {
+        // Like
+        await supabase
+          .from('memory_gallery_likes')
+          .insert({ photo_id: photoId, user_id: user.id });
+      }
+
+      // Update local state optimistically
+      setPhotos(prev => prev.map(p => {
+        if (p.id === photoId) {
+          return {
+            ...p,
+            likes_count: existing ? (p.likes_count || 1) - 1 : (p.likes_count || 0) + 1,
+            user_has_liked: !existing,
+          };
+        }
+        return p;
+      }));
+
+      return true;
+    } catch (err) {
+      console.error('[useMemoryGallery] Error toggling like:', err);
+      return false;
+    }
+  }, []);
+
+  // Get comments for a photo
+  const getComments = useCallback(async (photoId: string): Promise<PhotoComment[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('memory_gallery_comments')
+        .select('*')
+        .eq('photo_id', photoId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      // Get author nicknames
+      const userIds = [...new Set((data || []).map(c => c.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, nickname')
+        .in('id', userIds);
+
+      const nicknameMap: Record<string, string> = {};
+      (profiles || []).forEach(p => {
+        nicknameMap[p.id] = p.nickname;
+      });
+
+      return (data || []).map(c => ({
+        ...c,
+        author_nickname: nicknameMap[c.user_id] || 'Usuario',
+      }));
+    } catch (err) {
+      console.error('[useMemoryGallery] Error fetching comments:', err);
+      return [];
+    }
+  }, []);
+
+  // Add a comment
+  const addComment = useCallback(async (photoId: string, comment: string): Promise<boolean> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Debes iniciar sesión');
+      return false;
+    }
+
+    if (comment.length > 200) {
+      toast.error('El comentario es muy largo (máx 200 caracteres)');
+      return false;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('memory_gallery_comments')
+        .insert({ photo_id: photoId, user_id: user.id, comment });
+
+      if (error) throw error;
+
+      // Update comments count locally
+      setPhotos(prev => prev.map(p => {
+        if (p.id === photoId) {
+          return { ...p, comments_count: (p.comments_count || 0) + 1 };
+        }
+        return p;
+      }));
+
+      return true;
+    } catch (err) {
+      console.error('[useMemoryGallery] Error adding comment:', err);
+      toast.error('Error al comentar');
+      return false;
+    }
+  }, []);
+
+  // Delete a comment
+  const deleteComment = useCallback(async (commentId: string, photoId: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('memory_gallery_comments')
+        .delete()
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      // Update comments count locally
+      setPhotos(prev => prev.map(p => {
+        if (p.id === photoId) {
+          return { ...p, comments_count: Math.max((p.comments_count || 1) - 1, 0) };
+        }
+        return p;
+      }));
+
+      return true;
+    } catch (err) {
+      console.error('[useMemoryGallery] Error deleting comment:', err);
+      return false;
+    }
+  }, []);
+
   // Initial fetch + realtime
   useEffect(() => {
     fetchPhotos();
 
     const channel = supabase
-      .channel('memory_gallery_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'memory_gallery' },
-        () => fetchPhotos()
-      )
+      .channel('memory_gallery_all_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'memory_gallery' }, () => fetchPhotos())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'memory_gallery_likes' }, () => fetchPhotos())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'memory_gallery_comments' }, () => fetchPhotos())
       .subscribe();
 
     return () => {
@@ -165,6 +349,10 @@ export function useMemoryGallery() {
     uploading,
     uploadPhotos,
     deletePhoto,
+    toggleLike,
+    getComments,
+    addComment,
+    deleteComment,
     refresh: fetchPhotos,
   };
 }
