@@ -1,15 +1,16 @@
 // Community Events Screen for COMUNIDAD EX SOS
-// Message board for birthdays, health notices, hospital support, announcements + Breaking News + Reading Room
+// Message board for birthdays, health notices, hospital support, announcements + Breaking News + Market
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, BookOpen
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper
 } from 'lucide-react';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
-import { ReadingRoomTab } from '@/components/ReadingRoomTab';
+import { MarketScreen } from '@/pages/MarketScreen';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { UserRole } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +55,11 @@ const EVENT_TYPES: { value: CommunityEventType; label: string }[] = [
   { value: 'OTHER', label: '📝 Otro' },
 ];
 
-export const CommunityScreen: React.FC = () => {
+interface CommunityScreenProps {
+  userRole?: UserRole;
+}
+
+export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SOS_ACTIVO' }) => {
   const { user } = useAuth();
   const { 
     events, 
@@ -344,9 +349,9 @@ export const CommunityScreen: React.FC = () => {
                   📰 Noticias
                 </span>
               </TabsTrigger>
-              <TabsTrigger value="lectura" className="text-xs">
-                <BookOpen className="w-3.5 h-3.5 mr-1" />
-                Lectura
+              <TabsTrigger value="market" className="text-xs">
+                <ShoppingBag className="w-3.5 h-3.5 mr-1" />
+                Market
               </TabsTrigger>
             </TabsList>
           </div>
@@ -672,9 +677,9 @@ export const CommunityScreen: React.FC = () => {
           <BreakingNewsSection />
         </TabsContent>
 
-        {/* Reading Room Tab */}
-        <TabsContent value="lectura" className="mt-4">
-          <ReadingRoomTab />
+        {/* Market Tab */}
+        <TabsContent value="market" className="mt-4">
+          <MarketScreen userRole={userRole} />
         </TabsContent>
       </Tabs>
 
