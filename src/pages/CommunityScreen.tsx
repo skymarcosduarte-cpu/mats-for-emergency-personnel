@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard
 } from 'lucide-react';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
 import { MarketScreen } from '@/pages/MarketScreen';
@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// Tabs removed - using conditional rendering based on activeSection
 import { useCommunityEvents, CommunityEventType } from '@/hooks/useCommunityEvents';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 import TripRouteMap from '@/components/TripRouteMap';
@@ -79,6 +79,10 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   } = useActiveTrips();
 
   const { sendMessage } = useInternalMessages();
+  
+  // Landing view state - shows big buttons before entering a subsection
+  const [showLanding, setShowLanding] = useState(true);
+  const [activeSection, setActiveSection] = useState<'tablero' | 'noticias' | 'market'>('tablero');
   
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -318,47 +322,177 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
     }
   };
 
+  // Handler to enter a specific section from landing
+  const handleEnterSection = (section: 'tablero' | 'noticias' | 'market') => {
+    setActiveSection(section);
+    setShowLanding(false);
+  };
+
+  // Get section title based on current section
+  const getSectionTitle = () => {
+    switch (activeSection) {
+      case 'tablero': return 'Avisos';
+      case 'noticias': return 'Últimas Noticias';
+      case 'market': return 'Marketplace';
+      default: return 'Comunidad';
+    }
+  };
+
+  // Landing view with large buttons
+  if (showLanding) {
+    return (
+      <div className="flex-1 overflow-auto pb-20">
+        {/* Header */}
+        <div className="p-4 space-y-1">
+          <h1 className="text-2xl font-bold text-foreground">Comunidad</h1>
+          <p className="text-sm text-muted-foreground">Tablero de avisos, noticias y marketplace</p>
+        </div>
+
+        {/* Large Button Cards */}
+        <div className="px-4 space-y-3">
+          {/* Avisos Button */}
+          <button
+            onClick={() => handleEnterSection('tablero')}
+            className={cn(
+              "w-full flex items-center gap-4 p-4 rounded-xl",
+              "bg-card border border-border/50",
+              "hover:bg-muted/50 active:scale-[0.98]",
+              "transition-all duration-200"
+            )}
+          >
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-primary/20 text-primary">
+              <Clipboard className="w-8 h-8" />
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <h3 className="font-semibold text-foreground text-base">Avisos</h3>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                Cumpleaños, eventos y anuncios de la comunidad
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+          </button>
+
+          {/* Últimas Noticias Button */}
+          <button
+            onClick={() => handleEnterSection('noticias')}
+            className={cn(
+              "w-full flex items-center gap-4 p-4 rounded-xl",
+              "bg-card border border-border/50",
+              "hover:bg-muted/50 active:scale-[0.98]",
+              "transition-all duration-200"
+            )}
+          >
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-destructive/20 text-destructive">
+              <Newspaper className="w-8 h-8" />
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <h3 className="font-semibold text-foreground text-base">Últimas Noticias</h3>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                Viajes activos y noticias de última hora
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+          </button>
+
+          {/* Marketplace Button */}
+          <button
+            onClick={() => handleEnterSection('market')}
+            className={cn(
+              "w-full flex items-center gap-4 p-4 rounded-xl",
+              "bg-card border border-border/50",
+              "hover:bg-muted/50 active:scale-[0.98]",
+              "transition-all duration-200"
+            )}
+          >
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-pink-500/20 text-pink-400">
+              <ShoppingBag className="w-8 h-8" />
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <h3 className="font-semibold text-foreground text-base">Marketplace</h3>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                Compra y vende productos en la comunidad
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+          </button>
+        </div>
+
+        {/* Dialogs still need to be rendered */}
+        {/* New Event Dialog */}
+        <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
+          <DialogContent className="sm:max-w-md bg-card border-border">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquarePlus className="w-5 h-5 text-primary" />
+                Publicar Aviso
+              </DialogTitle>
+            </DialogHeader>
+            {/* Dialog content handled elsewhere */}
+          </DialogContent>
+        </Dialog>
+
+        {/* Birthday Greeting Dialog */}
+        <Dialog open={!!greetingTarget} onOpenChange={(open) => !open && setGreetingTarget(null)}>
+          {/* Dialog content handled in main view */}
+        </Dialog>
+
+        {/* Traveler Location Dialog */}
+        <TravelerLocationDialog
+          isOpen={!!viewingTravelerId}
+          onClose={() => setViewingTravelerId(null)}
+          userId={viewingTravelerId || ''}
+          onSendMessage={() => {
+            if (viewingTravelerId) {
+              window.location.href = `/?chat=${viewingTravelerId}`;
+            }
+          }}
+        />
+
+        {/* Image Gallery Viewer for Community Events */}
+        <ImageGalleryViewer
+          images={zoomImages?.images || []}
+          initialIndex={zoomImages?.index || 0}
+          open={!!zoomImages}
+          onOpenChange={(open) => !open && setZoomImages(null)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="pb-20">
-      <Tabs defaultValue="tablero" className="px-4 pt-4">
-        {/* Sticky Community sub-header (title + tabs) */}
+      <div className="px-4 pt-4">
+        {/* Sticky Community sub-header */}
         <div className="sticky top-0 z-20 -mx-4 px-4 pb-3 bg-background/95 backdrop-blur-sm border-b border-border">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-foreground">Comunidad</h1>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowLanding(true)}
+                className="h-8 w-8"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <h1 className="text-xl font-bold text-foreground">{getSectionTitle()}</h1>
+            </div>
             <div className="flex gap-2">
               <Button variant="ghost" size="icon" onClick={refresh} disabled={loading}>
                 <RefreshCw className={cn('w-5 h-5', loading && 'animate-spin')} />
               </Button>
-              <Button size="sm" onClick={() => setShowNewDialog(true)}>
-                <MessageSquarePlus className="w-4 h-4 mr-1" />
-                Publicar
-              </Button>
+              {activeSection === 'tablero' && (
+                <Button size="sm" onClick={() => setShowNewDialog(true)}>
+                  <MessageSquarePlus className="w-4 h-4 mr-1" />
+                  Publicar
+                </Button>
+              )}
             </div>
-          </div>
-
-          <div className="mt-3">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="tablero" className="text-xs">
-                📋 Tablero
-              </TabsTrigger>
-              <TabsTrigger 
-                value="noticias" 
-                className="text-xs relative overflow-hidden"
-              >
-                <span className="relative z-10 animate-pulse text-destructive font-semibold drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]">
-                  📰 Noticias
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="market" className="text-xs">
-                <ShoppingBag className="w-3.5 h-3.5 mr-1" />
-                Market
-              </TabsTrigger>
-            </TabsList>
           </div>
         </div>
 
-        {/* Tablero Tab */}
-        <TabsContent value="tablero" className="mt-4 space-y-4">
+        {/* Tablero/Avisos Section */}
+        {activeSection === 'tablero' && (
+          <div className="mt-4 space-y-4">
           {/* Nearby Birthdays (Yesterday, Today, Tomorrow) */}
           {birthdays.length > 0 && (
             <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/30">
@@ -592,10 +726,12 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
               ))
             )}
           </div>
-        </TabsContent>
+          </div>
+        )}
 
-        {/* Breaking News Tab */}
-        <TabsContent value="noticias" className="mt-4 space-y-4">
+        {/* Noticias Section */}
+        {activeSection === 'noticias' && (
+          <div className="mt-4 space-y-4">
           {/* Active Community Trips */}
           {communityTrips.length > 0 && (
             <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30">
@@ -675,13 +811,16 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
 
           {/* Breaking News Section */}
           <BreakingNewsSection />
-        </TabsContent>
+          </div>
+        )}
 
-        {/* Market Tab */}
-        <TabsContent value="market" className="mt-4">
-          <MarketScreen userRole={userRole} />
-        </TabsContent>
-      </Tabs>
+        {/* Market Section */}
+        {activeSection === 'market' && (
+          <div className="mt-4">
+            <MarketScreen userRole={userRole} />
+          </div>
+        )}
+      </div>
 
       {/* New Event Dialog */}
       <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
