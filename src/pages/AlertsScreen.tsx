@@ -27,7 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// Tabs removed - using conditional rendering based on initialTab
 import { MediaCapture } from '@/components/MediaCapture';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { EmergencyRouteMap } from '@/components/EmergencyRouteMap';
@@ -526,6 +526,16 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     );
   }
 
+  // Get section title based on current tab
+  const getSectionTitle = () => {
+    switch (initialTab) {
+      case 'skyalert': return 'SkyAlert';
+      case 'earthquakes': return 'Sismos Recientes';
+      case 'otros': return 'Otros Fenómenos';
+      default: return 'Sismos';
+    }
+  };
+
   return (
     <div className="flex-1 overflow-auto pb-20 scrollbar-thin">
       {/* Header */}
@@ -540,7 +550,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h1 className="text-xl font-bold text-foreground">Sismos</h1>
+            <h1 className="text-xl font-bold text-foreground">{getSectionTitle()}</h1>
           </div>
           <Button
             variant="ghost"
@@ -581,39 +591,16 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         )}
       </div>
 
-      <Tabs 
-        defaultValue={initialTab}
-        className="p-4"
-        onValueChange={(value) => {
-          // Auto-refresh when entering specific tabs
-          if (value === 'earthquakes') {
-            loadEarthquakes();
-          } else if (value === 'otros') {
-            refreshGDACS();
-          }
-        }}
-      >
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="skyalert" className="relative text-xs px-1">
-            🔔 SkyAlert
-          </TabsTrigger>
-          <TabsTrigger value="earthquakes" className="text-xs px-1">Sismos Recientes</TabsTrigger>
-          <TabsTrigger value="otros" className="relative text-xs px-1">
-            Otros Fenómenos
-            {(gdacsAlerts.length > 0 || aemetAlerts.length > 0) && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
-              >
-                {gdacsAlerts.length + aemetAlerts.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+      {/* Content based on selected section - NO TABS */}
+      <div className="p-4">
+        {/* SkyAlert Section */}
+        {initialTab === 'skyalert' && (
+          <SkyAlertTab />
+        )}
 
-
-        {/* Earthquakes Tab */}
-        <TabsContent value="earthquakes" className="space-y-3 mt-4">
+        {/* Earthquakes Section */}
+        {initialTab === 'earthquakes' && (
+          <div className="space-y-3">
           {/* Source filter and status */}
           <div className="flex flex-col gap-2">
             {/* Filter buttons */}
@@ -887,16 +874,12 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               </>
             );
           })()}
-        </TabsContent>
+          </div>
+        )}
 
-        {/* Weather Alerts Tab */}
-        {/* SkyAlert Tab */}
-        <TabsContent value="skyalert" className="space-y-3 mt-4">
-          <SkyAlertTab />
-        </TabsContent>
-
-        {/* Otros - International & Multi-source Alerts Tab */}
-        <TabsContent value="otros" className="space-y-3 mt-4">
+        {/* Otros Fenómenos Section */}
+        {initialTab === 'otros' && (
+          <div className="space-y-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-muted-foreground">
               Alertas internacionales multirriesgo
@@ -1209,42 +1192,41 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               })()}
             </>
           )}
-        </TabsContent>
+          </div>
+        )}
+      </div>
 
-
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>¿Eliminar esta alerta?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción marcará la alerta como resuelta y ya no será visible para otros usuarios. Esta acción no se puede deshacer.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={async () => {
-                  if (deleteConfirmId) {
-                    // Pass the current user's ID as the resolver
-                    const success = await resolveRequest(deleteConfirmId, user?.id);
-                    setDeleteConfirmId(null);
-                    if (success) {
-                      toast.success('Alerta eliminada correctamente');
-                    } else {
-                      toast.error('Error al eliminar la alerta');
-                    }
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar esta alerta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción marcará la alerta como resuelta y ya no será visible para otros usuarios. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (deleteConfirmId) {
+                  // Pass the current user's ID as the resolver
+                  const success = await resolveRequest(deleteConfirmId, user?.id);
+                  setDeleteConfirmId(null);
+                  if (success) {
+                    toast.success('Alerta eliminada correctamente');
+                  } else {
+                    toast.error('Error al eliminar la alerta');
                   }
-                }}
-              >
-                Eliminar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-      </Tabs>
+                }
+              }}
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Quake Detail Dialog with Checkin Map */}
       <Dialog open={showQuakeDetailDialog} onOpenChange={setShowQuakeDetailDialog}>
