@@ -78,6 +78,9 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
   const [newComment, setNewComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   
+  // Track which photo is currently animating (for like heart animation)
+  const [animatingLikeId, setAnimatingLikeId] = useState<string | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get unique years from photos
@@ -262,6 +265,9 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
 
   const handleLike = async (photo: MemoryPhoto, e?: React.MouseEvent) => {
     e?.stopPropagation();
+    // Trigger animation
+    setAnimatingLikeId(photo.id);
+    setTimeout(() => setAnimatingLikeId(null), 400);
     await toggleLike(photo.id);
   };
 
@@ -366,8 +372,9 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
             className="flex items-center gap-1 hover:scale-110 transition-transform active:scale-95"
           >
             <Heart className={cn(
-              "w-4 h-4 transition-colors", 
-              photo.user_has_liked ? "fill-destructive text-destructive" : ""
+              "w-4 h-4 transition-all duration-200", 
+              photo.user_has_liked ? "fill-destructive text-destructive" : "",
+              animatingLikeId === photo.id && "animate-like-bounce"
             )} />
             {photo.likes_count || 0}
           </button>
@@ -538,11 +545,12 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => handleLike(selectedPhoto)}
-                      className="flex items-center gap-1.5 text-sm"
+                      className="flex items-center gap-1.5 text-sm hover:scale-105 transition-transform active:scale-95"
                     >
                       <Heart className={cn(
-                        "w-5 h-5 transition-colors",
-                        selectedPhoto.user_has_liked ? "fill-destructive text-destructive" : "text-muted-foreground"
+                        "w-5 h-5 transition-all duration-200",
+                        selectedPhoto.user_has_liked ? "fill-destructive text-destructive" : "text-muted-foreground",
+                        animatingLikeId === selectedPhoto.id && "animate-like-bounce"
                       )} />
                       <span>{selectedPhoto.likes_count || 0}</span>
                     </button>
