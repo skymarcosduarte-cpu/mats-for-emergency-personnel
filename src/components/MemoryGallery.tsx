@@ -68,6 +68,7 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
   const [filterYear, setFilterYear] = useState<string>('all');
   const [filterUser, setFilterUser] = useState<string>('all');
   const [users, setUsers] = useState<UserInfo[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   
   // Photo detail/comments dialog
@@ -97,17 +98,30 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
 
   // Fetch user nicknames
   useEffect(() => {
-    if (uniqueUserIds.length === 0) return;
+    if (uniqueUserIds.length === 0) {
+      setUsersLoading(false);
+      return;
+    }
     
-    supabase
-      .from('profiles')
-      .select('id, nickname')
-      .in('id', uniqueUserIds)
-      .then(({ data }) => {
+    const fetchUsers = async () => {
+      setUsersLoading(true);
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, nickname')
+          .in('id', uniqueUserIds);
+        
         if (data) {
           setUsers(data.map(p => ({ id: p.id, nickname: p.nickname })));
         }
-      });
+      } catch (err) {
+        console.error('Error fetching users:', err);
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+    
+    fetchUsers();
   }, [uniqueUserIds]);
 
   // Filter photos
@@ -792,7 +806,7 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
         </div>
 
         <div className="p-4 space-y-4">
-          {loading ? (
+          {(loading || usersLoading) ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
