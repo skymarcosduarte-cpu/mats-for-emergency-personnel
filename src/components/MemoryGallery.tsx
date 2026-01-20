@@ -81,6 +81,9 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
   // Track which photo is currently animating (for like heart animation)
   const [animatingLikeId, setAnimatingLikeId] = useState<string | null>(null);
   
+  // Heart particles state for burst effect
+  const [heartParticles, setHeartParticles] = useState<{id: string, photoId: string, x: number, y: number, angle: number, scale: number}[]>([]);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get unique years from photos
@@ -268,6 +271,23 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
     // Trigger animation
     setAnimatingLikeId(photo.id);
     setTimeout(() => setAnimatingLikeId(null), 400);
+    
+    // Create heart particles burst
+    const newParticles = Array.from({ length: 6 }, (_, i) => ({
+      id: `${photo.id}-${Date.now()}-${i}`,
+      photoId: photo.id,
+      x: 0,
+      y: 0,
+      angle: (i * 60) + Math.random() * 30 - 15, // Spread evenly with some randomness
+      scale: 0.5 + Math.random() * 0.5
+    }));
+    setHeartParticles(prev => [...prev, ...newParticles]);
+    
+    // Remove particles after animation
+    setTimeout(() => {
+      setHeartParticles(prev => prev.filter(p => !newParticles.some(np => np.id === p.id)));
+    }, 700);
+    
     await toggleLike(photo.id);
   };
 
@@ -369,7 +389,7 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
         <div className="flex items-center gap-3 text-white text-xs">
           <button 
             onClick={(e) => handleLike(photo, e)}
-            className="flex items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+            className="relative flex items-center gap-1 hover:scale-110 transition-transform active:scale-95"
           >
             <Heart className={cn(
               "w-4 h-4 transition-all duration-200", 
@@ -377,6 +397,17 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
               animatingLikeId === photo.id && "animate-like-bounce"
             )} />
             {photo.likes_count || 0}
+            {/* Heart particles */}
+            {heartParticles.filter(p => p.photoId === photo.id).map(particle => (
+              <Heart 
+                key={particle.id}
+                className="absolute left-0 top-0 w-3 h-3 fill-destructive text-destructive animate-heart-particle pointer-events-none"
+                style={{
+                  '--particle-angle': `${particle.angle}deg`,
+                  '--particle-scale': particle.scale
+                } as React.CSSProperties}
+              />
+            ))}
           </button>
           <span className="flex items-center gap-1">
             <MessageCircle className="w-3 h-3" />

@@ -237,6 +237,28 @@
     animation: like-bounce 0.4s ease-in-out;
   }
 
+  /* Heart Particle Burst Animation */
+  @keyframes heart-particle {
+    0% {
+      opacity: 1;
+      transform: translate(0, 0) scale(var(--particle-scale, 1)) rotate(0deg);
+    }
+    100% {
+      opacity: 0;
+      transform: 
+        translate(
+          calc(cos(var(--particle-angle, 0deg)) * 30px),
+          calc(sin(var(--particle-angle, 0deg)) * -30px - 10px)
+        ) 
+        scale(0) 
+        rotate(45deg);
+    }
+  }
+
+  .animate-heart-particle {
+    animation: heart-particle 0.6s ease-out forwards;
+  }
+
   /* Safe Status Glow */
   .safe-glow {
     box-shadow: 0 0 20px hsl(var(--safe) / 0.4);
