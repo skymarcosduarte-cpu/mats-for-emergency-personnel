@@ -431,6 +431,50 @@
   .section-icon-settings {
     @apply bg-[hsl(220,15%,45%)] text-white;
   }
+
+  /* Internal section button styles - for subsections */
+  .subsection-card-avisos {
+    @apply border-primary hover:bg-primary/5;
+  }
+  .subsection-icon-avisos {
+    @apply bg-primary text-white;
+  }
+  .subsection-card-noticias {
+    @apply border-destructive hover:bg-destructive/5;
+  }
+  .subsection-icon-noticias {
+    @apply bg-destructive text-white;
+  }
+  .subsection-card-market {
+    @apply border-[hsl(142,80%,35%)] hover:bg-[hsl(142,80%,97%)];
+  }
+  .subsection-icon-market {
+    @apply bg-[hsl(142,80%,35%)] text-white;
+  }
+  .subsection-card-galeria {
+    @apply border-[hsl(35,100%,50%)] hover:bg-[hsl(35,100%,97%)];
+  }
+  .subsection-icon-galeria {
+    @apply bg-[hsl(35,100%,50%)] text-white;
+  }
+  .subsection-card-skyalert {
+    @apply border-primary hover:bg-primary/5;
+  }
+  .subsection-icon-skyalert {
+    @apply bg-primary text-white;
+  }
+  .subsection-card-sismos {
+    @apply border-[hsl(25,100%,50%)] hover:bg-[hsl(25,100%,97%)];
+  }
+  .subsection-icon-sismos {
+    @apply bg-[hsl(25,100%,50%)] text-white;
+  }
+  .subsection-card-otros {
+    @apply border-destructive hover:bg-destructive/5;
+  }
+  .subsection-icon-otros {
+    @apply bg-destructive text-white;
+  }
 }
 
 /* Transit marker pulse animation */

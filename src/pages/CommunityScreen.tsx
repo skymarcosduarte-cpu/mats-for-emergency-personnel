@@ -515,112 +515,120 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
     return (
       <div className="flex-1 overflow-auto pb-20">
         {/* Header */}
-        <div className="p-4 space-y-1">
+        <div className="p-4 space-y-2">
           <div className="flex items-center gap-2">
             {onGoHome && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={onGoHome}
-                className="h-8 w-8 shrink-0"
+                className="h-10 w-10 shrink-0"
                 title="Volver a Inicio"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-6 h-6" />
               </Button>
             )}
-            <h1 className="text-2xl font-bold text-foreground">Comunidad</h1>
+            <h1 className="text-3xl font-bold text-foreground">Comunidad</h1>
           </div>
-          <p className="text-sm text-muted-foreground">Tablero de avisos, noticias y marketplace</p>
+          <p className="text-base text-muted-foreground">Tablero de avisos, noticias y marketplace</p>
         </div>
 
         {/* Large Button Cards */}
-        <div className="px-4 space-y-3">
+        <div className="px-4 space-y-4">
           {/* AviSOS Button */}
           <button
             onClick={() => handleEnterSection('tablero')}
             className={cn(
-              "w-full flex items-center gap-4 p-4 rounded-xl",
-              "bg-card border border-border/50",
-              "hover:bg-muted/50 active:scale-[0.98]",
-              "transition-all duration-200"
+              "w-full flex items-center gap-4 p-5 rounded-2xl",
+              "bg-card border-2 shadow-sm",
+              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
+              "transition-all duration-200 animate-fade-in",
+              "subsection-card-avisos"
             )}
+            style={{ animationDelay: '0ms' }}
           >
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-primary/20 text-primary">
-              <Clipboard className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-avisos">
+              <Clipboard className="w-10 h-10" strokeWidth={2.5} />
             </div>
             <div className="flex-1 text-left min-w-0">
-              <h3 className="font-semibold text-foreground text-base">AviSOS</h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">
+              <h3 className="font-bold text-foreground text-xl">AviSOS</h3>
+              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
                 Cumpleaños, eventos y anuncios de la comunidad
               </p>
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
           </button>
 
           {/* Últimas Noticias Button */}
           <button
             onClick={() => handleEnterSection('noticias')}
             className={cn(
-              "w-full flex items-center gap-4 p-4 rounded-xl",
-              "bg-card border border-border/50",
-              "hover:bg-muted/50 active:scale-[0.98]",
-              "transition-all duration-200"
+              "w-full flex items-center gap-4 p-5 rounded-2xl",
+              "bg-card border-2 shadow-sm",
+              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
+              "transition-all duration-200 animate-fade-in",
+              "subsection-card-noticias"
             )}
+            style={{ animationDelay: '50ms' }}
           >
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-destructive/20 text-destructive">
-              <Newspaper className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-noticias">
+              <Newspaper className="w-10 h-10" strokeWidth={2.5} />
             </div>
             <div className="flex-1 text-left min-w-0">
-              <h3 className="font-semibold text-foreground text-base">Últimas Noticias</h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">
+              <h3 className="font-bold text-foreground text-xl">Últimas Noticias</h3>
+              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
                 Viajes activos y noticias de última hora
               </p>
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
           </button>
 
           {/* Marketplace Button */}
           <button
             onClick={() => handleEnterSection('market')}
             className={cn(
-              "w-full flex items-center gap-4 p-4 rounded-xl",
-              "bg-card border border-border/50",
-              "hover:bg-muted/50 active:scale-[0.98]",
-              "transition-all duration-200"
+              "w-full flex items-center gap-4 p-5 rounded-2xl",
+              "bg-card border-2 shadow-sm",
+              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
+              "transition-all duration-200 animate-fade-in",
+              "subsection-card-market"
             )}
+            style={{ animationDelay: '100ms' }}
           >
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-accent/20 text-accent-foreground">
-              <ShoppingCart className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-market">
+              <ShoppingCart className="w-10 h-10" strokeWidth={2.5} />
             </div>
             <div className="flex-1 text-left min-w-0">
-              <h3 className="font-semibold text-foreground text-base">Marketplace</h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">
+              <h3 className="font-bold text-foreground text-xl">Marketplace</h3>
+              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
                 Compra y vende productos en la comunidad
               </p>
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
           </button>
 
           {/* Galería del Recuerdo Button */}
           <button
             onClick={() => handleEnterSection('galeria')}
             className={cn(
-              "w-full flex items-center gap-4 p-4 rounded-xl",
-              "bg-card border border-border/50",
-              "hover:bg-muted/50 active:scale-[0.98]",
-              "transition-all duration-200"
+              "w-full flex items-center gap-4 p-5 rounded-2xl",
+              "bg-card border-2 shadow-sm",
+              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
+              "transition-all duration-200 animate-fade-in",
+              "subsection-card-galeria"
             )}
+            style={{ animationDelay: '150ms' }}
           >
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-amber-500/20 text-amber-400">
-              <Camera className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-galeria">
+              <Camera className="w-10 h-10" strokeWidth={2.5} />
             </div>
             <div className="flex-1 text-left min-w-0">
-              <h3 className="font-semibold text-foreground text-base">Galería del Recuerdo</h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">
+              <h3 className="font-bold text-foreground text-xl">Galería del Recuerdo</h3>
+              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
                 Comparte fotos nostálgicas de la comunidad
               </p>
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
           </button>
         </div>
 
