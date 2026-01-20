@@ -6,7 +6,7 @@ import {
   Map, 
   Activity, 
   Car, 
-  BookOpen, 
+  HeartPulse, 
   Users, 
   Settings,
   ChevronRight
@@ -59,10 +59,10 @@ const SECTIONS: SectionItem[] = [
   { 
     id: 'resources', 
     label: 'RecurSOS', 
-    icon: <BookOpen className="w-8 h-8" />,
+    icon: <HeartPulse className="w-8 h-8" />,
     description: 'Recursos de emergencia',
-    gradient: 'from-purple-500/20 to-violet-500/20',
-    iconBg: 'bg-purple-500/20 text-purple-400'
+    gradient: 'from-red-500/20 to-rose-500/20',
+    iconBg: 'bg-red-500/20 text-red-400'
   },
   { 
     id: 'community', 
