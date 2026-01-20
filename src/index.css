@@ -432,6 +432,44 @@
     @apply bg-[hsl(220,15%,45%)] text-white;
   }
 
+  /* HOME SECTION BUTTONS - Solid colored backgrounds with white text */
+  .home-section-map {
+    @apply bg-[hsl(210,100%,50%)] border-[hsl(210,100%,40%)] hover:bg-[hsl(210,100%,45%)];
+  }
+  .home-section-icon-map {
+    @apply bg-white text-[hsl(210,100%,50%)];
+  }
+  .home-section-alerts {
+    @apply bg-[hsl(25,100%,50%)] border-[hsl(25,100%,40%)] hover:bg-[hsl(25,100%,45%)];
+  }
+  .home-section-icon-alerts {
+    @apply bg-white text-[hsl(25,100%,50%)];
+  }
+  .home-section-transit {
+    @apply bg-[hsl(142,80%,35%)] border-[hsl(142,80%,25%)] hover:bg-[hsl(142,80%,30%)];
+  }
+  .home-section-icon-transit {
+    @apply bg-white text-[hsl(142,80%,35%)];
+  }
+  .home-section-resources {
+    @apply bg-[hsl(0,90%,50%)] border-[hsl(0,90%,40%)] hover:bg-[hsl(0,90%,45%)];
+  }
+  .home-section-icon-resources {
+    @apply bg-white text-[hsl(0,90%,50%)];
+  }
+  .home-section-community {
+    @apply bg-[hsl(320,90%,50%)] border-[hsl(320,90%,40%)] hover:bg-[hsl(320,90%,45%)];
+  }
+  .home-section-icon-community {
+    @apply bg-white text-[hsl(320,90%,50%)];
+  }
+  .home-section-settings {
+    @apply bg-[hsl(220,15%,45%)] border-[hsl(220,15%,35%)] hover:bg-[hsl(220,15%,40%)];
+  }
+  .home-section-icon-settings {
+    @apply bg-white text-[hsl(220,15%,45%)];
+  }
+
   /* Internal section button styles - for subsections */
   .subsection-card-avisos {
     @apply border-primary hover:bg-primary/5;
