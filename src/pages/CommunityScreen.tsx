@@ -57,9 +57,10 @@ const EVENT_TYPES: { value: CommunityEventType; label: string }[] = [
 
 interface CommunityScreenProps {
   userRole?: UserRole;
+  onGoHome?: () => void;
 }
 
-export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SOS_ACTIVO' }) => {
+export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SOS_ACTIVO', onGoHome }) => {
   const { user } = useAuth();
   const { 
     events, 
@@ -459,7 +460,20 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
       <div className="flex-1 overflow-auto pb-20">
         {/* Header */}
         <div className="p-4 space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">Comunidad</h1>
+          <div className="flex items-center gap-2">
+            {onGoHome && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onGoHome}
+                className="h-8 w-8 shrink-0"
+                title="Volver a Inicio"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            )}
+            <h1 className="text-2xl font-bold text-foreground">Comunidad</h1>
+          </div>
           <p className="text-sm text-muted-foreground">Tablero de avisos, noticias y marketplace</p>
         </div>
 

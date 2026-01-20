@@ -105,6 +105,7 @@ const VoiceDictationButton: React.FC<{
 interface TransitScreenProps {
   userRole?: UserRole;
   onOpenMessaging?: (userId: string, userName: string | null) => void;
+  onGoHome?: () => void;
 }
 
 interface TransitTrip {

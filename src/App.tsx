@@ -569,16 +569,20 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     }
   }, [user?.id, notifyEmergencyContacts]);
 
+  const handleGoHome = useCallback(() => {
+    setActiveTab('home');
+  }, []);
+
   const renderScreen = () => {
     const screens: Record<string, React.ReactNode> = {
       home: <HomeScreen onNavigate={setActiveTab} />,
-      map: <MapScreen className="h-[calc(100vh-120px)]" respondersToMyAlerts={respondersToMyAlerts} onNavigateToSettings={() => setActiveTab('settings')} activeDrillId={activeDrillId} onOpenDrillChat={(drillId) => { setCommunityChatContext({ type: 'drill', id: drillId, title: '🔔 Chat Clave 100' }); setCommunityChatOpen(true); }} />,
-      transit: <TransitScreen userRole={userRole} onOpenMessaging={handleOpenMessaging} />,
-      alerts: <AlertsScreen userRole={userRole} />,
-      community: <CommunityScreen userRole={userRole} />,
-      resources: <ResourcesScreen />,
+      map: <MapScreen className="h-[calc(100vh-120px)]" respondersToMyAlerts={respondersToMyAlerts} onNavigateToSettings={() => setActiveTab('settings')} activeDrillId={activeDrillId} onOpenDrillChat={(drillId) => { setCommunityChatContext({ type: 'drill', id: drillId, title: '🔔 Chat Clave 100' }); setCommunityChatOpen(true); }} onGoHome={handleGoHome} />,
+      transit: <TransitScreen userRole={userRole} onOpenMessaging={handleOpenMessaging} onGoHome={handleGoHome} />,
+      alerts: <AlertsScreen userRole={userRole} onGoHome={handleGoHome} />,
+      community: <CommunityScreen userRole={userRole} onGoHome={handleGoHome} />,
+      resources: <ResourcesScreen onGoHome={handleGoHome} />,
       status: <StatusScreen userRole={userRole} />,
-      settings: <SettingsScreen onLogout={handleLogout} />,
+      settings: <SettingsScreen onLogout={handleLogout} onGoHome={handleGoHome} />,
     };
 
     return (
