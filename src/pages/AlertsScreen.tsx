@@ -2,7 +2,7 @@
 // USGS + SSN Mexico earthquakes + "Todo bien" quick report + "14" help + notifications + my alerts history
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, WifiOff, Navigation, CloudRain, Route, X, CheckCircle2, Map, MessageCircle, Car, Plane } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, WifiOff, Navigation, CloudRain, Route, X, CheckCircle2, Map, MessageCircle, Car, Plane, BookOpen, Radio, Activity, ArrowLeft } from 'lucide-react';
 import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
 import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
 import { useMexicoAlerts, TropicalCycloneAlert, FireHotspot } from '@/hooks/useMexicoAlerts';
@@ -89,6 +89,10 @@ interface AlertsScreenProps {
 export const AlertsScreen: React.FC<AlertsScreenProps> = ({ 
   userRole = 'SOS_ACTIVO' 
 }) => {
+  // Landing view state - shows big buttons before entering tabs
+  const [showLanding, setShowLanding] = useState(true);
+  const [initialTab, setInitialTab] = useState<'skyalert' | 'earthquakes' | 'otros'>('skyalert');
+  
   const [selectedQuake, setSelectedQuake] = useState<EarthquakeWithDistance | null>(null);
   const [showQuakeDetailDialog, setShowQuakeDetailDialog] = useState(false);
   const [showCheckinDialog, setShowCheckinDialog] = useState(false);
@@ -110,6 +114,12 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   const [messagingOpen, setMessagingOpen] = useState(false);
   const [messagingUserId, setMessagingUserId] = useState<string | null>(null);
   const [messagingUserName, setMessagingUserName] = useState<string | null>(null);
+  
+  // Handler to enter a specific tab from landing
+  const handleEnterTab = (tab: 'skyalert' | 'earthquakes' | 'otros') => {
+    setInitialTab(tab);
+    setShowLanding(false);
+  };
   
   const { position } = useLocation();
   const { requests: helpRequests, resolvedRequests, resolveRequest } = useHelpRequests(position);
@@ -434,12 +444,104 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     return 'text-muted-foreground';
   };
 
+  // Landing view with large buttons
+  if (showLanding) {
+    return (
+      <div className="flex-1 overflow-auto pb-20">
+        {/* Header */}
+        <div className="p-4 space-y-1">
+          <h1 className="text-2xl font-bold text-foreground">Sismos</h1>
+          <p className="text-sm text-muted-foreground">Alertas sísmicas y fenómenos naturales</p>
+        </div>
+
+        {/* Large Button Cards */}
+        <div className="px-4 space-y-3">
+          {/* SkyAlert Button */}
+          <button
+            onClick={() => handleEnterTab('skyalert')}
+            className={cn(
+              "w-full flex items-center gap-4 p-4 rounded-xl",
+              "bg-card border border-border/50",
+              "hover:bg-muted/50 active:scale-[0.98]",
+              "transition-all duration-200"
+            )}
+          >
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-primary/20 text-primary">
+              <Radio className="w-8 h-8" />
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <h3 className="font-semibold text-foreground text-base">SkyAlert</h3>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                Alertas sísmicas en tiempo real
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+          </button>
+
+          {/* Sismos Recientes Button */}
+          <button
+            onClick={() => handleEnterTab('earthquakes')}
+            className={cn(
+              "w-full flex items-center gap-4 p-4 rounded-xl",
+              "bg-card border border-border/50",
+              "hover:bg-muted/50 active:scale-[0.98]",
+              "transition-all duration-200"
+            )}
+          >
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-orange-500/20 text-orange-400">
+              <Activity className="w-8 h-8" />
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <h3 className="font-semibold text-foreground text-base">Sismos Recientes</h3>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                SSN México - últimos eventos
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+          </button>
+
+          {/* Otros Fenómenos Button */}
+          <button
+            onClick={() => handleEnterTab('otros')}
+            className={cn(
+              "w-full flex items-center gap-4 p-4 rounded-xl",
+              "bg-card border border-border/50",
+              "hover:bg-muted/50 active:scale-[0.98]",
+              "transition-all duration-200"
+            )}
+          >
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-destructive/20 text-destructive">
+              <AlertTriangle className="w-8 h-8" />
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <h3 className="font-semibold text-foreground text-base">Otros Fenómenos</h3>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                Ciclones, incendios y alertas internacionales
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-auto pb-20 scrollbar-thin">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">Sismos</h1>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowLanding(true)}
+              className="h-8 w-8"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="text-xl font-bold text-foreground">Sismos</h1>
+          </div>
           <Button
             variant="ghost"
             size="icon"
@@ -480,7 +582,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       </div>
 
       <Tabs 
-        defaultValue="skyalert" 
+        defaultValue={initialTab}
         className="p-4"
         onValueChange={(value) => {
           // Auto-refresh when entering specific tabs
