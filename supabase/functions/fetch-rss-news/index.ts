@@ -64,6 +64,19 @@ const PRIORITY_FEEDS: { url: string; source: string; category: string }[] = [
   { url: 'https://reliefweb.int/updates/rss.xml?country=170', source: 'ReliefWeb México', category: 'emergencias' },
 ];
 
+// Strip all HTML tags from text
+function stripHtmlTags(text: string): string {
+  // Remove all HTML tags including self-closing ones
+  let result = text
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove scripts
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove styles
+    .replace(/<[^>]+>/g, '') // Remove all HTML tags
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+  
+  return result;
+}
+
 // Decode HTML entities
 function decodeHtmlEntities(text: string): string {
   const entities: Record<string, string> = {
@@ -116,11 +129,15 @@ function decodeHtmlEntities(text: string): string {
 function parseRSSItem(itemXml: string, source: string): RSSItem | null {
   try {
     const getTagContent = (tag: string): string => {
+      // Match CDATA or plain content
       const regex = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i');
       const match = itemXml.match(regex);
       if (match) {
-        const raw = (match[1] || match[2] || '').trim().replace(/<[^>]+>/g, '');
-        return decodeHtmlEntities(raw);
+        let raw = (match[1] || match[2] || '').trim();
+        // First decode HTML entities, then strip HTML tags
+        raw = decodeHtmlEntities(raw);
+        raw = stripHtmlTags(raw);
+        return raw;
       }
       return '';
     };
