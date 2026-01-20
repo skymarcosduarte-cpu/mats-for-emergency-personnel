@@ -501,11 +501,10 @@ export default function UserGuidePage() {
 
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  <BookOpen className="w-4 h-4 text-orange-500" />
-                  Sala de Lectura
+                  🛒 Market
                 </h4>
                 <p className="text-sm text-gray-600">
-                  Colección de recursos educativos y de emergencia.
+                  Compra, venta e intercambio de artículos entre miembros de la comunidad.
                 </p>
               </div>
             </div>
