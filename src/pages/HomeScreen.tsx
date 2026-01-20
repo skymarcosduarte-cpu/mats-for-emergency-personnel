@@ -36,7 +36,7 @@ const SECTIONS: SectionItem[] = [
     id: 'map', 
     label: 'Mapa', 
     icon: <Map className="w-8 h-8" />,
-    description: 'Ver ubicaciones en tiempo real',
+    description: 'Ver ubicaciones y usuarios en línea en tiempo real',
     gradient: 'from-blue-500/20 to-cyan-500/20',
     iconBg: 'bg-blue-500/20 text-blue-400'
   },
