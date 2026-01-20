@@ -1,9 +1,9 @@
-// Auto-update hook - forces app update on entry if new version available
+// Auto-update hook - forces app update on EVERY entry if new version available
 import { useEffect, useRef } from 'react';
 import { checkForUpdates, isNewerVersionAvailable, APP_VERSION } from '@/lib/versionCheck';
 
-const AUTO_UPDATE_KEY = 'auto-update-checked';
-const AUTO_UPDATE_COOLDOWN = 5 * 60 * 1000; // 5 minutes cooldown to prevent loops
+// Use sessionStorage to prevent infinite loops within same session only
+const SESSION_UPDATE_KEY = 'session-update-done';
 
 export function useAutoUpdate() {
   const hasChecked = useRef(false);
@@ -14,26 +14,23 @@ export function useAutoUpdate() {
 
     const performAutoUpdate = async () => {
       try {
-        // Check if we recently did an auto-update to prevent loops
-        const lastCheck = localStorage.getItem(AUTO_UPDATE_KEY);
-        if (lastCheck) {
-          const lastCheckTime = parseInt(lastCheck, 10);
-          if (Date.now() - lastCheckTime < AUTO_UPDATE_COOLDOWN) {
-            console.log('[AutoUpdate] Skipping - recently checked');
-            return;
-          }
+        // Only prevent infinite loops within the SAME session
+        // Each new session (new tab, app restart) will check again
+        if (sessionStorage.getItem(SESSION_UPDATE_KEY)) {
+          console.log('[AutoUpdate] Already updated this session');
+          return;
         }
 
-        console.log('[AutoUpdate] Checking for updates...');
+        console.log('[AutoUpdate] Checking for updates on app entry...');
 
         // Check server for new version
         const versionInfo = await checkForUpdates();
 
         if (versionInfo && isNewerVersionAvailable(APP_VERSION, versionInfo.latest)) {
-          console.log('[AutoUpdate] New version available:', versionInfo.latest);
+          console.log('[AutoUpdate] New version available:', versionInfo.latest, '(current:', APP_VERSION, ')');
           
-          // Mark that we're doing an update
-          localStorage.setItem(AUTO_UPDATE_KEY, Date.now().toString());
+          // Mark session so we don't loop infinitely
+          sessionStorage.setItem(SESSION_UPDATE_KEY, 'true');
 
           // Clear all caches
           if ('caches' in window) {
@@ -50,21 +47,18 @@ export function useAutoUpdate() {
           }
 
           // Force reload with cache bust
-          console.log('[AutoUpdate] Reloading app...');
+          console.log('[AutoUpdate] Forcing app reload...');
           window.location.href = window.location.origin + '?v=' + Date.now();
         } else {
-          console.log('[AutoUpdate] App is up to date');
-          // Clear the check flag since no update was needed
-          localStorage.removeItem(AUTO_UPDATE_KEY);
+          console.log('[AutoUpdate] App is up to date (v' + APP_VERSION + ')');
         }
       } catch (error) {
         console.warn('[AutoUpdate] Error checking for updates:', error);
-        localStorage.removeItem(AUTO_UPDATE_KEY);
       }
     };
 
-    // Small delay to not block initial render
-    const timer = setTimeout(performAutoUpdate, 1000);
+    // Minimal delay to not block initial render
+    const timer = setTimeout(performAutoUpdate, 500);
 
     return () => clearTimeout(timer);
   }, []);
