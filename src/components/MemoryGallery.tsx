@@ -1,30 +1,44 @@
 // Memory Gallery Component - "Galería del Recuerdo"
-// Displays community nostalgic photos with likes, comments, and date
+// Displays community nostalgic photos with likes, comments, date, and filters
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   ImagePlus, Loader2, Trash2, X, Upload, Camera, 
-  ArrowLeft, RefreshCw, ZoomIn, Heart, MessageCircle, Calendar, Send
+  ArrowLeft, RefreshCw, ZoomIn, Heart, MessageCircle, Calendar, Send, Filter, User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
 import { useMemoryGallery, MemoryPhoto, PhotoComment } from '@/hooks/useMemoryGallery';
 import { useAuth } from '@/hooks/useAuth';
-import { formatDistanceToNow, format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
 interface MemoryGalleryProps {
   onBack: () => void;
+}
+
+interface UserInfo {
+  id: string;
+  nickname: string;
 }
 
 export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
@@ -41,6 +55,12 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
   const [photoDate, setPhotoDate] = useState('');
   const [viewerImages, setViewerImages] = useState<{ images: string[]; index: number } | null>(null);
   
+  // Filters
+  const [filterYear, setFilterYear] = useState<string>('all');
+  const [filterUser, setFilterUser] = useState<string>('all');
+  const [users, setUsers] = useState<UserInfo[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  
   // Photo detail/comments dialog
   const [selectedPhoto, setSelectedPhoto] = useState<MemoryPhoto | null>(null);
   const [comments, setComments] = useState<PhotoComment[]>([]);
@@ -49,6 +69,65 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
   const [submittingComment, setSubmittingComment] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Get unique years from photos
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    photos.forEach(p => {
+      if (p.photo_date) {
+        years.add(new Date(p.photo_date).getFullYear().toString());
+      }
+    });
+    return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
+  }, [photos]);
+
+  // Get unique user IDs from photos
+  const uniqueUserIds = useMemo(() => {
+    return [...new Set(photos.map(p => p.user_id))];
+  }, [photos]);
+
+  // Fetch user nicknames
+  useEffect(() => {
+    if (uniqueUserIds.length === 0) return;
+    
+    supabase
+      .from('profiles')
+      .select('id, nickname')
+      .in('id', uniqueUserIds)
+      .then(({ data }) => {
+        if (data) {
+          setUsers(data.map(p => ({ id: p.id, nickname: p.nickname })));
+        }
+      });
+  }, [uniqueUserIds]);
+
+  // Filter photos
+  const filteredPhotos = useMemo(() => {
+    return photos.filter(photo => {
+      // Filter by year
+      if (filterYear !== 'all') {
+        if (!photo.photo_date) return false;
+        const photoYear = new Date(photo.photo_date).getFullYear().toString();
+        if (photoYear !== filterYear) return false;
+      }
+      
+      // Filter by user
+      if (filterUser !== 'all' && photo.user_id !== filterUser) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [photos, filterYear, filterUser]);
+
+  // Active filter count
+  const activeFilterCount = (filterYear !== 'all' ? 1 : 0) + (filterUser !== 'all' ? 1 : 0);
+
+  // Clear filters
+  const clearFilters = () => {
+    setFilterYear('all');
+    setFilterUser('all');
+  };
 
   // Load comments when photo is selected
   useEffect(() => {
@@ -131,7 +210,6 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
     const success = await addComment(selectedPhoto.id, newComment.trim());
     if (success) {
       setNewComment('');
-      // Refresh comments
       const updated = await getComments(selectedPhoto.id);
       setComments(updated);
     }
@@ -145,12 +223,16 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
   };
 
   const openViewer = (index: number) => {
-    const allImages = photos.map(p => p.image_url);
+    const allImages = filteredPhotos.map(p => p.image_url);
     setViewerImages({ images: allImages, index });
   };
 
   const openPhotoDetail = (photo: MemoryPhoto) => {
     setSelectedPhoto(photo);
+  };
+
+  const getUserNickname = (userId: string) => {
+    return users.find(u => u.id === userId)?.nickname || 'Usuario';
   };
 
   return (
@@ -164,10 +246,25 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
             </Button>
             <div>
               <h1 className="text-xl font-bold text-foreground">Galería del Recuerdo</h1>
-              <p className="text-xs text-muted-foreground">{photos.length} fotos</p>
+              <p className="text-xs text-muted-foreground">
+                {filteredPhotos.length} de {photos.length} fotos
+              </p>
             </div>
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant={showFilters ? "secondary" : "ghost"} 
+              size="icon" 
+              onClick={() => setShowFilters(!showFilters)}
+              className="relative"
+            >
+              <Filter className="w-5 h-5" />
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
             <Button variant="ghost" size="icon" onClick={refresh} disabled={loading}>
               <RefreshCw className={cn('w-5 h-5', loading && 'animate-spin')} />
             </Button>
@@ -177,6 +274,80 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
             </Button>
           </div>
         </div>
+
+        {/* Filter Panel */}
+        {showFilters && (
+          <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Filtros</span>
+              {activeFilterCount > 0 && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  Limpiar
+                </Button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {/* Year Filter */}
+              <div>
+                <Label className="text-xs mb-1 block">Año</Label>
+                <Select value={filterYear} onValueChange={setFilterYear}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los años</SelectItem>
+                    {availableYears.map(year => (
+                      <SelectItem key={year} value={year}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* User Filter */}
+              <div>
+                <Label className="text-xs mb-1 block">Usuario</Label>
+                <Select value={filterUser} onValueChange={setFilterUser}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {user && (
+                      <SelectItem value={user.id}>Mis fotos</SelectItem>
+                    )}
+                    {users.filter(u => u.id !== user?.id).map(u => (
+                      <SelectItem key={u.id} value={u.id}>@{u.nickname}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Active filters badges */}
+            {activeFilterCount > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {filterYear !== 'all' && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {filterYear}
+                    <button onClick={() => setFilterYear('all')} className="ml-1">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
+                {filterUser !== 'all' && (
+                  <Badge variant="secondary" className="gap-1">
+                    <User className="w-3 h-3" />
+                    {filterUser === user?.id ? 'Mis fotos' : `@${getUserNickname(filterUser)}`}
+                    <button onClick={() => setFilterUser('all')} className="ml-1">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Gallery Grid */}
@@ -185,23 +356,34 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
           </div>
-        ) : photos.length === 0 ? (
+        ) : filteredPhotos.length === 0 ? (
           <Card className="bg-muted/30 border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
               <Camera className="w-12 h-12 text-muted-foreground mb-4" />
-              <h3 className="font-medium text-foreground mb-1">Sin fotos aún</h3>
+              <h3 className="font-medium text-foreground mb-1">
+                {activeFilterCount > 0 ? 'Sin fotos con estos filtros' : 'Sin fotos aún'}
+              </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Sé el primero en compartir un recuerdo
+                {activeFilterCount > 0 
+                  ? 'Prueba ajustando los filtros'
+                  : 'Sé el primero en compartir un recuerdo'
+                }
               </p>
-              <Button onClick={() => setShowUploadDialog(true)}>
-                <ImagePlus className="w-4 h-4 mr-2" />
-                Subir Fotos
-              </Button>
+              {activeFilterCount > 0 ? (
+                <Button variant="outline" onClick={clearFilters}>
+                  Limpiar filtros
+                </Button>
+              ) : (
+                <Button onClick={() => setShowUploadDialog(true)}>
+                  <ImagePlus className="w-4 h-4 mr-2" />
+                  Subir Fotos
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {photos.map((photo, index) => (
+            {filteredPhotos.map((photo, index) => (
               <div
                 key={photo.id}
                 className="relative aspect-square group rounded-lg overflow-hidden bg-muted cursor-pointer"
@@ -364,19 +546,24 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
                   src={selectedPhoto.image_url}
                   alt={selectedPhoto.caption || 'Foto'}
                   className="w-full max-h-[50vh] object-contain bg-black cursor-pointer"
-                  onClick={() => openViewer(photos.findIndex(p => p.id === selectedPhoto.id))}
+                  onClick={() => openViewer(filteredPhotos.findIndex(p => p.id === selectedPhoto.id))}
                 />
                 <Button
                   variant="secondary"
                   size="icon"
                   className="absolute top-2 right-2 h-8 w-8"
-                  onClick={() => openViewer(photos.findIndex(p => p.id === selectedPhoto.id))}
+                  onClick={() => openViewer(filteredPhotos.findIndex(p => p.id === selectedPhoto.id))}
                 >
                   <ZoomIn className="w-4 h-4" />
                 </Button>
               </div>
 
               <div className="p-4 space-y-4">
+                {/* Author */}
+                <p className="text-xs text-muted-foreground">
+                  Subido por <span className="text-primary">@{getUserNickname(selectedPhoto.user_id)}</span>
+                </p>
+
                 {/* Actions */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
