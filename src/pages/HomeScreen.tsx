@@ -43,50 +43,50 @@ const SECTIONS: SectionItem[] = [
   { 
     id: 'map', 
     label: 'Mapa', 
-    icon: <Map className="w-8 h-8" />,
-    description: 'Ver ubicaciones y usuarios en línea en tiempo real',
-    gradient: 'from-blue-500/20 to-cyan-500/20',
-    iconBg: 'bg-blue-500/20 text-blue-400'
+    icon: <Map className="w-12 h-12" strokeWidth={2.5} />,
+    description: 'Ver ubicaciones en tiempo real',
+    gradient: 'bg-card section-card-map',
+    iconBg: 'section-icon-map'
   },
   { 
     id: 'alerts', 
     label: 'Sismos', 
-    icon: <Activity className="w-8 h-8" />,
+    icon: <Activity className="w-12 h-12" strokeWidth={2.5} />,
     description: 'Alertas sísmicas y reportes',
-    gradient: 'from-orange-500/20 to-red-500/20',
-    iconBg: 'bg-orange-500/20 text-orange-400'
+    gradient: 'bg-card section-card-alerts',
+    iconBg: 'section-icon-alerts'
   },
   { 
     id: 'transit', 
     label: 'Tránsito Seguro', 
-    icon: <Car className="w-8 h-8" />,
+    icon: <Car className="w-12 h-12" strokeWidth={2.5} />,
     description: 'Registrar y monitorear viajes',
-    gradient: 'from-green-500/20 to-emerald-500/20',
-    iconBg: 'bg-green-500/20 text-green-400'
+    gradient: 'bg-card section-card-transit',
+    iconBg: 'section-icon-transit'
   },
   { 
     id: 'resources', 
     label: 'RecurSOS', 
-    icon: <HeartPulse className="w-8 h-8" />,
+    icon: <HeartPulse className="w-12 h-12" strokeWidth={2.5} />,
     description: 'Recursos de emergencia',
-    gradient: 'from-red-500/20 to-rose-500/20',
-    iconBg: 'bg-red-500/20 text-red-400'
+    gradient: 'bg-card section-card-resources',
+    iconBg: 'section-icon-resources'
   },
   { 
     id: 'community', 
     label: 'Comunidad', 
-    icon: <Users className="w-8 h-8" />,
-    description: 'Tablero, noticias y marketplace',
-    gradient: 'from-pink-500/20 to-rose-500/20',
-    iconBg: 'bg-pink-500/20 text-pink-400'
+    icon: <Users className="w-12 h-12" strokeWidth={2.5} />,
+    description: 'Tablero y noticias',
+    gradient: 'bg-card section-card-community',
+    iconBg: 'section-icon-community'
   },
   { 
     id: 'settings', 
     label: 'Ajustes', 
-    icon: <Settings className="w-8 h-8" />,
+    icon: <Settings className="w-12 h-12" strokeWidth={2.5} />,
     description: 'Configuración y perfil',
-    gradient: 'from-slate-500/20 to-gray-500/20',
-    iconBg: 'bg-slate-500/20 text-slate-400'
+    gradient: 'bg-card section-card-settings',
+    iconBg: 'section-icon-settings'
   },
 ];
 
@@ -394,37 +394,37 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
         )}
 
         {/* Welcome Section */}
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-primary">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold text-primary">
             {getGreeting()}, {firstName}
           </h1>
-          <p className="text-sm text-muted-foreground capitalize">{todayDate}</p>
+          <p className="text-base text-muted-foreground capitalize">{todayDate}</p>
         </div>
 
         {/* Weather Card */}
         {(weather || weatherLoading) && (
-          <div className="bg-card/50 border border-border rounded-xl p-4">
+          <div className="bg-card border-2 border-border rounded-2xl p-5 shadow-sm">
             <div className="flex items-center gap-3">
-              <MapPinned className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span className="text-sm text-muted-foreground truncate">
+              <MapPinned className="w-5 h-5 text-muted-foreground shrink-0" />
+              <span className="text-base text-muted-foreground truncate font-medium">
                 {weather?.locationName || 'Obteniendo ubicación...'}
               </span>
             </div>
             {weather && (
-              <div className="flex items-center gap-3 mt-2">
-                <span className="text-3xl">{weather.icon}</span>
+              <div className="flex items-center gap-4 mt-3">
+                <span className="text-5xl">{weather.icon}</span>
                 <div>
-                  <p className="text-3xl font-bold text-foreground">{weather.temperature}°</p>
-                  <p className="text-sm text-muted-foreground">{weather.description}</p>
+                  <p className="text-4xl font-bold text-foreground">{weather.temperature}°</p>
+                  <p className="text-lg text-muted-foreground">{weather.description}</p>
                 </div>
               </div>
             )}
             {weatherLoading && !weather && (
-              <div className="flex items-center gap-2 mt-2">
-                <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
-                <div className="space-y-1.5">
-                  <div className="w-16 h-6 bg-muted animate-pulse rounded" />
-                  <div className="w-24 h-4 bg-muted animate-pulse rounded" />
+              <div className="flex items-center gap-2 mt-3">
+                <div className="w-12 h-12 rounded-full bg-muted animate-pulse" />
+                <div className="space-y-2">
+                  <div className="w-20 h-8 bg-muted animate-pulse rounded" />
+                  <div className="w-28 h-5 bg-muted animate-pulse rounded" />
                 </div>
               </div>
             )}
@@ -432,58 +432,61 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
         )}
 
         {/* Online Users Indicator */}
-        <div className="bg-card/50 border border-border rounded-xl p-4">
-          <div className="flex items-center gap-3">
+        <div className="bg-card border-2 border-border rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-4 h-4 rounded-full bg-safe" />
-              <div className="absolute inset-0 w-4 h-4 rounded-full bg-safe animate-ping opacity-60" />
+              <div className="w-5 h-5 rounded-full bg-safe" />
+              <div className="absolute inset-0 w-5 h-5 rounded-full bg-safe animate-ping opacity-60" />
             </div>
             <div className="flex-1">
-              <p className="text-lg font-bold text-safe">{onlineCount} usuarios conectados</p>
-              <p className="text-xs text-muted-foreground">Miembros activos en la comunidad</p>
+              <p className="text-xl font-bold text-safe">{onlineCount} usuarios conectados</p>
+              <p className="text-base text-muted-foreground">Miembros activos en la comunidad</p>
             </div>
           </div>
         </div>
 
         {/* Sections Grid */}
-        <div className="space-y-3">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+        <div className="space-y-4">
+          <h2 className="text-base font-semibold text-muted-foreground uppercase tracking-wider">
             Secciones
           </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {SECTIONS.map((section) => (
+          <div className="grid grid-cols-2 gap-4">
+            {SECTIONS.map((section, index) => (
               <button
                 key={section.id}
                 onClick={() => onNavigate(section.id)}
                 className={cn(
-                  "relative overflow-hidden rounded-xl p-4 text-left transition-all duration-200",
-                  "bg-gradient-to-br border border-border/50",
-                  "hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]",
+                  "relative overflow-hidden rounded-2xl p-5 text-left transition-all duration-300",
+                  "border-2 shadow-sm",
+                  "hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]",
+                  "animate-fade-in",
                   section.gradient
                 )}
+                style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="space-y-3">
-                  {/* Icon */}
+                <div className="space-y-4">
+                  {/* Icon - Larger with solid color background */}
                   <div className={cn(
-                    "w-14 h-14 rounded-xl flex items-center justify-center",
+                    "w-20 h-20 rounded-2xl flex items-center justify-center shadow-md",
+                    "transition-transform duration-300 hover:scale-110",
                     section.iconBg
                   )}>
                     {section.icon}
                   </div>
                   
-                  {/* Label */}
+                  {/* Label - Larger text */}
                   <div>
-                    <h3 className="font-semibold text-foreground text-base">
+                    <h3 className="font-bold text-foreground text-xl leading-tight">
                       {section.label}
                     </h3>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
                       {section.description}
                     </p>
                   </div>
                 </div>
 
-                {/* Chevron indicator */}
-                <ChevronRight className="absolute top-4 right-3 w-5 h-5 text-muted-foreground/50" />
+                {/* Chevron indicator - Larger */}
+                <ChevronRight className="absolute top-5 right-4 w-7 h-7 text-muted-foreground/60" />
               </button>
             ))}
           </div>
