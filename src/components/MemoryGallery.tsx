@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   ImagePlus, Loader2, Trash2, X, Upload, Camera, 
   ArrowLeft, RefreshCw, ZoomIn, Heart, MessageCircle, Calendar, Send, Filter, User,
-  Download, Share2, Copy, Check
+  Download, Share2, Copy, Check, Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -43,12 +43,19 @@ interface UserInfo {
   nickname: string;
 }
 
+// View modes: 'selection' | 'all' | 'grouped'
+type ViewMode = 'selection' | 'all' | 'grouped';
+
 export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
   const { user } = useAuth();
   const { 
     photos, loading, uploading, uploadPhotos, deletePhoto, 
     toggleLike, getComments, addComment, deleteComment, refresh 
   } = useMemoryGallery();
+  
+  // View mode state - starts with selection screen
+  const [viewMode, setViewMode] = useState<ViewMode>('selection');
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
   
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -129,6 +136,38 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
   const clearFilters = () => {
     setFilterYear('all');
     setFilterUser('all');
+  };
+
+  // Group photos by user
+  const photosByUser = useMemo(() => {
+    const grouped: Record<string, MemoryPhoto[]> = {};
+    photos.forEach(photo => {
+      if (!grouped[photo.user_id]) {
+        grouped[photo.user_id] = [];
+      }
+      grouped[photo.user_id].push(photo);
+    });
+    return grouped;
+  }, [photos]);
+
+  // Toggle user expansion in grouped view
+  const toggleUserExpansion = (userId: string) => {
+    setExpandedUsers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
+  };
+
+  // Go back to selection from gallery view
+  const handleBackToSelection = () => {
+    setViewMode('selection');
+    clearFilters();
+    setExpandedUsers(new Set());
   };
 
   // Load comments when photo is selected
@@ -285,192 +324,45 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
     }
   };
 
-  return (
-    <div className="pb-20">
-      {/* Header */}
-      <div className="sticky top-0 z-20 px-4 py-3 bg-background/95 backdrop-blur-sm border-b border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Galería del Recuerdo</h1>
-              <p className="text-xs text-muted-foreground">
-                {filteredPhotos.length} de {photos.length} fotos
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              variant={showFilters ? "secondary" : "ghost"} 
-              size="icon" 
-              onClick={() => setShowFilters(!showFilters)}
-              className="relative"
-            >
-              <Filter className="w-5 h-5" />
-              {activeFilterCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center">
-                  {activeFilterCount}
-                </span>
-              )}
-            </Button>
-            <Button variant="ghost" size="icon" onClick={refresh} disabled={loading}>
-              <RefreshCw className={cn('w-5 h-5', loading && 'animate-spin')} />
-            </Button>
-            <Button size="sm" onClick={() => setShowUploadDialog(true)}>
-              <Camera className="w-4 h-4 mr-1" />
-              Subir
-            </Button>
-          </div>
+  // Render photo card (reusable)
+  const renderPhotoCard = (photo: MemoryPhoto) => (
+    <div
+      key={photo.id}
+      className="relative aspect-square group rounded-lg overflow-hidden bg-muted cursor-pointer"
+      onClick={() => openPhotoDetail(photo)}
+    >
+      <img
+        src={photo.image_url}
+        alt={photo.caption || 'Foto del recuerdo'}
+        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+        loading="lazy"
+      />
+      {/* Stats overlay */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+        <div className="flex items-center gap-3 text-white text-xs">
+          <span className="flex items-center gap-1">
+            <Heart className={cn("w-3 h-3", photo.user_has_liked && "fill-current text-destructive")} />
+            {photo.likes_count || 0}
+          </span>
+          <span className="flex items-center gap-1">
+            <MessageCircle className="w-3 h-3" />
+            {photo.comments_count || 0}
+          </span>
         </div>
-
-        {/* Filter Panel */}
-        {showFilters && (
-          <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Filtros</span>
-              {activeFilterCount > 0 && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  Limpiar
-                </Button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {/* Year Filter */}
-              <div>
-                <Label className="text-xs mb-1 block">Año</Label>
-                <Select value={filterYear} onValueChange={setFilterYear}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los años</SelectItem>
-                    {availableYears.map(year => (
-                      <SelectItem key={year} value={year}>{year}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* User Filter */}
-              <div>
-                <Label className="text-xs mb-1 block">Usuario</Label>
-                <Select value={filterUser} onValueChange={setFilterUser}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    {user && (
-                      <SelectItem value={user.id}>Mis fotos</SelectItem>
-                    )}
-                    {users.filter(u => u.id !== user?.id).map(u => (
-                      <SelectItem key={u.id} value={u.id}>@{u.nickname}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Active filters badges */}
-            {activeFilterCount > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {filterYear !== 'all' && (
-                  <Badge variant="secondary" className="gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {filterYear}
-                    <button onClick={() => setFilterYear('all')} className="ml-1">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </Badge>
-                )}
-                {filterUser !== 'all' && (
-                  <Badge variant="secondary" className="gap-1">
-                    <User className="w-3 h-3" />
-                    {filterUser === user?.id ? 'Mis fotos' : `@${getUserNickname(filterUser)}`}
-                    <button onClick={() => setFilterUser('all')} className="ml-1">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </Badge>
-                )}
-              </div>
-            )}
-          </div>
-        )}
       </div>
+      {/* Date badge */}
+      {photo.photo_date && (
+        <div className="absolute top-1 left-1 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1">
+          <Calendar className="w-2.5 h-2.5" />
+          {format(new Date(photo.photo_date), 'yyyy')}
+        </div>
+      )}
+    </div>
+  );
 
-      {/* Gallery Grid */}
-      <div className="p-4">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : filteredPhotos.length === 0 ? (
-          <Card className="bg-muted/30 border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <Camera className="w-12 h-12 text-muted-foreground mb-4" />
-              <h3 className="font-medium text-foreground mb-1">
-                {activeFilterCount > 0 ? 'Sin fotos con estos filtros' : 'Sin fotos aún'}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                {activeFilterCount > 0 
-                  ? 'Prueba ajustando los filtros'
-                  : 'Sé el primero en compartir un recuerdo'
-                }
-              </p>
-              {activeFilterCount > 0 ? (
-                <Button variant="outline" onClick={clearFilters}>
-                  Limpiar filtros
-                </Button>
-              ) : (
-                <Button onClick={() => setShowUploadDialog(true)}>
-                  <ImagePlus className="w-4 h-4 mr-2" />
-                  Subir Fotos
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {filteredPhotos.map((photo, index) => (
-              <div
-                key={photo.id}
-                className="relative aspect-square group rounded-lg overflow-hidden bg-muted cursor-pointer"
-                onClick={() => openPhotoDetail(photo)}
-              >
-                <img
-                  src={photo.image_url}
-                  alt={photo.caption || 'Foto del recuerdo'}
-                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                  loading="lazy"
-                />
-                {/* Stats overlay */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                  <div className="flex items-center gap-3 text-white text-xs">
-                    <span className="flex items-center gap-1">
-                      <Heart className={cn("w-3 h-3", photo.user_has_liked && "fill-current text-destructive")} />
-                      {photo.likes_count || 0}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MessageCircle className="w-3 h-3" />
-                      {photo.comments_count || 0}
-                    </span>
-                  </div>
-                </div>
-                {/* Date badge */}
-                {photo.photo_date && (
-                  <div className="absolute top-1 left-1 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1">
-                    <Calendar className="w-2.5 h-2.5" />
-                    {format(new Date(photo.photo_date), 'yyyy')}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
+  // Render dialogs (shared across all views)
+  const renderDialogs = () => (
+    <>
       {/* Upload Dialog */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
         <DialogContent className="sm:max-w-lg bg-card border-border max-h-[90vh] overflow-y-auto">
@@ -743,6 +635,412 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
         open={!!viewerImages}
         onOpenChange={(open) => !open && setViewerImages(null)}
       />
+    </>
+  );
+
+  // ===== SELECTION SCREEN =====
+  if (viewMode === 'selection') {
+    return (
+      <div className="pb-20">
+        {/* Header */}
+        <div className="sticky top-0 z-20 px-4 py-3 bg-background/95 backdrop-blur-sm border-b border-border">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Galería del Recuerdo</h1>
+              <p className="text-xs text-muted-foreground">{photos.length} fotos en la galería</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 space-y-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              {/* Welcome message */}
+              <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+                <CardContent className="py-6 text-center">
+                  <Camera className="w-12 h-12 text-primary mx-auto mb-3" />
+                  <h2 className="text-lg font-semibold mb-2">¿Cómo quieres ver la galería?</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Elige si deseas ver todas las fotos o explorar por usuario
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* View options */}
+              <div className="grid grid-cols-1 gap-3">
+                {/* View all option */}
+                <Card 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors border-2 hover:border-primary/50"
+                  onClick={() => setViewMode('all')}
+                >
+                  <CardContent className="flex items-center gap-4 py-4">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <ImagePlus className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium">Ver toda la galería</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Todas las {photos.length} fotos en orden cronológico
+                      </p>
+                    </div>
+                    <ArrowLeft className="w-5 h-5 text-muted-foreground rotate-180" />
+                  </CardContent>
+                </Card>
+
+                {/* View by user option */}
+                <Card 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors border-2 hover:border-primary/50"
+                  onClick={() => setViewMode('grouped')}
+                >
+                  <CardContent className="flex items-center gap-4 py-4">
+                    <div className="w-12 h-12 rounded-full bg-secondary/50 flex items-center justify-center shrink-0">
+                      <Users className="w-6 h-6 text-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium">Ver por usuario</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Fotos agrupadas por quien las subió ({users.length} usuarios)
+                      </p>
+                    </div>
+                    <ArrowLeft className="w-5 h-5 text-muted-foreground rotate-180" />
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Users preview */}
+              {users.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium mb-3 text-muted-foreground">
+                    Usuarios con fotos
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {users.map(u => {
+                      const userPhotoCount = photos.filter(p => p.user_id === u.id).length;
+                      return (
+                        <Badge 
+                          key={u.id} 
+                          variant="secondary" 
+                          className="gap-1 cursor-pointer hover:bg-primary/20 transition-colors"
+                          onClick={() => {
+                            setFilterUser(u.id);
+                            setViewMode('all');
+                          }}
+                        >
+                          <User className="w-3 h-3" />
+                          @{u.nickname}
+                          <span className="text-muted-foreground">({userPhotoCount})</span>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Upload button */}
+              <Button 
+                className="w-full mt-4" 
+                size="lg"
+                onClick={() => setShowUploadDialog(true)}
+              >
+                <Camera className="w-5 h-5 mr-2" />
+                Subir mis fotos
+              </Button>
+            </>
+          )}
+        </div>
+
+        {renderDialogs()}
+      </div>
+    );
+  }
+
+  // ===== GROUPED VIEW =====
+  if (viewMode === 'grouped') {
+    return (
+      <div className="pb-20">
+        {/* Header */}
+        <div className="sticky top-0 z-20 px-4 py-3 bg-background/95 backdrop-blur-sm border-b border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={handleBackToSelection} className="h-8 w-8">
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div>
+                <h1 className="text-xl font-bold text-foreground">Por Usuario</h1>
+                <p className="text-xs text-muted-foreground">
+                  {users.length} usuarios · {photos.length} fotos
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="icon" onClick={refresh} disabled={loading}>
+                <RefreshCw className={cn('w-5 h-5', loading && 'animate-spin')} />
+              </Button>
+              <Button size="sm" onClick={() => setShowUploadDialog(true)}>
+                <Camera className="w-4 h-4 mr-1" />
+                Subir
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 space-y-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : Object.keys(photosByUser).length === 0 ? (
+            <Card className="bg-muted/30 border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <Camera className="w-12 h-12 text-muted-foreground mb-4" />
+                <h3 className="font-medium text-foreground mb-1">Sin fotos aún</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Sé el primero en compartir un recuerdo
+                </p>
+                <Button onClick={() => setShowUploadDialog(true)}>
+                  <ImagePlus className="w-4 h-4 mr-2" />
+                  Subir Fotos
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {Object.entries(photosByUser).map(([userId, userPhotos]) => {
+                const isExpanded = expandedUsers.has(userId);
+                const displayPhotos = isExpanded ? userPhotos : userPhotos.slice(0, 4);
+                const hasMore = userPhotos.length > 4;
+                const nickname = getUserNickname(userId);
+                
+                return (
+                  <Card key={userId} className="overflow-hidden">
+                    {/* User header */}
+                    <div 
+                      className="flex items-center justify-between p-3 bg-muted/30 cursor-pointer"
+                      onClick={() => toggleUserExpansion(userId)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">@{nickname}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            {userPhotos.length} foto{userPhotos.length !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        {isExpanded ? 'Ver menos' : hasMore ? `Ver todas (${userPhotos.length})` : 'Ver'}
+                      </Button>
+                    </div>
+                    
+                    {/* Photos grid */}
+                    <CardContent className="p-2">
+                      <div className="grid grid-cols-4 gap-1">
+                        {displayPhotos.map((photo, idx) => (
+                          <div
+                            key={photo.id}
+                            className="relative aspect-square rounded overflow-hidden bg-muted cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openPhotoDetail(photo);
+                            }}
+                          >
+                            <img
+                              src={photo.image_url}
+                              alt={photo.caption || 'Foto'}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform"
+                              loading="lazy"
+                            />
+                            {!isExpanded && idx === 3 && hasMore && (
+                              <div 
+                                className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-medium"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleUserExpansion(userId);
+                                }}
+                              >
+                                +{userPhotos.length - 4}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </>
+          )}
+        </div>
+
+        {renderDialogs()}
+      </div>
+    );
+  }
+
+  // ===== ALL PHOTOS VIEW (default) =====
+  return (
+    <div className="pb-20">
+      {/* Header */}
+      <div className="sticky top-0 z-20 px-4 py-3 bg-background/95 backdrop-blur-sm border-b border-border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={handleBackToSelection} className="h-8 w-8">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Galería del Recuerdo</h1>
+              <p className="text-xs text-muted-foreground">
+                {filteredPhotos.length} de {photos.length} fotos
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant={showFilters ? "secondary" : "ghost"} 
+              size="icon" 
+              onClick={() => setShowFilters(!showFilters)}
+              className="relative"
+            >
+              <Filter className="w-5 h-5" />
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={refresh} disabled={loading}>
+              <RefreshCw className={cn('w-5 h-5', loading && 'animate-spin')} />
+            </Button>
+            <Button size="sm" onClick={() => setShowUploadDialog(true)}>
+              <Camera className="w-4 h-4 mr-1" />
+              Subir
+            </Button>
+          </div>
+        </div>
+
+        {/* Filter Panel */}
+        {showFilters && (
+          <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Filtros</span>
+              {activeFilterCount > 0 && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  Limpiar
+                </Button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {/* Year Filter */}
+              <div>
+                <Label className="text-xs mb-1 block">Año</Label>
+                <Select value={filterYear} onValueChange={setFilterYear}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los años</SelectItem>
+                    {availableYears.map(year => (
+                      <SelectItem key={year} value={year}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* User Filter */}
+              <div>
+                <Label className="text-xs mb-1 block">Usuario</Label>
+                <Select value={filterUser} onValueChange={setFilterUser}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {user && (
+                      <SelectItem value={user.id}>Mis fotos</SelectItem>
+                    )}
+                    {users.filter(u => u.id !== user?.id).map(u => (
+                      <SelectItem key={u.id} value={u.id}>@{u.nickname}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Active filters badges */}
+            {activeFilterCount > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {filterYear !== 'all' && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {filterYear}
+                    <button onClick={() => setFilterYear('all')} className="ml-1">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
+                {filterUser !== 'all' && (
+                  <Badge variant="secondary" className="gap-1">
+                    <User className="w-3 h-3" />
+                    {filterUser === user?.id ? 'Mis fotos' : `@${getUserNickname(filterUser)}`}
+                    <button onClick={() => setFilterUser('all')} className="ml-1">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Gallery Grid */}
+      <div className="p-4">
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : filteredPhotos.length === 0 ? (
+          <Card className="bg-muted/30 border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <Camera className="w-12 h-12 text-muted-foreground mb-4" />
+              <h3 className="font-medium text-foreground mb-1">
+                {activeFilterCount > 0 ? 'Sin fotos con estos filtros' : 'Sin fotos aún'}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {activeFilterCount > 0 
+                  ? 'Prueba ajustando los filtros'
+                  : 'Sé el primero en compartir un recuerdo'
+                }
+              </p>
+              {activeFilterCount > 0 ? (
+                <Button variant="outline" onClick={clearFilters}>
+                  Limpiar filtros
+                </Button>
+              ) : (
+                <Button onClick={() => setShowUploadDialog(true)}>
+                  <ImagePlus className="w-4 h-4 mr-2" />
+                  Subir Fotos
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {filteredPhotos.map((photo) => renderPhotoCard(photo))}
+          </div>
+        )}
+      </div>
+
+      {renderDialogs()}
     </div>
   );
 };
