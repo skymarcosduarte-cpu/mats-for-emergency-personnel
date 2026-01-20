@@ -96,31 +96,38 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
     return [...new Set(photos.map(p => p.user_id))];
   }, [photos]);
 
-  // Fetch user nicknames
+  // Fetch user nicknames (public profiles)
   useEffect(() => {
     if (uniqueUserIds.length === 0) {
       setUsersLoading(false);
       return;
     }
-    
+
     const fetchUsers = async () => {
       setUsersLoading(true);
       try {
-        const { data } = await supabase
-          .from('profiles')
-          .select('id, nickname')
-          .in('id', uniqueUserIds);
-        
+        const { data, error } = await supabase
+          .from('profiles_public')
+          .select('user_id, nickname')
+          .in('user_id', uniqueUserIds);
+
+        if (error) throw error;
+
         if (data) {
-          setUsers(data.map(p => ({ id: p.id, nickname: p.nickname })));
+          setUsers(
+            data.map(p => ({
+              id: p.user_id,
+              nickname: p.nickname || 'Usuario',
+            }))
+          );
         }
       } catch (err) {
-        console.error('Error fetching users:', err);
+        console.error('[MemoryGallery] Error fetching user nicknames:', err);
       } finally {
         setUsersLoading(false);
       }
     };
-    
+
     fetchUsers();
   }, [uniqueUserIds]);
 
