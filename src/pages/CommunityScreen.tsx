@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play
 } from 'lucide-react';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
 import { MarketScreen } from '@/pages/MarketScreen';
@@ -68,6 +68,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
     createEvent, 
     deleteEvent,
     uploadImage,
+    uploadVideo,
     refresh,
     getEventTypeLabel,
     getEventTypeColor,
@@ -93,9 +94,13 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
     event_type: '' as CommunityEventType | '',
     title: '',
     message: '',
+    link_url: '',
   });
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   
   // Birthday greeting state
   const [greetingTarget, setGreetingTarget] = useState<NearbyBirthday | null>(null);
@@ -242,20 +247,75 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
     setImagePreviews([]);
   };
 
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      toast.error('Solo se permiten videos');
+      return;
+    }
+    
+    // Validate size (10MB max)
+    const MAX_VIDEO_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_VIDEO_SIZE) {
+      toast.error('El video debe ser menor a 10MB');
+      return;
+    }
+    
+    // Clear previous preview
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    
+    setSelectedVideo(file);
+    setVideoPreview(URL.createObjectURL(file));
+  };
+
+  const handleClearVideo = () => {
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    setSelectedVideo(null);
+    setVideoPreview(null);
+  };
+
   const handleSubmit = async () => {
     if (!formData.event_type || !formData.title.trim()) {
       toast.error('Completa los campos obligatorios');
       return;
     }
 
+    // Validate link URL if provided
+    if (formData.link_url.trim()) {
+      try {
+        new URL(formData.link_url.trim());
+      } catch {
+        toast.error('La URL del enlace no es válida');
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       let imageUrls: string[] = [];
+      let videoUrl: string | undefined;
       
       // Upload all images
       for (const file of selectedImages) {
         const url = await uploadImage(file);
         imageUrls.push(url);
+      }
+
+      // Upload video if selected
+      if (selectedVideo) {
+        setUploadingVideo(true);
+        try {
+          videoUrl = await uploadVideo(selectedVideo);
+        } finally {
+          setUploadingVideo(false);
+        }
       }
 
       await createEvent({
@@ -264,12 +324,15 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
         message: formData.message || undefined,
         image_url: imageUrls[0], // Keep first image for backwards compatibility
         image_urls: imageUrls.length > 0 ? imageUrls : undefined,
+        link_url: formData.link_url.trim() || undefined,
+        video_url: videoUrl,
       });
       
       toast.success('Evento publicado');
       setShowNewDialog(false);
-      setFormData({ event_type: '', title: '', message: '' });
+      setFormData({ event_type: '', title: '', message: '', link_url: '' });
       handleClearImages();
+      handleClearVideo();
     } catch (err) {
       console.error('Error creating event:', err);
       toast.error('Error al publicar');
@@ -638,6 +701,35 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
                         {event.message && (
                           <p className="text-sm text-muted-foreground mt-1">{event.message}</p>
                         )}
+                        
+                        {/* Link URL */}
+                        {event.link_url && (
+                          <a
+                            href={event.link_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 mt-2 text-sm text-primary hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Link className="w-4 h-4" />
+                            <span className="truncate">{new URL(event.link_url).hostname}</span>
+                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                          </a>
+                        )}
+                        
+                        {/* Video */}
+                        {event.video_url && (
+                          <div className="mt-3">
+                            <video
+                              src={event.video_url}
+                              controls
+                              className="w-full rounded-lg border border-border max-h-64"
+                              preload="metadata"
+                            >
+                              Tu navegador no soporta videos.
+                            </video>
+                          </div>
+                        )}
                         {/* Image Gallery - support multiple images */}
                         {(() => {
                           const images = (event as any).image_urls?.length > 0 
@@ -886,6 +978,61 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
               />
             </div>
 
+            {/* Link URL */}
+            <div>
+              <Label className="flex items-center gap-2">
+                <Link className="w-4 h-4" />
+                Enlace web (opcional)
+              </Label>
+              <Input
+                value={formData.link_url}
+                onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
+                placeholder="https://ejemplo.com"
+                type="url"
+              />
+            </div>
+
+            {/* Video Upload */}
+            <div>
+              <Label className="flex items-center gap-2">
+                <Video className="w-4 h-4" />
+                Video (opcional, máx. 10 MB)
+              </Label>
+              
+              {videoPreview ? (
+                <div className="relative mt-2">
+                  <video
+                    src={videoPreview}
+                    className="w-full h-32 object-cover rounded-lg border border-border"
+                    controls
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-1 -right-1 h-6 w-6"
+                    onClick={handleClearVideo}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <label className="flex items-center justify-center gap-2 w-full h-16 mt-2 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors">
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={handleVideoSelect}
+                  />
+                  <Video className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Agregar video</span>
+                </label>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Tamaño máximo: 10 MB
+              </p>
+            </div>
+
             {/* Image Upload - Multiple */}
             <div>
               <Label>Imágenes (opcional, máx. 5)</Label>
@@ -942,11 +1089,11 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={submitting || !formData.event_type || !formData.title.trim()}
+                disabled={submitting || uploadingVideo || !formData.event_type || !formData.title.trim()}
                 className="flex-1"
               >
-                {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                Publicar
+                {(submitting || uploadingVideo) && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                {uploadingVideo ? 'Subiendo video...' : 'Publicar'}
               </Button>
             </div>
           </div>

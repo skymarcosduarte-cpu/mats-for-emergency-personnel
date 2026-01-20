@@ -23,6 +23,8 @@ export interface CommunityEvent {
   message: string | null;
   image_url: string | null;
   image_urls: string[] | null;
+  link_url: string | null;
+  video_url: string | null;
   target_user_id: string | null;
   is_active: boolean;
   expires_at: string | null;
@@ -115,6 +117,33 @@ export function useCommunityEvents() {
     return publicUrl;
   }, []);
 
+  // Upload video to storage (max 10MB)
+  const uploadVideo = useCallback(async (file: File): Promise<string> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Validate video size (10MB max)
+    const MAX_VIDEO_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_VIDEO_SIZE) {
+      throw new Error('El video debe ser menor a 10MB');
+    }
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/video_${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('community_images')
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('community_images')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  }, []);
+
   // Create a new event
   const createEvent = useCallback(async (event: {
     event_type: CommunityEventType;
@@ -122,6 +151,8 @@ export function useCommunityEvents() {
     message?: string;
     image_url?: string;
     image_urls?: string[];
+    link_url?: string;
+    video_url?: string;
     target_user_id?: string;
     expires_at?: string;
   }) => {
@@ -137,6 +168,8 @@ export function useCommunityEvents() {
         message: event.message || null,
         image_url: event.image_url || null,
         image_urls: event.image_urls || null,
+        link_url: event.link_url || null,
+        video_url: event.video_url || null,
         target_user_id: event.target_user_id || null,
         expires_at: event.expires_at || null,
       })
@@ -240,6 +273,7 @@ export function useCommunityEvents() {
     updateEvent,
     deleteEvent,
     uploadImage,
+    uploadVideo,
     refresh: fetchEvents,
     getEventTypeLabel,
     getEventTypeColor,
