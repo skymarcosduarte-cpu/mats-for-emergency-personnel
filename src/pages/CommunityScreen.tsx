@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingBag, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play, Pencil
 } from 'lucide-react';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
 import { MarketScreen } from '@/pages/MarketScreen';
@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 // Tabs removed - using conditional rendering based on activeSection
-import { useCommunityEvents, CommunityEventType } from '@/hooks/useCommunityEvents';
+import { useCommunityEvents, CommunityEventType, CommunityEvent } from '@/hooks/useCommunityEvents';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 import TripRouteMap from '@/components/TripRouteMap';
 import MapErrorBoundary from '@/components/MapErrorBoundary';
@@ -66,6 +66,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
     birthdays, 
     loading, 
     createEvent, 
+    updateEvent,
     deleteEvent,
     uploadImage,
     uploadVideo,
@@ -86,6 +87,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   const [activeSection, setActiveSection] = useState<'tablero' | 'noticias' | 'market'>('tablero');
   
   const [showNewDialog, setShowNewDialog] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CommunityEvent | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<ActiveTrip | null>(null);
   const [routeHistory, setRouteHistory] = useState<[number, number][]>([]);
@@ -101,6 +103,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [existingVideoUrl, setExistingVideoUrl] = useState<string | null>(null);
   
   // Birthday greeting state
   const [greetingTarget, setGreetingTarget] = useState<NearbyBirthday | null>(null);
@@ -279,6 +282,29 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
     }
     setSelectedVideo(null);
     setVideoPreview(null);
+    setExistingVideoUrl(null);
+  };
+
+  // Open edit dialog with event data
+  const handleEdit = (event: CommunityEvent) => {
+    setEditingEvent(event);
+    setFormData({
+      event_type: event.event_type,
+      title: event.title,
+      message: event.message || '',
+      link_url: event.link_url || '',
+    });
+    setExistingVideoUrl(event.video_url);
+    setShowNewDialog(true);
+  };
+
+  // Reset form state
+  const resetForm = () => {
+    setFormData({ event_type: '', title: '', message: '', link_url: '' });
+    handleClearImages();
+    handleClearVideo();
+    setEditingEvent(null);
+    setExistingVideoUrl(null);
   };
 
   const handleSubmit = async () => {
@@ -299,6 +325,34 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
 
     setSubmitting(true);
     try {
+      // If editing an existing event
+      if (editingEvent) {
+        let videoUrl: string | null = existingVideoUrl;
+        
+        // Upload new video if selected
+        if (selectedVideo) {
+          setUploadingVideo(true);
+          try {
+            videoUrl = await uploadVideo(selectedVideo);
+          } finally {
+            setUploadingVideo(false);
+          }
+        }
+
+        await updateEvent(editingEvent.id, {
+          title: formData.title,
+          message: formData.message || null,
+          link_url: formData.link_url.trim() || null,
+          video_url: videoUrl,
+        });
+        
+        toast.success('Aviso actualizado');
+        setShowNewDialog(false);
+        resetForm();
+        return;
+      }
+
+      // Creating a new event
       let imageUrls: string[] = [];
       let videoUrl: string | undefined;
       
@@ -330,12 +384,10 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
       
       toast.success('Evento publicado');
       setShowNewDialog(false);
-      setFormData({ event_type: '', title: '', message: '', link_url: '' });
-      handleClearImages();
-      handleClearVideo();
+      resetForm();
     } catch (err) {
-      console.error('Error creating event:', err);
-      toast.error('Error al publicar');
+      console.error('Error saving event:', err);
+      toast.error(editingEvent ? 'Error al actualizar' : 'Error al publicar');
     } finally {
       setSubmitting(false);
     }
@@ -803,14 +855,24 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
                         </div>
                       </div>
                       {event.user_id === user?.id && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleDelete(event.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            onClick={() => handleEdit(event)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDelete(event.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </CardContent>
@@ -915,12 +977,24 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
       </div>
 
       {/* New Event Dialog */}
-      <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
-        <DialogContent className="sm:max-w-md bg-card border-border">
+      <Dialog open={showNewDialog} onOpenChange={(open) => {
+        setShowNewDialog(open);
+        if (!open) resetForm();
+      }}>
+        <DialogContent className="sm:max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <MessageSquarePlus className="w-5 h-5 text-primary" />
-              Publicar Aviso
+              {editingEvent ? (
+                <>
+                  <Pencil className="w-5 h-5 text-primary" />
+                  Editar Aviso
+                </>
+              ) : (
+                <>
+                  <MessageSquarePlus className="w-5 h-5 text-primary" />
+                  Publicar Aviso
+                </>
+              )}
             </DialogTitle>
           </DialogHeader>
           
@@ -930,6 +1004,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
               <Select
                 value={formData.event_type || undefined}
                 onValueChange={(v) => setFormData({ ...formData, event_type: v as CommunityEventType })}
+                disabled={!!editingEvent} // Can't change type when editing
                 onOpenChange={(open) => {
                   // Debug for Android/WebView issues
                   console.log('[CommunityScreen] event_type Select open:', open);
@@ -999,10 +1074,10 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
                 Video (opcional, máx. 10 MB)
               </Label>
               
-              {videoPreview ? (
+              {videoPreview || existingVideoUrl ? (
                 <div className="relative mt-2">
                   <video
-                    src={videoPreview}
+                    src={videoPreview || existingVideoUrl || ''}
                     className="w-full h-32 object-cover rounded-lg border border-border"
                     controls
                   />
@@ -1033,51 +1108,60 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
               </p>
             </div>
 
-            {/* Image Upload - Multiple */}
-            <div>
-              <Label>Imágenes (opcional, máx. 5)</Label>
-              
-              {/* Selected images preview */}
-              {imagePreviews.length > 0 && (
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {imagePreviews.map((preview, idx) => (
-                    <div key={idx} className="relative">
-                      <img 
-                        src={preview} 
-                        alt={`Preview ${idx + 1}`}
-                        className="w-full h-20 object-cover rounded-lg border border-border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute -top-1 -right-1 h-5 w-5"
-                        onClick={() => handleRemoveImage(idx)}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {/* Add more images button */}
-              {imagePreviews.length < 5 && (
-                <label className="flex items-center justify-center gap-2 w-full h-16 mt-2 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleImageSelect}
-                  />
-                  <ImagePlus className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    {imagePreviews.length === 0 ? 'Agregar imágenes' : 'Agregar más'}
-                  </span>
-                </label>
-              )}
-            </div>
+            {/* Image Upload - Multiple (only for new events, not editable) */}
+            {!editingEvent && (
+              <div>
+                <Label>Imágenes (opcional, máx. 5)</Label>
+                
+                {/* Selected images preview */}
+                {imagePreviews.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {imagePreviews.map((preview, idx) => (
+                      <div key={idx} className="relative">
+                        <img 
+                          src={preview} 
+                          alt={`Preview ${idx + 1}`}
+                          className="w-full h-20 object-cover rounded-lg border border-border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-1 -right-1 h-5 w-5"
+                          onClick={() => handleRemoveImage(idx)}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Add more images button */}
+                {imagePreviews.length < 5 && (
+                  <label className="flex items-center justify-center gap-2 w-full h-16 mt-2 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handleImageSelect}
+                    />
+                    <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {imagePreviews.length === 0 ? 'Agregar imágenes' : 'Agregar más'}
+                    </span>
+                  </label>
+                )}
+              </div>
+            )}
+
+            {/* Note about images in edit mode */}
+            {editingEvent && (
+              <p className="text-xs text-muted-foreground italic">
+                Las imágenes no se pueden modificar. Para cambiarlas, elimina el aviso y crea uno nuevo.
+              </p>
+            )}
 
             <div className="flex gap-2">
               <Button
@@ -1093,7 +1177,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
                 className="flex-1"
               >
                 {(submitting || uploadingVideo) && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {uploadingVideo ? 'Subiendo video...' : 'Publicar'}
+                {uploadingVideo ? 'Subiendo video...' : editingEvent ? 'Guardar' : 'Publicar'}
               </Button>
             </div>
           </div>

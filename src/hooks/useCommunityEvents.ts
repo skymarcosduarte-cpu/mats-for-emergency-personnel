@@ -185,7 +185,9 @@ export function useCommunityEvents() {
   // Update an event
   const updateEvent = useCallback(async (id: string, updates: Partial<{
     title: string;
-    message: string;
+    message: string | null;
+    link_url: string | null;
+    video_url: string | null;
     is_active: boolean;
   }>) => {
     const { error: updateError } = await supabase
