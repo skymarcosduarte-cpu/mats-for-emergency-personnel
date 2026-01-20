@@ -315,12 +315,17 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
       return;
     }
 
-    // Validate link URL if provided
-    if (formData.link_url.trim()) {
+    // Validate and fix link URL if provided
+    let linkUrl = formData.link_url.trim();
+    if (linkUrl) {
+      // Auto-add https:// if user forgot to include protocol
+      if (linkUrl && !linkUrl.startsWith('http://') && !linkUrl.startsWith('https://')) {
+        linkUrl = 'https://' + linkUrl;
+      }
       try {
-        new URL(formData.link_url.trim());
+        new URL(linkUrl);
       } catch {
-        toast.error('La URL del enlace no es válida');
+        toast.error('La URL del enlace no es válida. Ejemplo: https://ejemplo.com');
         return;
       }
     }
@@ -344,7 +349,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
         await updateEvent(editingEvent.id, {
           title: formData.title,
           message: formData.message || null,
-          link_url: formData.link_url.trim() || null,
+          link_url: linkUrl || null,
           video_url: videoUrl,
         });
         
@@ -380,7 +385,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
         message: formData.message || undefined,
         image_url: imageUrls[0], // Keep first image for backwards compatibility
         image_urls: imageUrls.length > 0 ? imageUrls : undefined,
-        link_url: formData.link_url.trim() || undefined,
+        link_url: linkUrl || undefined,
         video_url: videoUrl,
       });
       
@@ -1085,6 +1090,24 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
               />
             </div>
 
+            {/* Link URL - Moved up for visibility */}
+            <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+              <Label className="flex items-center gap-2 text-primary font-medium">
+                <Link className="w-4 h-4" />
+                Enlace web (opcional)
+              </Label>
+              <Input
+                value={formData.link_url}
+                onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
+                placeholder="https://ejemplo.com o www.ejemplo.com"
+                type="url"
+                className="mt-2"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Incluye https:// o http:// al inicio del enlace
+              </p>
+            </div>
+
             <div>
               <Label>Mensaje (opcional)</Label>
               <textarea
@@ -1093,20 +1116,6 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
                 placeholder="Detalles adicionales..."
                 className="w-full h-24 px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground resize-none"
                 maxLength={500}
-              />
-            </div>
-
-            {/* Link URL */}
-            <div>
-              <Label className="flex items-center gap-2">
-                <Link className="w-4 h-4" />
-                Enlace web (opcional)
-              </Label>
-              <Input
-                value={formData.link_url}
-                onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
-                placeholder="https://ejemplo.com"
-                type="url"
               />
             </div>
 
