@@ -147,26 +147,26 @@ const NewsCard: React.FC<NewsCardProps> = ({ item }) => {
             <div className="flex items-center gap-2 mb-1.5">
               <Badge 
                 variant="outline" 
-                className={cn("text-[10px] px-1.5 py-0", getSourceColor(item.source))}
+                className={cn("text-xs px-2 py-0.5", getSourceColor(item.source))}
               >
                 {item.source}
               </Badge>
               {timeAgo && (
-                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                  <Clock className="w-2.5 h-2.5" />
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
                   {timeAgo}
                 </span>
               )}
             </div>
             
             {/* Title */}
-            <h3 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+            <h3 className="text-base font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
               {item.title}
             </h3>
             
             {/* Description preview */}
             {item.description && (
-              <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+              <p className="text-sm text-muted-foreground line-clamp-2 mt-1.5 leading-relaxed">
                 {item.description}
               </p>
             )}
