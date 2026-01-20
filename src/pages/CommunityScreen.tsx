@@ -448,7 +448,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   // Get section title based on current section
   const getSectionTitle = () => {
     switch (activeSection) {
-      case 'tablero': return 'Avisos';
+      case 'tablero': return 'AviSOS';
       case 'noticias': return 'Últimas Noticias';
       case 'market': return 'Marketplace';
       case 'galeria': return 'Galería del Recuerdo';
@@ -486,7 +486,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
 
         {/* Large Button Cards */}
         <div className="px-4 space-y-3">
-          {/* Avisos Button */}
+          {/* AviSOS Button */}
           <button
             onClick={() => handleEnterSection('tablero')}
             className={cn(
@@ -500,7 +500,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
               <Clipboard className="w-8 h-8" />
             </div>
             <div className="flex-1 text-left min-w-0">
-              <h3 className="font-semibold text-foreground text-base">Avisos</h3>
+              <h3 className="font-semibold text-foreground text-base">AviSOS</h3>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 Cumpleaños, eventos y anuncios de la comunidad
               </p>
