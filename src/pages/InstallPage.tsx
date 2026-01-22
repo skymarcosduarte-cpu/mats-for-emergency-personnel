@@ -270,7 +270,7 @@ export default function InstallPage() {
                   </div>
                   <div className="text-left">
                     <p className="font-semibold">Android</p>
-                    <p className="text-sm text-muted-foreground">Chrome, Samsung Internet, Edge</p>
+                    <p className="text-sm text-muted-foreground">Chrome, Samsung Internet, Edge, Huawei</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -334,6 +334,59 @@ export default function InstallPage() {
                         title="Confirma"
                         description="El ícono de la app aparecerá en tu pantalla de inicio"
                       />
+                    </div>
+                  </div>
+
+                  {/* Huawei (sin Google Play Services) */}
+                  <div className="pt-4 border-t">
+                    <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <span className="text-base">📱</span> Huawei (Sin Google Play Services)
+                    </h4>
+                    <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4">
+                      <p className="text-sm">
+                        <strong className="text-amber-600 dark:text-amber-400">💡 Buenas noticias:</strong> Los dispositivos Huawei sin Google Play Services funcionan perfectamente con esta aplicación web. No necesitas instalar nada de Google.
+                      </p>
+                    </div>
+                    <div className="space-y-4">
+                      <InstallStep 
+                        number={1}
+                        title="Abre el Navegador Huawei"
+                        description="Usa el navegador que viene preinstalado en tu Huawei o descarga Microsoft Edge desde AppGallery"
+                        visual={
+                          <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                            <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                              <span className="text-lg">🌐</span>
+                            </div>
+                            <span className="font-medium">Navegador Huawei o Edge</span>
+                          </div>
+                        }
+                      />
+                      <InstallStep 
+                        number={2}
+                        title="Abre el menú del navegador"
+                        description="Toca los 3 puntos (⋮) en la esquina inferior o superior derecha"
+                      />
+                      <InstallStep 
+                        number={3}
+                        title='Busca "Agregar a pantalla de inicio"'
+                        description='También puede aparecer como "Crear acceso directo" o "Añadir a inicio"'
+                        visual={
+                          <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                            <Plus className="h-5 w-5 text-primary" />
+                            <span className="font-medium">Agregar a pantalla de inicio</span>
+                          </div>
+                        }
+                      />
+                      <InstallStep 
+                        number={4}
+                        title="Confirma la instalación"
+                        description="La app se instalará sin necesidad de Play Store y funcionará como una app nativa"
+                      />
+                    </div>
+                    <div className="mt-4 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                      <p className="text-xs text-muted-foreground">
+                        <strong>✓ Compatible:</strong> Huawei P40, P50, Mate 40, Mate 50, Nova series y todos los dispositivos con HarmonyOS o EMUI sin Google Services.
+                      </p>
                     </div>
                   </div>
                 </div>
