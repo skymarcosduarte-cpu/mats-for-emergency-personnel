@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { NotificationsBell } from './NotificationsBell';
+import { EmergencyStreamButton } from './EmergencyStreamButton';
 
 interface AppHeaderProps {
   onPanicClick: () => void;
@@ -186,6 +187,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Emergency Stream Button - Live Recording */}
+          <EmergencyStreamButton />
+          
           {/* Notifications bell */}
           <NotificationsBell />
           

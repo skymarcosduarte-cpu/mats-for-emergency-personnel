@@ -740,6 +740,54 @@ export default function UserGuidePage() {
               </li>
             </ul>
 
+            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">🎥 Grabación de Emergencia en Vivo</h3>
+            <p className="text-gray-700 mb-4">
+              El botón de cámara con <strong>glow rojo</strong> en el header permite grabar video en vivo durante emergencias.
+              <em className="block text-sm text-gray-600 mt-1">Nota: El ícono es pequeño A PROPÓSITO para grabar discretamente.</em>
+            </p>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+              <h4 className="font-medium text-gray-900 mb-2">Características:</h4>
+              <ul className="space-y-1 text-sm text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600">•</span>
+                  <span>Clips de 15 segundos automáticos (máximo 5 minutos = 20 clips)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600">•</span>
+                  <span>Se publica automáticamente en el chat comunitario</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600">•</span>
+                  <span>Se notifica a tus contactos de emergencia</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600">•</span>
+                  <span>Incluye tu ubicación GPS en cada mensaje</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600">•</span>
+                  <span>Videos disponibles por 7 días como evidencia</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600">•</span>
+                  <span>SOLO tú puedes borrar tus propios videos</span>
+                </li>
+              </ul>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h4 className="font-medium text-red-800 mb-2">⚠️ ADVERTENCIAS IMPORTANTES</h4>
+              <ul className="space-y-1 text-sm text-red-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600">•</span>
+                  <span>Solo usar para emergencias reales o sospecha de peligro</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600">•</span>
+                  <span><strong>El mal uso causará BAJA INMEDIATA de la red</strong></span>
+                </li>
+              </ul>
+            </div>
+
             <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Respuesta a Emergencias</h3>
             <p className="text-gray-700">
               Cuando alguien activa una emergencia, los rescatistas cercanos reciben una notificación 
