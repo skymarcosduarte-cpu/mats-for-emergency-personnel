@@ -368,6 +368,99 @@ export function useEmergencyStream() {
     }
   }, [getCurrentLocation, startClipRecording, rotateClip, postToCommunityChat, notifyEmergencyContacts, cleanup]);
 
+  // Build WhatsApp share message with all clip URLs
+  const buildClipsShareMessage = useCallback(async (
+    clipCount: number,
+    location: { lat: number; lng: number } | null
+  ): Promise<string> => {
+    const streamId = streamIdRef.current;
+    if (!streamId) return '';
+
+    // Fetch all clips for this stream
+    const { data: clips } = await supabase
+      .from('emergency_stream_clips')
+      .select('video_url, sequence_number')
+      .eq('stream_id', streamId)
+      .order('sequence_number', { ascending: true });
+
+    const locationLink = location
+      ? `https://maps.google.com/?q=${location.lat},${location.lng}`
+      : 'Ubicación no disponible';
+
+    let message = `🚨 *GRABACIÓN DE EMERGENCIA FINALIZADA*\n\n`;
+    message += `👤 ${userNameRef.current}\n`;
+    message += `📹 ${clipCount} clips grabados\n`;
+    message += `📍 Ubicación: ${locationLink}\n`;
+    message += `🕐 ${new Date().toLocaleString('es-MX')}\n\n`;
+
+    if (clips && clips.length > 0) {
+      message += `*Videos disponibles (7 días):*\n`;
+      clips.forEach((clip) => {
+        message += `▶️ Clip #${clip.sequence_number}: ${clip.video_url}\n`;
+      });
+    }
+
+    message += `\n_Grabado desde M.A.T.S. - Mutual Aid Tracking System_`;
+
+    return message;
+  }, []);
+
+  // Share clips via WhatsApp
+  const shareClipsViaWhatsApp = useCallback(async (
+    clipCount: number,
+    location: { lat: number; lng: number } | null
+  ) => {
+    const contacts = await getEmergencyContacts();
+    if (contacts.length === 0) {
+      toast.info('No hay contactos de emergencia configurados');
+      return;
+    }
+
+    const message = await buildClipsShareMessage(clipCount, location);
+    const encodedMessage = encodeURIComponent(message);
+
+    // Format phone for WhatsApp
+    const formatPhone = (phone: string): string => {
+      let cleaned = phone.replace(/\D/g, '');
+      if (cleaned.length === 10) cleaned = '52' + cleaned;
+      return cleaned;
+    };
+
+    // Show option to share
+    toast.success('📹 Grabación finalizada', {
+      duration: 15000,
+      description: `${clipCount} clips listos para compartir`,
+      action: {
+        label: '📱 Compartir por WhatsApp',
+        onClick: () => {
+          const primaryContact = contacts[0];
+          const phone = formatPhone(primaryContact.whatsapp || primaryContact.phone);
+          window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
+
+          // Offer to share with more contacts
+          if (contacts.length > 1) {
+            setTimeout(() => {
+              toast.info(`¿Compartir con ${contacts.length - 1} contacto(s) más?`, {
+                duration: 10000,
+                action: {
+                  label: 'Compartir todos',
+                  onClick: () => {
+                    contacts.slice(1).forEach((contact, idx) => {
+                      setTimeout(() => {
+                        const ph = formatPhone(contact.whatsapp || contact.phone);
+                        window.open(`https://wa.me/${ph}?text=${encodedMessage}`, '_blank');
+                      }, idx * 1500);
+                    });
+                  },
+                },
+              });
+            }, 2000);
+          }
+        },
+      },
+    });
+  }, [getEmergencyContacts, buildClipsShareMessage]);
+
   // Stop emergency stream
   const stopStream = useCallback(async () => {
     console.log('[useEmergencyStream] Stopping stream');
@@ -377,6 +470,8 @@ export function useEmergencyStream() {
       mediaRecorderRef.current.stop();
     }
 
+    const finalClipCount = currentClipRef.current;
+
     // Mark stream as ended in database
     if (streamIdRef.current) {
       await supabase
@@ -384,7 +479,7 @@ export function useEmergencyStream() {
         .update({
           is_active: false,
           ended_at: new Date().toISOString(),
-          clip_count: currentClipRef.current,
+          clip_count: finalClipCount,
         })
         .eq('id', streamIdRef.current);
 
@@ -394,18 +489,13 @@ export function useEmergencyStream() {
         ? `https://maps.google.com/?q=${location.lat},${location.lng}`
         : 'Ubicación no disponible';
 
-      const endMessage = `✅ **Transmisión finalizada** de ${userNameRef.current}\n📹 ${currentClipRef.current} clips grabados\n📍 Última ubicación: ${locationLink}`;
+      const endMessage = `✅ **Transmisión finalizada** de ${userNameRef.current}\n📹 ${finalClipCount} clips grabados\n📍 Última ubicación: ${locationLink}`;
       await postToCommunityChat(endMessage);
 
-      // Now notify emergency contacts (after recording ends, so it doesn't interrupt)
-      if (location) {
-        notifyEmergencyContacts(
-          'transmision_emergencia',
-          location.lat,
-          location.lng,
-          `Acabo de finalizar una transmisión de emergencia con ${currentClipRef.current} clips grabados. Por favor revisa el chat comunitario.`
-        );
-      }
+      // Wait a moment for last clip to be processed, then offer WhatsApp share
+      setTimeout(() => {
+        shareClipsViaWhatsApp(finalClipCount, location);
+      }, 2000);
     }
 
     cleanup();
@@ -419,9 +509,7 @@ export function useEmergencyStream() {
       streamId: null,
       mediaStream: null,
     });
-
-    toast.success('📹 Transmisión de emergencia finalizada', { duration: 3000 });
-  }, [cleanup, getCurrentLocation, postToCommunityChat]);
+  }, [cleanup, getCurrentLocation, postToCommunityChat, shareClipsViaWhatsApp]);
 
   // Cleanup on unmount
   useEffect(() => {
