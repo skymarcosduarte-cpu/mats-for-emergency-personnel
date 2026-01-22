@@ -292,6 +292,80 @@ export type Database = {
         }
         Relationships: []
       }
+      emergency_stream_clips: {
+        Row: {
+          created_at: string
+          duration_ms: number
+          id: string
+          sequence_number: number
+          stream_id: string
+          user_id: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number
+          id?: string
+          sequence_number: number
+          stream_id: string
+          user_id: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number
+          id?: string
+          sequence_number?: number
+          stream_id?: string
+          user_id?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_stream_clips_stream_id_fkey"
+            columns: ["stream_id"]
+            isOneToOne: false
+            referencedRelation: "emergency_streams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emergency_streams: {
+        Row: {
+          clip_count: number
+          created_at: string
+          ended_at: string | null
+          id: string
+          is_active: boolean
+          location_lat: number | null
+          location_lng: number | null
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          clip_count?: number
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean
+          location_lat?: number | null
+          location_lng?: number | null
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          clip_count?: number
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean
+          location_lat?: number | null
+          location_lng?: number | null
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       help_request_responders: {
         Row: {
           arrived_at: string | null

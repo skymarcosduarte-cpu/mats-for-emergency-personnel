@@ -21,7 +21,8 @@ import {
   X,
   Radio,
   Flame,
-  Users
+  Users,
+  Video
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatsLogo } from '@/components/MatsLogo';
@@ -122,6 +123,33 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
           </div>
         ),
         important: true,
+      },
+      {
+        title: '🎥 Grabación de Emergencia',
+        content: (
+          <div className="space-y-4">
+            <p>
+              El botón de <strong>cámara con glow rojo</strong> permite grabar video en vivo durante emergencias.
+            </p>
+            <div className="flex items-start gap-3 p-3 bg-destructive/10 rounded-lg border border-destructive/30">
+              <Video className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-destructive">Transmisión en Vivo</p>
+                <p className="text-xs text-muted-foreground">Clips de 15 seg automáticos al chat comunitario</p>
+              </div>
+            </div>
+            <div className="bg-muted rounded-lg p-3 text-xs space-y-1">
+              <p>• Se notifica a tus contactos de emergencia</p>
+              <p>• Incluye tu ubicación GPS</p>
+              <p>• Videos disponibles por 7 días</p>
+              <p>• SOLO tú puedes borrar tus videos</p>
+            </div>
+            <div className="bg-warning/10 border border-warning/30 rounded-lg p-2 text-xs">
+              <p className="font-medium text-warning">⚠️ Solo para emergencias reales. El mal uso causa BAJA de la red.</p>
+            </div>
+          </div>
+        ),
+        tip: 'El ícono es pequeño a propósito para grabar discretamente',
       },
     ],
   },
