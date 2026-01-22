@@ -174,14 +174,16 @@ export function useEmergencyStream() {
   const uploadClip = useCallback(async (blob: Blob, clipNumber: number): Promise<string | null> => {
     if (!userIdRef.current || !streamIdRef.current) return null;
 
-    const fileName = `${userIdRef.current}/${streamIdRef.current}/clip_${String(clipNumber).padStart(3, '0')}.webm`;
+    const contentType = blob.type || 'video/webm';
+    const ext = contentType.includes('mp4') ? 'mp4' : 'webm';
+    const fileName = `${userIdRef.current}/${streamIdRef.current}/clip_${String(clipNumber).padStart(3, '0')}.${ext}`;
 
     console.log(`[useEmergencyStream] Uploading clip ${clipNumber}, size: ${blob.size} bytes`);
 
     const { error: uploadError } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(fileName, blob, {
-        contentType: 'video/webm',
+        contentType,
         upsert: false,
       });
 
@@ -216,7 +218,8 @@ export function useEmergencyStream() {
     const { error } = await supabase.from('community_messages').insert({
       sender_id: user.id,
       message,
-      context_type: 'clave100', // Emergency context
+      // IMPORTANT: keep emergency posts visible in the default community chat
+      context_type: 'general',
     });
 
     if (error) {
@@ -228,7 +231,7 @@ export function useEmergencyStream() {
   const saveClipRecord = useCallback(async (videoUrl: string, clipNumber: number) => {
     if (!userIdRef.current || !streamIdRef.current) return;
 
-    await supabase.from('emergency_stream_clips').insert({
+    const { error: clipError } = await supabase.from('emergency_stream_clips').insert({
       stream_id: streamIdRef.current,
       user_id: userIdRef.current,
       video_url: videoUrl,
@@ -236,11 +239,21 @@ export function useEmergencyStream() {
       duration_ms: CLIP_DURATION_MS,
     });
 
+    if (clipError) {
+      console.error('[useEmergencyStream] Save clip record error:', clipError);
+      toast.error(`Error guardando clip #${clipNumber}`);
+      return;
+    }
+
     // Update clip count in stream
-    await supabase
+    const { error: streamUpdateError } = await supabase
       .from('emergency_streams')
       .update({ clip_count: clipNumber })
       .eq('id', streamIdRef.current);
+
+    if (streamUpdateError) {
+      console.error('[useEmergencyStream] Update stream clip_count error:', streamUpdateError);
+    }
   }, []);
 
   /** Fetch all clips for a stream */
@@ -265,7 +278,8 @@ export function useEmergencyStream() {
 
   /** Process recorded clip data */
   const processClip = useCallback(async (clipNumber: number) => {
-    const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+    const inferredType = recordedChunksRef.current?.[0]?.type || 'video/webm';
+    const blob = new Blob(recordedChunksRef.current, { type: inferredType });
     recordedChunksRef.current = [];
 
     if (blob.size === 0) {
@@ -306,13 +320,19 @@ export function useEmergencyStream() {
 
     recordedChunksRef.current = [];
 
-    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
-      ? 'video/webm;codecs=vp8,opus'
-      : 'video/webm';
+    // Prefer a format supported by the current device/browser.
+    // NOTE: iOS/Safari often supports mp4, while many Android devices prefer webm.
+    const mimeCandidates = [
+      'video/webm;codecs=vp8,opus',
+      'video/webm',
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+      'video/mp4',
+    ];
+    const mimeType = mimeCandidates.find((t) => MediaRecorder.isTypeSupported(t)) || '';
 
     try {
       const recorder = new MediaRecorder(mediaStreamRef.current, {
-        mimeType,
+        ...(mimeType ? { mimeType } : {}),
         videoBitsPerSecond: 1000000, // 1 Mbps
       });
 
@@ -420,8 +440,8 @@ export function useEmergencyStream() {
     streamId: string
   ) => {
     const contacts = await getEmergencyContacts();
-    const message = await buildClipsShareMessage(clipCount, location, streamId);
-    const encodedMessage = encodeURIComponent(message);
+    // WhatsApp cannot be sent programmatically; we prepare a message and copy it.
+    // Opening WhatsApp automatically can break the recording flow on some devices.
 
     // Main toast with sharing options
     toast.success('📹 Grabación finalizada', {
@@ -433,43 +453,14 @@ export function useEmergencyStream() {
       },
     });
 
-    // WhatsApp sharing toast (appears after 1 second)
     if (contacts.length > 0) {
-      setTimeout(() => {
-        toast.info(`📱 ¿Compartir con ${contacts.length} contacto(s) de emergencia?`, {
-          duration: 15000,
-          action: {
-            label: 'WhatsApp',
-            onClick: () => {
-              const primaryContact = contacts[0];
-              const phone = formatPhoneForWhatsApp(primaryContact.whatsapp || primaryContact.phone);
-              window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
-
-              // Offer additional contacts
-              if (contacts.length > 1) {
-                setTimeout(() => {
-                  toast.info(`¿Enviar a ${contacts.length - 1} contacto(s) más?`, {
-                    duration: 10000,
-                    action: {
-                      label: 'Enviar todos',
-                      onClick: () => {
-                        contacts.slice(1).forEach((contact, idx) => {
-                          setTimeout(() => {
-                            const ph = formatPhoneForWhatsApp(contact.whatsapp || contact.phone);
-                            window.open(`https://wa.me/${ph}?text=${encodedMessage}`, '_blank');
-                          }, idx * 1500);
-                        });
-                      },
-                    },
-                  });
-                }, 2000);
-              }
-            },
-          },
-        });
-      }, 1000);
+      const primary = contacts[0];
+      toast.info('📱 Contactos de emergencia listos', {
+        duration: 10000,
+        description: `Copia los enlaces y pégalos en WhatsApp (principal: ${primary.name}).`,
+      });
     }
-  }, [getEmergencyContacts, buildClipsShareMessage, copyClipsToClipboard, formatPhoneForWhatsApp]);
+  }, [getEmergencyContacts, copyClipsToClipboard]);
 
   // ============================================
   // MAIN STREAM CONTROLS
@@ -499,10 +490,10 @@ export function useEmergencyStream() {
       // Get initial location
       locationRef.current = await getCurrentLocation();
 
-      // Request camera access (rear camera preferred for discreet recording)
+      // Request camera access (FRONT camera by default)
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: 'environment',
+          facingMode: 'user',
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -524,6 +515,7 @@ export function useEmergencyStream() {
         .single();
 
       if (streamError || !streamData) {
+        console.error('[useEmergencyStream] Stream insert error:', streamError);
         throw new Error('Error creando stream de emergencia');
       }
 
