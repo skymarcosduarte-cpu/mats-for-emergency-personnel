@@ -1,4 +1,23 @@
-// Emergency Live Recording Button Component
+/**
+ * ============================================
+ * EMERGENCY STREAM BUTTON COMPONENT
+ * ============================================
+ * 
+ * A compact camera button with red glow effect for the app header.
+ * When pressed, shows confirmation dialog and starts emergency recording.
+ * Displays fullscreen overlay during active recording.
+ * 
+ * FEATURES:
+ * - Red glow effect when not recording
+ * - Pulsing indicator when recording
+ * - Fullscreen video preview overlay
+ * - Progress bar with time remaining
+ * - Stop confirmation dialog
+ * 
+ * USAGE:
+ * <EmergencyStreamButton className="..." />
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Video, Square, Radio } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -73,7 +92,7 @@ export function EmergencyStreamButton({ className }: EmergencyStreamButtonProps)
 
   return (
     <>
-      {/* Main Button */}
+      {/* Main Button - Small with red glow */}
       <Button
         variant="ghost"
         size="icon"
@@ -102,7 +121,7 @@ export function EmergencyStreamButton({ className }: EmergencyStreamButtonProps)
         )}
       </Button>
 
-      {/* Confirmation Dialog - Start */}
+      {/* Confirmation Dialog - Start Recording */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
