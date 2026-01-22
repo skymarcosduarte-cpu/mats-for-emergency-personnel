@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useState } from 'react';
 import { MatsLogo } from './MatsLogo';
-import { AlertTriangle, Phone, MessageCircle, Sun, SunDim, Bell } from 'lucide-react';
+import { AlertTriangle, Phone, MessageCircle, Sun, SunDim, Users } from 'lucide-react';
 import { playUrgentSound, playSubtleSound } from '@/lib/alertSound';
 import { toast } from 'sonner';
 import {
@@ -147,21 +147,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <MatsLogo size={36} showText className="min-w-0" />
 
-          {/* Clave 100 community chat - prominent on left side */}
+          {/* Community chat - prominent on left side */}
           <button
             onClick={() => {
               // Play short notification sound when opening chat
               playSubtleSound();
               onOpenClave100Chat();
             }}
-            className="relative p-2 rounded-full bg-warning/20 hover:bg-warning/30 transition-all shadow-[0_0_12px_hsl(var(--warning)/0.6)] animate-pulse"
-            aria-label="Chat Clave 100"
-            title="Chat Clave 100"
+            className="relative p-2 rounded-full bg-primary/20 hover:bg-primary/30 transition-all"
+            aria-label="Chat Todos"
+            title="Chat Todos"
           >
-            <Bell className="w-5 h-5 text-warning drop-shadow-[0_0_6px_hsl(var(--warning)/0.8)]" />
-            <span className="absolute -top-0.5 -right-0.5 px-1.5 h-4 bg-warning text-warning-foreground text-[10px] font-bold rounded-full flex items-center justify-center shadow-[0_0_8px_hsl(var(--warning)/0.7)]">
-              100
-            </span>
+            <Users className="w-5 h-5 text-primary" />
           </button>
 
           {/* Wake Lock Status Chip */}
