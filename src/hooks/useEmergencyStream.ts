@@ -581,51 +581,54 @@ export function useEmergencyStream() {
 
   /** Stop emergency stream */
   const stopStream = useCallback(async () => {
-    console.log('[useEmergencyStream] Stopping stream');
+    // IMPORTANT: Stop MUST be instant and never depend on network/geolocation.
+    // Finalization (DB + chat + share toasts) happens best-effort in the background.
+    if (isStoppingRef.current) return;
+
+    console.log('[useEmergencyStream] Stopping stream (fast path)');
     isStoppingRef.current = true;
 
-    // Stop timers first
+    // Snapshot refs for background finalization
+    const finalClipCount = currentClipRef.current;
+    const finalStreamId = streamIdRef.current;
+    const finalLocation = locationRef.current;
+
+    // Stop timers immediately
     if (clipTimerRef.current) {
       clearInterval(clipTimerRef.current);
       clipTimerRef.current = null;
     }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
 
-    // Process any remaining data
+    // Stop recorder (this will trigger onstop -> processClip)
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
+      try {
+        // Ask browser to flush any pending data before stopping
+        mediaRecorderRef.current.requestData?.();
+      } catch {
+        // ignore
+      }
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {
+        console.log('[useEmergencyStream] Error stopping recorder:', e);
+      }
     }
 
-    const finalClipCount = currentClipRef.current;
-    const finalStreamId = streamIdRef.current;
-
-    // Mark stream as ended in database
-    if (finalStreamId) {
-      await supabase
-        .from('emergency_streams')
-        .update({
-          is_active: false,
-          ended_at: new Date().toISOString(),
-          clip_count: finalClipCount,
-        })
-        .eq('id', finalStreamId);
-
-      // Post end message
-      const location = await getCurrentLocation();
-      const locationLink = location
-        ? `https://maps.google.com/?q=${location.lat},${location.lng}`
-        : 'Ubicación no disponible';
-
-      const endMessage = `✅ **Transmisión finalizada** de ${userNameRef.current}\n📹 ${finalClipCount} clips grabados\n📍 Última ubicación: ${locationLink}`;
-      await postToCommunityChat(endMessage);
-
-      // Wait for last clip to process, then show sharing options
-      setTimeout(() => {
-        showSharingOptions(finalClipCount, location, finalStreamId);
-      }, 2500);
+    // Stop camera/mic tracks immediately (user expects instant stop)
+    if (mediaStreamRef.current) {
+      try {
+        mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      } catch {
+        // ignore
+      }
+      mediaStreamRef.current = null;
     }
 
-    cleanup();
-
+    // Update UI immediately
     setState({
       isStreaming: false,
       isPreparing: false,
@@ -635,6 +638,57 @@ export function useEmergencyStream() {
       streamId: null,
       mediaStream: null,
     });
+
+    // Background finalization (best-effort)
+    void (async () => {
+      if (!finalStreamId) return;
+
+      const locationLink = finalLocation
+        ? `https://maps.google.com/?q=${finalLocation.lat},${finalLocation.lng}`
+        : 'Ubicación no disponible';
+
+      // Do NOT block stop on any of this
+      try {
+        // Mark stream as ended
+        await Promise.race([
+          supabase
+            .from('emergency_streams')
+            .update({
+              is_active: false,
+              ended_at: new Date().toISOString(),
+              clip_count: finalClipCount,
+            })
+            .eq('id', finalStreamId),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+        ]);
+      } catch (e) {
+        console.warn('[useEmergencyStream] Finalize stream update failed:', e);
+      }
+
+      try {
+        const endMessage = `✅ **Transmisión finalizada** de ${userNameRef.current}\n📹 ${finalClipCount} clips grabados\n📍 Última ubicación: ${locationLink}`;
+        await Promise.race([
+          postToCommunityChat(endMessage),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+        ]);
+      } catch (e) {
+        console.warn('[useEmergencyStream] Finalize chat post failed:', e);
+      }
+
+      // Give the last clip a moment to finish processing, then show share UI
+      setTimeout(() => {
+        try {
+          showSharingOptions(finalClipCount, finalLocation, finalStreamId);
+        } catch {
+          // ignore
+        }
+      }, 2500);
+    })();
+
+    // Delay cleanup slightly to avoid racing the MediaRecorder "onstop" handler.
+    setTimeout(() => {
+      cleanup();
+    }, 1500);
   }, [cleanup, getCurrentLocation, postToCommunityChat, showSharingOptions]);
 
   // Cleanup on unmount
