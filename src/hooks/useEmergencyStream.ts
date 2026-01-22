@@ -318,14 +318,10 @@ export function useEmergencyStream() {
       const startMessage = `🚨 **TRANSMISIÓN DE EMERGENCIA** 🚨\n\n${userNameRef.current} está transmitiendo en vivo. Puede ser una emergencia.\n\n📍 Ubicación: ${locationLink}\n\n⚠️ Por favor mantente alerta.`;
       await postToCommunityChat(startMessage, true);
 
-      // Notify emergency contacts
-      if (locationRef.current) {
-        notifyEmergencyContacts(
-          'transmision_emergencia',
-          locationRef.current.lat,
-          locationRef.current.lng,
-          'He iniciado una transmisión de emergencia en vivo. Por favor revisa el chat comunitario.'
-        );
+      // Show notification about emergency contacts (don't open WhatsApp - it interrupts recording)
+      const contacts = await getEmergencyContacts();
+      if (contacts.length > 0) {
+        toast.info(`📱 ${contacts.length} contacto(s) de emergencia serán notificados al finalizar`, { duration: 4000 });
       }
 
       // Start first clip
@@ -400,6 +396,16 @@ export function useEmergencyStream() {
 
       const endMessage = `✅ **Transmisión finalizada** de ${userNameRef.current}\n📹 ${currentClipRef.current} clips grabados\n📍 Última ubicación: ${locationLink}`;
       await postToCommunityChat(endMessage);
+
+      // Now notify emergency contacts (after recording ends, so it doesn't interrupt)
+      if (location) {
+        notifyEmergencyContacts(
+          'transmision_emergencia',
+          location.lat,
+          location.lng,
+          `Acabo de finalizar una transmisión de emergencia con ${currentClipRef.current} clips grabados. Por favor revisa el chat comunitario.`
+        );
+      }
     }
 
     cleanup();
