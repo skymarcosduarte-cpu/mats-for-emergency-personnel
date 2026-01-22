@@ -62,6 +62,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MatsLogo } from '@/components/MatsLogo';
 import { EmergencyContactsManager } from '@/components/EmergencyContactsManager';
+import { MyEmergencyRecordings } from '@/components/MyEmergencyRecordings';
 import { AppFooter } from '@/components/AppFooter';
 import { ConnectionStatusIndicator } from '@/components/ConnectionStatusIndicator';
 import { AdminPanel } from '@/components/AdminPanel';
@@ -1851,6 +1852,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
         {/* Emergency Contacts Section */}
         <EmergencyContactsManager />
+
+        {/* My Emergency Recordings Section */}
+        <MyEmergencyRecordings />
 
         {/* Application (Install + Version) */}
         <Card className="bg-card border-border">

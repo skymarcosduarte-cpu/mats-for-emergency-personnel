@@ -1,10 +1,35 @@
-// Hook for Emergency Live Recording functionality
+/**
+ * ============================================
+ * EMERGENCY LIVE RECORDING HOOK
+ * ============================================
+ * 
+ * This hook provides complete emergency video recording functionality:
+ * - Records 15-second video clips automatically (max 5 minutes / 20 clips)
+ * - Uploads clips to private storage bucket with 7-day signed URLs
+ * - Posts alerts to community chat with GPS location
+ * - Notifies emergency contacts via WhatsApp after recording ends
+ * - Allows copying all clip links to clipboard
+ * 
+ * REQUIREMENTS:
+ * - Tables: emergency_streams, emergency_stream_clips
+ * - Storage bucket: emergency-streams (private)
+ * - Table: community_messages (for chat posts)
+ * - Table: emergency_contacts (for WhatsApp notifications)
+ * 
+ * PORTABLE: Copy this file + EmergencyStreamButton.tsx + useEmergencyNotification.ts
+ * to any React project with Supabase.
+ */
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useEmergencyNotification } from './useEmergencyNotification';
 
-interface EmergencyStreamState {
+// ============================================
+// TYPES & CONSTANTS
+// ============================================
+
+export interface EmergencyStreamState {
   isStreaming: boolean;
   isPreparing: boolean;
   clipCount: number;
@@ -14,9 +39,35 @@ interface EmergencyStreamState {
   mediaStream: MediaStream | null;
 }
 
+export interface EmergencyStreamClip {
+  id: string;
+  stream_id: string;
+  video_url: string;
+  sequence_number: number;
+  duration_ms: number;
+  created_at: string;
+}
+
+export interface EmergencyStreamRecord {
+  id: string;
+  user_id: string;
+  location_lat: number | null;
+  location_lng: number | null;
+  started_at: string;
+  ended_at: string | null;
+  is_active: boolean;
+  clip_count: number;
+  created_at: string;
+}
+
 const MAX_CLIPS = 20; // 5 minutes max (20 * 15 seconds)
 const CLIP_DURATION_MS = 15000; // 15 seconds per clip
 const SIGNED_URL_EXPIRY = 604800; // 7 days in seconds
+const STORAGE_BUCKET = 'emergency-streams';
+
+// ============================================
+// MAIN HOOK
+// ============================================
 
 export function useEmergencyStream() {
   const [state, setState] = useState<EmergencyStreamState>({
@@ -29,6 +80,7 @@ export function useEmergencyStream() {
     mediaStream: null,
   });
 
+  // Refs for recording state (not reactive)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -39,11 +91,18 @@ export function useEmergencyStream() {
   const userIdRef = useRef<string | null>(null);
   const locationRef = useRef<{ lat: number; lng: number } | null>(null);
   const userNameRef = useRef<string>('Usuario');
+  const isStoppingRef = useRef<boolean>(false);
 
-  const { notifyEmergencyContacts, getEmergencyContacts } = useEmergencyNotification();
+  const { getEmergencyContacts } = useEmergencyNotification();
 
-  // Cleanup function
+  // ============================================
+  // UTILITY FUNCTIONS
+  // ============================================
+
+  /** Clean up all resources */
   const cleanup = useCallback(() => {
+    console.log('[useEmergencyStream] Cleaning up resources');
+    
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       try {
         mediaRecorderRef.current.stop();
@@ -69,9 +128,10 @@ export function useEmergencyStream() {
     
     recordedChunksRef.current = [];
     currentClipRef.current = 0;
+    isStoppingRef.current = false;
   }, []);
 
-  // Get current location
+  /** Get current GPS location */
   const getCurrentLocation = useCallback((): Promise<{ lat: number; lng: number } | null> => {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
@@ -96,14 +156,30 @@ export function useEmergencyStream() {
     });
   }, []);
 
-  // Upload clip to storage and get signed URL
+  /** Format phone number for WhatsApp (Mexico default) */
+  const formatPhoneForWhatsApp = useCallback((phone: string): string => {
+    let cleaned = phone.replace(/\D/g, '');
+    // Add Mexico country code if 10 digits
+    if (cleaned.length === 10) {
+      cleaned = '52' + cleaned;
+    }
+    return cleaned;
+  }, []);
+
+  // ============================================
+  // STORAGE FUNCTIONS
+  // ============================================
+
+  /** Upload clip to storage and return signed URL */
   const uploadClip = useCallback(async (blob: Blob, clipNumber: number): Promise<string | null> => {
     if (!userIdRef.current || !streamIdRef.current) return null;
 
     const fileName = `${userIdRef.current}/${streamIdRef.current}/clip_${String(clipNumber).padStart(3, '0')}.webm`;
 
+    console.log(`[useEmergencyStream] Uploading clip ${clipNumber}, size: ${blob.size} bytes`);
+
     const { error: uploadError } = await supabase.storage
-      .from('emergency-streams')
+      .from(STORAGE_BUCKET)
       .upload(fileName, blob, {
         contentType: 'video/webm',
         upsert: false,
@@ -116,7 +192,7 @@ export function useEmergencyStream() {
 
     // Get signed URL valid for 7 days
     const { data: signedData, error: signedError } = await supabase.storage
-      .from('emergency-streams')
+      .from(STORAGE_BUCKET)
       .createSignedUrl(fileName, SIGNED_URL_EXPIRY);
 
     if (signedError || !signedData?.signedUrl) {
@@ -124,25 +200,31 @@ export function useEmergencyStream() {
       return null;
     }
 
+    console.log(`[useEmergencyStream] Clip ${clipNumber} uploaded successfully`);
     return signedData.signedUrl;
   }, []);
 
-  // Post clip to community chat
-  const postToCommunityChat = useCallback(async (
-    message: string,
-    isStart: boolean = false
-  ) => {
+  // ============================================
+  // DATABASE FUNCTIONS
+  // ============================================
+
+  /** Post message to community chat */
+  const postToCommunityChat = useCallback(async (message: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase.from('community_messages').insert({
+    const { error } = await supabase.from('community_messages').insert({
       sender_id: user.id,
       message,
-      context_type: 'clave100', // Use emergency context
+      context_type: 'clave100', // Emergency context
     });
+
+    if (error) {
+      console.error('[useEmergencyStream] Chat post error:', error);
+    }
   }, []);
 
-  // Save clip record to database
+  /** Save clip record to database */
   const saveClipRecord = useCallback(async (videoUrl: string, clipNumber: number) => {
     if (!userIdRef.current || !streamIdRef.current) return;
 
@@ -161,7 +243,27 @@ export function useEmergencyStream() {
       .eq('id', streamIdRef.current);
   }, []);
 
-  // Process recorded clip
+  /** Fetch all clips for a stream */
+  const fetchStreamClips = useCallback(async (streamId: string): Promise<EmergencyStreamClip[]> => {
+    const { data, error } = await supabase
+      .from('emergency_stream_clips')
+      .select('*')
+      .eq('stream_id', streamId)
+      .order('sequence_number', { ascending: true });
+
+    if (error) {
+      console.error('[useEmergencyStream] Fetch clips error:', error);
+      return [];
+    }
+
+    return data as EmergencyStreamClip[];
+  }, []);
+
+  // ============================================
+  // CLIP PROCESSING
+  // ============================================
+
+  /** Process recorded clip data */
   const processClip = useCallback(async (clipNumber: number) => {
     const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
     recordedChunksRef.current = [];
@@ -198,9 +300,9 @@ export function useEmergencyStream() {
     setState(prev => ({ ...prev, clipCount: clipNumber }));
   }, [uploadClip, saveClipRecord, getCurrentLocation, postToCommunityChat]);
 
-  // Start recording a clip
+  /** Start recording a single clip */
   const startClipRecording = useCallback(() => {
-    if (!mediaStreamRef.current) return;
+    if (!mediaStreamRef.current || isStoppingRef.current) return;
 
     recordedChunksRef.current = [];
 
@@ -234,8 +336,10 @@ export function useEmergencyStream() {
     }
   }, [processClip]);
 
-  // Handle clip rotation
+  /** Rotate to next clip */
   const rotateClip = useCallback(() => {
+    if (isStoppingRef.current) return;
+
     // Stop current recorder
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
@@ -245,18 +349,133 @@ export function useEmergencyStream() {
 
     // Check if we've reached max clips
     if (currentClipRef.current > MAX_CLIPS) {
-      stopStream();
+      isStoppingRef.current = true;
       toast.info('⏱️ Transmisión completada (5 minutos máximo)', { duration: 5000 });
+      // Will be handled by stopStream
       return;
     }
 
     // Start new clip after a brief delay
     setTimeout(() => {
-      startClipRecording();
+      if (!isStoppingRef.current) {
+        startClipRecording();
+      }
     }, 100);
   }, [startClipRecording]);
 
-  // Start emergency stream
+  // ============================================
+  // SHARING FUNCTIONS
+  // ============================================
+
+  /** Build complete message with all clip URLs */
+  const buildClipsShareMessage = useCallback(async (
+    clipCount: number,
+    location: { lat: number; lng: number } | null,
+    streamId: string
+  ): Promise<string> => {
+    const clips = await fetchStreamClips(streamId);
+
+    const locationLink = location
+      ? `https://maps.google.com/?q=${location.lat},${location.lng}`
+      : 'Ubicación no disponible';
+
+    let message = `🚨 *GRABACIÓN DE EMERGENCIA FINALIZADA*\n\n`;
+    message += `👤 ${userNameRef.current}\n`;
+    message += `📹 ${clipCount} clips grabados\n`;
+    message += `📍 Ubicación: ${locationLink}\n`;
+    message += `🕐 ${new Date().toLocaleString('es-MX')}\n\n`;
+
+    if (clips.length > 0) {
+      message += `*Videos disponibles (7 días):*\n`;
+      clips.forEach((clip) => {
+        message += `▶️ Clip #${clip.sequence_number}: ${clip.video_url}\n`;
+      });
+    }
+
+    message += `\n_Grabado desde la app de emergencia_`;
+
+    return message;
+  }, [fetchStreamClips]);
+
+  /** Copy all clip links to clipboard */
+  const copyClipsToClipboard = useCallback(async (
+    clipCount: number,
+    location: { lat: number; lng: number } | null,
+    streamId: string
+  ) => {
+    try {
+      const message = await buildClipsShareMessage(clipCount, location, streamId);
+      await navigator.clipboard.writeText(message);
+      toast.success('📋 Enlaces copiados al portapapeles', { duration: 3000 });
+    } catch (error) {
+      console.error('[useEmergencyStream] Clipboard error:', error);
+      toast.error('Error al copiar enlaces');
+    }
+  }, [buildClipsShareMessage]);
+
+  /** Show sharing options after recording ends */
+  const showSharingOptions = useCallback(async (
+    clipCount: number,
+    location: { lat: number; lng: number } | null,
+    streamId: string
+  ) => {
+    const contacts = await getEmergencyContacts();
+    const message = await buildClipsShareMessage(clipCount, location, streamId);
+    const encodedMessage = encodeURIComponent(message);
+
+    // Main toast with sharing options
+    toast.success('📹 Grabación finalizada', {
+      duration: 20000,
+      description: `${clipCount} clips listos para compartir`,
+      action: {
+        label: '📋 Copiar enlaces',
+        onClick: () => copyClipsToClipboard(clipCount, location, streamId),
+      },
+    });
+
+    // WhatsApp sharing toast (appears after 1 second)
+    if (contacts.length > 0) {
+      setTimeout(() => {
+        toast.info(`📱 ¿Compartir con ${contacts.length} contacto(s) de emergencia?`, {
+          duration: 15000,
+          action: {
+            label: 'WhatsApp',
+            onClick: () => {
+              const primaryContact = contacts[0];
+              const phone = formatPhoneForWhatsApp(primaryContact.whatsapp || primaryContact.phone);
+              window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
+
+              // Offer additional contacts
+              if (contacts.length > 1) {
+                setTimeout(() => {
+                  toast.info(`¿Enviar a ${contacts.length - 1} contacto(s) más?`, {
+                    duration: 10000,
+                    action: {
+                      label: 'Enviar todos',
+                      onClick: () => {
+                        contacts.slice(1).forEach((contact, idx) => {
+                          setTimeout(() => {
+                            const ph = formatPhoneForWhatsApp(contact.whatsapp || contact.phone);
+                            window.open(`https://wa.me/${ph}?text=${encodedMessage}`, '_blank');
+                          }, idx * 1500);
+                        });
+                      },
+                    },
+                  });
+                }, 2000);
+              }
+            },
+          },
+        });
+      }, 1000);
+    }
+  }, [getEmergencyContacts, buildClipsShareMessage, copyClipsToClipboard, formatPhoneForWhatsApp]);
+
+  // ============================================
+  // MAIN STREAM CONTROLS
+  // ============================================
+
+  /** Start emergency stream */
   const startStream = useCallback(async () => {
     setState(prev => ({ ...prev, isPreparing: true, error: null }));
 
@@ -280,10 +499,10 @@ export function useEmergencyStream() {
       // Get initial location
       locationRef.current = await getCurrentLocation();
 
-      // Request camera access
+      // Request camera access (rear camera preferred for discreet recording)
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: 'environment', // Rear camera by default
+          facingMode: 'environment',
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -316,12 +535,12 @@ export function useEmergencyStream() {
         : 'Ubicación no disponible';
 
       const startMessage = `🚨 **TRANSMISIÓN DE EMERGENCIA** 🚨\n\n${userNameRef.current} está transmitiendo en vivo. Puede ser una emergencia.\n\n📍 Ubicación: ${locationLink}\n\n⚠️ Por favor mantente alerta.`;
-      await postToCommunityChat(startMessage, true);
+      await postToCommunityChat(startMessage);
 
-      // Show notification about emergency contacts (don't open WhatsApp - it interrupts recording)
+      // Notify about emergency contacts (don't open WhatsApp during recording)
       const contacts = await getEmergencyContacts();
       if (contacts.length > 0) {
-        toast.info(`📱 ${contacts.length} contacto(s) de emergencia serán notificados al finalizar`, { duration: 4000 });
+        toast.info(`📱 ${contacts.length} contacto(s) serán notificados al finalizar`, { duration: 4000 });
       }
 
       // Start first clip
@@ -366,104 +585,18 @@ export function useEmergencyStream() {
       }));
       toast.error(errorMessage);
     }
-  }, [getCurrentLocation, startClipRecording, rotateClip, postToCommunityChat, notifyEmergencyContacts, cleanup]);
+  }, [getCurrentLocation, startClipRecording, rotateClip, postToCommunityChat, getEmergencyContacts, cleanup]);
 
-  // Build WhatsApp share message with all clip URLs
-  const buildClipsShareMessage = useCallback(async (
-    clipCount: number,
-    location: { lat: number; lng: number } | null
-  ): Promise<string> => {
-    const streamId = streamIdRef.current;
-    if (!streamId) return '';
-
-    // Fetch all clips for this stream
-    const { data: clips } = await supabase
-      .from('emergency_stream_clips')
-      .select('video_url, sequence_number')
-      .eq('stream_id', streamId)
-      .order('sequence_number', { ascending: true });
-
-    const locationLink = location
-      ? `https://maps.google.com/?q=${location.lat},${location.lng}`
-      : 'Ubicación no disponible';
-
-    let message = `🚨 *GRABACIÓN DE EMERGENCIA FINALIZADA*\n\n`;
-    message += `👤 ${userNameRef.current}\n`;
-    message += `📹 ${clipCount} clips grabados\n`;
-    message += `📍 Ubicación: ${locationLink}\n`;
-    message += `🕐 ${new Date().toLocaleString('es-MX')}\n\n`;
-
-    if (clips && clips.length > 0) {
-      message += `*Videos disponibles (7 días):*\n`;
-      clips.forEach((clip) => {
-        message += `▶️ Clip #${clip.sequence_number}: ${clip.video_url}\n`;
-      });
-    }
-
-    message += `\n_Grabado desde M.A.T.S. - Mutual Aid Tracking System_`;
-
-    return message;
-  }, []);
-
-  // Share clips via WhatsApp
-  const shareClipsViaWhatsApp = useCallback(async (
-    clipCount: number,
-    location: { lat: number; lng: number } | null
-  ) => {
-    const contacts = await getEmergencyContacts();
-    if (contacts.length === 0) {
-      toast.info('No hay contactos de emergencia configurados');
-      return;
-    }
-
-    const message = await buildClipsShareMessage(clipCount, location);
-    const encodedMessage = encodeURIComponent(message);
-
-    // Format phone for WhatsApp
-    const formatPhone = (phone: string): string => {
-      let cleaned = phone.replace(/\D/g, '');
-      if (cleaned.length === 10) cleaned = '52' + cleaned;
-      return cleaned;
-    };
-
-    // Show option to share
-    toast.success('📹 Grabación finalizada', {
-      duration: 15000,
-      description: `${clipCount} clips listos para compartir`,
-      action: {
-        label: '📱 Compartir por WhatsApp',
-        onClick: () => {
-          const primaryContact = contacts[0];
-          const phone = formatPhone(primaryContact.whatsapp || primaryContact.phone);
-          window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
-
-          // Offer to share with more contacts
-          if (contacts.length > 1) {
-            setTimeout(() => {
-              toast.info(`¿Compartir con ${contacts.length - 1} contacto(s) más?`, {
-                duration: 10000,
-                action: {
-                  label: 'Compartir todos',
-                  onClick: () => {
-                    contacts.slice(1).forEach((contact, idx) => {
-                      setTimeout(() => {
-                        const ph = formatPhone(contact.whatsapp || contact.phone);
-                        window.open(`https://wa.me/${ph}?text=${encodedMessage}`, '_blank');
-                      }, idx * 1500);
-                    });
-                  },
-                },
-              });
-            }, 2000);
-          }
-        },
-      },
-    });
-  }, [getEmergencyContacts, buildClipsShareMessage]);
-
-  // Stop emergency stream
+  /** Stop emergency stream */
   const stopStream = useCallback(async () => {
     console.log('[useEmergencyStream] Stopping stream');
+    isStoppingRef.current = true;
+
+    // Stop timers first
+    if (clipTimerRef.current) {
+      clearInterval(clipTimerRef.current);
+      clipTimerRef.current = null;
+    }
 
     // Process any remaining data
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
@@ -471,9 +604,10 @@ export function useEmergencyStream() {
     }
 
     const finalClipCount = currentClipRef.current;
+    const finalStreamId = streamIdRef.current;
 
     // Mark stream as ended in database
-    if (streamIdRef.current) {
+    if (finalStreamId) {
       await supabase
         .from('emergency_streams')
         .update({
@@ -481,7 +615,7 @@ export function useEmergencyStream() {
           ended_at: new Date().toISOString(),
           clip_count: finalClipCount,
         })
-        .eq('id', streamIdRef.current);
+        .eq('id', finalStreamId);
 
       // Post end message
       const location = await getCurrentLocation();
@@ -492,10 +626,10 @@ export function useEmergencyStream() {
       const endMessage = `✅ **Transmisión finalizada** de ${userNameRef.current}\n📹 ${finalClipCount} clips grabados\n📍 Última ubicación: ${locationLink}`;
       await postToCommunityChat(endMessage);
 
-      // Wait a moment for last clip to be processed, then offer WhatsApp share
+      // Wait for last clip to process, then show sharing options
       setTimeout(() => {
-        shareClipsViaWhatsApp(finalClipCount, location);
-      }, 2000);
+        showSharingOptions(finalClipCount, location, finalStreamId);
+      }, 2500);
     }
 
     cleanup();
@@ -509,7 +643,7 @@ export function useEmergencyStream() {
       streamId: null,
       mediaStream: null,
     });
-  }, [cleanup, getCurrentLocation, postToCommunityChat, shareClipsViaWhatsApp]);
+  }, [cleanup, getCurrentLocation, postToCommunityChat, showSharingOptions]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -518,9 +652,93 @@ export function useEmergencyStream() {
     };
   }, [cleanup]);
 
+  // ============================================
+  // RETURN API
+  // ============================================
+
   return {
+    // State
     ...state,
+    
+    // Actions
     startStream,
     stopStream,
+    
+    // Utilities (for external use like recordings viewer)
+    fetchStreamClips,
+    buildClipsShareMessage,
+    copyClipsToClipboard,
+  };
+}
+
+// ============================================
+// HOOK FOR VIEWING USER'S RECORDINGS
+// ============================================
+
+export function useMyEmergencyRecordings() {
+  const [recordings, setRecordings] = useState<EmergencyStreamRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchMyRecordings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setRecordings([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('emergency_streams')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('[useMyEmergencyRecordings] Fetch error:', error);
+        setRecordings([]);
+        return;
+      }
+
+      setRecordings(data as EmergencyStreamRecord[]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const deleteRecording = useCallback(async (streamId: string) => {
+    try {
+      // Delete clips first (cascade should handle this, but just in case)
+      await supabase
+        .from('emergency_stream_clips')
+        .delete()
+        .eq('stream_id', streamId);
+
+      // Delete stream record
+      const { error } = await supabase
+        .from('emergency_streams')
+        .delete()
+        .eq('id', streamId);
+
+      if (error) throw error;
+
+      // Refresh list
+      await fetchMyRecordings();
+      toast.success('Grabación eliminada');
+    } catch (error) {
+      console.error('[useMyEmergencyRecordings] Delete error:', error);
+      toast.error('Error al eliminar grabación');
+    }
+  }, [fetchMyRecordings]);
+
+  useEffect(() => {
+    fetchMyRecordings();
+  }, [fetchMyRecordings]);
+
+  return {
+    recordings,
+    loading,
+    refresh: fetchMyRecordings,
+    deleteRecording,
   };
 }
