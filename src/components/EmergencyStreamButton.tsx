@@ -12,15 +12,15 @@
  * - Pulsing indicator when recording
  * - Fullscreen video preview overlay
  * - Progress bar with time remaining
- * - Stop confirmation dialog
+ * - Direct STOP button (no confirmation dialog to ensure it works)
  * 
  * USAGE:
  * <EmergencyStreamButton className="..." />
  */
 
-import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Video, Square, Radio } from 'lucide-react';
+import { Video, Square, Radio, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,7 +44,7 @@ const MAX_DURATION_SECONDS = 300; // 5 minutes
 
 export function EmergencyStreamButton({ className }: EmergencyStreamButtonProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showStopDialog, setShowStopDialog] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const {
@@ -67,7 +67,8 @@ export function EmergencyStreamButton({ className }: EmergencyStreamButtonProps)
 
   const handleButtonClick = () => {
     if (isStreaming) {
-      setShowStopDialog(true);
+      // Direct stop - no dialog that can get hidden
+      handleDirectStop();
     } else {
       setShowConfirmDialog(true);
     }
@@ -78,9 +79,15 @@ export function EmergencyStreamButton({ className }: EmergencyStreamButtonProps)
     await startStream();
   };
 
-  const handleConfirmStop = async () => {
-    setShowStopDialog(false);
-    await stopStream();
+  // Direct stop without dialog - more reliable
+  const handleDirectStop = async () => {
+    if (isStopping) return;
+    setIsStopping(true);
+    try {
+      await stopStream();
+    } finally {
+      setIsStopping(false);
+    }
   };
 
   const formatTime = useCallback((seconds: number): string => {
@@ -91,10 +98,8 @@ export function EmergencyStreamButton({ className }: EmergencyStreamButtonProps)
 
   const progressPercent = (elapsedSeconds / MAX_DURATION_SECONDS) * 100;
 
-  // IMPORTANT: The header (`.app-header`) uses `transform` + `overflow:hidden`, which
-  // can clip `position: fixed` children. Render the recording overlay in a portal
-  // so it always covers the full viewport and the stop button stays accessible.
-  const recordingOverlay = useMemo(() => {
+  // Render the recording overlay - computed directly (not memoized) to ensure reactivity
+  const renderRecordingOverlay = () => {
     if (!isStreaming) return null;
 
     const lastProcessed = clipCount;
@@ -103,7 +108,7 @@ export function EmergencyStreamButton({ className }: EmergencyStreamButtonProps)
 
     return (
       <div
-        className="fixed inset-0 flex flex-col"
+        className="fixed inset-0 flex flex-col bg-black"
         style={{
           zIndex: 2147483647,
           position: 'fixed',
@@ -117,7 +122,7 @@ export function EmergencyStreamButton({ className }: EmergencyStreamButtonProps)
         aria-label="Grabación de emergencia en curso"
       >
         {/* Video Preview - Limited height to ensure controls are visible */}
-        <div className="relative flex-1 min-h-0 max-h-[60vh] bg-black">
+        <div className="relative flex-1 min-h-0 max-h-[55vh] bg-black">
           <video
             ref={videoRef}
             autoPlay
@@ -148,52 +153,70 @@ export function EmergencyStreamButton({ className }: EmergencyStreamButtonProps)
 
         {/* Bottom Controls - Fixed, always visible */}
         <div
-          className="bg-black p-4 space-y-4 border-t-2 border-destructive"
+          className="bg-black p-4 space-y-3 border-t-2 border-destructive flex-shrink-0"
           style={{
             paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 16px))',
-            minHeight: '220px',
           }}
         >
           {/* Progress bar */}
-          <div className="space-y-2">
-            <Progress value={progressPercent} className="h-3 bg-muted" />
-            <div className="flex justify-between text-white text-sm">
+          <div className="space-y-1">
+            <Progress value={progressPercent} className="h-2 bg-muted" />
+            <div className="flex justify-between text-white text-xs">
               <span className="font-mono">{formatTime(elapsedSeconds)}</span>
               <span className="text-muted-foreground">Máximo {formatTime(MAX_DURATION_SECONDS)}</span>
             </div>
           </div>
 
           {/* Status Info */}
-          <div className="rounded-lg p-3 bg-black/60 border border-white/10">
-            <p className="text-white font-medium">Estado</p>
-            <ul className="mt-2 space-y-1 text-sm text-white/80">
-              <li>
-                ✅ Clips guardados: <span className="font-semibold text-white">{lastProcessed}</span>
+          <div className="rounded-lg p-3 bg-white/5 border border-white/10">
+            <p className="text-white font-medium text-sm mb-2">Estado de la grabación</p>
+            <ul className="space-y-1.5 text-xs">
+              <li className="flex items-center gap-2 text-white/90">
+                <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <span>Clips guardados: <strong className="text-white">{lastProcessed}</strong></span>
               </li>
-              <li>
-                💬 Chat comunitario: {isPostingToChat ? 'se enviará este clip' : 'solo primeros 3 clips'}
+              <li className="flex items-center gap-2 text-white/90">
+                {isPostingToChat ? (
+                  <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                )}
+                <span>Chat: {isPostingToChat ? 'enviando clips' : 'solo primeros 3'}</span>
               </li>
-              <li>
-                📱 Contactos de emergencia: se notifica al finalizar (para no interrumpir)
+              <li className="flex items-center gap-2 text-white/90">
+                <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                <span>Contactos: al finalizar (para no interrumpir)</span>
               </li>
             </ul>
           </div>
 
-          {/* STOP BUTTON - Large and very visible */}
+          {/* STOP BUTTON - Large, visible, DIRECT action (no dialog) */}
           <Button
-            onClick={() => setShowStopDialog(true)}
-            className="w-full h-16 text-xl font-bold bg-destructive hover:bg-destructive/90 border-2 border-white shadow-lg"
+            onClick={handleDirectStop}
+            disabled={isStopping}
+            className="w-full h-14 text-lg font-bold bg-destructive hover:bg-destructive/90 border-2 border-white shadow-xl active:scale-95 transition-transform"
             style={{ touchAction: 'manipulation' }}
           >
-            <Square className="w-6 h-6 mr-3 fill-white" />
-            DETENER TRANSMISIÓN
+            {isStopping ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                DETENIENDO...
+              </>
+            ) : (
+              <>
+                <Square className="w-5 h-5 mr-2 fill-white" />
+                DETENER GRABACIÓN
+              </>
+            )}
           </Button>
 
-          <p className="text-center text-white/50 text-xs">Toca el botón rojo para detener la grabación</p>
+          <p className="text-center text-white/40 text-xs">
+            Toca el botón rojo para detener • Los clips se guardan automáticamente
+          </p>
         </div>
       </div>
     );
-  }, [clipCount, elapsedSeconds, formatTime, isStreaming, progressPercent]);
+  };
 
   return (
     <>
@@ -274,30 +297,8 @@ export function EmergencyStreamButton({ className }: EmergencyStreamButtonProps)
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Stop Confirmation Dialog */}
-      <AlertDialog open={showStopDialog} onOpenChange={setShowStopDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Detener transmisión?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Has grabado {clipCount} clip(s) ({formatTime(elapsedSeconds)}). 
-              ¿Estás seguro de que deseas detener la transmisión?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Continuar grabando</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmStop}>
-              <Square className="w-4 h-4 mr-2" />
-              Detener
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Fullscreen Recording Overlay (portaled to body to avoid header clipping) */}
-      {recordingOverlay && typeof document !== 'undefined'
-        ? createPortal(recordingOverlay, document.body)
-        : null}
+      {typeof document !== 'undefined' && createPortal(renderRecordingOverlay(), document.body)}
     </>
   );
 }
