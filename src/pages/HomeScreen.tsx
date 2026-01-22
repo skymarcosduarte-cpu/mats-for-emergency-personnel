@@ -301,99 +301,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   return (
     <div className="flex-1 overflow-auto pb-20">
       <div className="px-4 pt-4 space-y-6">
-        {/* Emergency Alerts Banner */}
-        {activeAlerts.length > 0 && (
-          <div className="space-y-2">
-            {activeAlerts.slice(0, 3).map((alert) => {
-              const info = getAlertInfo(alert);
-              return (
-                <div 
-                  key={alert.id}
-                  className={cn(
-                    "relative rounded-xl p-3 border animate-pulse-slow",
-                    info.isPanic 
-                      ? "bg-destructive/10 border-destructive/50" 
-                      : "bg-orange-500/10 border-orange-500/50"
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Alert Icon */}
-                    <div className={cn(
-                      "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center",
-                      info.isPanic ? "bg-destructive/20" : "bg-orange-500/20"
-                    )}>
-                      <span className="text-lg">{info.emoji}</span>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className={cn(
-                          "text-sm font-bold",
-                          info.isPanic ? "text-destructive" : "text-orange-500"
-                        )}>
-                          {info.isPanic ? '🚨 ALERTA' : '🆘 AYUDA'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(alert.createdAt, { addSuffix: true, locale: es })}
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {info.label} - {alert.creatorName}
-                      </p>
-                      {alert.message && (
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {alert.message}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => openGoogleMaps(alert.lat, alert.lng)}
-                        title="Ver ubicación"
-                      >
-                        <MapPin className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-primary"
-                        onClick={() => navigateToLocation(alert.lat, alert.lng)}
-                        title="Navegar"
-                      >
-                        <Navigation className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => handleDismissAlert(alert.id)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            
-            {/* Show more indicator */}
-            {activeAlerts.length > 3 && (
-              <button
-                onClick={() => onNavigate('map')}
-                className="w-full text-center text-xs text-muted-foreground hover:text-foreground py-1"
-              >
-                +{activeAlerts.length - 3} alertas más · Ver en Mapa
-              </button>
-            )}
-          </div>
-        )}
-
         {/* Welcome Section */}
         <div className="space-y-2">
           <h1 className="text-3xl font-bold text-primary">
@@ -401,6 +308,133 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
           </h1>
           <p className="text-base text-muted-foreground capitalize">{todayDate}</p>
         </div>
+
+        {/* Emergency Alerts Banner - Prominent position right after greeting */}
+        {activeAlerts.length > 0 && (
+          <motion.div 
+            className="space-y-3"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {/* Header */}
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive animate-pulse" />
+              <span className="text-sm font-bold text-destructive uppercase tracking-wide">
+                {activeAlerts.length === 1 ? 'Emergencia Activa' : `${activeAlerts.length} Emergencias Activas`}
+              </span>
+            </div>
+
+            {activeAlerts.slice(0, 3).map((alert, index) => {
+              const info = getAlertInfo(alert);
+              return (
+                <motion.div 
+                  key={alert.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className={cn(
+                    "relative rounded-xl p-4 border-2 shadow-md",
+                    info.isPanic 
+                      ? "bg-destructive/15 border-destructive" 
+                      : "bg-orange-500/15 border-orange-500"
+                  )}
+                >
+                  {/* Pulsing indicator */}
+                  <div className="absolute top-3 right-3">
+                    <span className="relative flex h-3 w-3">
+                      <span className={cn(
+                        "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                        info.isPanic ? "bg-destructive" : "bg-orange-500"
+                      )} />
+                      <span className={cn(
+                        "relative inline-flex rounded-full h-3 w-3",
+                        info.isPanic ? "bg-destructive" : "bg-orange-500"
+                      )} />
+                    </span>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    {/* Alert Icon */}
+                    <div className={cn(
+                      "flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center",
+                      info.isPanic ? "bg-destructive/30" : "bg-orange-500/30"
+                    )}>
+                      <span className="text-2xl">{info.emoji}</span>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 pr-6">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={cn(
+                          "text-sm font-bold",
+                          info.isPanic ? "text-destructive" : "text-orange-600 dark:text-orange-400"
+                        )}>
+                          {info.isPanic ? '🚨 ALERTA' : '🆘 AYUDA'}
+                        </span>
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                          {formatDistanceToNow(alert.createdAt, { addSuffix: true, locale: es })}
+                        </span>
+                      </div>
+                      <p className="text-base font-semibold text-foreground mt-1">
+                        {info.label}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        por <span className="font-medium text-foreground">{alert.creatorName}</span>
+                      </p>
+                      {alert.message && (
+                        <p className="text-sm text-muted-foreground italic mt-1 line-clamp-2">
+                          "{alert.message}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions - More prominent */}
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2"
+                      onClick={() => onNavigate('map')}
+                    >
+                      <MapPin className="w-4 h-4" />
+                      Ver en Mapa
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="flex-1 gap-2"
+                      onClick={() => navigateToLocation(alert.lat, alert.lng)}
+                    >
+                      <Navigation className="w-4 h-4" />
+                      Cómo llegar
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 flex-shrink-0"
+                      onClick={() => handleDismissAlert(alert.id)}
+                      title="Descartar"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </motion.div>
+              );
+            })}
+            
+            {/* Show more indicator */}
+            {activeAlerts.length > 3 && (
+              <button
+                onClick={() => onNavigate('map')}
+                className="w-full text-center text-sm font-medium text-primary hover:text-primary/80 py-2 bg-primary/10 rounded-lg"
+              >
+                +{activeAlerts.length - 3} alertas más · Ver todas en Mapa →
+              </button>
+            )}
+          </motion.div>
+        )}
 
         {/* Weather Card */}
         {(weather || weatherLoading) && (
