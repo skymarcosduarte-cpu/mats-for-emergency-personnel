@@ -25,6 +25,7 @@ import { useCurrentWeather } from '@/hooks/useCurrentWeather';
 import { supabase } from '@/integrations/supabase/client';
 import type { TabId } from '@/components/BottomNavigation';
 import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
 
 interface HomeScreenProps {
   onNavigate: (tab: TabId) => void;
@@ -452,27 +453,46 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
           </h2>
           <div className="grid grid-cols-2 gap-4">
             {SECTIONS.map((section, index) => (
-              <button
+              <motion.button
                 key={section.id}
                 onClick={() => onNavigate(section.id)}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ 
+                  duration: 0.4, 
+                  delay: index * 0.08,
+                  ease: [0.25, 0.46, 0.45, 0.94]
+                }}
+                whileHover={{ 
+                  scale: 1.04, 
+                  y: -4,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ 
+                  scale: 0.97,
+                  transition: { duration: 0.1 }
+                }}
                 className={cn(
-                  "relative overflow-hidden rounded-2xl p-5 text-left transition-all duration-300",
+                  "relative overflow-hidden rounded-2xl p-5 text-left",
                   "border-2 shadow-sm",
-                  "hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]",
-                  "animate-fade-in",
                   section.gradient
                 )}
-                style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="space-y-4">
-                  {/* Icon - White container with colored icon */}
-                  <div className={cn(
-                    "w-16 h-16 rounded-2xl flex items-center justify-center shadow-md",
-                    "transition-transform duration-300 hover:scale-110",
-                    section.iconBg
-                  )}>
+                  {/* Icon - Animated container with colored icon */}
+                  <motion.div 
+                    className={cn(
+                      "w-16 h-16 rounded-2xl flex items-center justify-center shadow-md",
+                      section.iconBg
+                    )}
+                    whileHover={{ 
+                      scale: 1.1, 
+                      rotate: [0, -5, 5, 0],
+                      transition: { duration: 0.4 }
+                    }}
+                  >
                     {section.icon}
-                  </div>
+                  </motion.div>
                   
                   {/* Label - White text for contrast */}
                   <div>
@@ -485,9 +505,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                   </div>
                 </div>
 
-                {/* Chevron indicator - Larger */}
-                <ChevronRight className="absolute top-5 right-4 w-7 h-7 text-muted-foreground/60" />
-              </button>
+                {/* Animated chevron */}
+                <motion.div
+                  className="absolute top-5 right-4"
+                  initial={{ x: 0 }}
+                  whileHover={{ x: 4 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ChevronRight className="w-7 h-7 text-white/60" />
+                </motion.div>
+              </motion.button>
             ))}
           </div>
         </div>
