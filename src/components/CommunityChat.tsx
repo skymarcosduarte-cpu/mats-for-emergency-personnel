@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   X, Send, Users, Image, Camera, Mic, MicOff, MapPin, 
-  Play, Pause, Trash2, AlertTriangle, Bell, Lock, ShieldCheck
+  Play, Pause, Trash2, AlertTriangle, Bell, Lock, ShieldCheck, Video
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -507,6 +507,59 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
     return format(new Date(dateStr), 'HH:mm', { locale: es });
   };
 
+  // Extract video URLs from message text (Supabase signed URLs for emergency-streams)
+  const extractVideoUrl = (text: string): string | null => {
+    // Match Supabase storage signed URLs for video files
+    const videoUrlPattern = /(https:\/\/[^\s]+supabase[^\s]+\/storage\/v1\/object\/sign\/emergency-streams\/[^\s]+\.(webm|mp4)[^\s]*)/i;
+    const match = text.match(videoUrlPattern);
+    return match ? match[1] : null;
+  };
+
+  // Render message with inline video player if it contains a video URL
+  const renderMessageContent = (message: string, isMine: boolean) => {
+    const videoUrl = extractVideoUrl(message);
+    
+    if (videoUrl) {
+      // Remove the video URL from the displayed text to avoid duplication
+      const textWithoutUrl = message.replace(videoUrl, '').trim();
+      
+      return (
+        <>
+          {/* Inline video player */}
+          <div className="mb-2 rounded-lg overflow-hidden bg-black/10">
+            <video
+              controls
+              preload="metadata"
+              className="w-full max-h-[200px] rounded"
+              playsInline
+            >
+              <source src={videoUrl} type="video/webm" />
+              <source src={videoUrl} type="video/mp4" />
+              Tu navegador no soporta video.
+            </video>
+            <div className="flex items-center gap-1 px-2 py-1 text-xs opacity-70">
+              <Video className="w-3 h-3" />
+              <span>Clip de emergencia</span>
+            </div>
+          </div>
+          {/* Remaining text */}
+          {textWithoutUrl && (
+            <p className="text-sm whitespace-pre-wrap break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+              {textWithoutUrl}
+            </p>
+          )}
+        </>
+      );
+    }
+    
+    // No video URL, render as normal text
+    return (
+      <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+        {message}
+      </p>
+    );
+  };
+
   // Get context badge
   const getContextBadge = () => {
     if (contextType === 'clave100') {
@@ -673,10 +726,8 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
                         </div>
                       )}
                       
-                      {/* Message text - with proper word-breaking for long messages */}
-                      <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                        {msg.message}
-                      </p>
+                      {/* Message text - with inline video player support */}
+                      {renderMessageContent(msg.message, isMine)}
                       
                       <div className="flex items-center justify-between mt-1 gap-2">
                         <span className="text-xs opacity-50">
