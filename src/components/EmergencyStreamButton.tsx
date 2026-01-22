@@ -18,7 +18,8 @@
  * <EmergencyStreamButton className="..." />
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Video, Square, Radio } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -82,13 +83,117 @@ export function EmergencyStreamButton({ className }: EmergencyStreamButtonProps)
     await stopStream();
   };
 
-  const formatTime = (seconds: number): string => {
+  const formatTime = useCallback((seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${String(secs).padStart(2, '0')}`;
-  };
+  }, []);
 
   const progressPercent = (elapsedSeconds / MAX_DURATION_SECONDS) * 100;
+
+  // IMPORTANT: The header (`.app-header`) uses `transform` + `overflow:hidden`, which
+  // can clip `position: fixed` children. Render the recording overlay in a portal
+  // so it always covers the full viewport and the stop button stays accessible.
+  const recordingOverlay = useMemo(() => {
+    if (!isStreaming) return null;
+
+    const lastProcessed = clipCount;
+    const nextClip = clipCount + 1;
+    const isPostingToChat = nextClip <= 3;
+
+    return (
+      <div
+        className="fixed inset-0 flex flex-col"
+        style={{
+          zIndex: 2147483647,
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Grabación de emergencia en curso"
+      >
+        {/* Video Preview - Limited height to ensure controls are visible */}
+        <div className="relative flex-1 min-h-0 max-h-[60vh] bg-black">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+
+          {/* Live indicator - Top left */}
+          <div className="absolute top-4 left-4 flex items-center gap-2 bg-destructive px-3 py-1.5 rounded-full shadow-lg">
+            <Radio className="w-4 h-4 text-white animate-pulse" />
+            <span className="text-white font-bold text-sm">EN VIVO</span>
+          </div>
+
+          {/* Clip counter - Top right */}
+          <div className="absolute top-4 right-4 bg-black/70 px-3 py-1.5 rounded-full">
+            <span className="text-white text-sm font-medium">📹 Clip #{nextClip}</span>
+          </div>
+
+          {/* Recording status indicator */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/80 px-4 py-2 rounded-full border-2 border-destructive">
+            <span className="text-white text-sm font-medium flex items-center gap-2">
+              <span className="w-3 h-3 bg-destructive rounded-full animate-pulse" />
+              Grabando…
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom Controls - Fixed, always visible */}
+        <div
+          className="bg-black p-4 space-y-4 border-t-2 border-destructive"
+          style={{
+            paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 16px))',
+            minHeight: '220px',
+          }}
+        >
+          {/* Progress bar */}
+          <div className="space-y-2">
+            <Progress value={progressPercent} className="h-3 bg-muted" />
+            <div className="flex justify-between text-white text-sm">
+              <span className="font-mono">{formatTime(elapsedSeconds)}</span>
+              <span className="text-muted-foreground">Máximo {formatTime(MAX_DURATION_SECONDS)}</span>
+            </div>
+          </div>
+
+          {/* Status Info */}
+          <div className="rounded-lg p-3 bg-black/60 border border-white/10">
+            <p className="text-white font-medium">Estado</p>
+            <ul className="mt-2 space-y-1 text-sm text-white/80">
+              <li>
+                ✅ Clips guardados: <span className="font-semibold text-white">{lastProcessed}</span>
+              </li>
+              <li>
+                💬 Chat comunitario: {isPostingToChat ? 'se enviará este clip' : 'solo primeros 3 clips'}
+              </li>
+              <li>
+                📱 Contactos de emergencia: se notifica al finalizar (para no interrumpir)
+              </li>
+            </ul>
+          </div>
+
+          {/* STOP BUTTON - Large and very visible */}
+          <Button
+            onClick={() => setShowStopDialog(true)}
+            className="w-full h-16 text-xl font-bold bg-destructive hover:bg-destructive/90 border-2 border-white shadow-lg"
+            style={{ touchAction: 'manipulation' }}
+          >
+            <Square className="w-6 h-6 mr-3 fill-white" />
+            DETENER TRANSMISIÓN
+          </Button>
+
+          <p className="text-center text-white/50 text-xs">Toca el botón rojo para detener la grabación</p>
+        </div>
+      </div>
+    );
+  }, [clipCount, elapsedSeconds, formatTime, isStreaming, progressPercent]);
 
   return (
     <>
@@ -189,93 +294,10 @@ export function EmergencyStreamButton({ className }: EmergencyStreamButtonProps)
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Fullscreen Recording Overlay - CRITICAL: Must be visible above everything */}
-      {isStreaming && (
-        <div 
-          className="fixed inset-0 bg-black flex flex-col"
-          style={{ 
-            zIndex: 2147483647, // Maximum possible z-index
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          }}
-        >
-          {/* Video Preview - Limited height to ensure controls are visible */}
-          <div className="relative flex-1 min-h-0 max-h-[60vh]">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            
-            {/* Live indicator - Top left */}
-            <div className="absolute top-4 left-4 flex items-center gap-2 bg-destructive px-3 py-1.5 rounded-full shadow-lg">
-              <Radio className="w-4 h-4 text-white animate-pulse" />
-              <span className="text-white font-bold text-sm">EN VIVO</span>
-            </div>
-
-            {/* Clip counter - Top right */}
-            <div className="absolute top-4 right-4 bg-black/70 px-3 py-1.5 rounded-full">
-              <span className="text-white text-sm font-medium">
-                📹 Clip #{clipCount + 1}
-              </span>
-            </div>
-
-            {/* Recording status indicator */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/80 px-4 py-2 rounded-full border-2 border-destructive">
-              <span className="text-white text-sm font-medium flex items-center gap-2">
-                <span className="w-3 h-3 bg-destructive rounded-full animate-pulse" />
-                Grabando...
-              </span>
-            </div>
-          </div>
-
-          {/* Bottom Controls - Fixed, always visible */}
-          <div 
-            className="bg-black p-4 space-y-4 border-t-2 border-destructive"
-            style={{ 
-              paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 16px))',
-              minHeight: '200px',
-            }}
-          >
-            {/* Progress bar */}
-            <div className="space-y-2">
-              <Progress value={progressPercent} className="h-3 bg-muted" />
-              <div className="flex justify-between text-white text-sm">
-                <span className="font-mono">{formatTime(elapsedSeconds)}</span>
-                <span className="text-muted-foreground">Máximo {formatTime(MAX_DURATION_SECONDS)}</span>
-              </div>
-            </div>
-
-            {/* Status Info */}
-            <div className="text-center bg-muted rounded-lg p-3">
-              <p className="text-foreground font-medium">📢 Transmitiendo al Chat Comunitario</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {clipCount} clips grabados • Tu ubicación se comparte
-              </p>
-            </div>
-
-            {/* STOP BUTTON - Large and very visible */}
-            <Button
-              onClick={() => setShowStopDialog(true)}
-              className="w-full h-16 text-xl font-bold bg-destructive hover:bg-destructive/90 border-2 border-white shadow-lg"
-              style={{ touchAction: 'manipulation' }}
-            >
-              <Square className="w-6 h-6 mr-3 fill-white" />
-              DETENER TRANSMISIÓN
-            </Button>
-
-            {/* Additional tap target for accessibility */}
-            <p className="text-center text-white/50 text-xs">
-              Toca el botón rojo para detener la grabación
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Fullscreen Recording Overlay (portaled to body to avoid header clipping) */}
+      {recordingOverlay && typeof document !== 'undefined'
+        ? createPortal(recordingOverlay, document.body)
+        : null}
     </>
   );
 }
