@@ -106,6 +106,8 @@ interface EmergencyAlert {
 
 const PANIC_LABELS: Record<string, { label: string; emoji: string }> = {
   medical: { label: 'Emergencia Médica', emoji: '🏥' },
+  AMBULANCIA: { label: 'Ambulancia', emoji: '🚑' },
+  AMBULANCIA_TERCERO: { label: 'Ambulancia para Tercero', emoji: '🚑' },
   fire: { label: 'Incendio', emoji: '🔥' },
   assault: { label: 'Asalto', emoji: '🚨' },
   accident: { label: 'Accidente', emoji: '💥' },
@@ -156,28 +158,50 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
       // Fetch active panic events (not resolved, within last 2 hours)
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
       
+      // Use simple queries without FK joins - profiles_public doesn't have FK relationship
       const [panicResult, helpResult] = await Promise.all([
         supabase
           .from('panic_events')
-          .select(`
-            id, panic_type, lat, lng, message, created_at, user_id,
-            profiles_public!panic_events_user_id_fkey(nickname, full_name)
-          `)
+          .select('id, panic_type, lat, lng, message, created_at, user_id')
           .eq('resolved', false)
           .gte('created_at', twoHoursAgo)
           .order('created_at', { ascending: false })
           .limit(5),
         supabase
           .from('help_requests')
-          .select(`
-            id, kind, lat, lng, message, created_at, user_id,
-            profiles_public!help_requests_user_id_fkey(nickname, full_name)
-          `)
+          .select('id, kind, lat, lng, message, created_at, user_id')
           .eq('resolved', false)
           .gte('created_at', twoHoursAgo)
           .order('created_at', { ascending: false })
           .limit(5)
       ]);
+
+      if (panicResult.error) {
+        console.error('[HomeScreen] Panic query error:', panicResult.error);
+      }
+      if (helpResult.error) {
+        console.error('[HomeScreen] Help query error:', helpResult.error);
+      }
+
+      // Collect all unique user IDs to fetch nicknames
+      const userIds = new Set<string>();
+      panicResult.data?.forEach(e => userIds.add(e.user_id));
+      helpResult.data?.forEach(r => userIds.add(r.user_id));
+
+      // Fetch profiles in a separate query
+      let profilesMap: Record<string, string> = {};
+      if (userIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles_public')
+          .select('user_id, nickname')
+          .in('user_id', Array.from(userIds));
+        
+        if (profiles) {
+          profiles.forEach(p => {
+            profilesMap[p.user_id] = p.nickname || 'Usuario';
+          });
+        }
+      }
 
       const alerts: EmergencyAlert[] = [];
 
@@ -187,7 +211,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
           // Skip own alerts
           if (event.user_id === user?.id) continue;
           
-          const profileData = event.profiles_public as any;
           alerts.push({
             id: `panic-${event.id}`,
             type: 'panic',
@@ -195,8 +218,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
             lat: event.lat,
             lng: event.lng,
             message: event.message || undefined,
-            creatorName: profileData?.nickname || profileData?.full_name || 'Usuario',
-            createdAt: new Date(event.created_at),
+            creatorName: profilesMap[event.user_id] || 'Usuario',
+            createdAt: new Date(event.created_at!),
           });
         }
       }
@@ -207,7 +230,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
           // Skip own alerts
           if (req.user_id === user?.id) continue;
           
-          const profileData = req.profiles_public as any;
           alerts.push({
             id: `help-${req.id}`,
             type: 'help',
@@ -215,14 +237,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
             lat: req.lat,
             lng: req.lng,
             message: req.message || undefined,
-            creatorName: profileData?.nickname || profileData?.full_name || 'Usuario',
-            createdAt: new Date(req.created_at),
+            creatorName: profilesMap[req.user_id] || 'Usuario',
+            createdAt: new Date(req.created_at!),
           });
         }
       }
 
       // Sort by most recent
       alerts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      console.log('[HomeScreen] Loaded emergency alerts:', alerts.length);
       setEmergencyAlerts(alerts);
     } catch (e) {
       console.error('[HomeScreen] Error fetching emergency alerts:', e);
