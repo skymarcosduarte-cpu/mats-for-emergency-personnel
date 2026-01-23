@@ -11,13 +11,19 @@ import "leaflet/dist/leaflet.css";
 
 interface TripRouteMapProps {
   routeCoordinates: [number, number][];
+  /** Estimated route coordinates (purple dashed line) */
+  estimatedRouteCoordinates?: [number, number][];
   originCoords?: { lat: number; lng: number } | null;
   destinationCoords?: { lat: number; lng: number } | null;
   currentPosition?: { lat: number; lng: number } | null;
+  /** Last known real position before estimation started */
+  lastRealPosition?: { lat: number; lng: number } | null;
   originName?: string;
   destinationName?: string;
   className?: string;
   height?: string;
+  /** Show legend for route types */
+  showLegend?: boolean;
 }
 
 const isFiniteNumber = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n);
@@ -56,21 +62,27 @@ const createDotIcon = (bg: string, size = 22) =>
 
 export default function TripRouteMap({
   routeCoordinates,
+  estimatedRouteCoordinates,
   originCoords,
   destinationCoords,
   currentPosition,
+  lastRealPosition,
   originName = "Origen",
   destinationName = "Destino",
   className,
   height = "300px",
+  showLegend = false,
 }: TripRouteMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const tileRef = useRef<L.TileLayer | null>(null);
   const routeRef = useRef<L.Polyline | null>(null);
+  const estimatedRouteRef = useRef<L.Polyline | null>(null);
+  const estimationConnectorRef = useRef<L.Polyline | null>(null);
   const originMarkerRef = useRef<L.Marker | null>(null);
   const destMarkerRef = useRef<L.Marker | null>(null);
   const currentMarkerRef = useRef<L.Marker | null>(null);
+  const lastRealMarkerRef = useRef<L.Marker | null>(null);
 
   const [isMapReady, setIsMapReady] = useState(false);
 
@@ -85,6 +97,17 @@ export default function TripRouteMap({
     }
     return filtered;
   }, [routeCoordinates]);
+
+  const safeEstimatedRouteCoordinates = useMemo(() => {
+    const input = estimatedRouteCoordinates ?? [];
+    const filtered = input.filter(([lat, lng]) => isValidLatLng(lat, lng));
+    return filtered;
+  }, [estimatedRouteCoordinates]);
+
+  const safeLastRealPosition = useMemo(
+    () => (lastRealPosition && isValidLatLng(lastRealPosition.lat, lastRealPosition.lng) ? lastRealPosition : null),
+    [lastRealPosition]
+  );
 
   const safeOrigin = useMemo(
     () => (originCoords && isValidLatLng(originCoords.lat, originCoords.lng) ? originCoords : null),
@@ -105,12 +128,13 @@ export default function TripRouteMap({
   );
 
   const pointsForBounds = useMemo(() => {
-    const all: [number, number][] = [...safeRouteCoordinates];
+    const all: [number, number][] = [...safeRouteCoordinates, ...safeEstimatedRouteCoordinates];
     if (safeOrigin) all.push([safeOrigin.lat, safeOrigin.lng]);
     if (safeDestination) all.push([safeDestination.lat, safeDestination.lng]);
     if (safeCurrent) all.push([safeCurrent.lat, safeCurrent.lng]);
+    if (safeLastRealPosition) all.push([safeLastRealPosition.lat, safeLastRealPosition.lng]);
     return all;
-  }, [safeRouteCoordinates, safeOrigin, safeDestination, safeCurrent]);
+  }, [safeRouteCoordinates, safeEstimatedRouteCoordinates, safeOrigin, safeDestination, safeCurrent, safeLastRealPosition]);
 
   const defaultCenter: [number, number] = useMemo(() => {
     if (safeCurrent) return [safeCurrent.lat, safeCurrent.lng];
@@ -120,7 +144,7 @@ export default function TripRouteMap({
   }, [safeCurrent, safeOrigin, safeRouteCoordinates]);
 
   const hasAnyData =
-    safeRouteCoordinates.length > 0 || !!safeOrigin || !!safeDestination || !!safeCurrent;
+    safeRouteCoordinates.length > 0 || safeEstimatedRouteCoordinates.length > 0 || !!safeOrigin || !!safeDestination || !!safeCurrent;
 
   // Store initial center to avoid re-creating map on data changes
   const initialCenterRef = useRef<[number, number] | null>(null);
@@ -175,9 +199,12 @@ export default function TripRouteMap({
       mapRef.current = null;
       tileRef.current = null;
       routeRef.current = null;
+      estimatedRouteRef.current = null;
+      estimationConnectorRef.current = null;
       originMarkerRef.current = null;
       destMarkerRef.current = null;
       currentMarkerRef.current = null;
+      lastRealMarkerRef.current = null;
       initialCenterRef.current = null;
     };
   // Empty deps - only run once on mount
@@ -188,7 +215,7 @@ export default function TripRouteMap({
     const map = mapRef.current;
     if (!map) return;
 
-    // Update route
+    // Update real route (blue solid line)
     if (routeRef.current) {
       routeRef.current.remove();
       routeRef.current = null;
@@ -202,6 +229,66 @@ export default function TripRouteMap({
         lineCap: "round",
         lineJoin: "round",
       }).addTo(map);
+      routeRef.current.bindPopup("<strong>Ruta real</strong><br/>Posiciones GPS registradas");
+    }
+
+    // Update estimated route (purple dashed line)
+    if (estimatedRouteRef.current) {
+      estimatedRouteRef.current.remove();
+      estimatedRouteRef.current = null;
+    }
+    if (safeEstimatedRouteCoordinates.length > 1) {
+      estimatedRouteRef.current = L.polyline(safeEstimatedRouteCoordinates, {
+        color: "#8b5cf6", // Purple
+        weight: 4,
+        opacity: 0.75,
+        lineCap: "round",
+        lineJoin: "round",
+        dashArray: "8, 12",
+      }).addTo(map);
+      estimatedRouteRef.current.bindPopup("<strong>Ruta estimada</strong><br/>Posiciones interpoladas cuando GPS estaba inactivo");
+    }
+
+    // Connector line from last real position to start of estimated route
+    if (estimationConnectorRef.current) {
+      estimationConnectorRef.current.remove();
+      estimationConnectorRef.current = null;
+    }
+    if (safeLastRealPosition && safeEstimatedRouteCoordinates.length > 0) {
+      const firstEstimatedPoint = safeEstimatedRouteCoordinates[0];
+      estimationConnectorRef.current = L.polyline(
+        [[safeLastRealPosition.lat, safeLastRealPosition.lng], firstEstimatedPoint],
+        {
+          color: "#8b5cf6",
+          weight: 2,
+          opacity: 0.5,
+          dashArray: "4, 8",
+        }
+      ).addTo(map);
+    }
+
+    // Last real position marker (where estimation started)
+    if (lastRealMarkerRef.current) {
+      lastRealMarkerRef.current.remove();
+      lastRealMarkerRef.current = null;
+    }
+    if (safeLastRealPosition && safeEstimatedRouteCoordinates.length > 0) {
+      const icon = L.divIcon({
+        html: `<div style="
+          background-color: #8b5cf6;
+          width: 14px;
+          height: 14px;
+          border-radius: 9999px;
+          border: 2px solid white;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        "></div>`,
+        className: "",
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      });
+      lastRealMarkerRef.current = L.marker([safeLastRealPosition.lat, safeLastRealPosition.lng], { icon })
+        .addTo(map)
+        .bindPopup("<strong>Última posición real</strong><br/>GPS dejó de reportar aquí");
     }
 
     // Origin marker
@@ -253,7 +340,7 @@ export default function TripRouteMap({
     } catch (err) {
       console.warn("[TripRouteMap] Error fitting bounds", err);
     }
-  }, [safeRouteCoordinates, safeOrigin, safeDestination, safeCurrent, originName, destinationName, pointsForBounds, defaultCenter]);
+  }, [safeRouteCoordinates, safeEstimatedRouteCoordinates, safeLastRealPosition, safeOrigin, safeDestination, safeCurrent, originName, destinationName, pointsForBounds, defaultCenter]);
 
   if (!hasAnyData) {
     return (
@@ -265,6 +352,8 @@ export default function TripRouteMap({
       </div>
     );
   }
+
+  const hasEstimatedRoute = safeEstimatedRouteCoordinates.length > 0;
 
   return (
     <div
@@ -280,6 +369,29 @@ export default function TripRouteMap({
         </div>
       )}
       <div ref={containerRef} className="h-full w-full" />
+      
+      {/* Route legend */}
+      {showLegend && (safeRouteCoordinates.length > 0 || hasEstimatedRoute) && (
+        <div className="absolute bottom-2 left-2 z-20 bg-card/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border text-xs">
+          <div className="space-y-1">
+            {safeRouteCoordinates.length > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-1 rounded-full" style={{ backgroundColor: hslVar("--primary", "#3b82f6") }} />
+                <span className="text-muted-foreground">Ruta real (GPS)</span>
+              </div>
+            )}
+            {hasEstimatedRoute && (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-0.5 rounded-full" style={{ 
+                  backgroundColor: "#8b5cf6",
+                  backgroundImage: "repeating-linear-gradient(90deg, #8b5cf6 0, #8b5cf6 4px, transparent 4px, transparent 8px)"
+                }} />
+                <span className="text-muted-foreground">Ruta estimada</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

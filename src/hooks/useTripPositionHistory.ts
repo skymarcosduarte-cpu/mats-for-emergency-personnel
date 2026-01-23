@@ -162,6 +162,100 @@ export function useTripPositionHistory({
     return history.map(pos => [pos.lat, pos.lng]);
   }, [history]);
 
+  /**
+   * Get separated real and estimated route coordinates
+   * Real positions have speed > 0 or were recorded within 2 minutes of each other
+   * Estimated positions are interpolated when GPS was stale
+   */
+  const getRouteWithEstimation = useCallback((
+    destinationLat?: number,
+    destinationLng?: number
+  ): {
+    realRoute: [number, number][];
+    estimatedRoute: [number, number][];
+    lastRealPosition: { lat: number; lng: number } | null;
+  } => {
+    if (history.length === 0) {
+      return { realRoute: [], estimatedRoute: [], lastRealPosition: null };
+    }
+
+    const realRoute: [number, number][] = [];
+    const estimatedRoute: [number, number][] = [];
+    let lastRealPos: { lat: number; lng: number } | null = null;
+    let inEstimationMode = false;
+    let lastRecordedTime: Date | null = null;
+
+    for (let i = 0; i < history.length; i++) {
+      const pos = history[i];
+      const currentTime = new Date(pos.recorded_at);
+      const hasSpeed = pos.speed !== null && pos.speed > 1; // > 1 m/s (~3.6 km/h)
+      
+      // Check time gap from previous position
+      let timeGapMinutes = 0;
+      if (lastRecordedTime) {
+        timeGapMinutes = (currentTime.getTime() - lastRecordedTime.getTime()) / (1000 * 60);
+      }
+      
+      // If there's a large time gap (> 2 min) without movement, treat subsequent positions as estimated
+      if (timeGapMinutes > 2 && !hasSpeed) {
+        if (!inEstimationMode && realRoute.length > 0) {
+          // Mark the transition point
+          lastRealPos = { lat: realRoute[realRoute.length - 1][0], lng: realRoute[realRoute.length - 1][1] };
+          inEstimationMode = true;
+        }
+      }
+      
+      // If we have speed again, switch back to real mode
+      if (hasSpeed && inEstimationMode) {
+        inEstimationMode = false;
+      }
+      
+      if (inEstimationMode) {
+        estimatedRoute.push([pos.lat, pos.lng]);
+      } else {
+        realRoute.push([pos.lat, pos.lng]);
+      }
+      
+      lastRecordedTime = currentTime;
+    }
+
+    // If last position had no speed and we have destination, add interpolated point
+    if (destinationLat && destinationLng && history.length > 0) {
+      const lastPos = history[history.length - 1];
+      const lastPosTime = new Date(lastPos.recorded_at);
+      const now = new Date();
+      const minutesSinceLastPos = (now.getTime() - lastPosTime.getTime()) / (1000 * 60);
+      
+      // If last position is stale (> 2 min) and no speed, add estimated current position
+      if (minutesSinceLastPos > 2 && (lastPos.speed === null || lastPos.speed <= 1)) {
+        if (!lastRealPos && realRoute.length > 0) {
+          lastRealPos = { lat: realRoute[realRoute.length - 1][0], lng: realRoute[realRoute.length - 1][1] };
+        }
+        
+        // Calculate average speed from recent history
+        const recentWithSpeed = history.filter(p => p.speed !== null && p.speed > 1).slice(-10);
+        const avgSpeedMs = recentWithSpeed.length > 0 
+          ? recentWithSpeed.reduce((sum, p) => sum + (p.speed || 0), 0) / recentWithSpeed.length
+          : 16.67; // Default ~60 km/h
+        
+        const avgSpeedKmh = avgSpeedMs * 3.6;
+        const hoursSinceLastPos = minutesSinceLastPos / 60;
+        const estimatedDistanceKm = avgSpeedKmh * hoursSinceLastPos;
+        
+        // Simple linear interpolation toward destination
+        const totalDistanceKm = calculateDistance(lastPos.lat, lastPos.lng, destinationLat, destinationLng);
+        if (totalDistanceKm > 0.5 && estimatedDistanceKm < totalDistanceKm) {
+          const progress = Math.min(estimatedDistanceKm / totalDistanceKm, 0.9);
+          const estLat = lastPos.lat + (destinationLat - lastPos.lat) * progress;
+          const estLng = lastPos.lng + (destinationLng - lastPos.lng) * progress;
+          estimatedRoute.push([estLat, estLng]);
+        }
+      }
+    }
+
+    return { realRoute, estimatedRoute, lastRealPosition: lastRealPos };
+  }, [history]);
+
   // Fetch history when tripId changes
   useEffect(() => {
     if (tripId) {
@@ -180,6 +274,19 @@ export function useTripPositionHistory({
     fetchHistory,
     clearHistory,
     getRouteCoordinates,
+    getRouteWithEstimation,
     positionCount: history.length,
   };
+}
+
+// Helper function for distance calculation
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
