@@ -2,7 +2,8 @@
 // Road + Flight transit tracking with incident reports
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge, Mic, MicOff, MessageCircle, ArrowLeft } from 'lucide-react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge, Mic, MicOff, MessageCircle, ArrowLeft, Share2 } from 'lucide-react';
+import { ShareTripToWhatsApp } from '@/components/ShareTripToWhatsApp';
 import { GpsStatusBanner } from '@/components/GpsStatusBanner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -131,6 +132,7 @@ interface TransitTrip {
   origin_lng: number | null;
   destination_lat: number | null;
   destination_lng: number | null;
+  share_token: string | null;
 }
 
 export const TransitScreen: React.FC<TransitScreenProps> = ({
@@ -1330,7 +1332,31 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             )}
                           </div>
                         )}
-                        <div className="flex gap-2 mt-3">
+                        <div className="flex gap-2 mt-3 flex-wrap">
+                          {/* Share trip to WhatsApp button */}
+                          <ShareTripToWhatsApp
+                            trip={{
+                              id: trip.id,
+                              transitType: trip.transit_type,
+                              origin: trip.origin,
+                              destination: trip.destination,
+                              eta: trip.eta,
+                              plates: trip.plates,
+                              vehicleType: trip.vehicle_type,
+                              companions: trip.companions,
+                              airline: trip.airline,
+                              flightNumber: trip.flight_number,
+                              departureAirport: trip.departure_airport,
+                              arrivalAirport: trip.arrival_airport,
+                              originLat: trip.origin_lat,
+                              originLng: trip.origin_lng,
+                              destinationLat: trip.destination_lat,
+                              destinationLng: trip.destination_lng,
+                              shareToken: trip.share_token,
+                            }}
+                            isOwnTrip={true}
+                            size="sm"
+                          />
                           {isActive && (
                             <Button
                               size="sm"
@@ -1533,7 +1559,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                               </div>
                             </div>
 
-                            <div className="mt-3 flex gap-2">
+                            <div className="mt-3 flex gap-2 flex-wrap">
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -1543,6 +1569,30 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                 <Map className="w-3.5 h-3.5" />
                                 Ver en mapa
                               </Button>
+                              {/* Share community trip to WhatsApp */}
+                              <ShareTripToWhatsApp
+                                trip={{
+                                  id: trip.id,
+                                  transitType: trip.transit_type,
+                                  origin: trip.origin,
+                                  destination: trip.destination,
+                                  eta: trip.eta,
+                                  plates: trip.plates,
+                                  vehicleType: trip.vehicle_type,
+                                  companions: trip.companions,
+                                  airline: trip.airline,
+                                  flightNumber: trip.flight_number,
+                                  originLat: trip.origin_lat,
+                                  originLng: trip.origin_lng,
+                                  destinationLat: trip.destination_lat,
+                                  destinationLng: trip.destination_lng,
+                                  nickname: displayName,
+                                  shareToken: trip.share_token,
+                                }}
+                                isOwnTrip={false}
+                                size="sm"
+                                showLabel={false}
+                              />
                               {onOpenMessaging && trip.user_id !== currentUserId && (
                                 <Button
                                   size="sm"
