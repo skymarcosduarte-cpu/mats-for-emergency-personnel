@@ -13,6 +13,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import MapErrorBoundary from './MapErrorBoundary';
 import { MiniMap } from './MiniMap';
+import TripRouteMap from './TripRouteMap';
 
 interface TravelerLocation {
   lat: number;
@@ -28,6 +29,16 @@ interface TravelerProfile {
   full_name: string;
 }
 
+interface TripDetails {
+  id: string;
+  destination_lat: number | null;
+  destination_lng: number | null;
+  origin_lat: number | null;
+  origin_lng: number | null;
+  origin: string;
+  destination: string;
+}
+
 interface TravelerLocationDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -35,6 +46,13 @@ interface TravelerLocationDialogProps {
   onSendMessage?: () => void;
   /** Optional trip ID for showing route history */
   tripId?: string;
+}
+
+interface PositionHistoryPoint {
+  lat: number;
+  lng: number;
+  speed: number | null;
+  recorded_at: string;
 }
 
 export function TravelerLocationDialog({
@@ -49,14 +67,17 @@ export function TravelerLocationDialog({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
+  const [positionHistory, setPositionHistory] = useState<PositionHistoryPoint[]>([]);
   const [activeTripId, setActiveTripId] = useState<string | null>(null);
+  const [tripDetails, setTripDetails] = useState<TripDetails | null>(null);
+  const [showDetailedMap, setShowDetailedMap] = useState(false);
 
   // Fetch route history for a trip
   const fetchRouteHistory = useCallback(async (tripId: string) => {
     try {
       const { data, error } = await supabase
         .from('trip_position_history')
-        .select('lat, lng, recorded_at')
+        .select('lat, lng, speed, recorded_at')
         .eq('trip_id', tripId)
         .order('recorded_at', { ascending: true });
 
@@ -65,6 +86,12 @@ export function TravelerLocationDialog({
       if (data && data.length > 0) {
         const coords: [number, number][] = data.map(pos => [pos.lat, pos.lng]);
         setRouteCoordinates(coords);
+        setPositionHistory(data.map(pos => ({
+          lat: pos.lat,
+          lng: pos.lng,
+          speed: pos.speed,
+          recorded_at: pos.recorded_at,
+        })));
         console.log(`[TravelerLocationDialog] Loaded ${coords.length} route points`);
       }
     } catch (err) {
@@ -94,14 +121,19 @@ export function TravelerLocationDialog({
             .select('nickname')
             .eq('user_id', userId)
             .maybeSingle(),
-          // Get active trip for this user
-          propTripId ? Promise.resolve({ data: { id: propTripId }, error: null }) :
-          supabase
-            .from('transit_trips')
-            .select('id')
-            .eq('user_id', userId)
-            .eq('status', 'active')
-            .maybeSingle(),
+          // Get active trip for this user with full details
+          propTripId ? 
+            supabase
+              .from('transit_trips')
+              .select('id, destination_lat, destination_lng, origin_lat, origin_lng, origin, destination')
+              .eq('id', propTripId)
+              .maybeSingle() :
+            supabase
+              .from('transit_trips')
+              .select('id, destination_lat, destination_lng, origin_lat, origin_lng, origin, destination')
+              .eq('user_id', userId)
+              .eq('status', 'active')
+              .maybeSingle(),
         ]);
 
         if (locationResult.error) throw locationResult.error;
@@ -119,11 +151,11 @@ export function TravelerLocationDialog({
           });
         }
 
-        // Fetch route history if we have a trip
-        const tripId = propTripId || tripResult.data?.id;
-        if (tripId) {
-          setActiveTripId(tripId);
-          await fetchRouteHistory(tripId);
+        // Fetch route history and trip details if we have a trip
+        if (tripResult.data) {
+          setActiveTripId(tripResult.data.id);
+          setTripDetails(tripResult.data as TripDetails);
+          await fetchRouteHistory(tripResult.data.id);
         }
       } catch (err) {
         console.error('[TravelerLocationDialog] Error fetching data:', err);
@@ -202,6 +234,57 @@ export function TravelerLocationDialog({
     return lastUpdate.getTime() > fiveMinutesAgo;
   };
 
+  // Calculate real vs estimated routes
+  const getRouteWithEstimation = (): {
+    realRoute: [number, number][];
+    estimatedRoute: [number, number][];
+    lastRealPosition: { lat: number; lng: number } | null;
+  } => {
+    if (positionHistory.length === 0) {
+      return { realRoute: routeCoordinates, estimatedRoute: [], lastRealPosition: null };
+    }
+
+    const realRoute: [number, number][] = [];
+    const estimatedRoute: [number, number][] = [];
+    let lastRealPos: { lat: number; lng: number } | null = null;
+    let inEstimationMode = false;
+    let lastRecordedTime: Date | null = null;
+
+    for (let i = 0; i < positionHistory.length; i++) {
+      const pos = positionHistory[i];
+      const currentTime = new Date(pos.recorded_at);
+      const hasSpeed = pos.speed !== null && pos.speed > 1;
+      
+      let timeGapMinutes = 0;
+      if (lastRecordedTime) {
+        timeGapMinutes = (currentTime.getTime() - lastRecordedTime.getTime()) / (1000 * 60);
+      }
+      
+      if (timeGapMinutes > 2 && !hasSpeed) {
+        if (!inEstimationMode && realRoute.length > 0) {
+          lastRealPos = { lat: realRoute[realRoute.length - 1][0], lng: realRoute[realRoute.length - 1][1] };
+          inEstimationMode = true;
+        }
+      }
+      
+      if (hasSpeed && inEstimationMode) {
+        inEstimationMode = false;
+      }
+      
+      if (inEstimationMode) {
+        estimatedRoute.push([pos.lat, pos.lng]);
+      } else {
+        realRoute.push([pos.lat, pos.lng]);
+      }
+      
+      lastRecordedTime = currentTime;
+    }
+
+    return { realRoute, estimatedRoute, lastRealPosition: lastRealPos };
+  };
+
+  const { realRoute, estimatedRoute, lastRealPosition } = getRouteWithEstimation();
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md bg-card border-border">
@@ -250,24 +333,58 @@ export function TravelerLocationDialog({
                 </div>
               </div>
 
-              {/* Map */}
-              <div className="rounded-lg overflow-hidden border border-border h-[200px]">
-                <MapErrorBoundary>
-                  <MiniMap
-                    lat={location.lat}
-                    lng={location.lng}
-                    zoom={15}
-                    routeCoordinates={routeCoordinates}
-                    title={`Viaje de ${profile?.nickname || 'Viajero'}`}
+              {/* Map - Show detailed map with route comparison if we have data */}
+              {showDetailedMap && tripDetails ? (
+                <div className="rounded-lg overflow-hidden border border-border">
+                  <TripRouteMap
+                    routeCoordinates={realRoute}
+                    estimatedRouteCoordinates={estimatedRoute}
+                    lastRealPosition={lastRealPosition}
+                    originCoords={tripDetails.origin_lat && tripDetails.origin_lng ? { lat: tripDetails.origin_lat, lng: tripDetails.origin_lng } : null}
+                    destinationCoords={tripDetails.destination_lat && tripDetails.destination_lng ? { lat: tripDetails.destination_lat, lng: tripDetails.destination_lng } : null}
+                    currentPosition={location ? { lat: location.lat, lng: location.lng } : null}
+                    originName={tripDetails.origin}
+                    destinationName={tripDetails.destination}
+                    height="300px"
+                    showLegend={true}
                   />
-                </MapErrorBoundary>
-              </div>
+                </div>
+              ) : (
+                <div className="rounded-lg overflow-hidden border border-border h-[200px]">
+                  <MapErrorBoundary>
+                    <MiniMap
+                      lat={location.lat}
+                      lng={location.lng}
+                      zoom={15}
+                      routeCoordinates={routeCoordinates}
+                      title={`Viaje de ${profile?.nickname || 'Viajero'}`}
+                    />
+                  </MapErrorBoundary>
+                </div>
+              )}
 
-              {/* Route info */}
+              {/* Route info with toggle for detailed view */}
               {routeCoordinates.length > 1 && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-                  <Route className="w-3.5 h-3.5 text-primary" />
-                  <span>{routeCoordinates.length} puntos de ruta registrados</span>
+                <div className="flex items-center justify-between text-xs bg-muted/50 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Route className="w-3.5 h-3.5 text-primary" />
+                    <span>{routeCoordinates.length} puntos registrados</span>
+                    {estimatedRoute.length > 0 && (
+                      <Badge variant="secondary" className="text-xs bg-purple-500/20 text-purple-400">
+                        +{estimatedRoute.length} estimados
+                      </Badge>
+                    )}
+                  </div>
+                  {tripDetails && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-xs"
+                      onClick={() => setShowDetailedMap(!showDetailedMap)}
+                    >
+                      {showDetailedMap ? 'Vista simple' : 'Ver rutas'}
+                    </Button>
+                  )}
                 </div>
               )}
 
