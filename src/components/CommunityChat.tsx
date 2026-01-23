@@ -902,6 +902,22 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
             )}
           </div>
           )}
+          
+          {/* Bottom close button for easy access */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              diagLog.buttonClick('Close Chat (Bottom)', 'CommunityChat Footer', { contextType, title });
+              onClose();
+            }}
+            className="w-full mt-2 text-muted-foreground hover:text-foreground"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Cerrar chat
+          </Button>
         </div>
       </div>
 
