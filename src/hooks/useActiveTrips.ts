@@ -174,12 +174,12 @@ export function useActiveTrips() {
           .select('user_id, lat, lng, speed, updated_at')
           .in('user_id', userIds)
           .eq('is_online', true),
-        // Fetch recent position history for estimation (last 15 minutes)
+        // Fetch position history for estimation (last 60 minutes)
         supabase
           .from('trip_position_history')
           .select('trip_id, lat, lng, speed, recorded_at')
           .in('trip_id', tripIds)
-          .gte('recorded_at', new Date(Date.now() - 15 * 60 * 1000).toISOString())
+          .gte('recorded_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
           .order('recorded_at', { ascending: false })
       ]);
 
