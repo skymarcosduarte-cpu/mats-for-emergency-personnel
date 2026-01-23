@@ -25,6 +25,10 @@ function createTravelerMarker(trip: ActiveTrip): L.DivIcon {
   const initial = nickname.charAt(0).toUpperCase();
   const emoji = trip.transit_type === 'FLIGHT' ? '✈️' : '🚗';
   
+  // Check if position is estimated
+  const isEstimated = trip.is_position_estimated || false;
+  const estimatedPosition = trip.estimated_position;
+  
   // Check if location is stale
   let staleMinutes = 0;
   if (trip.location_updated_at) {
@@ -44,12 +48,17 @@ function createTravelerMarker(trip: ActiveTrip): L.DivIcon {
   const speedKmh = isLocationStale ? 0 : rawSpeedKmh;
   const isMoving = !isLocationStale && speedKmh > 5;
   
-  // Color based on status
+  // Color based on status - blue for estimated position
   let bgColor = isMoving ? '#22c55e' : '#f59e0b';
   let borderColor = 'white';
   let animation = '';
   
-  if (isCriticallyStale) {
+  // Special styling for estimated positions
+  if (isEstimated && estimatedPosition) {
+    bgColor = '#8b5cf6'; // Purple for estimated
+    borderColor = '#c4b5fd';
+    animation = 'animation: pulse-estimated 2s ease-in-out infinite;';
+  } else if (isCriticallyStale) {
     bgColor = '#ef4444'; // Red for critical
     borderColor = '#fca5a5';
     animation = 'animation: pulse-signal-lost 1s ease-in-out infinite;';
@@ -59,10 +68,20 @@ function createTravelerMarker(trip: ActiveTrip): L.DivIcon {
     animation = 'animation: pulse-signal-warning 1.5s ease-in-out infinite;';
   }
   
-  // Badge content
-  const speedBadgeContent = isSignalLost 
-    ? `📡 ${staleMinutes >= 60 ? `${Math.floor(staleMinutes / 60)}h` : `${staleMinutes}m`}` 
-    : (isLocationStale ? `⏱ ${staleMinutes}m` : `${speedKmh} km/h`);
+  // Badge content - show estimation info if estimated
+  let speedBadgeContent: string;
+  if (isEstimated && estimatedPosition) {
+    const avgSpeed = estimatedPosition.averageSpeedKmh;
+    const confidence = estimatedPosition.confidenceLevel;
+    const confidenceEmoji = confidence === 'high' ? '✓' : (confidence === 'medium' ? '~' : '?');
+    speedBadgeContent = `📍 ~${avgSpeed} km/h ${confidenceEmoji}`;
+  } else if (isSignalLost) {
+    speedBadgeContent = `📡 ${staleMinutes >= 60 ? `${Math.floor(staleMinutes / 60)}h` : `${staleMinutes}m`}`;
+  } else if (isLocationStale) {
+    speedBadgeContent = `⏱ ${staleMinutes}m`;
+  } else {
+    speedBadgeContent = `${speedKmh} km/h`;
+  }
   
   return L.divIcon({
     className: `custom-traveler-marker ${isSignalLost ? 'signal-lost' : ''}`,
@@ -132,7 +151,25 @@ function createTravelerMarker(trip: ActiveTrip): L.DivIcon {
         ">
           ${nickname}
         </div>
-        ${isSignalLost ? `
+        ${isEstimated && estimatedPosition ? `
+          <div style="
+            position: absolute;
+            bottom: -16px;
+            background: #8b5cf6;
+            color: white;
+            font-size: 8px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 2px;
+          ">
+            📍 Pos. estimada
+          </div>
+        ` : (isSignalLost ? `
           <div style="
             position: absolute;
             bottom: -16px;
@@ -147,11 +184,23 @@ function createTravelerMarker(trip: ActiveTrip): L.DivIcon {
           ">
             ${isCriticallyStale ? '⚠️ Sin señal' : '📡 Señal débil'}
           </div>
-        ` : ''}
+        ` : '')}
       </div>
+      <style>
+        @keyframes pulse-estimated {
+          0%, 100% { 
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3), 0 2px 8px rgba(0,0,0,0.3);
+            opacity: 1;
+          }
+          50% { 
+            box-shadow: 0 0 0 8px rgba(139, 92, 246, 0.2), 0 2px 8px rgba(0,0,0,0.3);
+            opacity: 0.85;
+          }
+        }
+      </style>
     `,
-    iconSize: [80, isSignalLost ? 120 : 80],
-    iconAnchor: [40, isSignalLost ? 100 : 80],
+    iconSize: [80, (isSignalLost || isEstimated) ? 120 : 80],
+    iconAnchor: [40, (isSignalLost || isEstimated) ? 100 : 80],
   });
 }
 
@@ -230,6 +279,7 @@ export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const linesRef = useRef<Map<string, L.Polyline>>(new Map());
+  const estimationLinesRef = useRef<Map<string, L.Polyline>>(new Map()); // Lines from real to estimated position
   const userLocationMarkerRef = useRef<L.Marker | null>(null);
   const userAccuracyCircleRef = useRef<L.Circle | null>(null);
   const hasInitializedBounds = useRef(false);
@@ -237,9 +287,9 @@ export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
   // Track if user is manually interacting with the map
   const [isUserInteracting, setIsUserInteracting] = useState(false);
 
-  // Filter trips that have current location
+  // Filter trips that have current location (or display location if estimated)
   const tripsWithLocation = useMemo(() => {
-    return trips.filter(t => t.current_lat && t.current_lng);
+    return trips.filter(t => (t.display_lat && t.display_lng) || (t.current_lat && t.current_lng));
   }, [trips]);
 
   // Initialize map
@@ -305,17 +355,44 @@ export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
       }
     });
 
+    // Remove estimation lines for inactive trips
+    estimationLinesRef.current.forEach((line, tripId) => {
+      if (!currentTripIds.has(tripId)) {
+        line.remove();
+        estimationLinesRef.current.delete(tripId);
+      }
+    });
+
     // Add or update markers for each trip
     tripsWithLocation.forEach(trip => {
       if (!trip.current_lat || !trip.current_lng) return;
 
-      const position: L.LatLngExpression = [trip.current_lat, trip.current_lng];
-      const speedKmh = trip.current_speed ? Math.round(trip.current_speed * 3.6) : 0;
+      // Use display position (estimated if available, otherwise current)
+      const displayLat = trip.display_lat ?? trip.current_lat;
+      const displayLng = trip.display_lng ?? trip.current_lng;
+      const isEstimated = trip.is_position_estimated || false;
+      
+      const position: L.LatLngExpression = [displayLat, displayLng];
+      const realPosition: L.LatLngExpression = [trip.current_lat, trip.current_lng];
+      
+      // Show estimated speed if position is estimated
+      const speedKmh = isEstimated && trip.estimated_position 
+        ? trip.estimated_position.averageSpeedKmh 
+        : (trip.current_speed ? Math.round(trip.current_speed * 3.6) : 0);
+      
       const etaText = trip.dynamic_eta_minutes 
         ? `~${trip.dynamic_eta_minutes} min` 
         : 'Calculando...';
       const distanceText = trip.remaining_distance_km 
         ? `${trip.remaining_distance_km.toFixed(1)} km` 
+        : '';
+
+      // Show estimation badge in popup
+      const estimationInfo = isEstimated && trip.estimated_position 
+        ? `<div style="font-size: 10px; color: #8b5cf6; margin-top: 4px; padding: 4px; background: rgba(139, 92, 246, 0.1); border-radius: 4px;">
+             📍 Posición estimada (${trip.estimated_position.estimatedSinceMinutes}min sin señal)<br/>
+             Confianza: ${trip.estimated_position.confidenceLevel === 'high' ? 'Alta' : (trip.estimated_position.confidenceLevel === 'medium' ? 'Media' : 'Baja')}
+           </div>`
         : '';
 
       const popupContent = `
@@ -331,14 +408,14 @@ export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
           </div>
           <div style="display: flex; gap: 8px; margin-top: 8px;">
             <span style="
-              background: ${speedKmh > 5 ? '#22c55e' : '#f59e0b'};
+              background: ${isEstimated ? '#8b5cf6' : (speedKmh > 5 ? '#22c55e' : '#f59e0b')};
               color: white;
               padding: 2px 8px;
               border-radius: 12px;
               font-size: 11px;
               font-weight: 600;
             ">
-              ${speedKmh} km/h
+              ${isEstimated ? `~${speedKmh} km/h` : `${speedKmh} km/h`}
             </span>
             ${distanceText ? `
               <span style="
@@ -356,6 +433,7 @@ export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
           <div style="font-size: 11px; color: #888; margin-top: 8px;">
             ETA: ${etaText}
           </div>
+          ${estimationInfo}
         </div>
       `;
 
@@ -377,7 +455,7 @@ export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
         markersRef.current.set(trip.id, marker);
       }
 
-      // Draw line to destination if available
+      // Draw line from estimated position to destination
       if (trip.destination_lat && trip.destination_lng) {
         const destPosition: L.LatLngExpression = [trip.destination_lat, trip.destination_lng];
         const existingLine = linesRef.current.get(trip.id);
@@ -395,13 +473,38 @@ export const CommunityTripsMap: React.FC<CommunityTripsMapProps> = ({
           linesRef.current.set(trip.id, line);
         }
       }
+
+      // Draw dotted line from real position to estimated position
+      if (isEstimated && trip.estimated_position) {
+        const existingEstimationLine = estimationLinesRef.current.get(trip.id);
+        
+        if (existingEstimationLine) {
+          existingEstimationLine.setLatLngs([realPosition, position]);
+        } else {
+          const estimationLine = L.polyline([realPosition, position], {
+            color: '#8b5cf6',
+            weight: 3,
+            opacity: 0.7,
+            dashArray: '4, 8',
+          }).addTo(mapRef.current!);
+          
+          estimationLinesRef.current.set(trip.id, estimationLine);
+        }
+      } else {
+        // Remove estimation line if position is no longer estimated
+        const existingEstimationLine = estimationLinesRef.current.get(trip.id);
+        if (existingEstimationLine) {
+          existingEstimationLine.remove();
+          estimationLinesRef.current.delete(trip.id);
+        }
+      }
     });
 
     // Only fit bounds on initial load, not on every update (to preserve user zoom/pan)
     if (!hasInitializedBounds.current && !isUserInteracting) {
       const allPoints: L.LatLngTuple[] = tripsWithLocation
-        .filter(t => t.current_lat && t.current_lng)
-        .map(t => [t.current_lat!, t.current_lng!] as L.LatLngTuple);
+        .filter(t => (t.display_lat && t.display_lng) || (t.current_lat && t.current_lng))
+        .map(t => [t.display_lat ?? t.current_lat!, t.display_lng ?? t.current_lng!] as L.LatLngTuple);
       
       if (userLocation) {
         allPoints.push([userLocation.lat, userLocation.lng]);
