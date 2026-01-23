@@ -17,7 +17,7 @@ interface UIIssue {
 }
 
 const RAGE_CLICK_THRESHOLD = 4; // Number of clicks in quick succession
-const RAGE_CLICK_WINDOW_MS = 2000; // Time window for rage clicks
+const RAGE_CLICK_WINDOW_MS = 3000; // Time window for rage clicks (3 seconds)
 const RAGE_CLICK_DISTANCE = 50; // Max distance in pixels between clicks
 const STUCK_DIALOG_THRESHOLD_MS = 60000; // 1 minute without closing a dialog
 const REPEATED_ACTION_THRESHOLD = 5; // Same action repeated multiple times
