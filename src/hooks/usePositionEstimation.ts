@@ -42,6 +42,9 @@ const STALE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
 const MAX_ESTIMATION_TIME_MS = 30 * 60 * 1000; // Max 30 minutes of estimation
 const DEFAULT_SPEED_KMH = 60; // Default highway speed
 const MIN_SPEED_FOR_ESTIMATION = 20; // Minimum 20 km/h to estimate movement
+// When GPS is stale, we still want to leverage older route points to infer speed.
+// This avoids falling back to DEFAULT_SPEED_KMH too often.
+const SPEED_HISTORY_WINDOW_MS = 60 * 60 * 1000; // 60 minutes
 
 /**
  * Calculate distance between two points using Haversine formula
@@ -65,18 +68,25 @@ function calculateAverageSpeed(history: PositionHistoryPoint[]): number | null {
   if (!history || history.length < 2) return null;
   
   const now = Date.now();
-  const fifteenMinutesAgo = now - 15 * 60 * 1000;
+  const windowStart = now - SPEED_HISTORY_WINDOW_MS;
   
-  // Filter to recent points with valid speed > 0
-  const recentPoints = history.filter(p => {
+  // Filter to recent-ish points with valid speed > 0
+  // NOTE: History arrives ordered desc in some callers; don't rely on order.
+  const recentPoints = history.filter((p) => {
     const pointTime = new Date(p.recorded_at).getTime();
-    return pointTime >= fifteenMinutesAgo && p.speed !== null && p.speed > 1;
+    return pointTime >= windowStart && p.speed !== null && p.speed > 1;
   });
   
   if (recentPoints.length === 0) return null;
   
+  // Prefer the most recent samples (cap to avoid old/outlier noise)
+  const sorted = recentPoints
+    .slice()
+    .sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime())
+    .slice(0, 20);
+
   // Calculate average speed in m/s, then convert to km/h
-  const avgSpeedMs = recentPoints.reduce((sum, p) => sum + (p.speed || 0), 0) / recentPoints.length;
+  const avgSpeedMs = sorted.reduce((sum, p) => sum + (p.speed || 0), 0) / sorted.length;
   const avgSpeedKmh = avgSpeedMs * 3.6;
   
   return avgSpeedKmh >= MIN_SPEED_FOR_ESTIMATION ? avgSpeedKmh : null;
