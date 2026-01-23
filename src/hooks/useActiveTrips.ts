@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateDistance } from '@/hooks/useLocation';
 import { getCachedCommunityTrips, cacheCommunityTrips } from '@/lib/offlineDataCache';
+import { applyPositionEstimation, type EstimatedPosition, type PositionHistoryPoint } from '@/hooks/usePositionEstimation';
 
 export interface ActiveTrip {
   id: string;
@@ -33,6 +34,11 @@ export interface ActiveTrip {
   // Calculated fields
   remaining_distance_km?: number | null;
   dynamic_eta_minutes?: number | null;
+  // Position estimation fields
+  estimated_position?: EstimatedPosition | null;
+  display_lat?: number | null;
+  display_lng?: number | null;
+  is_position_estimated?: boolean;
 }
 
 export function useActiveTrips() {
@@ -94,11 +100,12 @@ export function useActiveTrips() {
         return;
       }
 
-      // Get unique user IDs to fetch nicknames and locations
+      // Get unique user IDs and trip IDs to fetch data
       const userIds = [...new Set(tripsData.map(t => t.user_id))];
+      const tripIds = tripsData.map(t => t.id);
 
-      // Fetch nicknames from profiles_public and current locations in parallel
-      const [profilesResult, locationsResult] = await Promise.all([
+      // Fetch nicknames, current locations, and position history in parallel
+      const [profilesResult, locationsResult, positionHistoryResult] = await Promise.all([
         supabase
           .from('profiles_public')
           .select('user_id, nickname')
@@ -107,7 +114,14 @@ export function useActiveTrips() {
           .from('user_locations')
           .select('user_id, lat, lng, speed, updated_at')
           .in('user_id', userIds)
-          .eq('is_online', true)
+          .eq('is_online', true),
+        // Fetch recent position history for estimation (last 15 minutes)
+        supabase
+          .from('trip_position_history')
+          .select('trip_id, lat, lng, speed, recorded_at')
+          .in('trip_id', tripIds)
+          .gte('recorded_at', new Date(Date.now() - 15 * 60 * 1000).toISOString())
+          .order('recorded_at', { ascending: false })
       ]);
 
       const nicknameMap = new Map(
@@ -123,9 +137,23 @@ export function useActiveTrips() {
         }]) || []
       );
 
-      // Merge data and calculate dynamic ETA
+      // Group position history by trip_id
+      const positionHistoryMap = new Map<string, PositionHistoryPoint[]>();
+      positionHistoryResult.data?.forEach(p => {
+        const existing = positionHistoryMap.get(p.trip_id) || [];
+        existing.push({
+          lat: p.lat,
+          lng: p.lng,
+          speed: p.speed,
+          recorded_at: p.recorded_at,
+        });
+        positionHistoryMap.set(p.trip_id, existing);
+      });
+
+      // Merge data, calculate dynamic ETA, and apply position estimation
       const tripsWithDetails: ActiveTrip[] = tripsData.map(trip => {
         const location = locationMap.get(trip.user_id);
+        const positionHistory = positionHistoryMap.get(trip.id) || [];
         let remainingDistanceKm: number | null = null;
         let dynamicEtaMinutes: number | null = null;
 
@@ -144,6 +172,36 @@ export function useActiveTrips() {
           dynamicEtaMinutes = Math.round((remainingDistanceKm / effectiveSpeed) * 60);
         }
 
+        // Apply position estimation for stale GPS data
+        const estimatedPosition = location ? applyPositionEstimation(
+          {
+            current_lat: location.lat,
+            current_lng: location.lng,
+            current_speed: location.speed,
+            location_updated_at: location.updated_at,
+            destination_lat: trip.destination_lat,
+            destination_lng: trip.destination_lng,
+          },
+          positionHistory
+        ) : null;
+
+        // Use estimated position for display if available
+        const displayLat = estimatedPosition?.isEstimated ? estimatedPosition.lat : (location?.lat || null);
+        const displayLng = estimatedPosition?.isEstimated ? estimatedPosition.lng : (location?.lng || null);
+
+        // Recalculate remaining distance based on display position
+        if (estimatedPosition?.isEstimated && trip.destination_lat && trip.destination_lng) {
+          remainingDistanceKm = calculateDistance(
+            displayLat!,
+            displayLng!,
+            trip.destination_lat,
+            trip.destination_lng
+          );
+          // Use average speed from estimation for ETA
+          const effectiveSpeed = estimatedPosition.averageSpeedKmh > 5 ? estimatedPosition.averageSpeedKmh : 60;
+          dynamicEtaMinutes = Math.round((remainingDistanceKm / effectiveSpeed) * 60);
+        }
+
         return {
           ...trip,
           transit_type: trip.transit_type as 'ROAD' | 'FLIGHT',
@@ -154,6 +212,10 @@ export function useActiveTrips() {
           location_updated_at: location?.updated_at || null,
           remaining_distance_km: remainingDistanceKm,
           dynamic_eta_minutes: dynamicEtaMinutes,
+          estimated_position: estimatedPosition,
+          display_lat: displayLat,
+          display_lng: displayLng,
+          is_position_estimated: estimatedPosition?.isEstimated || false,
         };
       });
 
@@ -248,6 +310,36 @@ export function useActiveTrips() {
                 dynamicEtaMinutes = Math.round((remainingDistanceKm / effectiveSpeed) * 60);
               }
               
+              // Apply position estimation for the updated location
+              const estimatedPosition = applyPositionEstimation(
+                {
+                  current_lat: newLoc.lat,
+                  current_lng: newLoc.lng,
+                  current_speed: newLoc.speed,
+                  location_updated_at: newLoc.updated_at,
+                  destination_lat: trip.destination_lat,
+                  destination_lng: trip.destination_lng,
+                },
+                // We don't have fresh position history here, so estimation will use default speed
+                undefined
+              );
+              
+              // Use estimated position for display if available
+              const displayLat = estimatedPosition?.isEstimated ? estimatedPosition.lat : (newLoc.lat ?? trip.current_lat);
+              const displayLng = estimatedPosition?.isEstimated ? estimatedPosition.lng : (newLoc.lng ?? trip.current_lng);
+              
+              // Recalculate based on display position if estimated
+              if (estimatedPosition?.isEstimated && trip.destination_lat && trip.destination_lng && displayLat && displayLng) {
+                remainingDistanceKm = calculateDistance(
+                  displayLat,
+                  displayLng,
+                  trip.destination_lat,
+                  trip.destination_lng
+                );
+                const effectiveSpeed = estimatedPosition.averageSpeedKmh > 5 ? estimatedPosition.averageSpeedKmh : 60;
+                dynamicEtaMinutes = Math.round((remainingDistanceKm / effectiveSpeed) * 60);
+              }
+              
               return {
                 ...trip,
                 current_lat: newLoc.lat ?? trip.current_lat,
@@ -256,6 +348,10 @@ export function useActiveTrips() {
                 location_updated_at: newLoc.updated_at ?? trip.location_updated_at,
                 remaining_distance_km: remainingDistanceKm,
                 dynamic_eta_minutes: dynamicEtaMinutes,
+                estimated_position: estimatedPosition,
+                display_lat: displayLat,
+                display_lng: displayLng,
+                is_position_estimated: estimatedPosition?.isEstimated || false,
               };
             }));
           }
