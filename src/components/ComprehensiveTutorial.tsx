@@ -317,6 +317,7 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
   const [showTableOfContents, setShowTableOfContents] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const section = TUTORIAL_SECTIONS[currentSection];
   const step = section?.steps[currentStep];
@@ -350,6 +351,10 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
   }, [currentSection, currentStep]);
 
   const handleComplete = async () => {
+    // Prevent multiple clicks
+    if (isCompleting || isExiting) return;
+    setIsCompleting(true);
+    
     // Mark tutorial as completed
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -361,16 +366,18 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
       }
     } catch (error) {
       console.error('Error saving tutorial completion:', error);
+      // Continue anyway - don't block the user
     }
 
     toast.success('¡Bienvenido a M.A.T.S.!', {
       description: 'Ya estás listo para usar la aplicación',
     });
 
-    // Start exit animation
+    // Start exit animation FIRST
     setIsExiting(true);
+    setShowDisclaimer(false);
     
-    // Fire confetti after a small delay so it's visible over the fading tutorial
+    // Fire confetti ONCE after a small delay
     setTimeout(() => {
       confetti({
         particleCount: 150,
@@ -380,6 +387,7 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
       });
     }, 100);
     
+    // Call onComplete after animation
     setTimeout(() => {
       onComplete();
     }, 400);
@@ -599,14 +607,23 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
                 variant="outline"
                 className="flex-1 h-12"
                 onClick={() => setShowDisclaimer(false)}
+                disabled={isCompleting}
               >
                 Volver
               </Button>
               <Button
                 className="flex-1 h-12"
                 onClick={handleComplete}
+                disabled={isCompleting}
               >
-                Acepto y continúo
+                {isCompleting ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Procesando...
+                  </span>
+                ) : (
+                  'Acepto y continúo'
+                )}
               </Button>
             </div>
           </motion.div>

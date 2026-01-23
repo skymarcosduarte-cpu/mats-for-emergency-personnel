@@ -620,13 +620,16 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1 pointer-events-auto">
+          <div className="flex items-center gap-1">
             {/* Close drill chat button - only for authorized users */}
             {canCloseDrillChat && !chatClosed && (
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={() => setShowCloseConfirm(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCloseConfirm(true);
+                }}
                 className="text-amber-600 hover:bg-amber-100 min-w-[44px] min-h-[44px]"
                 title="Cerrar chat del simulacro"
               >
@@ -636,8 +639,12 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={onClose}
-              className="min-w-[44px] min-h-[44px]"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onClose();
+              }}
+              className="min-w-[44px] min-h-[44px] z-[100400]"
               aria-label="Cerrar chat"
             >
               <X className="w-5 h-5" />
@@ -887,7 +894,7 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteMessageId} onOpenChange={() => setDeleteMessageId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="z-[100500]">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar mensaje?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -905,7 +912,7 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
 
       {/* Close Drill Chat Confirmation */}
       <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="z-[100500]">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-amber-600" />
