@@ -1458,6 +1458,23 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                       <Mic className="w-5 h-5" />
                     </Button>
                   </div>
+                  
+                  {/* Bottom close button for easy access */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (hasPendingDraft) {
+                        setShowDiscardDraftConfirm(true);
+                      } else {
+                        onClose();
+                      }
+                    }}
+                    className="w-full text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cerrar chat
+                  </Button>
                 </div>
               )}
             </div>
