@@ -46,6 +46,8 @@ import { ReopenCheckinButton } from '@/components/ReopenCheckinButton';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import { ComprehensiveTutorial } from '@/components/ComprehensiveTutorial';
 import { FloatingHelpButton } from '@/components/FloatingHelpButton';
+import { UIIssueReportPrompt } from '@/components/UIIssueReportPrompt';
+import { UIIssueDetectorProvider, useUIIssueContext } from '@/hooks/useUIIssueDetector';
 import { useAppState } from '@/hooks/useRealtime';
 import { useLocation } from '@/hooks/useLocation';
 import { useEarthquakeDetection } from '@/hooks/useEarthquakeDetection';
@@ -820,9 +822,26 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       {/* Floating Help Button - Always accessible */}
       <FloatingHelpButton />
 
+      {/* UI Issue Report Prompt */}
+      <UIIssueReportPromptWrapper />
+
     </div>
   );
 }
+
+// Wrapper to use the context inside AppContent
+const UIIssueReportPromptWrapper = () => {
+  const { detectedIssue, showReportPrompt, dismissPrompt, clearIssue } = useUIIssueContext();
+  
+  return (
+    <UIIssueReportPrompt
+      issue={detectedIssue}
+      show={showReportPrompt}
+      onDismiss={dismissPrompt}
+      onClear={clearIssue}
+    />
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -836,7 +855,9 @@ const App = () => (
           {/* Main app with internal messages provider */}
           <Route path="/" element={
             <InternalMessagesProvider>
-              <AppContent />
+              <UIIssueDetectorProvider>
+                <AppContent />
+              </UIIssueDetectorProvider>
             </InternalMessagesProvider>
           } />
           <Route path="*" element={<Navigate to="/" replace />} />
