@@ -15,6 +15,7 @@ import { compressImages } from '@/lib/imageCompress';
 import { createAudioRecorder, formatDuration, type AudioRecorder } from '@/lib/audioUtils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { diagLog } from '@/lib/diagnosticLogger';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -207,9 +208,18 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
     }
   };
 
+  // Log component lifecycle
+  useEffect(() => {
+    if (isOpen) {
+      diagLog.dialogOpen('CommunityChat', { contextType, contextId, title });
+    }
+  }, [isOpen, contextType, contextId, title]);
+
   // Subscribe to realtime updates
   useEffect(() => {
     if (!isOpen || !user?.id) return;
+    
+    diagLog.info('CommunityChat', 'Subscribing to realtime updates', { contextType, contextId });
     
     fetchMessages();
     fetchOnlineCount();
@@ -259,6 +269,7 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
     const onlineInterval = setInterval(fetchOnlineCount, 30000);
     
     return () => {
+      diagLog.info('CommunityChat', 'Unsubscribing from realtime updates');
       supabase.removeChannel(channel);
       clearInterval(onlineInterval);
     };
@@ -628,6 +639,7 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
                 size="icon" 
                 onClick={(e) => {
                   e.stopPropagation();
+                  diagLog.buttonClick('Close Drill Chat', 'CommunityChat Header');
                   setShowCloseConfirm(true);
                 }}
                 className="text-amber-600 hover:bg-amber-100 min-w-[44px] min-h-[44px]"
@@ -642,6 +654,7 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
+                diagLog.buttonClick('Close Chat (X)', 'CommunityChat Header', { contextType, title });
                 onClose();
               }}
               className="min-w-[44px] min-h-[44px] z-[100400]"

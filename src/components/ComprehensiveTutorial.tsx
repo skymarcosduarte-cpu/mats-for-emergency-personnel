@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { diagLog } from '@/lib/diagnosticLogger';
 import { 
   AlertTriangle, 
   MapPin, 
@@ -352,20 +353,31 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
 
   const handleComplete = async () => {
     // Prevent multiple clicks
-    if (isCompleting || isExiting) return;
+    if (isCompleting || isExiting) {
+      diagLog.warn('Tutorial', 'handleComplete called while already completing', { isCompleting, isExiting });
+      return;
+    }
+    
+    diagLog.buttonClick('Acepto y continúo', 'Tutorial Disclaimer Modal');
     setIsCompleting(true);
     
     // Mark tutorial as completed
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({ tutorial_disclaimer_accepted_at: new Date().toISOString() })
           .eq('id', user.id);
+        
+        if (error) {
+          diagLog.error('Tutorial', 'Failed to save tutorial completion', { error: error.message });
+        } else {
+          diagLog.info('Tutorial', 'Tutorial completion saved to DB');
+        }
       }
     } catch (error) {
-      console.error('Error saving tutorial completion:', error);
+      diagLog.error('Tutorial', 'Exception saving tutorial completion', { error: String(error) });
       // Continue anyway - don't block the user
     }
 
@@ -374,11 +386,13 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
     });
 
     // Start exit animation FIRST
+    diagLog.info('Tutorial', 'Starting exit animation');
     setIsExiting(true);
     setShowDisclaimer(false);
     
     // Fire confetti ONCE after a small delay
     setTimeout(() => {
+      diagLog.info('Tutorial', 'Firing confetti');
       confetti({
         particleCount: 150,
         spread: 100,
@@ -389,15 +403,30 @@ export const ComprehensiveTutorial: React.FC<ComprehensiveTutorialProps> = ({
     
     // Call onComplete after animation
     setTimeout(() => {
+      diagLog.info('Tutorial', 'Calling onComplete callback');
       onComplete();
     }, 400);
   };
 
   const goToSection = (sectionIndex: number) => {
+    diagLog.action('Tutorial', `Navigate to section ${sectionIndex}`, { sectionTitle: TUTORIAL_SECTIONS[sectionIndex]?.title });
     setCurrentSection(sectionIndex);
     setCurrentStep(0);
     setShowTableOfContents(false);
   };
+
+  // Log when disclaimer modal opens
+  useEffect(() => {
+    if (showDisclaimer) {
+      diagLog.dialogOpen('Tutorial Disclaimer');
+    }
+  }, [showDisclaimer]);
+
+  // Log component mount
+  useEffect(() => {
+    diagLog.mount('ComprehensiveTutorial');
+    return () => diagLog.unmount('ComprehensiveTutorial');
+  }, []);
 
   // Keyboard navigation
   useEffect(() => {

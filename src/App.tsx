@@ -78,10 +78,16 @@ import { useIOSKeyboardFix } from '@/hooks/useIOSKeyboardFix';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { UserRole, USGSEarthquake, PanicType } from '@/types';
+import { diagLog } from '@/lib/diagnosticLogger';
 
 const queryClient = new QueryClient();
 
 function AppContent() {
+  // Log session start on first render
+  useEffect(() => {
+    diagLog.sessionStart();
+  }, []);
+
   // Auto-update on app entry
   useAutoUpdate();
   
