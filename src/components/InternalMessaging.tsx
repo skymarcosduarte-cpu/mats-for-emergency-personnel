@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { diagLog } from '@/lib/diagnosticLogger';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -134,12 +135,23 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
     realtimeStatus
   } = useInternalMessages();
   
-  // Refetch messages when modal opens to ensure fresh data
+  // Log component lifecycle and refetch when modal opens
   useEffect(() => {
     if (isOpen) {
+      diagLog.dialogOpen('InternalMessaging', { 
+        initialUserId, 
+        initialUserName,
+        hasUser: !!user 
+      });
       refetch();
     }
-  }, [isOpen, refetch]);
+    
+    return () => {
+      if (isOpen) {
+        diagLog.dialogClose('InternalMessaging');
+      }
+    };
+  }, [isOpen, refetch, initialUserId, initialUserName, user]);
   
   // Clear conversation state
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -1200,8 +1212,21 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0"
-              onClick={onClose}
+              className="h-8 w-8 p-0 z-[100]"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                diagLog.buttonClick('Close Chat (Header X)', 'InternalMessaging', { 
+                  selectedUserId, 
+                  selectedUserName,
+                  hasPendingDraft 
+                });
+                if (hasPendingDraft) {
+                  setShowDiscardDraftConfirm(true);
+                } else {
+                  onClose();
+                }
+              }}
             >
               <X className="w-4 h-4" />
             </Button>
@@ -1464,6 +1489,11 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => {
+                      diagLog.buttonClick('Close Chat (Bottom)', 'InternalMessaging', { 
+                        selectedUserId, 
+                        selectedUserName,
+                        hasPendingDraft 
+                      });
                       if (hasPendingDraft) {
                         setShowDiscardDraftConfirm(true);
                       } else {
