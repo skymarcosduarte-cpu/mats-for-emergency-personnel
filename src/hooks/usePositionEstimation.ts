@@ -137,13 +137,10 @@ export function usePositionEstimation() {
     const timeSinceUpdateMs = now - lastUpdate;
     const timeSinceUpdateMinutes = Math.floor(timeSinceUpdateMs / (1000 * 60));
     
-    // If data is fresh (less than 2 minutes old and has speed), no estimation needed
-    if (timeSinceUpdateMs < STALE_THRESHOLD_MS && currentSpeed !== null && currentSpeed > 1) {
-      return null;
-    }
-    
-    // If current speed is > 5 km/h (1.4 m/s), GPS is working - no estimation needed
-    if (currentSpeed !== null && currentSpeed > 1.4) {
+    // If data is fresh (<2 minutes), no estimation needed.
+    // NOTE: We intentionally do NOT block estimation just because the last reported speed was high;
+    // we estimate based on staleness (time since last update) to avoid "frozen" markers.
+    if (timeSinceUpdateMs < STALE_THRESHOLD_MS) {
       return null;
     }
     
@@ -160,8 +157,12 @@ export function usePositionEstimation() {
       };
     }
     
-    // Calculate average speed from history
-    const avgSpeedKmh = calculateAverageSpeed(positionHistory || []) || DEFAULT_SPEED_KMH;
+    // Calculate average speed from history; fall back to last known speed if available.
+    const currentSpeedKmh = currentSpeed !== null ? currentSpeed * 3.6 : null;
+    const avgSpeedKmh =
+      calculateAverageSpeed(positionHistory || []) ||
+      (currentSpeedKmh && currentSpeedKmh >= MIN_SPEED_FOR_ESTIMATION ? currentSpeedKmh : null) ||
+      DEFAULT_SPEED_KMH;
     
     // Calculate distance that should have been traveled
     const timeSinceUpdateHours = timeSinceUpdateMs / (1000 * 60 * 60);
@@ -235,18 +236,20 @@ export function applyPositionEstimation(
   if (!trip.current_lat || !trip.current_lng) {
     return null;
   }
+
+  // Without an update timestamp we can't determine staleness reliably.
+  if (!trip.location_updated_at) {
+    return null;
+  }
   
   const now = Date.now();
   const lastUpdate = trip.location_updated_at ? new Date(trip.location_updated_at).getTime() : 0;
   const timeSinceUpdateMs = now - lastUpdate;
   
   // Fresh data - no estimation needed
-  if (timeSinceUpdateMs < STALE_THRESHOLD_MS && trip.current_speed && trip.current_speed > 1) {
-    return null;
-  }
-  
-  // Speed indicates movement - no estimation needed
-  if (trip.current_speed && trip.current_speed > 1.4) {
+  // NOTE: We intentionally do NOT block estimation just because the last reported speed was high.
+  // If the GPS hasn't updated in >2 minutes, the marker will look frozen unless we estimate.
+  if (timeSinceUpdateMs < STALE_THRESHOLD_MS) {
     return null;
   }
   
@@ -270,8 +273,14 @@ export function applyPositionEstimation(
     };
   }
   
-  // Calculate average speed
-  const avgSpeedKmh = calculateAverageSpeed(positionHistory || []) || DEFAULT_SPEED_KMH;
+  // Calculate average speed; fall back to last known speed if available.
+  const currentSpeedKmh = trip.current_speed !== null && trip.current_speed !== undefined
+    ? trip.current_speed * 3.6
+    : null;
+  const avgSpeedKmh =
+    calculateAverageSpeed(positionHistory || []) ||
+    (currentSpeedKmh && currentSpeedKmh >= MIN_SPEED_FOR_ESTIMATION ? currentSpeedKmh : null) ||
+    DEFAULT_SPEED_KMH;
   
   // Calculate estimated travel distance
   const timeSinceUpdateHours = timeSinceUpdateMs / (1000 * 60 * 60);
