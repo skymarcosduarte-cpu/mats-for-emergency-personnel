@@ -155,7 +155,12 @@ export function useCommunityTripsHistory() {
       });
 
       setTrips(filteredTrips);
-      console.log('[useCommunityTripsHistory] Loaded', filteredTrips.length, 'trips from last 8 hours');
+      console.log('[useCommunityTripsHistory] Loaded', filteredTrips.length, 'trips from last 8 hours', {
+        activeCount: activeRes.data?.length ?? 0,
+        completedCount: completedRes.data?.length ?? 0,
+        cutoffIso,
+        arrivedStatuses: filteredTrips.filter(t => t.status === 'ARRIVED').map(t => ({ id: t.id.slice(0,8), arrived: t.arrived_at }))
+      });
     } catch (err) {
       console.error('[useCommunityTripsHistory] Error fetching trips:', err);
       setError('Error al cargar historial de viajes');
