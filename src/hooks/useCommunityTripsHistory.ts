@@ -46,35 +46,66 @@ export function useCommunityTripsHistory() {
       // Calculate the cutoff time (8 hours ago)
       const cutoffTime = new Date();
       cutoffTime.setHours(cutoffTime.getHours() - HISTORY_HOURS);
+      const cutoffIso = cutoffTime.toISOString();
 
-      // Fetch trips from last 8 hours with status ACTIVE, ARRIVED, or CANCELLED
-      // Using created_at for active trips, arrived_at for completed
-      const { data: tripsData, error: tripsError } = await supabase
-        .from('transit_trips')
-        .select(`
-          id,
-          user_id,
-          transit_type,
-          origin,
-          destination,
-          eta,
-          status,
-          created_at,
-          arrived_at,
-          origin_lat,
-          origin_lng,
-          destination_lat,
-          destination_lng,
-          vehicle_type,
-          plates,
-          companions,
-          airline,
-          flight_number
-        `)
-        .or(`status.eq.ACTIVE,and(status.in.(ARRIVED,CANCELLED),arrived_at.gte.${cutoffTime.toISOString()})`)
-        .order('created_at', { ascending: false });
+      // Fetch trips from last 8 hours with status ACTIVE, ARRIVED, or CANCELLED.
+      // IMPORTANT: We intentionally avoid a single `.or(...)` with an interpolated ISO timestamp,
+      // because it can be brittle in URL filter parsing. Two queries are clearer and reliable.
+      const selectFields = `
+        id,
+        user_id,
+        transit_type,
+        origin,
+        destination,
+        eta,
+        status,
+        created_at,
+        arrived_at,
+        origin_lat,
+        origin_lng,
+        destination_lat,
+        destination_lng,
+        vehicle_type,
+        plates,
+        companions,
+        airline,
+        flight_number
+      `;
 
-      if (tripsError) throw tripsError;
+      const [activeRes, completedRes] = await Promise.all([
+        supabase
+          .from('transit_trips')
+          .select(selectFields)
+          .eq('status', 'ACTIVE')
+          .gte('created_at', cutoffIso)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('transit_trips')
+          .select(selectFields)
+          .in('status', ['ARRIVED', 'CANCELLED'])
+          .gte('arrived_at', cutoffIso)
+          .order('arrived_at', { ascending: false }),
+      ]);
+
+      if (activeRes.error) throw activeRes.error;
+      if (completedRes.error) throw completedRes.error;
+
+      const combined = [...(activeRes.data ?? []), ...(completedRes.data ?? [])];
+
+      // De-duplicate by id (defensive)
+      const seen = new Set<string>();
+      const tripsData = combined.filter((t) => {
+        if (seen.has(t.id)) return false;
+        seen.add(t.id);
+        return true;
+      });
+
+      // Sort newest first using arrived_at if present, otherwise created_at
+      tripsData.sort((a, b) => {
+        const aTime = new Date((a.arrived_at ?? a.created_at) as string).getTime();
+        const bTime = new Date((b.arrived_at ?? b.created_at) as string).getTime();
+        return bTime - aTime;
+      });
 
       if (!tripsData || tripsData.length === 0) {
         setTrips([]);
