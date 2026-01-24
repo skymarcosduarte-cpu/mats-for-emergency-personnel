@@ -161,6 +161,25 @@ function parseRSSItem(itemXml: string, source: string): RSSItem | null {
   }
 }
 
+// Fix mojibake / broken encoding by trying to repair ISO-8859-1 decoded as UTF-8
+function repairEncoding(text: string): string {
+  // Common ISO-8859-1 to UTF-8 mojibake patterns
+  const repairs: Array<[RegExp, string]> = [
+    [/Ã¡/g, "á"], [/Ã©/g, "é"], [/Ã­/g, "í"], [/Ã³/g, "ó"], [/Ãº/g, "ú"],
+    [/Ã±/g, "ñ"], [/Ã'/g, "Ñ"], [/Ã¼/g, "ü"],
+    [/Ã /g, "à"], [/Ã¨/g, "è"], [/Ã¬/g, "ì"], [/Ã²/g, "ò"], [/Ã¹/g, "ù"],
+    [/Ã„/g, "Ä"], [/Ã–/g, "Ö"], [/Ãœ/g, "Ü"],
+    [/Â¡/g, "¡"], [/Â¿/g, "¿"], [/Âº/g, "º"], [/Âª/g, "ª"],
+  ];
+  let result = text;
+  for (const [pattern, replacement] of repairs) {
+    result = result.replace(pattern, replacement);
+  }
+  // Remove replacement character (indicates broken encoding)
+  result = result.replace(/\uFFFD/g, "");
+  return result;
+}
+
 async function fetchFeed(url: string, source: string): Promise<RSSItem[]> {
   try {
     console.log(`Fetching feed: ${source} - ${url}`);
@@ -183,7 +202,37 @@ async function fetchFeed(url: string, source: string): Promise<RSSItem[]> {
       return [];
     }
 
-    const text = await response.text();
+    // Detect encoding from Content-Type or XML declaration
+    const contentType = response.headers.get('content-type') || '';
+    const isLatin1 = contentType.toLowerCase().includes('iso-8859-1') ||
+                     contentType.toLowerCase().includes('latin1');
+
+    let text: string;
+    if (isLatin1) {
+      // Decode as ISO-8859-1
+      const buffer = await response.arrayBuffer();
+      text = new TextDecoder('iso-8859-1').decode(buffer);
+    } else {
+      text = await response.text();
+      // Check XML declaration for encoding
+      const xmlEncodingMatch = text.match(/<\?xml[^>]+encoding=["']([^"']+)["']/i);
+      if (xmlEncodingMatch) {
+        const declared = xmlEncodingMatch[1].toLowerCase();
+        if (declared === 'iso-8859-1' || declared === 'latin1' || declared === 'windows-1252') {
+          // Re-fetch and decode properly
+          const buffer = await (await fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; EmergencyNewsBot/1.0)',
+              'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+            },
+          })).arrayBuffer();
+          text = new TextDecoder(declared).decode(buffer);
+        }
+      }
+    }
+    
+    // Apply encoding repair as fallback for any remaining mojibake
+    text = repairEncoding(text);
     
     // Extract items from RSS
     const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/gi;
