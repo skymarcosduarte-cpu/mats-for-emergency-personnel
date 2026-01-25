@@ -8,7 +8,8 @@ import {
   AlertCircle,
   Clock,
   Loader2,
-  Filter
+  Filter,
+  Radio
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -327,6 +328,36 @@ export const BreakingNewsSection: React.FC = () => {
       </CardHeader>
       
       <CardContent className="space-y-2">
+        {/* N+ Streaming en vivo link */}
+        <a
+          href="https://www.youtube.com/live/p2AzyIEuFak?si=L9WTy72PmRc9YTai"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block group"
+        >
+          <div className={cn(
+            "p-3 rounded-lg border-2 border-red-500/50 bg-gradient-to-r from-red-500/10 to-orange-500/10",
+            "hover:border-red-500 hover:shadow-md",
+            "transition-all duration-200 active:scale-[0.99]"
+          )}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-red-500/20 animate-pulse">
+                <Radio className="w-5 h-5 text-red-500" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-red-500 uppercase tracking-wide">EN VIVO</span>
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                </div>
+                <h3 className="text-base font-bold text-foreground group-hover:text-red-500 transition-colors">
+                  N+ Streaming en vivo
+                </h3>
+              </div>
+              <ExternalLink className="w-5 h-5 text-red-500/70 group-hover:text-red-500 transition-colors" />
+            </div>
+          </div>
+        </a>
+
         {loading && validItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin mb-2" />
