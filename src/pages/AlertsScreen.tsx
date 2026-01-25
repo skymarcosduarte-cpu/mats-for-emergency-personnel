@@ -407,6 +407,41 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         }
       }
 
+      // Send email notifications to "usuarios de guardia"
+      if (newRequest) {
+        try {
+          const { data: session } = await supabase.auth.getSession();
+          if (session?.session?.access_token) {
+            fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-alert-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.session.access_token}`,
+              },
+              body: JSON.stringify({
+                alertType: 'HELP_REQUEST',
+                alertId: newRequest.id,
+                helpKind: 'SISMO_AYUDA_14',
+                creatorName: user?.email?.split('@')[0] || 'Usuario',
+                message: help14Message || 'Solicitud de ayuda por sismo',
+                lat: position.lat,
+                lng: position.lng,
+              }),
+            }).then(res => {
+              if (res.ok) {
+                console.log('[AlertsScreen] Email notification sent successfully');
+              } else {
+                console.warn('[AlertsScreen] Email notification failed:', res.status);
+              }
+            }).catch(err => {
+              console.warn('[AlertsScreen] Email notification error:', err);
+            });
+          }
+        } catch (emailErr) {
+          console.warn('[AlertsScreen] Error sending email notification:', emailErr);
+        }
+      }
+
       toast.success('¡Alerta enviada!', {
         description: 'Se notificó a la comunidad dentro de la app',
         duration: 5000,
