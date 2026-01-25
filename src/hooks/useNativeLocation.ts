@@ -23,8 +23,8 @@ interface NativeLocationState {
 }
 
 // Minimum distance to trigger an update (in meters)
-// Reduced from 50m to 15m for more responsive map updates
-const MIN_DISTANCE_METERS = 15;
+// Reduced from 15m to 5m for more responsive map updates and to detect small movements
+const MIN_DISTANCE_METERS = 5;
 // Minimum time between updates (in ms)
 // Reduced from 10s to 3s for faster location updates
 const MIN_UPDATE_INTERVAL_MS = 3000;
@@ -62,6 +62,31 @@ export function useNativeLocation() {
     return R * c;
   }, []);
 
+  // Calculate speed from position difference when GPS doesn't report it
+  const calculateSpeedFromPositions = useCallback((
+    currentLat: number,
+    currentLng: number,
+    lastLat: number,
+    lastLng: number,
+    timeDiffMs: number
+  ): number | null => {
+    if (timeDiffMs <= 0) return null;
+    
+    const distanceMeters = calculateDistance(lastLat, lastLng, currentLat, currentLng);
+    const timeDiffSeconds = timeDiffMs / 1000;
+    
+    // Speed in m/s
+    const speedMs = distanceMeters / timeDiffSeconds;
+    
+    // Filter out unrealistic speeds (> 200 km/h = 55.5 m/s)
+    if (speedMs > 55.5) return null;
+    
+    // Filter out noise (< 0.1 m/s = 0.36 km/h, likely stationary)
+    if (speedMs < 0.1) return 0;
+    
+    return speedMs;
+  }, [calculateDistance]);
+
   // Sync position to database
   const syncPosition = useCallback(async (position: GeoPosition) => {
     if (!user) return;
@@ -79,6 +104,28 @@ export function useNativeLocation() {
       }
     }
 
+    // Calculate speed from position difference if GPS doesn't report it or reports 0
+    let effectiveSpeed = position.speed;
+    if (lastPos && lastUpdateRef.current > 0) {
+      const timeDiffMs = now - lastUpdateRef.current;
+      const gpsSpeedInvalid = position.speed === null || position.speed === undefined || position.speed < 0.1;
+      
+      if (gpsSpeedInvalid && timeDiffMs > 0) {
+        const calculatedSpeed = calculateSpeedFromPositions(
+          position.lat,
+          position.lng,
+          lastPos.lat,
+          lastPos.lng,
+          timeDiffMs
+        );
+        
+        if (calculatedSpeed !== null) {
+          effectiveSpeed = calculatedSpeed;
+          console.log(`[NativeLocation] Calculated speed from positions: ${(calculatedSpeed * 3.6).toFixed(1)} km/h`);
+        }
+      }
+    }
+
     try {
       await supabase
         .from('user_locations')
@@ -88,7 +135,7 @@ export function useNativeLocation() {
           lng: position.lng,
           accuracy: position.accuracy,
           heading: position.heading,
-          speed: position.speed,
+          speed: effectiveSpeed,
           is_online: true,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
@@ -100,7 +147,7 @@ export function useNativeLocation() {
     } catch (error) {
       console.error('[NativeLocation] Sync failed:', error);
     }
-  }, [user, calculateDistance]);
+  }, [user, calculateDistance, calculateSpeedFromPositions]);
 
   // Convert Capacitor Position to GeoPosition
   const convertPosition = useCallback((pos: Position): GeoPosition => ({

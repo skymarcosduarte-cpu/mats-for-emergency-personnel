@@ -23,8 +23,8 @@ interface UseTripPositionHistoryOptions {
 export function useTripPositionHistory({
   tripId,
   userId,
-  minDistanceMeters = 50, // Default: record if moved more than 50m
-  minIntervalMs = 10000, // Default: minimum 10 seconds between recordings
+  minDistanceMeters = 5, // Reduced from 50m to 5m for more responsive tracking
+  minIntervalMs = 3000, // Reduced from 10s to 3s for faster updates
 }: UseTripPositionHistoryOptions) {
   const [history, setHistory] = useState<PositionRecord[]>([]);
   const [loading, setLoading] = useState(false);
