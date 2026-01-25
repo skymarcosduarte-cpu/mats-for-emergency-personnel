@@ -1814,6 +1814,34 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             </span>
                           </div>
                         )}
+                        
+                        {/* Share arrival button for completed trips */}
+                        {isCompleted && trip.arrived_at && (
+                          <div className="mt-3">
+                            <ShareArrivalToWhatsApp
+                              trip={{
+                                id: trip.id,
+                                transitType: trip.transit_type,
+                                origin: trip.origin,
+                                destination: trip.destination,
+                                eta: trip.eta,
+                                arrivedAt: trip.arrived_at,
+                                plates: trip.plates,
+                                vehicleType: trip.vehicle_type,
+                                companions: trip.companions,
+                                airline: trip.airline,
+                                flightNumber: trip.flight_number,
+                                originLat: trip.origin_lat,
+                                originLng: trip.origin_lng,
+                                destinationLat: trip.destination_lat,
+                                destinationLng: trip.destination_lng,
+                                nickname: trip.nickname,
+                              }}
+                              size="sm"
+                              showLabel={true}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
