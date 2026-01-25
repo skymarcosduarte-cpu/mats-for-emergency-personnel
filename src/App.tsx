@@ -537,6 +537,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
           
           const { data: session } = await supabase.auth.getSession();
           if (session?.session?.access_token && insertedEvent?.id) {
+            // Send push broadcast notifications
             fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-panic-broadcast`, {
               method: 'POST',
               headers: {
@@ -559,6 +560,32 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
               }
             }).catch(err => {
               console.warn('[handlePanicTriggered] Push broadcast error:', err);
+            });
+
+            // Send email notifications to "usuarios de guardia"
+            fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-alert-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.session.access_token}`,
+              },
+              body: JSON.stringify({
+                alertType: 'PANIC',
+                alertId: insertedEvent.id,
+                panicType: type,
+                creatorName,
+                message,
+                lat,
+                lng,
+              }),
+            }).then(res => {
+              if (res.ok) {
+                console.log('[handlePanicTriggered] Email notification sent successfully');
+              } else {
+                console.warn('[handlePanicTriggered] Email notification failed:', res.status);
+              }
+            }).catch(err => {
+              console.warn('[handlePanicTriggered] Email notification error:', err);
             });
           }
         } catch (pushErr) {

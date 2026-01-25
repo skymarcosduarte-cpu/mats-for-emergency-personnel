@@ -334,6 +334,40 @@ export function SeismicAlert({
           } catch (notifyError) {
             console.error('Error notifying nearby users:', notifyError);
           }
+
+          // Send email notifications to "usuarios de guardia"
+          try {
+            const { data: session } = await supabase.auth.getSession();
+            const emailSupabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            if (session?.session?.access_token && emailSupabaseUrl) {
+              fetch(`${emailSupabaseUrl}/functions/v1/notify-alert-email`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.session.access_token}`,
+                },
+                body: JSON.stringify({
+                  alertType: 'HELP_REQUEST',
+                  alertId: helpData.id,
+                  helpKind: 'SISMO_AYUDA_14',
+                  creatorName: user?.email?.split('@')[0] || 'Usuario',
+                  message: helpMessage || `Sismo M${mag.toFixed(1)} - Ayuda necesaria`,
+                  lat: position.lat,
+                  lng: position.lng,
+                }),
+              }).then(res => {
+                if (res.ok) {
+                  console.log('[SeismicAlert] Email notification sent successfully');
+                } else {
+                  console.warn('[SeismicAlert] Email notification failed:', res.status);
+                }
+              }).catch(err => {
+                console.warn('[SeismicAlert] Email notification error:', err);
+              });
+            }
+          } catch (emailErr) {
+            console.warn('[SeismicAlert] Error sending email notification:', emailErr);
+          }
         }
       }
 

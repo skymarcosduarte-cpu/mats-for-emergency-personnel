@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_email_recipients: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          is_active: boolean
+          name: string
+          notify_help_request: boolean
+          notify_panic: boolean
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notify_help_request?: boolean
+          notify_panic?: boolean
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notify_help_request?: boolean
+          notify_panic?: boolean
+        }
+        Relationships: []
+      }
       app_releases: {
         Row: {
           id: string
