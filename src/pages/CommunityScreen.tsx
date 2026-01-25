@@ -1290,10 +1290,19 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || uploadingVideo || !formData.event_type || !formData.title.trim()}
-                className="flex-1"
+                className="flex-1 min-w-[140px]"
               >
-                {(submitting || uploadingVideo) && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {uploadingVideo ? 'Subiendo video...' : editingEvent ? 'Guardar' : 'Publicar'}
+                {(submitting || uploadingVideo) ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    {uploadingVideo ? 'Subiendo video...' : selectedImages.length > 0 ? 'Subiendo imágenes...' : 'Publicando...'}
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    {editingEvent ? 'Guardar cambios' : 'Publicar aviso'}
+                  </>
+                )}
               </Button>
             </div>
           </div>
