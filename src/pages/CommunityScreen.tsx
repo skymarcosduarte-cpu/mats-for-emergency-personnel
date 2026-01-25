@@ -354,8 +354,17 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   };
 
   const handleSubmit = async () => {
-    if (!formData.event_type || !formData.title.trim()) {
-      toast.error('Completa los campos obligatorios');
+    console.log('[CommunityScreen] handleSubmit called', { formData, selectedImages: selectedImages.length, selectedVideo: !!selectedVideo });
+    
+    if (!formData.event_type) {
+      toast.error('Selecciona un tipo de evento');
+      console.log('[CommunityScreen] Validation failed: no event_type');
+      return;
+    }
+    
+    if (!formData.title.trim()) {
+      toast.error('Ingresa un título');
+      console.log('[CommunityScreen] Validation failed: no title');
       return;
     }
 
@@ -436,9 +445,10 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
       toast.success('Evento publicado');
       setShowNewDialog(false);
       resetForm();
-    } catch (err) {
-      console.error('Error saving event:', err);
-      toast.error(editingEvent ? 'Error al actualizar' : 'Error al publicar');
+    } catch (err: any) {
+      console.error('[CommunityScreen] Error saving event:', err);
+      const errorMessage = err?.message || (editingEvent ? 'Error al actualizar' : 'Error al publicar');
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }

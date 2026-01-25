@@ -28,7 +28,7 @@ export interface CommunityTripHistory {
   is_delayed?: boolean;
 }
 
-const HISTORY_HOURS = 8;
+const HISTORY_HOURS = 24;
 
 export function useCommunityTripsHistory() {
   const [trips, setTrips] = useState<CommunityTripHistory[]>([]);
