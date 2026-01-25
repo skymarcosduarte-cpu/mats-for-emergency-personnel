@@ -4,6 +4,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge, Mic, MicOff, MessageCircle, ArrowLeft, Share2 } from 'lucide-react';
 import { ShareTripToWhatsApp } from '@/components/ShareTripToWhatsApp';
+import { ShareArrivalToWhatsApp } from '@/components/ShareArrivalToWhatsApp';
 import { GpsStatusBanner } from '@/components/GpsStatusBanner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -207,6 +208,9 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
   // Community trip map dialog state
   const [selectedCommunityTrip, setSelectedCommunityTrip] = useState<ActiveTrip | null>(null);
+
+  // Arrival share dialog state
+  const [arrivalDialogTrip, setArrivalDialogTrip] = useState<TransitTrip | null>(null);
 
   const { position, getCurrentPosition, startWatching, stopWatching, watching, loading: locationLoading, error: locationError } = useLocation({ autoWatch: false });
   const { reports, refetch: refetchReports } = useRoadReports();
@@ -1364,12 +1368,13 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                               className="text-xs"
                               onClick={async () => {
                                 try {
+                                  const arrivedAt = new Date().toISOString();
                                   // Update trip status - use 'ARRIVED' to match DB constraint
                                   const { error: updateError } = await supabase
                                     .from('transit_trips')
                                     .update({ 
                                       status: 'ARRIVED', 
-                                      arrived_at: new Date().toISOString() 
+                                      arrived_at: arrivedAt 
                                     })
                                     .eq('id', trip.id);
                                   
@@ -1395,6 +1400,9 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                   
                                   toast.success('¡Viaje completado! Todos los usuarios activos fueron notificados.');
                                   fetchMyTrips();
+                                  
+                                  // Open arrival share dialog
+                                  setArrivalDialogTrip({ ...trip, arrived_at: arrivedAt, status: 'ARRIVED' });
                                 } catch (e) {
                                   console.error('Error completing trip:', e);
                                   toast.error('Error al completar viaje');
@@ -2531,6 +2539,57 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                 Actualizar
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Arrival share dialog */}
+      <Dialog open={!!arrivalDialogTrip} onOpenChange={(open) => !open && setArrivalDialogTrip(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-safe">
+              <CheckCircle className="w-5 h-5" />
+              ¡Llegaste a tu destino!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              ¿Quieres compartir tu llegada en WhatsApp para avisar a tus contactos?
+            </p>
+            {arrivalDialogTrip && (
+              <div className="flex flex-col gap-2">
+                <ShareArrivalToWhatsApp
+                  trip={{
+                    id: arrivalDialogTrip.id,
+                    transitType: arrivalDialogTrip.transit_type,
+                    origin: arrivalDialogTrip.origin,
+                    destination: arrivalDialogTrip.destination,
+                    eta: arrivalDialogTrip.eta,
+                    arrivedAt: arrivalDialogTrip.arrived_at || new Date().toISOString(),
+                    plates: arrivalDialogTrip.plates,
+                    vehicleType: arrivalDialogTrip.vehicle_type,
+                    companions: arrivalDialogTrip.companions,
+                    airline: arrivalDialogTrip.airline,
+                    flightNumber: arrivalDialogTrip.flight_number,
+                    departureAirport: arrivalDialogTrip.departure_airport,
+                    arrivalAirport: arrivalDialogTrip.arrival_airport,
+                    originLat: arrivalDialogTrip.origin_lat,
+                    originLng: arrivalDialogTrip.origin_lng,
+                    destinationLat: arrivalDialogTrip.destination_lat,
+                    destinationLng: arrivalDialogTrip.destination_lng,
+                  }}
+                  onShared={() => setArrivalDialogTrip(null)}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setArrivalDialogTrip(null)}
+                  className="text-muted-foreground"
+                >
+                  Ahora no
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
