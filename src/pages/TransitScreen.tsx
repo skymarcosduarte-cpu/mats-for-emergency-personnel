@@ -1640,7 +1640,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           </div>
         </TabsContent>
 
-        {/* History Tab - Community trips from last 8 hours */}
+        {/* History Tab - Community trips from last 24 hours */}
         <TabsContent value="history" className="space-y-3 mt-4">
           {/* Info banner */}
           <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-sm">
@@ -1649,8 +1649,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               Actividad de viajes de la comunidad
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Muestra viajes activos, atrasados y concluidos de las últimas 8 horas.
-              El historial se limpia automáticamente cada 8 horas.
+              Muestra viajes activos, atrasados y concluidos de las últimas 24 horas.
+              El historial se limpia automáticamente cada 24 horas.
             </p>
             <p className="text-[10px] text-muted-foreground mt-1">
               Última limpieza: {lastCleared.toLocaleString('es-MX', { 
@@ -1702,7 +1702,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                 <div className="text-center py-12 text-muted-foreground">
                   <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>No hay viajes recientes de la comunidad</p>
-                  <p className="text-xs mt-1">Los viajes de las últimas 8 horas aparecerán aquí</p>
+                  <p className="text-xs mt-1">Los viajes de las últimas 24 horas aparecerán aquí</p>
                 </div>
               );
             }

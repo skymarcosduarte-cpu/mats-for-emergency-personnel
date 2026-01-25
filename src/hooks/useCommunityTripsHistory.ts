@@ -1,4 +1,4 @@
-// Hook to fetch community trips history (last 8 hours) including active, delayed, and completed trips
+// Hook to fetch community trips history (last 24 hours) including active, delayed, and completed trips
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -43,12 +43,12 @@ export function useCommunityTripsHistory() {
       }
       setError(null);
 
-      // Calculate the cutoff time (8 hours ago)
+      // Calculate the cutoff time (24 hours ago)
       const cutoffTime = new Date();
       cutoffTime.setHours(cutoffTime.getHours() - HISTORY_HOURS);
       const cutoffIso = cutoffTime.toISOString();
 
-      // Fetch trips from last 8 hours with status ACTIVE, ARRIVED, or CANCELLED.
+      // Fetch trips from last 24 hours with status ACTIVE, ARRIVED, or CANCELLED.
       // IMPORTANT: We intentionally avoid a single `.or(...)` with an interpolated ISO timestamp,
       // because it can be brittle in URL filter parsing. Two queries are clearer and reliable.
       const selectFields = `
@@ -142,11 +142,11 @@ export function useCommunityTripsHistory() {
       });
 
       // Filter to only show:
-      // 1. Active trips (always show within 8h of creation)
-      // 2. Arrived/Cancelled trips from the last 8 hours
+      // 1. Active trips (always show within 24h of creation)
+      // 2. Arrived/Cancelled trips from the last 24 hours
       const filteredTrips = tripsWithDetails.filter(trip => {
         if (trip.status === 'ACTIVE') {
-          // Show active trips created in last 8 hours
+          // Show active trips created in last 24 hours
           const createdAt = new Date(trip.created_at);
           return createdAt >= cutoffTime;
         }
@@ -155,7 +155,7 @@ export function useCommunityTripsHistory() {
       });
 
       setTrips(filteredTrips);
-      console.log('[useCommunityTripsHistory] Loaded', filteredTrips.length, 'trips from last 8 hours', {
+      console.log('[useCommunityTripsHistory] Loaded', filteredTrips.length, 'trips from last 24 hours', {
         activeCount: activeRes.data?.length ?? 0,
         completedCount: completedRes.data?.length ?? 0,
         cutoffIso,
@@ -174,14 +174,14 @@ export function useCommunityTripsHistory() {
     fetchCommunityTrips(false);
   }, [fetchCommunityTrips]);
 
-  // Clear old data and refresh every 8 hours
+  // Clear old data and refresh every 24 hours
   useEffect(() => {
     const checkAndClear = () => {
       const now = new Date();
       const hoursSinceLastClear = (now.getTime() - lastCleared.getTime()) / (1000 * 60 * 60);
       
       if (hoursSinceLastClear >= HISTORY_HOURS) {
-        console.log('[useCommunityTripsHistory] Clearing history after 8 hours');
+        console.log('[useCommunityTripsHistory] Clearing history after 24 hours');
         setTrips([]);
         setLastCleared(now);
         fetchCommunityTrips(false);
