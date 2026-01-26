@@ -613,6 +613,7 @@ export type Database = {
       }
       memory_gallery: {
         Row: {
+          author_nickname: string | null
           caption: string | null
           created_at: string
           id: string
@@ -621,6 +622,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          author_nickname?: string | null
           caption?: string | null
           created_at?: string
           id?: string
@@ -629,6 +631,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          author_nickname?: string | null
           caption?: string | null
           created_at?: string
           id?: string
