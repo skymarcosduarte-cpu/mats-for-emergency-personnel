@@ -12,6 +12,7 @@ export interface MemoryPhoto {
   caption: string | null;
   photo_date: string | null;
   created_at: string;
+  author_nickname: string | null;
   // Aggregated data
   likes_count?: number;
   user_has_liked?: boolean;

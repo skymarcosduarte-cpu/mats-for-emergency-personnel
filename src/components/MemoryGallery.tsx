@@ -67,8 +67,6 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
   // Filters
   const [filterYear, setFilterYear] = useState<string>('all');
   const [filterUser, setFilterUser] = useState<string>('all');
-  const [users, setUsers] = useState<UserInfo[]>([]);
-  const [usersLoading, setUsersLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   
   // Photo detail/comments dialog
@@ -86,6 +84,17 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Get unique users from photos - nicknames now stored in memory_gallery.author_nickname
+  const users = useMemo(() => {
+    const userMap = new Map<string, string>();
+    photos.forEach(photo => {
+      if (!userMap.has(photo.user_id)) {
+        userMap.set(photo.user_id, photo.author_nickname || 'Usuario');
+      }
+    });
+    return Array.from(userMap.entries()).map(([id, nickname]) => ({ id, nickname }));
+  }, [photos]);
+
   // Get unique years from photos
   const availableYears = useMemo(() => {
     const years = new Set<string>();
@@ -96,75 +105,6 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
     });
     return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
   }, [photos]);
-
-  // Get unique user IDs from photos - stabilized with JSON stringify
-  const uniqueUserIds = useMemo(() => {
-    return [...new Set(photos.map(p => p.user_id))];
-  }, [photos]);
-
-  // Stable string for dependency tracking
-  const userIdsKey = useMemo(() => uniqueUserIds.sort().join(','), [uniqueUserIds]);
-
-  // Fetch user nicknames (public profiles) - uses stable key to prevent unnecessary re-fetches
-  useEffect(() => {
-    if (uniqueUserIds.length === 0) {
-      setUsersLoading(false);
-      return;
-    }
-
-    const fetchUsers = async () => {
-      setUsersLoading(true);
-      try {
-        // Fetch from profiles_public first
-        const { data: publicData, error: publicError } = await supabase
-          .from('profiles_public')
-          .select('user_id, nickname')
-          .in('user_id', uniqueUserIds);
-
-        if (publicError) throw publicError;
-
-        // Create a map of found users
-        const foundUsers = new Map<string, string>();
-        (publicData || []).forEach(p => {
-          if (p.nickname) {
-            foundUsers.set(p.user_id, p.nickname);
-          }
-        });
-
-        // Check if any users are missing nicknames - fetch from profiles as fallback
-        const missingUserIds = uniqueUserIds.filter(id => !foundUsers.has(id));
-        
-        if (missingUserIds.length > 0) {
-          console.log('[MemoryGallery] Fetching missing nicknames from profiles:', missingUserIds);
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('id, nickname')
-            .in('id', missingUserIds);
-          
-          (profilesData || []).forEach(p => {
-            if (p.nickname) {
-              foundUsers.set(p.id, p.nickname);
-            }
-          });
-        }
-
-        // Build final users list
-        const usersList = uniqueUserIds.map(id => ({
-          id,
-          nickname: foundUsers.get(id) || 'Usuario',
-        }));
-
-        setUsers(usersList);
-        console.log('[MemoryGallery] Loaded users:', usersList.map(u => `${u.id.slice(0,8)}:${u.nickname}`));
-      } catch (err) {
-        console.error('[MemoryGallery] Error fetching user nicknames:', err);
-      } finally {
-        setUsersLoading(false);
-      }
-    };
-
-    fetchUsers();
-  }, [userIdsKey]); // Use stable key instead of array
 
   // Filter photos
   const filteredPhotos = useMemo(() => {
@@ -349,9 +289,6 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
   };
 
   const getUserNickname = (userId: string) => {
-    // If still loading users, show loading indicator
-    if (usersLoading) return 'Cargando...';
-    // Find user in loaded list
     const found = users.find(u => u.id === userId);
     return found?.nickname || 'Usuario';
   };
@@ -814,7 +751,7 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
               </div>
 
               {/* Users preview */}
-              {users.length > 0 && (
+              {users.length > 0 && !loading && (
                 <div className="mt-6">
                   <h3 className="text-sm font-medium mb-3 text-muted-foreground">
                     Usuarios con fotos
@@ -891,7 +828,7 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
         </div>
 
         <div className="p-4 space-y-4">
-          {(loading || usersLoading) ? (
+          {loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
