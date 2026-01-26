@@ -88,14 +88,16 @@ export function useNativeLocation() {
   }, [calculateDistance]);
 
   // Sync position to database
-  const syncPosition = useCallback(async (position: GeoPosition) => {
+  // forceUpdate = true bypasses throttling (for initial sync)
+  const syncPosition = useCallback(async (position: GeoPosition, forceUpdate = false) => {
     if (!user) return;
 
     const now = Date.now();
     const lastPos = lastPositionRef.current;
 
     // Check if we should update (time and distance thresholds)
-    if (lastPos) {
+    // Skip throttling if forceUpdate is true (initial sync)
+    if (!forceUpdate && lastPos) {
       const timeSinceLastUpdate = now - lastUpdateRef.current;
       const distance = calculateDistance(lastPos.lat, lastPos.lng, position.lat, position.lng);
 
@@ -142,6 +144,10 @@ export function useNativeLocation() {
 
       lastUpdateRef.current = now;
       lastPositionRef.current = position;
+      
+      if (forceUpdate) {
+        console.log('[NativeLocation] Initial location synced - user is now online');
+      }
       
       setState(prev => ({ ...prev, lastPosition: position, error: null }));
     } catch (error) {
@@ -212,6 +218,42 @@ export function useNativeLocation() {
     setState(prev => ({ ...prev, isTracking: true, error: null }));
 
     try {
+      // Get initial position immediately and force sync it
+      // This ensures the user appears online right away
+      try {
+        if (isNative) {
+          const initialPos = await Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 10000,
+          });
+          if (initialPos) {
+            const geoPos = convertPosition(initialPos);
+            await syncPosition(geoPos, true); // Force initial sync
+            console.log('[NativeLocation] Initial position synced immediately');
+          }
+        } else {
+          // Web fallback for initial position
+          navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+              const geoPos: GeoPosition = {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                accuracy: pos.coords.accuracy,
+                heading: pos.coords.heading,
+                speed: pos.coords.speed,
+                timestamp: pos.timestamp,
+              };
+              await syncPosition(geoPos, true); // Force initial sync
+              console.log('[NativeLocation] Initial web position synced immediately');
+            },
+            (err) => console.warn('[NativeLocation] Initial position failed:', err),
+            { enableHighAccuracy: true, timeout: 10000 }
+          );
+        }
+      } catch (initErr) {
+        console.warn('[NativeLocation] Initial position failed, continuing with watch:', initErr);
+      }
+
       if (isNative) {
         // Use Capacitor Geolocation for native
         watchIdRef.current = await Geolocation.watchPosition(
