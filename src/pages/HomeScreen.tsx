@@ -327,7 +327,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
       <div className="px-4 pt-4 space-y-6">
         {/* Welcome Section */}
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-primary">
+          <h1 className="text-3xl font-bold text-[hsl(210,80%,30%)]">
             {getGreeting()}, {firstName}
           </h1>
           <p className="text-base text-muted-foreground capitalize">{todayDate}</p>
