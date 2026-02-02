@@ -40,15 +40,8 @@ interface SectionItem {
   iconBg: string;
 }
 
+// New order: Left column (Sismos, Recursos, Comunidad) | Right column (Mapa, Tránsito, Ajustes)
 const SECTIONS: SectionItem[] = [
-  { 
-    id: 'map', 
-    label: 'Mapa', 
-    icon: <Map className="w-10 h-10" strokeWidth={2.5} />,
-    description: 'Ver ubicaciones en tiempo real',
-    gradient: 'home-section-map',
-    iconBg: 'home-section-icon-map'
-  },
   { 
     id: 'alerts', 
     label: 'Sismos', 
@@ -58,12 +51,12 @@ const SECTIONS: SectionItem[] = [
     iconBg: 'home-section-icon-alerts'
   },
   { 
-    id: 'transit', 
-    label: 'Tránsito Seguro', 
-    icon: <Car className="w-10 h-10" strokeWidth={2.5} />,
-    description: 'Registrar y monitorear viajes',
-    gradient: 'home-section-transit',
-    iconBg: 'home-section-icon-transit'
+    id: 'map', 
+    label: 'Mapa', 
+    icon: <Map className="w-10 h-10" strokeWidth={2.5} />,
+    description: 'Ver ubicaciones en tiempo real',
+    gradient: 'home-section-map',
+    iconBg: 'home-section-icon-map'
   },
   { 
     id: 'resources', 
@@ -72,6 +65,14 @@ const SECTIONS: SectionItem[] = [
     description: 'Recursos de emergencia',
     gradient: 'home-section-resources',
     iconBg: 'home-section-icon-resources'
+  },
+  { 
+    id: 'transit', 
+    label: 'Tránsito Seguro', 
+    icon: <Car className="w-10 h-10" strokeWidth={2.5} />,
+    description: 'Registrar y monitorear viajes',
+    gradient: 'home-section-transit',
+    iconBg: 'home-section-icon-transit'
   },
   { 
     id: 'community', 
@@ -489,8 +490,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
           </div>
         )}
 
-        {/* Online Users Indicator */}
-        <div className="bg-card border-2 border-border rounded-2xl p-5 shadow-sm">
+        {/* Online Users Indicator - Clickable to navigate to Map */}
+        <button
+          onClick={() => onNavigate('map')}
+          className="w-full bg-card border-2 border-border rounded-2xl p-5 shadow-sm hover:bg-muted/50 active:scale-[0.98] transition-all text-left"
+        >
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className="w-5 h-5 rounded-full bg-safe" />
@@ -500,8 +504,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
               <p className="text-xl font-bold text-safe">{onlineCount} usuarios conectados</p>
               <p className="text-base text-muted-foreground">Miembros activos en la comunidad</p>
             </div>
+            <ChevronRight className="w-6 h-6 text-muted-foreground" />
           </div>
-        </div>
+        </button>
 
         {/* Sections Grid */}
         <div className="space-y-4">

@@ -477,42 +477,48 @@
     @apply bg-[hsl(220,15%,45%)] text-white;
   }
 
-  /* HOME SECTION BUTTONS - Solid colored backgrounds with white text */
+  /* HOME SECTION BUTTONS - New colors per user request */
+  /* Mapa: Verde */
   .home-section-map {
-    @apply bg-[hsl(210,100%,50%)] border-[hsl(210,100%,40%)] hover:bg-[hsl(210,100%,45%)];
+    @apply bg-[hsl(142,70%,40%)] border-[hsl(142,70%,30%)] hover:bg-[hsl(142,70%,35%)];
   }
   .home-section-icon-map {
-    @apply bg-white text-[hsl(210,100%,50%)];
+    @apply bg-white text-[hsl(142,70%,40%)];
   }
+  /* Sismos: Naranja */
   .home-section-alerts {
     @apply bg-[hsl(25,100%,50%)] border-[hsl(25,100%,40%)] hover:bg-[hsl(25,100%,45%)];
   }
   .home-section-icon-alerts {
     @apply bg-white text-[hsl(25,100%,50%)];
   }
+  /* Tránsito Seguro: Amarillo */
   .home-section-transit {
-    @apply bg-[hsl(142,80%,35%)] border-[hsl(142,80%,25%)] hover:bg-[hsl(142,80%,30%)];
+    @apply bg-[hsl(45,100%,45%)] border-[hsl(45,100%,35%)] hover:bg-[hsl(45,100%,40%)];
   }
   .home-section-icon-transit {
-    @apply bg-white text-[hsl(142,80%,35%)];
+    @apply bg-white text-[hsl(45,100%,45%)];
   }
+  /* Recursos: Rojo */
   .home-section-resources {
-    @apply bg-[hsl(0,90%,50%)] border-[hsl(0,90%,40%)] hover:bg-[hsl(0,90%,45%)];
+    @apply bg-[hsl(0,85%,50%)] border-[hsl(0,85%,40%)] hover:bg-[hsl(0,85%,45%)];
   }
   .home-section-icon-resources {
-    @apply bg-white text-[hsl(0,90%,50%)];
+    @apply bg-white text-[hsl(0,85%,50%)];
   }
+  /* Comunidad: Azul Naval */
   .home-section-community {
-    @apply bg-[hsl(320,90%,50%)] border-[hsl(320,90%,40%)] hover:bg-[hsl(320,90%,45%)];
+    @apply bg-[hsl(210,80%,30%)] border-[hsl(210,80%,20%)] hover:bg-[hsl(210,80%,25%)];
   }
   .home-section-icon-community {
-    @apply bg-white text-[hsl(320,90%,50%)];
+    @apply bg-white text-[hsl(210,80%,30%)];
   }
+  /* Ajustes: Negro */
   .home-section-settings {
-    @apply bg-[hsl(220,15%,45%)] border-[hsl(220,15%,35%)] hover:bg-[hsl(220,15%,40%)];
+    @apply bg-[hsl(0,0%,15%)] border-[hsl(0,0%,10%)] hover:bg-[hsl(0,0%,20%)];
   }
   .home-section-icon-settings {
-    @apply bg-white text-[hsl(220,15%,45%)];
+    @apply bg-white text-[hsl(0,0%,15%)];
   }
 
   /* Internal section button styles - for subsections */
