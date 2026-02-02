@@ -556,12 +556,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                     {section.icon}
                   </motion.div>
                   
-                  {/* Label - White text for contrast */}
+                  {/* Label - inherits text color from gradient class (white default, navy for transit) */}
                   <div>
-                    <h3 className="font-bold text-white text-xl leading-tight drop-shadow-sm">
+                    <h3 className={cn(
+                      "font-bold text-xl leading-tight drop-shadow-sm",
+                      section.id === 'transit' ? '' : 'text-white'
+                    )}>
                       {section.label}
                     </h3>
-                    <p className="text-sm text-white/90 line-clamp-2 mt-1 leading-relaxed">
+                    <p className={cn(
+                      "text-sm line-clamp-2 mt-1 leading-relaxed",
+                      section.id === 'transit' ? 'opacity-80' : 'text-white/90'
+                    )}>
                       {section.description}
                     </p>
                   </div>
@@ -574,7 +580,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                   whileHover={{ x: 4 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <ChevronRight className="w-7 h-7 text-white/60" />
+                  <ChevronRight className={cn(
+                    "w-7 h-7",
+                    section.id === 'transit' ? 'opacity-50' : 'text-white/60'
+                  )} />
                 </motion.div>
               </motion.button>
             ))}
