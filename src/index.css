@@ -492,12 +492,12 @@
   .home-section-icon-alerts {
     @apply bg-white text-[hsl(25,100%,50%)];
   }
-  /* Tránsito Seguro: Amarillo */
+  /* Tránsito Seguro: Amarillo con texto azul naval */
   .home-section-transit {
-    @apply bg-[hsl(45,100%,45%)] border-[hsl(45,100%,35%)] hover:bg-[hsl(45,100%,40%)];
+    @apply bg-[hsl(45,100%,50%)] border-[hsl(45,100%,40%)] hover:bg-[hsl(45,100%,45%)] text-[hsl(210,80%,25%)];
   }
   .home-section-icon-transit {
-    @apply bg-white text-[hsl(45,100%,45%)];
+    @apply bg-[hsl(210,80%,25%)] text-[hsl(45,100%,50%)];
   }
   /* Recursos: Rojo */
   .home-section-resources {
