@@ -385,8 +385,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       return;
     }
 
-    if (sanitizedPassword.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+    if (sanitizedPassword.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres');
       return;
     }
 
