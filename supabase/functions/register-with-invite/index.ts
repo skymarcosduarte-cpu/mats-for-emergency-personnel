@@ -203,7 +203,7 @@ serve(async (req) => {
       );
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       console.log(`[${requestId}] VALIDATION_FAILED: password too short (${password.length} chars)`);
       await logAttempt({
         email_hash: emailHash,
@@ -214,7 +214,7 @@ serve(async (req) => {
         client_info: clientInfo,
       });
       return new Response(
-        JSON.stringify({ error: 'La contraseña debe tener al menos 6 caracteres', code: 'PASSWORD_TOO_SHORT' }),
+        JSON.stringify({ error: 'La contraseña debe tener al menos 8 caracteres', code: 'PASSWORD_TOO_SHORT' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

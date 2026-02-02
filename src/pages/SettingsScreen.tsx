@@ -520,8 +520,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const handlePasswordChange = async () => {
     setPasswordError('');
 
-    if (newPassword.length < 6) {
-      setPasswordError('La contraseña debe tener al menos 6 caracteres');
+    if (newPassword.length < 8) {
+      setPasswordError('La contraseña debe tener al menos 8 caracteres');
       return;
     }
 
