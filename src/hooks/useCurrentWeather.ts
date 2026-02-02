@@ -68,25 +68,33 @@ export function useCurrentWeather(lat: number | null, lng: number | null) {
       
       const weatherData = await weatherResponse.json();
       
-      // Reverse geocode to get location name
+      // Reverse geocode to get location name using Nominatim (more reliable)
       let locationName = '';
       try {
         const geoResponse = await fetch(
-          `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lng}&language=es`
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&accept-language=es`,
+          { headers: { 'User-Agent': 'MATS-App/1.0' } }
         );
         if (geoResponse.ok) {
           const geoData = await geoResponse.json();
-          if (geoData.results?.length > 0) {
-            const result = geoData.results[0];
-            locationName = result.admin2 || result.admin1 || result.name || '';
-            if (result.admin1 && result.admin1 !== locationName) {
-              locationName += `, ${result.admin1}`;
+          if (geoData.address) {
+            // Try to get the most specific locality name
+            const addr = geoData.address;
+            const locality = addr.suburb || addr.neighbourhood || addr.borough || 
+                           addr.city_district || addr.district || addr.town || 
+                           addr.village || addr.city || addr.municipality || '';
+            const region = addr.state || addr.county || '';
+            
+            if (locality && region && locality !== region) {
+              locationName = `${locality}, ${region}`;
+            } else {
+              locationName = locality || region || geoData.display_name?.split(',')[0] || '';
             }
           }
         }
       } catch {
-        // Fallback if reverse geocoding fails
-        locationName = 'Tu ubicación';
+        // Silent fallback - will use empty string
+        console.warn('[useCurrentWeather] Reverse geocoding failed');
       }
 
       const weatherCode = weatherData.current?.weather_code ?? 0;
@@ -97,7 +105,7 @@ export function useCurrentWeather(lat: number | null, lng: number | null) {
         weatherCode,
         description,
         icon,
-        locationName: locationName || 'Tu ubicación',
+        locationName: locationName || 'Obteniendo ubicación...',
       });
     } catch (err) {
       console.error('[useCurrentWeather] Error:', err);
