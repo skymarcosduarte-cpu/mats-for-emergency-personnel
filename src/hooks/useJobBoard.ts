@@ -13,6 +13,7 @@ export interface JobPost {
   position_sought: string;
   cv_url: string | null;
   cv_filename: string | null;
+  linkedin_url: string | null;
   is_offering_job: boolean;
   is_active: boolean;
   created_at: string;
@@ -24,6 +25,7 @@ export interface CreateJobPostData {
   title: string;
   experience?: string;
   position_sought: string;
+  linkedin_url?: string;
   is_offering_job: boolean;
 }
 
@@ -128,6 +130,7 @@ export function useJobBoard() {
       title: data.title,
       experience: data.experience || null,
       position_sought: data.position_sought,
+      linkedin_url: data.linkedin_url || null,
       is_offering_job: data.is_offering_job,
       cv_url: cvUrl,
       cv_filename: cvFilename,
