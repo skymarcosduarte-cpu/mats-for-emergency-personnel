@@ -569,6 +569,51 @@ export type Database = {
         }
         Relationships: []
       }
+      job_board: {
+        Row: {
+          created_at: string
+          cv_filename: string | null
+          cv_url: string | null
+          experience: string | null
+          full_name: string
+          id: string
+          is_active: boolean | null
+          is_offering_job: boolean | null
+          position_sought: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cv_filename?: string | null
+          cv_url?: string | null
+          experience?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean | null
+          is_offering_job?: boolean | null
+          position_sought: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cv_filename?: string | null
+          cv_url?: string | null
+          experience?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean | null
+          is_offering_job?: boolean | null
+          position_sought?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       marketplace_listings: {
         Row: {
           category: string

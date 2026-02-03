@@ -4,11 +4,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingCart, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play, Pencil, Camera
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingCart, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play, Pencil, Camera, Briefcase
 } from 'lucide-react';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
 import { MemoryGallery } from '@/components/MemoryGallery';
 import { MarketScreen } from '@/pages/MarketScreen';
+import { JobBoardScreen } from '@/components/JobBoardScreen';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { UserRole } from '@/types';
@@ -130,7 +131,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   
   // Landing view state - shows big buttons before entering a subsection
   const [showLanding, setShowLanding] = useState(true);
-  const [activeSection, setActiveSection] = useState<'tablero' | 'noticias' | 'market' | 'galeria'>('tablero');
+  const [activeSection, setActiveSection] = useState<'tablero' | 'noticias' | 'market' | 'galeria' | 'jobs'>('tablero');
   
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CommunityEvent | null>(null);
@@ -499,7 +500,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   };
 
   // Handler to enter a specific section from landing
-  const handleEnterSection = (section: 'tablero' | 'noticias' | 'market' | 'galeria') => {
+  const handleEnterSection = (section: 'tablero' | 'noticias' | 'market' | 'galeria' | 'jobs') => {
     setActiveSection(section);
     setShowLanding(false);
   };
@@ -511,6 +512,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
       case 'noticias': return 'Últimas Noticias';
       case 'market': return 'Marketplace';
       case 'galeria': return 'Galería del Recuerdo';
+      case 'jobs': return 'Bolsa de Trabajo';
       default: return 'Comunidad';
     }
   };
@@ -518,6 +520,11 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   // Render Memory Gallery as its own full screen
   if (activeSection === 'galeria' && !showLanding) {
     return <MemoryGallery onBack={() => setShowLanding(true)} />;
+  }
+
+  // Render Job Board as its own full screen
+  if (activeSection === 'jobs' && !showLanding) {
+    return <JobBoardScreen onBack={() => setShowLanding(true)} />;
   }
 
   // Landing view with large buttons
@@ -636,6 +643,30 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
               <h3 className="font-bold text-foreground text-xl">Galería del Recuerdo</h3>
               <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
                 Comparte fotos nostálgicas de la comunidad
+              </p>
+            </div>
+            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
+          </button>
+
+          {/* Bolsa de Trabajo Button */}
+          <button
+            onClick={() => handleEnterSection('jobs')}
+            className={cn(
+              "w-full flex items-center gap-4 p-5 rounded-2xl",
+              "bg-card border-2 shadow-sm",
+              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
+              "transition-all duration-200 animate-fade-in",
+              "subsection-card-jobs"
+            )}
+            style={{ animationDelay: '200ms' }}
+          >
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-jobs">
+              <Briefcase className="w-10 h-10" strokeWidth={2.5} />
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <h3 className="font-bold text-foreground text-xl">Bolsa de Trabajo</h3>
+              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
+                Publica tu CV o encuentra oportunidades laborales
               </p>
             </div>
             <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
