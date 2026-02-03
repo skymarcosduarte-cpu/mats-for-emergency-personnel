@@ -78,7 +78,7 @@ const SECTIONS: SectionItem[] = [
     id: 'community', 
     label: 'Comunidad', 
     icon: <Users className="w-10 h-10" strokeWidth={2.5} />,
-    description: 'Tablero y noticias',
+    description: 'AviSOS, Noticias, Marketplace, Galería y Bolsa de Trabajo',
     gradient: 'home-section-community',
     iconBg: 'home-section-icon-community'
   },
