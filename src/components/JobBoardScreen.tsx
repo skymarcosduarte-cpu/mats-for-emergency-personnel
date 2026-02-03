@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import {
   Briefcase, Plus, FileText, User, Award, Target, Loader2,
-  ArrowLeft, RefreshCw, Trash2, Edit, Download, Building2, Search
+  ArrowLeft, RefreshCw, Trash2, Edit, Download, Building2, Search, Linkedin, ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,6 +51,7 @@ export const JobBoardScreen: React.FC<JobBoardScreenProps> = ({ onBack }) => {
     title: '',
     experience: '',
     position_sought: '',
+    linkedin_url: '',
     is_offering_job: false,
   });
   const [cvFile, setCvFile] = useState<File | null>(null);
@@ -61,6 +62,7 @@ export const JobBoardScreen: React.FC<JobBoardScreenProps> = ({ onBack }) => {
       title: '',
       experience: '',
       position_sought: '',
+      linkedin_url: '',
       is_offering_job: false,
     });
     setCvFile(null);
@@ -79,6 +81,7 @@ export const JobBoardScreen: React.FC<JobBoardScreenProps> = ({ onBack }) => {
       title: post.title,
       experience: post.experience || '',
       position_sought: post.position_sought,
+      linkedin_url: (post as any).linkedin_url || '',
       is_offering_job: post.is_offering_job,
     });
     setCvFile(null);
@@ -312,6 +315,20 @@ export const JobBoardScreen: React.FC<JobBoardScreenProps> = ({ onBack }) => {
                       )}
 
                       <div className="flex items-center gap-3 mt-3 flex-wrap">
+                        {(post as any).linkedin_url && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            className="h-8"
+                          >
+                            <a href={(post as any).linkedin_url} target="_blank" rel="noopener noreferrer">
+                              <Linkedin className="w-3.5 h-3.5 mr-1" />
+                              LinkedIn
+                            </a>
+                          </Button>
+                        )}
+
                         {post.cv_url && (
                           <Button
                             variant="outline"
@@ -454,6 +471,21 @@ export const JobBoardScreen: React.FC<JobBoardScreenProps> = ({ onBack }) => {
                 onChange={(e) => setFormData((prev) => ({ ...prev, experience: e.target.value }))}
                 rows={3}
               />
+            </div>
+
+            {/* LinkedIn URL */}
+            <div className="space-y-2">
+              <Label htmlFor="linkedin_url">Perfil de LinkedIn</Label>
+              <div className="relative">
+                <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="linkedin_url"
+                  placeholder="https://linkedin.com/in/tu-perfil"
+                  value={formData.linkedin_url}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, linkedin_url: e.target.value }))}
+                  className="pl-9"
+                />
+              </div>
             </div>
 
             {/* CV Upload */}

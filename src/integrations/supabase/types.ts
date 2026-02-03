@@ -579,6 +579,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_offering_job: boolean | null
+          linkedin_url: string | null
           position_sought: string
           title: string
           updated_at: string
@@ -593,6 +594,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_offering_job?: boolean | null
+          linkedin_url?: string | null
           position_sought: string
           title: string
           updated_at?: string
@@ -607,6 +609,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_offering_job?: boolean | null
+          linkedin_url?: string | null
           position_sought?: string
           title?: string
           updated_at?: string
