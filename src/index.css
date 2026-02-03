@@ -546,6 +546,12 @@
   .subsection-icon-galeria {
     @apply bg-[hsl(35,100%,50%)] text-white;
   }
+  .subsection-card-jobs {
+    @apply border-[hsl(220,80%,50%)] hover:bg-[hsl(220,80%,97%)];
+  }
+  .subsection-icon-jobs {
+    @apply bg-[hsl(220,80%,50%)] text-white;
+  }
   .subsection-card-skyalert {
     @apply border-primary hover:bg-primary/5;
   }
