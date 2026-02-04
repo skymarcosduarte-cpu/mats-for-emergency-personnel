@@ -54,6 +54,7 @@ const EVENT_TYPES: { value: CommunityEventType; label: string }[] = [
   { value: 'CELEBRATION', label: '🎉 Hoy se Celebra' },
   { value: 'RECOMMENDATION', label: '💡 Recomendación' },
   { value: 'NEWS', label: '📰 Noticia Relevante' },
+  { value: 'BLOOD_DONOR', label: '🩸 Donador de Sangre' },
   { value: 'OTHER', label: '📝 Otro' },
 ];
 

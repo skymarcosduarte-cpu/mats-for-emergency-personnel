@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, X, ImagePlus, Calendar, Tag, DollarSign, Loader2, ChevronLeft, ChevronRight, Search, MessageCircle, Filter, Pencil, Trash2, User, Bell, ZoomIn } from 'lucide-react';
+import { Plus, X, ImagePlus, Tag, DollarSign, Loader2, ChevronLeft, ChevronRight, Search, MessageCircle, Filter, Pencil, Trash2, User, Bell, ZoomIn } from 'lucide-react';
 import { createNotification } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +30,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { format, addDays, differenceInDays } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ImageZoomViewer } from '@/components/ImageZoomViewer';
 import type { UserRole } from '@/types';
@@ -69,7 +69,6 @@ const CATEGORIES = [
 const FORM_CATEGORIES = CATEGORIES.filter(c => c.value !== 'all');
 
 const MAX_IMAGES = 5;
-const MAX_DAYS = 30;
 
 export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATISTA' }) => {
   const [listings, setListings] = useState<MarketListing[]>([]);
@@ -96,7 +95,6 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('product');
   const [price, setPrice] = useState('');
-  const [validDays, setValidDays] = useState('7');
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -187,7 +185,6 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
     setDescription('');
     setCategory('product');
     setPrice('');
-    setValidDays('7');
     setImages([]);
     setImagePreviews([]);
     setExistingImages([]);
@@ -200,7 +197,6 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
     setDescription(listing.description);
     setCategory(listing.category);
     setPrice(listing.price?.toString() || '');
-    setValidDays('7');
     setExistingImages(listing.images);
     setImages([]);
     setImagePreviews([]);
@@ -218,16 +214,6 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
       toast({
         title: 'Campos requeridos',
         description: 'Por favor completa el título y descripción',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const days = parseInt(validDays);
-    if (!editingListing && (days < 1 || days > MAX_DAYS)) {
-      toast({
-        title: 'Fecha inválida',
-        description: `La vigencia debe ser entre 1 y ${MAX_DAYS} días`,
         variant: 'destructive',
       });
       return;
@@ -290,7 +276,7 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
             category,
             price: price ? parseFloat(price) : null,
             images: allImages,
-            valid_until: addDays(new Date(), days).toISOString(),
+            valid_until: new Date('2099-12-31').toISOString(),
           });
 
         if (error) throw error;
@@ -353,11 +339,6 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
 
   const getCategoryLabel = (value: string) => {
     return CATEGORIES.find((c) => c.value === value)?.label || value;
-  };
-
-  const getDaysRemaining = (validUntil: string) => {
-    const days = differenceInDays(new Date(validUntil), new Date());
-    return days;
   };
 
   const handleListingClick = (listing: MarketListing) => {
@@ -537,28 +518,6 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                     </div>
                   </div>
                 </div>
-
-                {/* Valid Days - only for new listings */}
-                {!editingListing && (
-                  <div className="space-y-2">
-                    <Label htmlFor="validDays">Vigencia (días)</Label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="validDays"
-                        type="number"
-                        value={validDays}
-                        onChange={(e) => setValidDays(e.target.value)}
-                        className="pl-9"
-                        min="1"
-                        max={MAX_DAYS}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Máximo {MAX_DAYS} días. El anuncio expirará automáticamente.
-                    </p>
-                  </div>
-                )}
 
                 {/* Images */}
                 <div className="space-y-2">
@@ -740,8 +699,6 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredListings.map((listing) => {
-              const daysRemaining = getDaysRemaining(listing.valid_until);
-              
               return (
                 <Card 
                   key={listing.id} 
@@ -784,14 +741,9 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                       {listing.description}
                     </p>
                     
-                    <div className="flex items-center justify-between">
-                      <Badge variant="secondary">
-                        {getCategoryLabel(listing.category)}
-                      </Badge>
-                      <span className={`text-xs ${daysRemaining <= 3 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {daysRemaining} días restantes
-                      </span>
-                    </div>
+                    <Badge variant="secondary">
+                      {getCategoryLabel(listing.category)}
+                    </Badge>
                   </CardContent>
                 </Card>
               );
@@ -865,14 +817,9 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({ userRole = 'RESCATIS
                       <h2 className="text-2xl font-bold text-foreground">
                         {selectedListing.title}
                       </h2>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="secondary">
-                          {getCategoryLabel(selectedListing.category)}
-                        </Badge>
-                        <span className={`text-sm ${getDaysRemaining(selectedListing.valid_until) <= 3 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                          {getDaysRemaining(selectedListing.valid_until)} días restantes
-                        </span>
-                      </div>
+                      <Badge variant="secondary">
+                        {getCategoryLabel(selectedListing.category)}
+                      </Badge>
                     </div>
                     {selectedListing.price && (
                       <div className="text-right">
