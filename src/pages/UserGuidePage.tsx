@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   Navigation,
   Phone,
-  MessageCircle,
   Wifi,
   Heart,
   Zap,
@@ -462,49 +461,85 @@ export default function UserGuidePage() {
             <div className="space-y-4">
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  <MessageCircle className="w-4 h-4 text-orange-500" />
-                  Tablero
+                  🆘 AviSOS (Tablero)
                 </h4>
                 <p className="text-sm text-gray-600 mb-2">
-                  Publicaciones de la comunidad incluyendo:
+                  Publicaciones y avisos de la comunidad incluyendo:
                 </p>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  <li>🎂 Cumpleaños</li>
-                  <li>📅 Eventos</li>
+                  <li>🎂 Cumpleaños de miembros</li>
+                  <li>📅 Eventos comunitarios</li>
                   <li>💍 Aniversarios</li>
-                  <li>🕯️ Decesos</li>
+                  <li>🕯️ Decesos y condolencias</li>
                   <li>📰 Noticias relevantes</li>
                   <li>💡 Recomendaciones</li>
+                  <li>🎥 Videos de emergencia (grabación en vivo)</li>
                 </ul>
               </div>
 
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
+                  <Zap className="w-4 h-4 text-orange-500" />
+                  Noticias (Breaking News)
+                </h4>
+                <p className="text-sm text-gray-600">
+                  Noticias de emergencia en tiempo real de fuentes mexicanas. Mantente informado 
+                  sobre eventos importantes y situaciones de emergencia.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
+                  🛒 Marketplace
+                </h4>
+                <p className="text-sm text-gray-600">
+                  Compra, venta e intercambio de artículos entre miembros de la comunidad. 
+                  Publica tus productos con fotos, descripción y precio.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
+                  <Camera className="w-4 h-4 text-orange-500" />
+                  Galería del Recuerdo
+                </h4>
+                <p className="text-sm text-gray-600">
+                  Espacio para compartir fotos y videos de momentos especiales de la comunidad. 
+                  Guarda memorias de eventos, reuniones y celebraciones con comentarios y reacciones.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
+                  💼 Bolsa de Trabajo
+                </h4>
+                <p className="text-sm text-gray-600 mb-2">
+                  Red de oportunidades laborales exclusiva para miembros de la comunidad.
+                </p>
+                <div className="bg-white border border-gray-100 rounded p-3 mt-2">
+                  <p className="text-xs font-medium text-gray-700 mb-2">Puedes publicar:</p>
+                  <ul className="text-xs text-gray-600 space-y-1">
+                    <li>• <strong>Si buscas empleo:</strong> Tu perfil profesional con experiencia y habilidades</li>
+                    <li>• <strong>Si ofreces trabajo:</strong> Vacantes y oportunidades laborales</li>
+                  </ul>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Incluye:</p>
+                  <ul className="text-xs text-gray-600 space-y-1">
+                    <li>📄 Currículum Vitae (PDF o Word, máx. 10MB)</li>
+                    <li>🔗 Enlace a perfil de LinkedIn</li>
+                    <li>🎯 Título profesional y experiencia</li>
+                    <li>📋 Posición buscada u ofrecida</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
                   <Car className="w-4 h-4 text-orange-500" />
-                  Viajeros
+                  Viajeros Activos
                 </h4>
                 <p className="text-sm text-gray-600">
                   Lista de viajes activos de la comunidad. Puedes ver la ubicación en tiempo real 
                   de cualquier viajero y su ruta recorrida.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  <Zap className="w-4 h-4 text-orange-500" />
-                  Breaking News
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Noticias de emergencia en tiempo real de fuentes mexicanas.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  🛒 Market
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Compra, venta e intercambio de artículos entre miembros de la comunidad.
                 </p>
               </div>
             </div>
