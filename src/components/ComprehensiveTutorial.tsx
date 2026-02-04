@@ -261,6 +261,89 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
     ],
   },
   {
+    id: 'community',
+    title: 'Comunidad',
+    icon: <Users className="w-6 h-6" />,
+    color: 'text-safe',
+    steps: [
+      {
+        title: '👥 Secciones de Comunidad',
+        content: (
+          <div className="space-y-4">
+            <p>
+              La sección <strong>Comunidad</strong> tiene múltiples áreas para conectar con otros miembros.
+            </p>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-start gap-2 p-2 bg-muted rounded-lg">
+                <span>🆘</span>
+                <div>
+                  <p className="font-medium">AviSOS</p>
+                  <p className="text-xs text-muted-foreground">Tablero de publicaciones y chat comunitario</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 p-2 bg-muted rounded-lg">
+                <span>📰</span>
+                <div>
+                  <p className="font-medium">Noticias</p>
+                  <p className="text-xs text-muted-foreground">Breaking news en tiempo real</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 p-2 bg-muted rounded-lg">
+                <span>🛒</span>
+                <div>
+                  <p className="font-medium">Marketplace</p>
+                  <p className="text-xs text-muted-foreground">Compra, venta e intercambio</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 p-2 bg-muted rounded-lg">
+                <span>📸</span>
+                <div>
+                  <p className="font-medium">Galería del Recuerdo</p>
+                  <p className="text-xs text-muted-foreground">Fotos y videos de momentos especiales</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        title: '💼 Bolsa de Trabajo',
+        content: (
+          <div className="space-y-4">
+            <p>
+              Red de <strong>oportunidades laborales</strong> exclusiva para miembros de la comunidad.
+            </p>
+            <div className="space-y-2">
+              <div className="flex items-start gap-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                <span className="text-lg">👤</span>
+                <div>
+                  <p className="font-medium text-blue-600">Si buscas empleo</p>
+                  <p className="text-xs text-muted-foreground">Publica tu perfil profesional</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-safe/10 rounded-lg border border-safe/30">
+                <span className="text-lg">🏢</span>
+                <div>
+                  <p className="font-medium text-safe">Si ofreces trabajo</p>
+                  <p className="text-xs text-muted-foreground">Publica vacantes y oportunidades</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-muted rounded-lg p-3 text-xs">
+              <p className="font-medium mb-1">Puedes incluir:</p>
+              <ul className="space-y-1">
+                <li>📄 Currículum Vitae (PDF o Word)</li>
+                <li>🔗 Enlace a perfil de LinkedIn</li>
+                <li>🎯 Título y experiencia profesional</li>
+              </ul>
+            </div>
+          </div>
+        ),
+        tip: 'Conecta con otros miembros para oportunidades laborales',
+      },
+    ],
+  },
+  {
     id: 'finish',
     title: '¡Listo!',
     icon: <Check className="w-6 h-6" />,
