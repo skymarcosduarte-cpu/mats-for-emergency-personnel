@@ -13,6 +13,7 @@ export type CommunityEventType =
   | 'CELEBRATION'
   | 'RECOMMENDATION'
   | 'NEWS'
+  | 'BLOOD_DONOR'
   | 'OTHER';
 
 export interface CommunityEvent {
@@ -223,6 +224,7 @@ export function useCommunityEvents() {
       'CELEBRATION': '🎉 Hoy se Celebra',
       'RECOMMENDATION': '💡 Recomendación',
       'NEWS': '📰 Noticia Relevante',
+      'BLOOD_DONOR': '🩸 Donador de Sangre',
       'OTHER': '📝 Otro',
     };
     return labels[type] || type;
@@ -239,6 +241,7 @@ export function useCommunityEvents() {
       'CELEBRATION': 'bg-amber-500/10 text-amber-500 border-amber-500/30',
       'RECOMMENDATION': 'bg-purple-500/10 text-purple-500 border-purple-500/30',
       'NEWS': 'bg-cyan-500/10 text-cyan-500 border-cyan-500/30',
+      'BLOOD_DONOR': 'bg-red-500/10 text-red-500 border-red-500/30',
       'OTHER': 'bg-accent/10 text-accent-foreground border-accent/30',
     };
     return colors[type] || 'bg-muted text-muted-foreground';
