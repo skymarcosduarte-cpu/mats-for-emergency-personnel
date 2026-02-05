@@ -161,8 +161,42 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   // Traveler location dialog state
   const [viewingTravelerId, setViewingTravelerId] = useState<string | null>(null);
   
+  // Moderator status for AviSOS
+  const [isModerator, setIsModerator] = useState(false);
+
   // Image zoom state for community events with gallery support
   const [zoomImages, setZoomImages] = useState<{ images: string[]; index: number } | null>(null);
+
+  // Check if user is AviSOS moderator
+  useEffect(() => {
+    const checkModeratorStatus = async () => {
+      if (!user?.id) {
+        setIsModerator(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('avisos_moderators')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (error) {
+          console.error('[CommunityScreen] Error checking moderator status:', error);
+          setIsModerator(false);
+          return;
+        }
+        
+        setIsModerator(!!data);
+      } catch (err) {
+        console.error('[CommunityScreen] Error checking moderator:', err);
+        setIsModerator(false);
+      }
+    };
+    
+    checkModeratorStatus();
+  }, [user?.id]);
 
   // Fetch route history when a trip is selected
   const fetchRouteHistory = useCallback(async (tripId: string) => {
@@ -998,16 +1032,18 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
                           </span>
                         </div>
                       </div>
-                      {event.user_id === user?.id && (
+                      {(event.user_id === user?.id || isModerator || userRole === 'SOS_ACTIVO') && (
                         <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-primary"
-                            onClick={() => handleEdit(event)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
+                          {event.user_id === user?.id && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-primary"
+                              onClick={() => handleEdit(event)}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
