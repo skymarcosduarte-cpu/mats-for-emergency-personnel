@@ -92,6 +92,27 @@ export type Database = {
         }
         Relationships: []
       }
+      avisos_moderators: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       beta_feedback: {
         Row: {
           category: string
@@ -1574,6 +1595,7 @@ export type Database = {
         }[]
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_avisos_moderator: { Args: { _user_id: string }; Returns: boolean }
       is_ex_sos: { Args: { _user_id: string }; Returns: boolean }
       is_rescatista: { Args: { _user_id: string }; Returns: boolean }
       is_sos_activo: { Args: { _user_id: string }; Returns: boolean }
