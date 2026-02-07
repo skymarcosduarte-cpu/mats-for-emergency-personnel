@@ -717,12 +717,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       return;
     }
 
-    // Use manually selected location or fall back to GPS
+    // Use manually selected location, fall back to GPS, or allow without location
     const loc = reportLocation || (position ? { lat: position.lat, lng: position.lng } : null);
-    if (!loc) {
-      toast.error('Selecciona una ubicación en el mapa o activa el GPS');
-      return;
-    }
 
     if (!reportForm.category) {
       toast.error('Selecciona una categoría');
@@ -748,8 +744,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           severity: reportForm.severity,
           title: title,
           description: reportForm.description || null,
-          lat: loc.lat,
-          lng: loc.lng,
+          lat: loc?.lat ?? null,
+          lng: loc?.lng ?? null,
           is_active: true,
         })
         .select()
