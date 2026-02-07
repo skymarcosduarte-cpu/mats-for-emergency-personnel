@@ -1,6 +1,6 @@
 // Últimas Noticias Section - Clean, fluid display of emergency news
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   Newspaper, 
   ExternalLink, 
@@ -9,12 +9,15 @@ import {
   Clock,
   Loader2,
   Filter,
-  Radio
+  Radio,
+  AlertTriangle,
+  ThumbsUp
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useBreakingNews, NewsItem } from '@/hooks/useBreakingNews';
+import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -192,14 +195,140 @@ function isValidNewsDate(pubDate: string): boolean {
   }
 }
 
+const REPORT_CATEGORY_LABELS: Record<string, { label: string; emoji: string }> = {
+  'BLOCKADE': { label: 'Bloqueo', emoji: '🚧' },
+  'ACCIDENT': { label: 'Accidente', emoji: '🚨' },
+  'PROTEST': { label: 'Manifestación', emoji: '📢' },
+  'HAZARD': { label: 'Peligro', emoji: '⚠️' },
+  'ROAD_REPAIR': { label: 'Obra vial', emoji: '🔧' },
+  'HEAVY_TRAFFIC': { label: 'Tráfico pesado', emoji: '🚗' },
+  'STOPPED_TRAFFIC': { label: 'Tráfico detenido', emoji: '🛑' },
+  'TOLL_CLOSED': { label: 'Caseta cerrada', emoji: '🚫' },
+  'TOLL_OPEN': { label: 'Caseta abierta', emoji: '✅' },
+  'FOG': { label: 'Neblina', emoji: '🌫️' },
+  'HAIL_SNOW': { label: 'Granizo/Nieve', emoji: '🌨️' },
+  'OTHER': { label: 'Incidente', emoji: '📍' },
+};
+
+interface RoadReportItem {
+  id: string;
+  category: string;
+  severity: number;
+  title: string;
+  description: string | null;
+  created_at: string;
+  verification_count: number;
+  author_nickname?: string;
+}
+
 const INITIAL_ITEMS_COUNT = 10;
 const LOAD_MORE_COUNT = 10;
 const MAX_ITEMS_COUNT = 30;
+
+const ReportCard: React.FC<{ report: RoadReportItem }> = ({ report }) => {
+  const catInfo = REPORT_CATEGORY_LABELS[report.category] || REPORT_CATEGORY_LABELS['OTHER'];
+  const timeAgo = formatNewsTime(report.created_at);
+
+  return (
+    <div className={cn(
+      "p-3 rounded-lg border border-orange-500/30 bg-orange-500/5",
+      "transition-all duration-200"
+    )}>
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+          <span className="text-lg">{catInfo.emoji}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <Badge variant="outline" className="text-xs px-2 py-0.5 bg-orange-500/10 text-orange-600 border-orange-500/30">
+              {catInfo.label}
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              Severidad {report.severity}/4
+            </span>
+            {report.verification_count > 0 && (
+              <span className="text-xs text-safe flex items-center gap-0.5">
+                <ThumbsUp className="w-3 h-3" /> {report.verification_count}
+              </span>
+            )}
+          </div>
+          <h3 className="text-base font-medium text-foreground line-clamp-2 leading-snug">
+            {report.title}
+          </h3>
+          {report.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
+              {report.description}
+            </p>
+          )}
+          <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
+            {timeAgo && (
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {timeAgo}
+              </span>
+            )}
+            {report.author_nickname && (
+              <span>· por {report.author_nickname}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const BreakingNewsSection: React.FC = () => {
   const { items, loading, error, fetchedAt, refresh } = useBreakingNews();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [visibleCount, setVisibleCount] = useState(INITIAL_ITEMS_COUNT);
+  const [roadReports, setRoadReports] = useState<RoadReportItem[]>([]);
+
+  // Fetch road reports from last 12 hours
+  const fetchRoadReports = useCallback(async () => {
+    try {
+      const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+      const { data, error: fetchError } = await supabase
+        .from('road_reports')
+        .select('id, category, severity, title, description, created_at, verification_count, user_id')
+        .eq('is_active', true)
+        .gte('created_at', twelveHoursAgo)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (fetchError) {
+        console.error('[BreakingNews] Road reports error:', fetchError);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setRoadReports([]);
+        return;
+      }
+
+      // Fetch author nicknames
+      const userIds = [...new Set(data.map(r => r.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles_public')
+        .select('user_id, nickname')
+        .in('user_id', userIds);
+
+      const nicknameMap: Record<string, string> = {};
+      profiles?.forEach(p => { nicknameMap[p.user_id] = p.nickname || 'Usuario'; });
+
+      setRoadReports(data.map(r => ({
+        ...r,
+        author_nickname: nicknameMap[r.user_id] || 'Usuario',
+      })));
+    } catch (err) {
+      console.error('[BreakingNews] Error fetching road reports:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRoadReports();
+    const interval = setInterval(fetchRoadReports, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchRoadReports]);
   
   // Get all valid items (filtered by date only)
   const allValidItems = useMemo(() => {
@@ -357,6 +486,22 @@ export const BreakingNewsSection: React.FC = () => {
             </div>
           </div>
         </a>
+
+        {/* Road Reports from Community - Last 12 hours */}
+        {roadReports.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 pt-1">
+              <AlertTriangle className="w-4 h-4 text-orange-500" />
+              <span className="text-sm font-semibold text-foreground">
+                Reportes de Usuarios ({roadReports.length})
+              </span>
+              <span className="text-[10px] text-muted-foreground">últimas 12h</span>
+            </div>
+            {roadReports.map(report => (
+              <ReportCard key={report.id} report={report} />
+            ))}
+          </div>
+        )}
 
         {loading && validItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
