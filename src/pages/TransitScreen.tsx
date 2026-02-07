@@ -2,7 +2,7 @@
 // Road + Flight transit tracking with incident reports
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge, Mic, MicOff, MessageCircle, ArrowLeft, Share2 } from 'lucide-react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge, Mic, MicOff, MessageCircle, ArrowLeft, Share2, X } from 'lucide-react';
 import { ShareTripToWhatsApp } from '@/components/ShareTripToWhatsApp';
 import { ShareArrivalToWhatsApp } from '@/components/ShareArrivalToWhatsApp';
 import { GpsStatusBanner } from '@/components/GpsStatusBanner';
@@ -717,8 +717,10 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       return;
     }
 
-    if (!position) {
-      toast.error('Se requiere ubicación GPS');
+    // Use manually selected location or fall back to GPS
+    const loc = reportLocation || (position ? { lat: position.lat, lng: position.lng } : null);
+    if (!loc) {
+      toast.error('Selecciona una ubicación en el mapa o activa el GPS');
       return;
     }
 
@@ -746,8 +748,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           severity: reportForm.severity,
           title: title,
           description: reportForm.description || null,
-          lat: position.lat,
-          lng: position.lng,
+          lat: loc.lat,
+          lng: loc.lng,
           is_active: true,
         })
         .select()
@@ -813,8 +815,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         await supabase.functions.invoke('notify-nearby-report', {
           body: {
             reportId: reportData.id,
-            lat: position.lat,
-            lng: position.lng,
+            lat: loc.lat,
+            lng: loc.lng,
             title: title,
             category: reportForm.category,
             creatorId: user.id,
@@ -874,6 +876,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     });
     setReportImages([]);
     setReportAudio(null);
+    setReportLocation(null);
+    setReportLocationLabel('');
   };
 
   const getSeverityLabel = (severity: ReportSeverity) => {
@@ -2356,7 +2360,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               </Button>
               <Button
                 onClick={editingReport ? handleUpdateReport : handleReportSubmit}
-                disabled={submitting || (!editingReport && !position)}
+                disabled={submitting || (!editingReport && !position && !reportLocation)}
                 className="flex-1 bg-warning text-warning-foreground hover:bg-warning/90"
               >
                 {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
@@ -2365,22 +2369,56 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
             </div>
 
             {!editingReport && (
-              <div className="text-xs text-center">
-                {locationLoading ? (
-                  <p className="text-muted-foreground flex items-center justify-center gap-2">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Obteniendo ubicación GPS...
-                  </p>
-                ) : position ? (
-                  <p className="text-green-500 flex items-center justify-center gap-2">
-                    <MapPin className="w-3 h-3" />
-                    Ubicación detectada
-                  </p>
-                ) : locationError ? (
-                  <p className="text-destructive">{locationError}</p>
-                ) : (
-                  <p className="text-destructive">Se requiere ubicación GPS para reportar</p>
-                )}
+              <div className="space-y-2">
+                {/* Location picker for remote reports */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={() => setShowReportMapPicker(true)}
+                  >
+                    <MapPin className="w-3.5 h-3.5 mr-1" />
+                    {reportLocation
+                      ? `📍 ${reportLocationLabel || `${reportLocation.lat.toFixed(4)}, ${reportLocation.lng.toFixed(4)}`}`
+                      : 'Seleccionar ubicación en mapa'}
+                  </Button>
+                  {reportLocation && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs px-2"
+                      onClick={() => { setReportLocation(null); setReportLocationLabel(''); }}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
+
+                <div className="text-xs text-center">
+                  {reportLocation ? (
+                    <p className="text-safe flex items-center justify-center gap-2">
+                      <MapPin className="w-3 h-3" />
+                      Ubicación manual seleccionada
+                    </p>
+                  ) : locationLoading ? (
+                    <p className="text-muted-foreground flex items-center justify-center gap-2">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Obteniendo ubicación GPS...
+                    </p>
+                  ) : position ? (
+                    <p className="text-safe flex items-center justify-center gap-2">
+                      <MapPin className="w-3 h-3" />
+                      Ubicación GPS detectada (o selecciona en mapa)
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      Sin GPS — selecciona ubicación en el mapa ☝️
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -2621,6 +2659,18 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Report Location Picker Map */}
+      <LocationPickerMap
+        isOpen={showReportMapPicker}
+        onClose={() => setShowReportMapPicker(false)}
+        onLocationSelect={(lat, lng, address) => {
+          setReportLocation({ lat, lng });
+          setReportLocationLabel(address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        }}
+        initialLat={position?.lat}
+        initialLng={position?.lng}
+      />
     </div>
   );
 };
