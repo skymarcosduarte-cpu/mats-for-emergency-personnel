@@ -219,6 +219,7 @@ interface RoadReportItem {
   created_at: string;
   verification_count: number;
   author_nickname?: string;
+  image_url?: string | null;
 }
 
 const INITIAL_ITEMS_COUNT = 10;
@@ -259,6 +260,17 @@ const ReportCard: React.FC<{ report: RoadReportItem }> = ({ report }) => {
             <p className="text-sm text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
               {report.description}
             </p>
+          )}
+          {/* Report image */}
+          {report.image_url && (
+            <div className="mt-2 rounded-md overflow-hidden border border-border/50">
+              <img
+                src={report.image_url}
+                alt={report.title}
+                className="w-full h-40 object-cover"
+                loading="lazy"
+              />
+            </div>
           )}
           <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
             {timeAgo && (
@@ -305,19 +317,52 @@ export const BreakingNewsSection: React.FC = () => {
         return;
       }
 
-      // Fetch author nicknames
+      const reportIds = data.map(r => r.id);
       const userIds = [...new Set(data.map(r => r.user_id))];
-      const { data: profiles } = await supabase
-        .from('profiles_public')
-        .select('user_id, nickname')
-        .in('user_id', userIds);
+
+      // Fetch author nicknames and first image per report in parallel
+      const [profilesRes, mediaRes] = await Promise.all([
+        supabase
+          .from('profiles_public')
+          .select('user_id, nickname')
+          .in('user_id', userIds),
+        supabase
+          .from('report_media')
+          .select('report_id, storage_path')
+          .eq('report_type', 'road_report')
+          .eq('media_type', 'image')
+          .in('report_id', reportIds),
+      ]);
 
       const nicknameMap: Record<string, string> = {};
-      profiles?.forEach(p => { nicknameMap[p.user_id] = p.nickname || 'Usuario'; });
+      profilesRes.data?.forEach(p => { nicknameMap[p.user_id] = p.nickname || 'Usuario'; });
+
+      // Get signed URL for the first image of each report
+      const imageMap: Record<string, string> = {};
+      if (mediaRes.data && mediaRes.data.length > 0) {
+        // Keep only first image per report
+        const firstPerReport: Record<string, string> = {};
+        mediaRes.data.forEach(m => {
+          if (!firstPerReport[m.report_id]) {
+            firstPerReport[m.report_id] = m.storage_path;
+          }
+        });
+
+        const signedUrlPromises = Object.entries(firstPerReport).map(async ([reportId, path]) => {
+          const { data: urlData } = await supabase.storage
+            .from('reports_media')
+            .createSignedUrl(path, 3600);
+          if (urlData?.signedUrl) {
+            imageMap[reportId] = urlData.signedUrl;
+          }
+        });
+        await Promise.all(signedUrlPromises);
+      }
 
       setRoadReports(data.map(r => ({
         ...r,
         author_nickname: nicknameMap[r.user_id] || 'Usuario',
+        image_url: imageMap[r.id] || null,
       })));
     } catch (err) {
       console.error('[BreakingNews] Error fetching road reports:', err);
