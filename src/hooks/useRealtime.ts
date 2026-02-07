@@ -694,6 +694,15 @@ export function useRoadReports() {
           });
         }
       )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'road_reports' },
+        (payload) => {
+          console.log('[useRoadReports] DELETE:', payload.old);
+          const deleted = payload.old as RoadReport;
+          setReports(prev => prev.filter(r => r.id !== deleted.id));
+        }
+      )
       .subscribe((status) => {
         console.log('[useRoadReports] Subscription status:', status);
       });
