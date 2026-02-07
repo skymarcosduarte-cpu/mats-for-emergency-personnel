@@ -417,13 +417,17 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       if (userError) throw userError;
       if (!user) throw new Error('No autenticado');
 
-      // Delete report (hard delete)
-      const { error } = await supabase
+      // Delete report (hard delete) – super users can delete any, others only their own
+      const isSuperUser = userRole === 'SOS_ACTIVO' || userRole === 'RESCATISTA';
+      let query = supabase
         .from('road_reports')
         .delete()
-        .eq('id', reportId)
-        .eq('user_id', user.id);
+        .eq('id', reportId);
+      if (!isSuperUser) {
+        query = query.eq('user_id', user.id);
+      }
 
+      const { error } = await query;
       if (error) throw error;
 
       toast.success('Reporte eliminado');
@@ -1863,6 +1867,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               const category = REPORT_CATEGORIES.find(c => c.value === report.category);
               const verificationCount = (report as unknown as { verification_count?: number }).verification_count || 0;
               const isOwner = currentUserId && report.user_id === currentUserId;
+              const isSuperUser = userRole === 'SOS_ACTIVO' || userRole === 'RESCATISTA';
+              const canDelete = isOwner || isSuperUser;
               
               return (
                 <Card key={report.id} className={cn(
@@ -1918,29 +1924,29 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                           </div>
                           <div className="flex items-center gap-1">
                             {isOwner && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0"
-                                  onClick={() => handleEditReport(report)}
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                  onClick={() => handleDeleteReport(report.id)}
-                                  disabled={deletingReport === report.id}
-                                >
-                                  {deletingReport === report.id ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  )}
-                                </Button>
-                              </>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={() => handleEditReport(report)}
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                onClick={() => handleDeleteReport(report.id)}
+                                disabled={deletingReport === report.id}
+                              >
+                                {deletingReport === report.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                              </Button>
                             )}
                             <Button
                               size="sm"

@@ -2512,8 +2512,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       }
     });
 
-    // Add/update report markers
-    reports.forEach((report) => {
+    // Add/update report markers (skip reports without coordinates – remote reports)
+    reports.filter(r => r.lat != null && r.lng != null).forEach((report) => {
       const key = `report-${report.id}`;
       const existingMarker = markersRef.current.get(key);
 
