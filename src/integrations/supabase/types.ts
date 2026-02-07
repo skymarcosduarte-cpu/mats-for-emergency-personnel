@@ -1178,8 +1178,8 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean | null
-          lat: number
-          lng: number
+          lat: number | null
+          lng: number | null
           resolved_at: string | null
           severity: number
           title: string
@@ -1194,8 +1194,8 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
-          lat: number
-          lng: number
+          lat?: number | null
+          lng?: number | null
           resolved_at?: string | null
           severity: number
           title: string
@@ -1210,8 +1210,8 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
-          lat?: number
-          lng?: number
+          lat?: number | null
+          lng?: number | null
           resolved_at?: string | null
           severity?: number
           title?: string
