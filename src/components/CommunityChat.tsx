@@ -1019,35 +1019,39 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Clear All Messages Confirmation */}
-      <AlertDialog open={showClearAllConfirm} onOpenChange={(open) => {
-        if (!isClearing) setShowClearAllConfirm(open);
-      }}>
-        <AlertDialogContent className="z-[100500]">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Trash2 className="w-5 h-5 text-destructive" />
-              ¿Borrar todo el historial?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Se eliminarán todos los mensajes de este chat para todos los usuarios. Esta acción no se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isClearing}>Cancelar</AlertDialogCancel>
-            <button
-              type="button"
-              onClick={async () => {
-                await handleClearAllMessages();
-              }}
-              disabled={isClearing}
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:pointer-events-none disabled:opacity-50"
-            >
-              {isClearing ? 'Borrando...' : 'Borrar todo'}
-            </button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Clear All Messages Confirmation - using simple div overlay instead of AlertDialog */}
+      {showClearAllConfirm && (
+        <div className="fixed inset-0 z-[200500] flex items-start justify-center pt-4 sm:items-center sm:pt-0">
+          <div className="fixed inset-0 bg-black/80" onClick={() => !isClearing && setShowClearAllConfirm(false)} />
+          <div className="relative z-[200510] w-[calc(100%-2rem)] max-w-lg rounded-lg border bg-background p-6 shadow-lg">
+            <div className="flex flex-col space-y-2 text-center sm:text-left">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-destructive" />
+                ¿Borrar todo el historial?
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Se eliminarán todos los mensajes de este chat para todos los usuarios. Esta acción no se puede deshacer.
+              </p>
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowClearAllConfirm(false)}
+                disabled={isClearing}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleClearAllMessages()}
+                disabled={isClearing}
+              >
+                {isClearing ? 'Borrando...' : 'Borrar todo'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
