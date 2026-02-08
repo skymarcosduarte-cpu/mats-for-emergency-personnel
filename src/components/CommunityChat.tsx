@@ -215,7 +215,11 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
 
   // Clear all messages for this context (only for authorized users)
   const handleClearAllMessages = async () => {
-    if (!canClearAll || !user?.id) return;
+    console.log('[ClearAll] Called', { canClearAll, userId: user?.id, contextType, contextId });
+    if (!canClearAll || !user?.id) {
+      console.log('[ClearAll] Blocked - not authorized or no user');
+      return;
+    }
     
     setIsClearing(true);
     try {
@@ -231,14 +235,16 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
         query = query.eq('context_type', 'general');
       }
       
-      const { error } = await query;
+      console.log('[ClearAll] Executing delete query for context:', contextType);
+      const { error, count } = await query;
+      console.log('[ClearAll] Result:', { error, count });
       if (error) throw error;
       
       setMessages([]);
       toast.success('Historial borrado');
       setShowClearAllConfirm(false);
     } catch (err) {
-      console.error('Error clearing messages:', err);
+      console.error('[ClearAll] Error clearing messages:', err);
       toast.error('Error al borrar historial');
     } finally {
       setIsClearing(false);
@@ -1014,7 +1020,9 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
       </AlertDialog>
 
       {/* Clear All Messages Confirmation */}
-      <AlertDialog open={showClearAllConfirm} onOpenChange={setShowClearAllConfirm}>
+      <AlertDialog open={showClearAllConfirm} onOpenChange={(open) => {
+        if (!isClearing) setShowClearAllConfirm(open);
+      }}>
         <AlertDialogContent className="z-[100500]">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
@@ -1027,17 +1035,16 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isClearing}>Cancelar</AlertDialogCancel>
-            <Button 
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                handleClearAllMessages();
-              }} 
-              variant="destructive"
+            <button
+              type="button"
+              onClick={async () => {
+                await handleClearAllMessages();
+              }}
               disabled={isClearing}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:pointer-events-none disabled:opacity-50"
             >
               {isClearing ? 'Borrando...' : 'Borrar todo'}
-            </Button>
+            </button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
