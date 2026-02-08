@@ -80,6 +80,8 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
   
   // Delete confirmation
   const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -94,6 +96,9 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
     AUTHORIZED_DRILL_CLOSERS.includes(user.id) &&
     !!contextId &&
     (contextType === 'drill' || contextType === 'clave100');
+
+  // Check if current user can clear all messages
+  const canClearAll = !!user?.id && AUTHORIZED_DRILL_CLOSERS.includes(user.id);
 
   // Fetch messages
   const fetchMessages = useCallback(async () => {
@@ -205,6 +210,38 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
     } catch (err) {
       console.error('Error closing drill chat:', err);
       toast.error('Error al cerrar el chat');
+    }
+  };
+
+  // Clear all messages for this context (only for authorized users)
+  const handleClearAllMessages = async () => {
+    if (!canClearAll || !user?.id) return;
+    
+    setIsClearing(true);
+    try {
+      let query = (supabase as any)
+        .from('community_messages')
+        .delete();
+      
+      if (contextType !== 'general' && contextId) {
+        query = query.eq('context_type', contextType).eq('context_id', contextId);
+      } else if (contextType !== 'general') {
+        query = query.eq('context_type', contextType);
+      } else {
+        query = query.eq('context_type', 'general');
+      }
+      
+      const { error } = await query;
+      if (error) throw error;
+      
+      setMessages([]);
+      toast.success('Historial borrado');
+      setShowClearAllConfirm(false);
+    } catch (err) {
+      console.error('Error clearing messages:', err);
+      toast.error('Error al borrar historial');
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -632,6 +669,21 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {/* Clear all messages button - only for authorized users */}
+            {canClearAll && messages.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowClearAllConfirm(true);
+                }}
+                className="text-destructive hover:bg-destructive/10 min-w-[44px] min-h-[44px]"
+                title="Borrar todo el historial"
+              >
+                <Trash2 className="w-5 h-5" />
+              </Button>
+            )}
             {/* Close drill chat button - only for authorized users */}
             {canCloseDrillChat && !chatClosed && (
               <Button 
@@ -956,6 +1008,31 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleCloseDrillChat} className="bg-amber-600 hover:bg-amber-700">
               Cerrar Chat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear All Messages Confirmation */}
+      <AlertDialog open={showClearAllConfirm} onOpenChange={setShowClearAllConfirm}>
+        <AlertDialogContent className="z-[100500]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-destructive" />
+              ¿Borrar todo el historial?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminarán todos los mensajes de este chat para todos los usuarios. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleClearAllMessages} 
+              className="bg-destructive hover:bg-destructive/90"
+              disabled={isClearing}
+            >
+              {isClearing ? 'Borrando...' : 'Borrar todo'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
