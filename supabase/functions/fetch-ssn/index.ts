@@ -6,8 +6,8 @@ const corsHeaders = {
 };
 
 const SSN_URL = 'http://www.ssn.unam.mx/sismicidad/ultimos/';
-const TIMEOUT_MS = 30000; // 30 seconds
-const MAX_RETRIES = 3;
+const TIMEOUT_MS = 8000; // 8 seconds per attempt
+const MAX_RETRIES = 2;
 
 async function fetchWithRetry(url: string, retries = MAX_RETRIES): Promise<Response> {
   for (let attempt = 1; attempt <= retries; attempt++) {
