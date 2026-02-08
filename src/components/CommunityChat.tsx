@@ -1026,14 +1026,18 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleClearAllMessages} 
-              className="bg-destructive hover:bg-destructive/90"
+            <AlertDialogCancel disabled={isClearing}>Cancelar</AlertDialogCancel>
+            <Button 
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleClearAllMessages();
+              }} 
+              variant="destructive"
               disabled={isClearing}
             >
               {isClearing ? 'Borrando...' : 'Borrar todo'}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
