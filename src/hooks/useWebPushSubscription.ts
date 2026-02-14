@@ -73,7 +73,7 @@ export function useWebPushSubscription() {
       
       try {
         const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
+        const subscription = await (registration as any).pushManager.getSubscription();
         
         setState({
           isSupported: true,
@@ -209,12 +209,12 @@ export function useWebPushSubscription() {
       }
 
       // Check for existing subscription
-      let subscription = await state.registration.pushManager.getSubscription();
+      let subscription = await (state.registration as any).pushManager.getSubscription();
       
       // If no subscription or VAPID key changed, create new one
       if (!subscription) {
         try {
-          subscription = await state.registration.pushManager.subscribe({
+          subscription = await (state.registration as any).pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
           });
@@ -244,7 +244,7 @@ export function useWebPushSubscription() {
     if (!state.registration) return false;
 
     try {
-      const subscription = await state.registration.pushManager.getSubscription();
+      const subscription = await (state.registration as any).pushManager.getSubscription();
       
       if (subscription) {
         // Remove from database
@@ -283,14 +283,14 @@ export function useWebPushSubscription() {
       state.registration
     ) {
       // Auto-resubscribe silently
-      state.registration.pushManager.getSubscription().then(async (existingSub) => {
+      (state.registration as any).pushManager.getSubscription().then(async (existingSub: any) => {
         if (existingSub) {
           await saveSubscription(existingSub);
           setState(prev => ({ ...prev, isSubscribed: true }));
         } else {
           // Try to create new subscription
           try {
-            const subscription = await state.registration!.pushManager.subscribe({
+            const subscription = await (state.registration as any).pushManager.subscribe({
               userVisibleOnly: true,
               applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
             });
@@ -324,7 +324,7 @@ export function useWebPushSubscription() {
     const timer = setTimeout(async () => {
       // Re-check current subscription status
       try {
-        const currentSub = await state.registration?.pushManager.getSubscription();
+        const currentSub = await (state.registration as any)?.pushManager.getSubscription();
         
         if (!currentSub && state.permission !== 'denied') {
           // User doesn't have push subscription - this is critical for emergency app
