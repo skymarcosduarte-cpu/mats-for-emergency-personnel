@@ -1,18 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HeartPulse, BookOpen, Phone } from 'lucide-react';
 import { SectionLanding, SectionLandingItem } from '@/components/SectionLanding';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import EmergencyGuidesScreen from '@/components/EmergencyGuidesScreen';
 import EmergencyDirectory from '@/components/EmergencyDirectory';
 
-interface ResourcesScreenProps {
-  onGoHome?: () => void;
-}
-
 type SubView = 'landing' | 'guides' | 'directory';
 
-export default function ResourcesScreen({ onGoHome }: ResourcesScreenProps) {
-  const [subView, setSubView] = useState<SubView>('landing');
+interface ResourcesScreenProps {
+  onGoHome?: () => void;
+  initialSubView?: SubView;
+}
+
+export default function ResourcesScreen({ onGoHome, initialSubView }: ResourcesScreenProps) {
+  const [subView, setSubView] = useState<SubView>(initialSubView || 'landing');
+
+  // Sync when initialSubView changes (e.g. after panic alert)
+  useEffect(() => {
+    if (initialSubView) {
+      setSubView(initialSubView);
+    }
+  }, [initialSubView]);
 
   const items: SectionLandingItem[] = [
     {
