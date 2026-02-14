@@ -64,12 +64,14 @@ export function useSkyAlertAlerts() {
       const cached = localStorage.getItem(STORAGE_KEY);
       if (cached) {
         const { alerts: cachedAlerts, timestamp } = JSON.parse(cached);
+        // Always seed seen IDs from cache to prevent re-alerting on reload
+        if (Array.isArray(cachedAlerts)) {
+          cachedAlerts.forEach((a: SkyAlert) => seenAlertIds.current.add(a.id));
+        }
         const age = Date.now() - timestamp;
         if (age < CACHE_TTL_MS) {
           setAlerts(cachedAlerts);
           setLastChecked(new Date(timestamp));
-          // Populate seen alerts
-          cachedAlerts.forEach((a: SkyAlert) => seenAlertIds.current.add(a.id));
         }
       }
     } catch (e) {
