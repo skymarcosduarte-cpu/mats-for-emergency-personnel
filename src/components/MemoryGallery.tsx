@@ -2,6 +2,7 @@
 // Displays community nostalgic photos with likes, comments, date, and filters
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { 
   ImagePlus, Loader2, Trash2, X, Upload, Camera, 
   ArrowLeft, RefreshCw, ZoomIn, Heart, MessageCircle, Calendar, Send, Filter, User,
@@ -681,9 +682,7 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
         {/* Header */}
         <div className="sticky top-0 z-20 px-4 py-3 bg-background/95 backdrop-blur-sm border-b border-border">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
+            <BackToHomeButton onClick={onBack} />
             <div>
               <h1 className="text-xl font-bold text-foreground">Galería del Recuerdo</h1>
               <p className="text-xs text-muted-foreground">{photos.length} fotos en la galería</p>
@@ -805,9 +804,7 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
         <div className="sticky top-0 z-20 px-4 py-3 bg-background/95 backdrop-blur-sm border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={handleBackToSelection} className="h-8 w-8">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
+              <BackToHomeButton onClick={handleBackToSelection} />
               <div>
                 <h1 className="text-xl font-bold text-foreground">Por Usuario</h1>
                 <p className="text-xs text-muted-foreground">
@@ -929,9 +926,7 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ onBack }) => {
       <div className="sticky top-0 z-20 px-4 py-3 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={handleBackToSelection} className="h-8 w-8">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
+              <BackToHomeButton onClick={handleBackToSelection} />
             <div>
               <h1 className="text-xl font-bold text-foreground">Galería del Recuerdo</h1>
               <p className="text-xs text-muted-foreground">

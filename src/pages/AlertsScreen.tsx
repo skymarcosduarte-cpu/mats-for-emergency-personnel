@@ -591,14 +591,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowLanding(true)}
-              className="h-8 w-8"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
+            <BackToHomeButton onClick={() => setShowLanding(true)} />
             <h1 className="text-xl font-bold text-foreground">{getSectionTitle()}</h1>
           </div>
           <Button

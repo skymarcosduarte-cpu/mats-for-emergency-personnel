@@ -750,14 +750,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
         <div className="sticky top-0 z-20 -mx-4 px-4 pb-3 bg-background/95 backdrop-blur-sm border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowLanding(true)}
-                className="h-8 w-8"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
+              <BackToHomeButton onClick={() => setShowLanding(true)} />
               <h1 className="text-xl font-bold text-foreground">{getSectionTitle()}</h1>
             </div>
             <div className="flex gap-2">

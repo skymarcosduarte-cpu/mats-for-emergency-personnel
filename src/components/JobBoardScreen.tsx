@@ -1,6 +1,7 @@
 // Job Board Screen - Bolsa de Trabajo
 // Users can post CVs and job opportunities
 import React, { useState } from 'react';
+import { BackToHomeButton } from '@/components/BackToHomeButton';
 import {
   Briefcase, Plus, FileText, User, Award, Target, Loader2,
   ArrowLeft, RefreshCw, Trash2, Edit, Download, Building2, Search, Linkedin, ExternalLink
@@ -177,9 +178,7 @@ export const JobBoardScreen: React.FC<JobBoardScreenProps> = ({ onBack }) => {
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
+            <BackToHomeButton onClick={onBack} />
             <h1 className="text-xl font-bold text-foreground">Bolsa de Trabajo</h1>
           </div>
           <div className="flex gap-2">
