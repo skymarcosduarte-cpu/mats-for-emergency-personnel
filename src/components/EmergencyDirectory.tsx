@@ -684,85 +684,81 @@ export default function EmergencyDirectory() {
               </div>
             </div>
 
-            {/* Country grid */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Country list - each country is a button that expands inline */}
+            <div className="space-y-3">
               {countries.map((country) => {
                 const totalDeps = country.divisiones.reduce((acc: number, d: any) => acc + d.dependencias.length, 0);
+                const isExpanded = expandedCountry === country.codigo_pais;
                 return (
-                  <button
-                    key={country.codigo_pais}
-                    onClick={() => setExpandedCountry(expandedCountry === country.codigo_pais ? null : country.codigo_pais)}
-                    className={`flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all duration-200 hover:scale-105 active:scale-95 ${
-                      expandedCountry === country.codigo_pais
-                        ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
-                        : 'border-border bg-card hover:border-primary/50'
-                    }`}
-                  >
-                    <span className="text-4xl">{country.bandera}</span>
-                    <p className="font-bold text-sm text-center leading-tight">{country.nombre}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {country.divisiones.length} {country.division_tipo} · {totalDeps} dep.
-                    </p>
-                  </button>
+                  <div key={country.codigo_pais}>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedCountry(isExpanded ? null : country.codigo_pais)}
+                      className={cn(
+                        'flex items-center gap-3 w-full p-4 rounded-2xl border-2 transition-all duration-200 active:scale-[0.97] text-left',
+                        isExpanded
+                          ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
+                          : 'border-border bg-card hover:border-primary/50'
+                      )}
+                    >
+                      <span className="text-4xl">{country.bandera}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-base">{country.nombre}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {country.divisiones.length} {country.division_tipo} · {totalDeps} dependencias
+                        </p>
+                      </div>
+                      <ChevronRight className={cn(
+                        'w-5 h-5 text-muted-foreground transition-transform duration-200 shrink-0',
+                        isExpanded && 'rotate-90 text-primary'
+                      )} />
+                    </button>
+
+                    {/* Expanded detail inline */}
+                    {isExpanded && (
+                      <div className="mt-2 animate-fade-in border-2 border-primary/30 rounded-2xl p-4 bg-card space-y-3">
+                        <NationalBanner country={country} />
+
+                        <Accordion type="single" collapsible className="space-y-2">
+                          {country.divisiones.map((div) => (
+                            <AccordionItem
+                              key={div.codigo}
+                              value={`${country.codigo_pais}-${div.codigo}`}
+                              className="border border-border rounded-xl overflow-hidden bg-background"
+                            >
+                              <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                                <div className="flex items-center gap-2 text-left">
+                                  <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+                                    <MapPin className="w-3.5 h-3.5 text-primary" />
+                                  </div>
+                                  <div>
+                                    <p className="font-bold text-sm">{div.nombre}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {div.dependencias.length} dependencia{div.dependencias.length !== 1 ? 's' : ''}
+                                    </p>
+                                  </div>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="px-3 pb-3">
+                                <div className="space-y-3">
+                                  {div.dependencias.map((dep, i) => (
+                                    <DependencyCard
+                                      key={`${dep.nombre}-${i}`}
+                                      dep={dep}
+                                      divisionName={div.nombre}
+                                    />
+                                  ))}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
-
-            {/* Expanded country detail */}
-            {expandedCountry && countries.filter(c => c.codigo_pais === expandedCountry).map((country) => (
-              <div
-                key={country.codigo_pais}
-                ref={(el) => { if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100); }}
-                className="animate-fade-in border-2 border-primary/30 rounded-2xl p-4 bg-card space-y-3"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{country.bandera}</span>
-                  <div>
-                    <p className="font-black text-lg">{country.nombre}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {country.divisiones.length} {country.division_tipo} · {country.divisiones.reduce((acc: number, d: any) => acc + d.dependencias.length, 0)} dependencias
-                    </p>
-                  </div>
-                </div>
-
-                <NationalBanner country={country} />
-
-                <Accordion type="single" collapsible className="space-y-2">
-                  {country.divisiones.map((div) => (
-                    <AccordionItem
-                      key={div.codigo}
-                      value={`${country.codigo_pais}-${div.codigo}`}
-                      className="border border-border rounded-xl overflow-hidden bg-background"
-                    >
-                      <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
-                        <div className="flex items-center gap-2 text-left">
-                          <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
-                            <MapPin className="w-3.5 h-3.5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-sm">{div.nombre}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {div.dependencias.length} dependencia{div.dependencias.length !== 1 ? 's' : ''}
-                            </p>
-                          </div>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="px-3 pb-3">
-                        <div className="space-y-3">
-                          {div.dependencias.map((dep, i) => (
-                            <DependencyCard
-                              key={`${dep.nombre}-${i}`}
-                              dep={dep}
-                              divisionName={div.nombre}
-                            />
-                          ))}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
-            ))}
           </div>
         )}
       </div>
