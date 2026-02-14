@@ -664,36 +664,65 @@ export default function EmergencyDirectory() {
         )}
 
         {/* ── List View ── */}
-        {viewMode === 'list' && activeCountry && (
-          <Accordion type="single" collapsible className="space-y-2">
-            {activeCountry.divisiones.map((div) => (
+        {viewMode === 'list' && (
+          <Accordion type="single" collapsible className="space-y-3">
+            {countries.map((country) => (
               <AccordionItem
-                key={div.codigo}
-                value={div.codigo}
+                key={country.codigo_pais}
+                value={country.codigo_pais}
                 className="border-2 border-border rounded-2xl overflow-hidden bg-card"
               >
                 <AccordionTrigger className="px-4 py-3 hover:no-underline">
                   <div className="flex items-center gap-3 text-left">
-                    <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-                      <MapPin className="w-4 h-4 text-primary" />
-                    </div>
+                    <span className="text-2xl">{country.bandera}</span>
                     <div>
-                      <p className="font-bold text-base">{div.nombre}</p>
+                      <p className="font-bold text-base">{country.nombre}</p>
                       <p className="text-xs text-muted-foreground">
-                        {div.dependencias.length} dependencia{div.dependencias.length !== 1 ? 's' : ''}
+                        {country.divisiones.length} {country.division_tipo} · {country.divisiones.reduce((acc, d) => acc + d.dependencias.length, 0)} dependencias
                       </p>
                     </div>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <div className="space-y-3">
-                    {div.dependencias.map((dep, i) => (
-                      <DependencyCard
-                        key={`${dep.nombre}-${i}`}
-                        dep={dep}
-                        divisionName={div.nombre}
-                      />
-                    ))}
+                    {/* National phones for this country */}
+                    <NationalBanner country={country} />
+
+                    {/* Divisions accordion */}
+                    <Accordion type="single" collapsible className="space-y-2">
+                      {country.divisiones.map((div) => (
+                        <AccordionItem
+                          key={div.codigo}
+                          value={`${country.codigo_pais}-${div.codigo}`}
+                          className="border border-border rounded-xl overflow-hidden bg-background"
+                        >
+                          <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                            <div className="flex items-center gap-2 text-left">
+                              <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+                                <MapPin className="w-3.5 h-3.5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="font-bold text-sm">{div.nombre}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {div.dependencias.length} dependencia{div.dependencias.length !== 1 ? 's' : ''}
+                                </p>
+                              </div>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-3 pb-3">
+                            <div className="space-y-3">
+                              {div.dependencias.map((dep, i) => (
+                                <DependencyCard
+                                  key={`${dep.nombre}-${i}`}
+                                  dep={dep}
+                                  divisionName={div.nombre}
+                                />
+                              ))}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
                   </div>
                 </AccordionContent>
               </AccordionItem>
