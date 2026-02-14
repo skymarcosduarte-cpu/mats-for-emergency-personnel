@@ -199,6 +199,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   const { disasterMode } = useAppState();
   const [panicOpen, setPanicOpen] = useState(false);
   const [isSavingAlert, setIsSavingAlert] = useState(false);
+  const [resourcesInitialView, setResourcesInitialView] = useState<'landing' | 'directory' | undefined>(undefined);
   const [alertRefreshTrigger, setAlertRefreshTrigger] = useState(0);
   const { user } = useAuth();
   
@@ -521,6 +522,12 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
           duration: 5000,
         });
         setAlertRefreshTrigger(prev => prev + 1);
+
+        // After alert sent, navigate to emergency directory for quick access to local numbers
+        setTimeout(() => {
+          setResourcesInitialView('directory');
+          setActiveTab('resources');
+        }, 2000);
         
         // Notify emergency contacts via WhatsApp
         notifyEmergencyContacts(type, lat, lng, message);
@@ -615,7 +622,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       transit: <TransitScreen userRole={userRole} onOpenMessaging={handleOpenMessaging} onGoHome={handleGoHome} />,
       alerts: <AlertsScreen userRole={userRole} onGoHome={handleGoHome} />,
       community: <CommunityScreen userRole={userRole} onGoHome={handleGoHome} />,
-      resources: <ResourcesScreen onGoHome={handleGoHome} />,
+      resources: <ResourcesScreen onGoHome={() => { setResourcesInitialView(undefined); handleGoHome(); }} initialSubView={resourcesInitialView} />,
       status: <StatusScreen userRole={userRole} />,
       settings: <SettingsScreen onLogout={handleLogout} onGoHome={handleGoHome} />,
     };
