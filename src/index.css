@@ -339,7 +339,7 @@
   /* Main content wrapper - scrollable area between fixed header/footer */
   .main-content {
     padding-top: var(--app-header-height);
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0));
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0));
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
