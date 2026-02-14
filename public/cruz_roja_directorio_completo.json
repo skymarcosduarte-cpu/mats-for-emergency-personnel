@@ -1,0 +1,1537 @@
+{
+  "version": "3.0.0_cruz_roja",
+  "fecha_actualizacion": "2026-02-14",
+  "descripcion": "Directorio completo de Cruz Roja - teléfonos y ubicaciones por país, estado/provincia y ciudad",
+  "nota_importante": "Este archivo complementa el directorio de emergencias principal. La Cruz Roja debe integrarse en cada país/estado como una dependencia adicional",
+  
+  "cruz_roja_internacional": {
+    "telefono_emergencias_generico": "Varía por país - ver números nacionales",
+    "web": "https://www.ifrc.org",
+    "descripcion": "Federación Internacional de Sociedades de la Cruz Roja y de la Media Luna Roja"
+  },
+  
+  "paises": [
+    {
+      "codigo_pais": "MX",
+      "nombre": "México",
+      "organizacion": "Cruz Roja Mexicana",
+      "telefono_nacional": "911",
+      "telefono_nacional_descripcion": "A través del número único de emergencias 911 se puede contactar a Cruz Roja",
+      "web": "https://www.cruzrojamexicana.org.mx",
+      "sede_nacional": {
+        "nombre": "Cruz Roja Mexicana - Sede Nacional",
+        "direccion": "Luis Vives 200, Polanco, Miguel Hidalgo, CDMX",
+        "telefono": "55-5395-1111",
+        "email": "informes@cruzrojamexicana.org.mx",
+        "servicios": ["coordinacion_nacional", "banco_sangre", "capacitacion"]
+      },
+      "numero_delegaciones": "555 filiales en todo el país",
+      "estados": [
+        {
+          "codigo": "AGS",
+          "nombre": "Aguascalientes",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Aguascalientes",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Aguascalientes",
+              "direccion": "Dr. Enrique González Medina #104, Fracc. El Dorado",
+              "codigo_postal": "20230",
+              "telefono": "449-916-4200",
+              "telefonos_adicionales": ["449-916-5855", "449-916-4714"],
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "banco_sangre", "capacitacion"],
+              "coordenadas": {"latitud": 21.8853, "longitud": -102.2916}
+            }
+          ]
+        },
+        {
+          "codigo": "BC",
+          "nombre": "Baja California",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Tijuana",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Tijuana",
+              "direccion": "Blvd. Díaz Ordaz No. 14517-1, Fracc. Las Fuentes",
+              "codigo_postal": "22600",
+              "telefono": "664-448-2820",
+              "telefonos_adicionales": ["664-448-2821", "664-448-2822", "664-448-2823"],
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "rescate"],
+              "coordenadas": {"latitud": 32.5149, "longitud": -117.0382}
+            },
+            {
+              "nombre": "Cruz Roja Mexicali",
+              "tipo": "delegacion",
+              "ciudad": "Mexicali",
+              "direccion": "Calzada Independencia, Mexicali",
+              "telefono": "686-557-4545",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 32.6245, "longitud": -115.4523}
+            }
+          ]
+        },
+        {
+          "codigo": "BCS",
+          "nombre": "Baja California Sur",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja La Paz",
+              "tipo": "delegacion_estatal",
+              "ciudad": "La Paz",
+              "direccion": "Av. Reforma No. 1091, La Paz",
+              "telefono": "612-122-1111",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "rescate_maritimo"],
+              "coordenadas": {"latitud": 24.1426, "longitud": -110.3128}
+            },
+            {
+              "nombre": "Cruz Roja Los Cabos",
+              "tipo": "delegacion",
+              "ciudad": "San José del Cabo",
+              "direccion": "Blvd. Mijares, San José del Cabo",
+              "telefono": "624-142-0316",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "atencion_turistas"],
+              "coordenadas": {"latitud": 23.0545, "longitud": -109.6949}
+            }
+          ]
+        },
+        {
+          "codigo": "CAMP",
+          "nombre": "Campeche",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Campeche",
+              "tipo": "delegacion_estatal",
+              "ciudad": "San Francisco de Campeche",
+              "direccion": "Av. Ah-Kim-Pech, San Francisco de Campeche",
+              "telefono": "981-816-0666",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 19.8301, "longitud": -90.5349}
+            },
+            {
+              "nombre": "Cruz Roja Ciudad del Carmen",
+              "tipo": "delegacion",
+              "ciudad": "Ciudad del Carmen",
+              "direccion": "Av. Juárez s/n, Ciudad del Carmen",
+              "telefono": "938-382-0998",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "rescate_maritimo"],
+              "coordenadas": {"latitud": 18.6465, "longitud": -91.8323}
+            }
+          ]
+        },
+        {
+          "codigo": "CHIS",
+          "nombre": "Chiapas",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Tuxtla Gutiérrez",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Tuxtla Gutiérrez",
+              "direccion": "Libramiento Norte, Tuxtla Gutiérrez",
+              "telefono": "961-617-0909",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "banco_sangre"],
+              "coordenadas": {"latitud": 16.7569, "longitud": -93.1292}
+            },
+            {
+              "nombre": "Cruz Roja Tapachula",
+              "tipo": "delegacion",
+              "ciudad": "Tapachula",
+              "direccion": "Av. Central Norte, Tapachula",
+              "telefono": "962-626-4747",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "atencion_migrantes"],
+              "coordenadas": {"latitud": 14.9028, "longitud": -92.2633}
+            }
+          ]
+        },
+        {
+          "codigo": "CHIH",
+          "nombre": "Chihuahua",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Chihuahua",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Chihuahua",
+              "direccion": "Av. Teófilo Borunda No. 2405, Fracc. Jardines del Santuario",
+              "telefono": "614-415-5555",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "banco_sangre"],
+              "coordenadas": {"latitud": 28.6353, "longitud": -106.0889}
+            },
+            {
+              "nombre": "Cruz Roja Ciudad Juárez",
+              "tipo": "delegacion",
+              "ciudad": "Ciudad Juárez",
+              "direccion": "Av. Revolución y Bustamante, Ciudad Juárez",
+              "telefono": "656-613-5656",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "atencion_frontera"],
+              "coordenadas": {"latitud": 31.6904, "longitud": -106.4245}
+            },
+            {
+              "nombre": "Cruz Roja Creel",
+              "tipo": "delegacion",
+              "ciudad": "Creel",
+              "direccion": "Paseo de Arareco No. 15101, Fracc. Progreso",
+              "telefono": "635-456-0165",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "rescate_montana"],
+              "coordenadas": {"latitud": 27.7509, "longitud": -107.6346}
+            }
+          ]
+        },
+        {
+          "codigo": "CDMX",
+          "nombre": "Ciudad de México",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Mexicana - Sede Nacional CDMX",
+              "tipo": "sede_nacional",
+              "ciudad": "Ciudad de México",
+              "alcaldia": "Miguel Hidalgo",
+              "direccion": "Luis Vives 200, Polanco",
+              "codigo_postal": "11510",
+              "telefono": "55-5395-1111",
+              "telefono_emergencia": "911",
+              "email": "informes@cruzrojamexicana.org.mx",
+              "web": "https://www.cruzrojamexicana.org.mx",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre", "capacitacion", "coordinacion_nacional"],
+              "coordenadas": {"latitud": 19.4326, "longitud": -99.1961}
+            },
+            {
+              "nombre": "Cruz Roja Tlalpan",
+              "tipo": "delegacion",
+              "ciudad": "Ciudad de México",
+              "alcaldia": "Tlalpan",
+              "direccion": "Av. División del Norte, Tlalpan",
+              "telefono": "55-5424-4545",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 19.2837, "longitud": -99.1677}
+            },
+            {
+              "nombre": "Cruz Roja Azcapotzalco",
+              "tipo": "delegacion",
+              "ciudad": "Ciudad de México",
+              "alcaldia": "Azcapotzalco",
+              "direccion": "Av. de las Culturas, Azcapotzalco",
+              "telefono": "55-5355-6789",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 19.4909, "longitud": -99.1862}
+            },
+            {
+              "nombre": "Cruz Roja Iztapalapa",
+              "tipo": "delegacion",
+              "ciudad": "Ciudad de México",
+              "alcaldia": "Iztapalapa",
+              "direccion": "Av. Ermita Iztapalapa, Iztapalapa",
+              "telefono": "55-5686-9696",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 19.3467, "longitud": -99.0558}
+            }
+          ]
+        },
+        {
+          "codigo": "COAH",
+          "nombre": "Coahuila",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Saltillo",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Saltillo",
+              "direccion": "Blvd. Venustiano Carranza, Saltillo",
+              "telefono": "844-414-5555",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "banco_sangre"],
+              "coordenadas": {"latitud": 25.4232, "longitud": -100.9737}
+            },
+            {
+              "nombre": "Cruz Roja Torreón",
+              "tipo": "delegacion",
+              "ciudad": "Torreón",
+              "direccion": "Av. Juárez, Torreón",
+              "telefono": "871-716-1414",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 25.5428, "longitud": -103.4068}
+            },
+            {
+              "nombre": "Cruz Roja Monclova",
+              "tipo": "delegacion",
+              "ciudad": "Monclova",
+              "direccion": "Blvd. Harold R. Pape, Monclova",
+              "telefono": "866-633-7070",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 26.9067, "longitud": -101.4206}
+            }
+          ]
+        },
+        {
+          "codigo": "COL",
+          "nombre": "Colima",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Colima",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Colima",
+              "direccion": "Av. Ejército Mexicano, Colima",
+              "telefono": "312-312-0009",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "volcanes"],
+              "coordenadas": {"latitud": 19.2433, "longitud": -103.7250}
+            },
+            {
+              "nombre": "Cruz Roja Manzanillo",
+              "tipo": "delegacion",
+              "ciudad": "Manzanillo",
+              "direccion": "Blvd. Miguel de la Madrid, Manzanillo",
+              "telefono": "314-334-0545",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "rescate_maritimo"],
+              "coordenadas": {"latitud": 19.0519, "longitud": -104.3190}
+            }
+          ]
+        },
+        {
+          "codigo": "DGO",
+          "nombre": "Durango",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Durango",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Victoria de Durango",
+              "direccion": "Blvd. Domingo Arrieta, Durango",
+              "telefono": "618-811-8181",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 24.0277, "longitud": -104.6532}
+            }
+          ]
+        },
+        {
+          "codigo": "GTO",
+          "nombre": "Guanajuato",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja León",
+              "tipo": "delegacion_destacada",
+              "ciudad": "León",
+              "direccion": "Blvd. Alonso Torres No. 2001, Fracc. León I",
+              "telefono": "477-716-5656",
+              "telefono_emergencia": "911",
+              "email": "contacto@cruzrojaleon.org",
+              "horario": "24 horas",
+              "nota": "Segunda delegación más antigua de México (fundada 1913)",
+              "servicios": ["hospital", "ambulancias", "banco_sangre", "capacitacion"],
+              "coordenadas": {"latitud": 21.1236, "longitud": -101.6880}
+            },
+            {
+              "nombre": "Cruz Roja Guanajuato",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Guanajuato",
+              "direccion": "Paseo de la Presa, Guanajuato",
+              "telefono": "473-732-0998",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 21.0190, "longitud": -101.2574}
+            },
+            {
+              "nombre": "Cruz Roja Irapuato",
+              "tipo": "delegacion",
+              "ciudad": "Irapuato",
+              "direccion": "Blvd. Vasco de Quiroga, Irapuato",
+              "telefono": "462-626-1616",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 20.6767, "longitud": -101.3542}
+            },
+            {
+              "nombre": "Cruz Roja Celaya",
+              "tipo": "delegacion",
+              "ciudad": "Celaya",
+              "direccion": "Blvd. Adolfo López Mateos, Celaya",
+              "telefono": "461-611-3939",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 20.5219, "longitud": -100.8157}
+            }
+          ]
+        },
+        {
+          "codigo": "GRO",
+          "nombre": "Guerrero",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Acapulco",
+              "tipo": "delegacion_destacada",
+              "ciudad": "Acapulco",
+              "direccion": "Av. Ruiz Cortines, Acapulco",
+              "telefono": "744-485-4100",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "rescate_maritimo", "atencion_turistas"],
+              "coordenadas": {"latitud": 16.8531, "longitud": -99.8237}
+            },
+            {
+              "nombre": "Cruz Roja Chilpancingo",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Chilpancingo",
+              "direccion": "Av. Ruffo Figueroa, Chilpancingo",
+              "telefono": "747-472-0032",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 17.5506, "longitud": -99.5006}
+            },
+            {
+              "nombre": "Cruz Roja Zihuatanejo",
+              "tipo": "delegacion",
+              "ciudad": "Zihuatanejo",
+              "direccion": "Av. Morelos, Zihuatanejo",
+              "telefono": "755-554-2009",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "rescate_maritimo"],
+              "coordenadas": {"latitud": 17.6413, "longitud": -101.5516}
+            }
+          ]
+        },
+        {
+          "codigo": "HGO",
+          "nombre": "Hidalgo",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Pachuca",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Pachuca",
+              "direccion": "Carretera México-Pachuca, Pachuca",
+              "telefono": "771-717-0707",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "banco_sangre"],
+              "coordenadas": {"latitud": 20.0911, "longitud": -98.7624}
+            }
+          ]
+        },
+        {
+          "codigo": "JAL",
+          "nombre": "Jalisco",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Guadalajara",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Guadalajara",
+              "direccion": "Av. Federalismo Sur 381, Col. Mexicaltzingo",
+              "telefono": "33-3613-5252",
+              "telefono_emergencia": "911",
+              "email": "info@cruzrojagdl.org",
+              "web": "https://www.cruzrojagdl.org",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre", "capacitacion", "rescate"],
+              "coordenadas": {"latitud": 20.6597, "longitud": -103.3496}
+            },
+            {
+              "nombre": "Cruz Roja Puerto Vallarta",
+              "tipo": "delegacion",
+              "ciudad": "Puerto Vallarta",
+              "direccion": "Av. Río Balsas, Puerto Vallarta",
+              "telefono": "322-222-1533",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "atencion_turistas", "rescate_maritimo"],
+              "coordenadas": {"latitud": 20.6534, "longitud": -105.2253}
+            },
+            {
+              "nombre": "Cruz Roja Zapopan",
+              "tipo": "delegacion",
+              "ciudad": "Zapopan",
+              "direccion": "Av. Guadalupe, Zapopan",
+              "telefono": "33-3656-1212",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 20.7214, "longitud": -103.3918}
+            }
+          ]
+        },
+        {
+          "codigo": "MEX",
+          "nombre": "Estado de México",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Toluca",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Toluca",
+              "direccion": "Paseo Santa Elena 72, Fracc. Santa Elena",
+              "telefono": "722-217-1414",
+              "telefono_emergencia": "911",
+              "email": "contacto@cruzrojaedomex.org",
+              "web": "https://cruzrojaedomex.org",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre", "capacitacion"],
+              "coordenadas": {"latitud": 19.2827, "longitud": -99.6559}
+            },
+            {
+              "nombre": "Cruz Roja Ecatepec",
+              "tipo": "delegacion",
+              "ciudad": "Ecatepec",
+              "direccion": "Av. Central, Ecatepec",
+              "telefono": "55-5787-4141",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 19.6010, "longitud": -99.0503}
+            },
+            {
+              "nombre": "Cruz Roja Naucalpan",
+              "tipo": "delegacion",
+              "ciudad": "Naucalpan",
+              "direccion": "Av. San Luis Tlatilco, Naucalpan",
+              "telefono": "55-5576-1919",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 19.4780, "longitud": -99.2386}
+            },
+            {
+              "nombre": "Cruz Roja Nezahualcóyotl",
+              "tipo": "delegacion",
+              "ciudad": "Nezahualcóyotl",
+              "direccion": "Calle 23 No. 80, Ciudad Nezahualcóyotl",
+              "telefono": "55-5765-2020",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 19.4003, "longitud": -99.0145}
+            }
+          ]
+        },
+        {
+          "codigo": "MICH",
+          "nombre": "Michoacán",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Morelia",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Morelia",
+              "direccion": "Ventura Puente y Calzada Fray Antonio de San Miguel",
+              "telefono": "443-314-5151",
+              "telefono_emergencia": "911",
+              "web": "https://www.cruzrojamorelia.org",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre", "capacitacion"],
+              "coordenadas": {"latitud": 19.7060, "longitud": -101.1949}
+            },
+            {
+              "nombre": "Cruz Roja Uruapan",
+              "tipo": "delegacion",
+              "ciudad": "Uruapan",
+              "direccion": "Av. Latinoamericana, Uruapan",
+              "telefono": "452-524-0550",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 19.4203, "longitud": -102.0631}
+            }
+          ]
+        },
+        {
+          "codigo": "MOR",
+          "nombre": "Morelos",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Cuernavaca",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Cuernavaca",
+              "direccion": "Av. Morelos Sur, Cuernavaca",
+              "telefono": "777-315-3505",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "banco_sangre"],
+              "coordenadas": {"latitud": 18.9186, "longitud": -99.2341}
+            }
+          ]
+        },
+        {
+          "codigo": "NAY",
+          "nombre": "Nayarit",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Tepic",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Tepic",
+              "direccion": "Av. México, Tepic",
+              "telefono": "311-213-0909",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 21.5074, "longitud": -104.8949}
+            }
+          ]
+        },
+        {
+          "codigo": "NL",
+          "nombre": "Nuevo León",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Monterrey",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Monterrey",
+              "direccion": "Av. Alfonso Reyes No. 2503 Nte., Col. Del Prado",
+              "codigo_postal": "64410",
+              "telefono": "81-8375-1212",
+              "telefono_emergencia": "911",
+              "email": "informes@cruzrojanuevoleon.org",
+              "web": "https://cruzrojanuevoleon.org",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre", "capacitacion", "rescate"],
+              "coordenadas": {"latitud": 25.6866, "longitud": -100.3161}
+            },
+            {
+              "nombre": "Cruz Roja San Pedro Garza García",
+              "tipo": "delegacion",
+              "ciudad": "San Pedro Garza García",
+              "direccion": "Av. Gómez Morín, San Pedro",
+              "telefono": "81-8356-7070",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 25.6488, "longitud": -100.3680}
+            },
+            {
+              "nombre": "Cruz Roja Santa Catarina",
+              "tipo": "delegacion",
+              "ciudad": "Santa Catarina",
+              "direccion": "Av. Luis Donaldo Colosio No. 150",
+              "telefono": "81-8850-5656",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 25.6751, "longitud": -100.4631}
+            }
+          ]
+        },
+        {
+          "codigo": "OAX",
+          "nombre": "Oaxaca",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Oaxaca",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Oaxaca de Juárez",
+              "direccion": "Av. Universidad, Oaxaca",
+              "telefono": "951-516-4455",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre"],
+              "coordenadas": {"latitud": 17.0654, "longitud": -96.7236}
+            },
+            {
+              "nombre": "Cruz Roja Puerto Escondido",
+              "tipo": "delegacion",
+              "ciudad": "Puerto Escondido",
+              "direccion": "Blvd. Chahue No. 110, La Crucecita",
+              "telefono": "954-582-0550",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "atencion_turistas"],
+              "coordenadas": {"latitud": 15.8700, "longitud": -97.0737}
+            }
+          ]
+        },
+        {
+          "codigo": "PUE",
+          "nombre": "Puebla",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Puebla",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Heroica Puebla de Zaragoza",
+              "direccion": "Av. 20 Oriente No. 1002",
+              "telefono": "222-240-2020",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre", "capacitacion"],
+              "coordenadas": {"latitud": 19.0414, "longitud": -98.2063}
+            }
+          ]
+        },
+        {
+          "codigo": "QRO",
+          "nombre": "Querétaro",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Querétaro",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Santiago de Querétaro",
+              "direccion": "Av. Constituyentes, Querétaro",
+              "telefono": "442-216-0909",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre"],
+              "coordenadas": {"latitud": 20.5888, "longitud": -100.3899}
+            }
+          ]
+        },
+        {
+          "codigo": "QROO",
+          "nombre": "Quintana Roo",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Cancún",
+              "tipo": "delegacion_destacada",
+              "ciudad": "Cancún",
+              "direccion": "Av. Xcaret, Cancún",
+              "telefono": "998-884-1616",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "atencion_turistas", "rescate_maritimo"],
+              "coordenadas": {"latitud": 21.1619, "longitud": -86.8515}
+            },
+            {
+              "nombre": "Cruz Roja Playa del Carmen",
+              "tipo": "delegacion",
+              "ciudad": "Playa del Carmen",
+              "direccion": "Av. Constituyentes, Playa del Carmen",
+              "telefono": "984-873-1233",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "atencion_turistas"],
+              "coordenadas": {"latitud": 20.6296, "longitud": -87.0739}
+            },
+            {
+              "nombre": "Cruz Roja Chetumal",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Chetumal",
+              "direccion": "Av. Insurgentes, Chetumal",
+              "telefono": "983-832-0571",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 18.5036, "longitud": -88.2963}
+            }
+          ]
+        },
+        {
+          "codigo": "SLP",
+          "nombre": "San Luis Potosí",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja San Luis Potosí",
+              "tipo": "delegacion_estatal",
+              "ciudad": "San Luis Potosí",
+              "direccion": "Av. Venustiano Carranza, San Luis Potosí",
+              "telefono": "444-812-0232",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre"],
+              "coordenadas": {"latitud": 22.1565, "longitud": -100.9855}
+            }
+          ]
+        },
+        {
+          "codigo": "SIN",
+          "nombre": "Sinaloa",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Culiacán",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Culiacán",
+              "direccion": "Blvd. Emiliano Zapata, Culiacán",
+              "telefono": "667-712-1313",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre"],
+              "coordenadas": {"latitud": 24.8091, "longitud": -107.3940}
+            },
+            {
+              "nombre": "Cruz Roja Mazatlán",
+              "tipo": "delegacion",
+              "ciudad": "Mazatlán",
+              "direccion": "Av. Rafael Buelna, Mazatlán",
+              "telefono": "669-981-2222",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "atencion_turistas", "rescate_maritimo"],
+              "coordenadas": {"latitud": 23.2494, "longitud": -106.4111}
+            }
+          ]
+        },
+        {
+          "codigo": "SON",
+          "nombre": "Sonora",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Hermosillo",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Hermosillo",
+              "direccion": "Blvd. Paseo del Río, Hermosillo",
+              "telefono": "662-213-1212",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre"],
+              "coordenadas": {"latitud": 29.0729, "longitud": -110.9559}
+            },
+            {
+              "nombre": "Cruz Roja Ciudad Obregón",
+              "tipo": "delegacion",
+              "ciudad": "Ciudad Obregón",
+              "direccion": "Calle Chihuahua, Ciudad Obregón",
+              "telefono": "644-414-0101",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 27.4827, "longitud": -109.9309}
+            }
+          ]
+        },
+        {
+          "codigo": "TAB",
+          "nombre": "Tabasco",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Villahermosa",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Villahermosa",
+              "direccion": "Paseo Tabasco, Villahermosa",
+              "telefono": "993-315-5555",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "banco_sangre"],
+              "coordenadas": {"latitud": 17.9897, "longitud": -92.9475}
+            }
+          ]
+        },
+        {
+          "codigo": "TAMPS",
+          "nombre": "Tamaulipas",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Tampico",
+              "tipo": "delegacion",
+              "ciudad": "Tampico",
+              "direccion": "Av. Hidalgo, Tampico",
+              "telefono": "833-212-2626",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre"],
+              "coordenadas": {"latitud": 22.2331, "longitud": -97.8611}
+            },
+            {
+              "nombre": "Cruz Roja Ciudad Victoria",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Ciudad Victoria",
+              "direccion": "Blvd. Emilio Portes Gil, Ciudad Victoria",
+              "telefono": "834-312-0202",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 23.7369, "longitud": -99.1411}
+            },
+            {
+              "nombre": "Cruz Roja Reynosa",
+              "tipo": "delegacion",
+              "ciudad": "Reynosa",
+              "direccion": "Blvd. Morelos, Reynosa",
+              "telefono": "899-922-1818",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "atencion_frontera"],
+              "coordenadas": {"latitud": 26.0922, "longitud": -98.2777}
+            },
+            {
+              "nombre": "Cruz Roja Matamoros",
+              "tipo": "delegacion",
+              "ciudad": "Matamoros",
+              "direccion": "Km. 15 Carretera Matamoros-Reynosa",
+              "telefono": "868-812-0011",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "atencion_frontera"],
+              "coordenadas": {"latitud": 25.8797, "longitud": -97.5048}
+            }
+          ]
+        },
+        {
+          "codigo": "TLAX",
+          "nombre": "Tlaxcala",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Tlaxcala",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Tlaxcala de Xicohténcatl",
+              "direccion": "Av. Independencia, Tlaxcala",
+              "telefono": "246-462-0505",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 19.3139, "longitud": -98.2404}
+            }
+          ]
+        },
+        {
+          "codigo": "VER",
+          "nombre": "Veracruz",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Xalapa",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Xalapa",
+              "direccion": "Av. Lázaro Cárdenas, Xalapa",
+              "telefono": "228-817-7373",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre"],
+              "coordenadas": {"latitud": 19.5438, "longitud": -96.9102}
+            },
+            {
+              "nombre": "Cruz Roja Veracruz",
+              "tipo": "delegacion",
+              "ciudad": "Veracruz",
+              "direccion": "Av. Díaz Mirón, Veracruz",
+              "telefono": "229-932-0500",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "rescate_maritimo"],
+              "coordenadas": {"latitud": 19.1738, "longitud": -96.1342}
+            },
+            {
+              "nombre": "Cruz Roja Coatzacoalcos",
+              "tipo": "delegacion",
+              "ciudad": "Coatzacoalcos",
+              "direccion": "Av. Universidad, Coatzacoalcos",
+              "telefono": "921-214-0909",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias"],
+              "coordenadas": {"latitud": 18.1386, "longitud": -94.4583}
+            }
+          ]
+        },
+        {
+          "codigo": "YUC",
+          "nombre": "Yucatán",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Mérida",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Mérida",
+              "direccion": "Calle 61, Centro, Mérida",
+              "telefono": "999-924-9813",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["hospital", "ambulancias", "banco_sangre", "capacitacion"],
+              "coordenadas": {"latitud": 20.9674, "longitud": -89.5926}
+            }
+          ]
+        },
+        {
+          "codigo": "ZAC",
+          "nombre": "Zacatecas",
+          "delegaciones": [
+            {
+              "nombre": "Cruz Roja Zacatecas",
+              "tipo": "delegacion_estatal",
+              "ciudad": "Zacatecas",
+              "direccion": "Av. González Ortega, Zacatecas",
+              "telefono": "492-922-0202",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["ambulancias", "urgencias", "banco_sangre"],
+              "coordenadas": {"latitud": 22.7709, "longitud": -102.5832}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo_pais": "ES",
+      "nombre": "España",
+      "organizacion": "Cruz Roja Española",
+      "telefono_nacional": "900-22-11-22",
+      "telefono_nacional_gratuito": true,
+      "telefono_emergencias": "112",
+      "web": "https://www2.cruzroja.es",
+      "email": "informa@cruzroja.es",
+      "sede_nacional": {
+        "nombre": "Cruz Roja Española - Asamblea Suprema",
+        "direccion": "Avda. Reina Victoria 26-28, Madrid",
+        "codigo_postal": "28003",
+        "telefono": "900-22-11-22",
+        "telefono_internacional": "+34-91-335-4444",
+        "email": "informa@cruzroja.es",
+        "servicios": ["coordinacion_nacional", "cooperacion_internacional"]
+      },
+      "comunidades_autonomas": [
+        {
+          "codigo": "AN",
+          "nombre": "Andalucía",
+          "provincias": [
+            {
+              "nombre": "Almería",
+              "delegacion": {
+                "nombre": "Cruz Roja Almería",
+                "telefono": "950-006-100",
+                "telefono_emergencia": "112",
+                "direccion": "Almería",
+                "servicios": ["asistencia_social", "emergencias", "cooperacion"]
+              }
+            },
+            {
+              "nombre": "Cádiz",
+              "delegacion": {
+                "nombre": "Cruz Roja Cádiz",
+                "telefono": "956-007-000",
+                "telefono_emergencia": "112",
+                "direccion": "Cádiz",
+                "servicios": ["asistencia_social", "emergencias", "migracion"]
+              }
+            },
+            {
+              "nombre": "Córdoba",
+              "delegacion": {
+                "nombre": "Cruz Roja Córdoba",
+                "telefono": "957-249-021",
+                "telefono_emergencia": "112",
+                "direccion": "Córdoba",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            },
+            {
+              "nombre": "Granada",
+              "delegacion": {
+                "nombre": "Cruz Roja Granada",
+                "telefono": "958-024-600",
+                "telefono_adicional": "958-221-420",
+                "telefono_emergencia": "112",
+                "direccion": "Granada",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            },
+            {
+              "nombre": "Huelva",
+              "delegacion": {
+                "nombre": "Cruz Roja Huelva",
+                "telefono": "959-005-700",
+                "telefono_emergencia": "112",
+                "direccion": "Huelva",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            },
+            {
+              "nombre": "Jaén",
+              "delegacion": {
+                "nombre": "Cruz Roja Jaén",
+                "telefono": "953-013-084",
+                "telefono_adicional": "953-251-540",
+                "telefono_emergencia": "112",
+                "direccion": "Jaén",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            },
+            {
+              "nombre": "Málaga",
+              "delegacion": {
+                "nombre": "Cruz Roja Málaga",
+                "telefono": "951-932-203",
+                "telefono_adicional": "952-222-222",
+                "telefono_emergencia": "112",
+                "direccion": "Málaga",
+                "servicios": ["asistencia_social", "emergencias", "rescate_maritimo"]
+              }
+            },
+            {
+              "nombre": "Sevilla",
+              "delegacion": {
+                "nombre": "Cruz Roja Sevilla",
+                "telefono": "955-006-800",
+                "telefono_emergencia": "112",
+                "direccion": "Sevilla",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            }
+          ]
+        },
+        {
+          "codigo": "AR",
+          "nombre": "Aragón",
+          "provincias": [
+            {
+              "nombre": "Zaragoza",
+              "delegacion": {
+                "nombre": "Cruz Roja Zaragoza",
+                "direccion": "C/ Sancho y Gil, 8",
+                "codigo_postal": "50001",
+                "telefono": "976-218-401",
+                "telefono_emergencia": "112",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            },
+            {
+              "nombre": "Huesca",
+              "delegacion": {
+                "nombre": "Cruz Roja Huesca",
+                "direccion": "Pasaje Castillo de Loarre s/n",
+                "codigo_postal": "22003",
+                "telefono": "974-224-025",
+                "telefono_emergencia": "112",
+                "servicios": ["asistencia_social", "emergencias", "rescate_montana"]
+              }
+            },
+            {
+              "nombre": "Teruel",
+              "delegacion": {
+                "nombre": "Cruz Roja Teruel",
+                "direccion": "San Miguel, 3",
+                "codigo_postal": "44001",
+                "telefono": "978-602-609",
+                "telefono_emergencia": "112",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            }
+          ]
+        },
+        {
+          "codigo": "CT",
+          "nombre": "Cataluña",
+          "provincias": [
+            {
+              "nombre": "Barcelona",
+              "delegacion": {
+                "nombre": "Cruz Roja Barcelona",
+                "telefono": "93-300-6100",
+                "telefono_emergencia": "112",
+                "direccion": "Barcelona",
+                "servicios": ["asistencia_social", "emergencias", "migracion"]
+              }
+            },
+            {
+              "nombre": "Girona",
+              "delegacion": {
+                "nombre": "Cruz Roja Girona",
+                "telefono": "972-224-150",
+                "telefono_emergencia": "112",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            },
+            {
+              "nombre": "Lleida",
+              "delegacion": {
+                "nombre": "Cruz Roja Lleida",
+                "telefono": "973-232-222",
+                "telefono_emergencia": "112",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            },
+            {
+              "nombre": "Tarragona",
+              "delegacion": {
+                "nombre": "Cruz Roja Tarragona",
+                "telefono": "977-213-700",
+                "telefono_emergencia": "112",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            }
+          ]
+        },
+        {
+          "codigo": "MD",
+          "nombre": "Comunidad de Madrid",
+          "provincias": [
+            {
+              "nombre": "Madrid",
+              "delegacion": {
+                "nombre": "Cruz Roja Madrid",
+                "telefono": "91-522-2222",
+                "telefono_emergencia": "112",
+                "direccion": "C/ Rafael Villa s/n, Pozuelo de Alarcón",
+                "servicios": ["asistencia_social", "emergencias", "integracion"]
+              }
+            }
+          ]
+        },
+        {
+          "codigo": "PV",
+          "nombre": "País Vasco",
+          "provincias": [
+            {
+              "nombre": "Álava/Araba",
+              "delegacion": {
+                "nombre": "Cruz Roja Álava",
+                "telefono": "945-222-222",
+                "telefono_emergencia": "112",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            },
+            {
+              "nombre": "Bizkaia/Vizcaya",
+              "delegacion": {
+                "nombre": "Cruz Roja Bizkaia",
+                "telefono": "94-422-2222",
+                "telefono_emergencia": "112",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            },
+            {
+              "nombre": "Gipuzkoa/Guipúzcoa",
+              "delegacion": {
+                "nombre": "Cruz Roja Gipuzkoa",
+                "telefono": "943-222-222",
+                "telefono_emergencia": "112",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            }
+          ]
+        },
+        {
+          "codigo": "VC",
+          "nombre": "Comunitat Valenciana",
+          "provincias": [
+            {
+              "nombre": "Valencia",
+              "delegacion": {
+                "nombre": "Cruz Roja Valencia",
+                "telefono": "96-367-7375",
+                "telefono_emergencia": "112",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            },
+            {
+              "nombre": "Alicante",
+              "delegacion": {
+                "nombre": "Cruz Roja Alicante",
+                "telefono": "965-252-025",
+                "telefono_emergencia": "112",
+                "servicios": ["asistencia_social", "emergencias", "rescate_maritimo"]
+              }
+            },
+            {
+              "nombre": "Castellón",
+              "delegacion": {
+                "nombre": "Cruz Roja Castellón",
+                "telefono": "964-250-950",
+                "telefono_emergencia": "112",
+                "servicios": ["asistencia_social", "emergencias"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo_pais": "CO",
+      "nombre": "Colombia",
+      "organizacion": "Cruz Roja Colombiana",
+      "telefono_nacional": "132",
+      "telefono_nacional_descripcion": "Línea de atención nacional Cruz Roja",
+      "linea_nacional_gratuita": "01-800-519-8534",
+      "telefono_emergencias": "123",
+      "web": "https://www.cruzrojacolombiana.org",
+      "email": "cruzrojateescucha@cruzrojacolombiana.org",
+      "sede_nacional": {
+        "nombre": "Cruz Roja Colombiana - Sede Nacional",
+        "direccion": "Av. Carrera 68 No. 68B-31, Bogotá",
+        "telefono": "01-800-519-8534",
+        "horario": "Lunes a Viernes 8:00 AM - 5:00 PM",
+        "servicios": ["coordinacion_nacional", "banco_sangre"]
+      },
+      "departamentos": [
+        {
+          "codigo": "DC",
+          "nombre": "Bogotá D.C. y Cundinamarca",
+          "seccional": {
+            "nombre": "Cruz Roja Colombiana Seccional Cundinamarca y Bogotá",
+            "direccion": "Carrera 7 B bis No. 132-31, Bogotá",
+            "telefono": "601-746-0909",
+            "email": "info@cruzrojabogota.org.co",
+            "web": "https://www.cruzrojabogota.org.co",
+            "horario": "24 horas",
+            "servicios": ["ambulancias_samu", "urgencias", "banco_sangre", "capacitacion"],
+            "sedes": [
+              {
+                "nombre": "S.A.M.U. Av. 68",
+                "telefono_ext": "Ext. 107",
+                "servicios": ["ambulancias"]
+              },
+              {
+                "nombre": "S.A.M.U. Alquería",
+                "telefono_ext": "Ext. 911",
+                "servicios": ["ambulancias"]
+              },
+              {
+                "nombre": "S.A.M.U. Cll. 134",
+                "telefono_ext": "Ext. 818",
+                "servicios": ["ambulancias"]
+              }
+            ]
+          }
+        },
+        {
+          "codigo": "ANT",
+          "nombre": "Antioquia",
+          "seccional": {
+            "nombre": "Cruz Roja Colombiana Seccional Antioquia",
+            "ciudad": "Medellín",
+            "telefono": "604-250-5050",
+            "telefono_emergencia": "123",
+            "servicios": ["ambulancias", "urgencias", "banco_sangre"]
+          }
+        },
+        {
+          "codigo": "VAC",
+          "nombre": "Valle del Cauca",
+          "seccional": {
+            "nombre": "Cruz Roja Colombiana Seccional Valle",
+            "ciudad": "Cali",
+            "telefono": "602-668-3636",
+            "telefono_emergencia": "123",
+            "servicios": ["ambulancias", "urgencias", "banco_sangre"]
+          }
+        },
+        {
+          "codigo": "ATL",
+          "nombre": "Atlántico",
+          "seccional": {
+            "nombre": "Cruz Roja Colombiana Seccional Atlántico",
+            "ciudad": "Barranquilla",
+            "telefono": "605-340-0340",
+            "telefono_emergencia": "123",
+            "servicios": ["ambulancias", "urgencias"]
+          }
+        },
+        {
+          "codigo": "BOL",
+          "nombre": "Bolívar",
+          "seccional": {
+            "nombre": "Cruz Roja Colombiana Seccional Bolívar",
+            "ciudad": "Cartagena",
+            "telefono": "605-664-1010",
+            "telefono_emergencia": "123",
+            "servicios": ["ambulancias", "urgencias", "atencion_turistas"]
+          }
+        }
+      ]
+    },
+    {
+      "codigo_pais": "AR",
+      "nombre": "Argentina",
+      "organizacion": "Cruz Roja Argentina",
+      "telefono_nacional": "0800-222-0700",
+      "telefono_nacional_gratuito": true,
+      "telefono_emergencias": "911",
+      "web": "https://www.cruzroja.org.ar",
+      "sede_nacional": {
+        "nombre": "Cruz Roja Argentina - Sede Central",
+        "direccion": "Hipólito Yrigoyen 2170, CABA",
+        "telefono": "011-4952-7200",
+        "email": "informes@cruzroja.org.ar",
+        "servicios": ["coordinacion_nacional", "cooperacion"]
+      },
+      "provincias": [
+        {
+          "codigo": "CABA",
+          "nombre": "Ciudad Autónoma de Buenos Aires",
+          "filial": {
+            "nombre": "Cruz Roja Argentina CABA",
+            "telefono": "011-4952-7200",
+            "telefono_emergencia": "911",
+            "servicios": ["asistencia_social", "capacitacion"]
+          }
+        },
+        {
+          "codigo": "BA",
+          "nombre": "Buenos Aires",
+          "filial": {
+            "nombre": "Cruz Roja Provincia de Buenos Aires",
+            "telefono": "0221-427-1234",
+            "telefono_emergencia": "911",
+            "servicios": ["asistencia_social", "emergencias"]
+          }
+        },
+        {
+          "codigo": "CBA",
+          "nombre": "Córdoba",
+          "filial": {
+            "nombre": "Cruz Roja Córdoba",
+            "telefono": "0351-421-5544",
+            "telefono_emergencia": "911",
+            "servicios": ["asistencia_social", "emergencias"]
+          }
+        },
+        {
+          "codigo": "SF",
+          "nombre": "Santa Fe",
+          "filial": {
+            "nombre": "Cruz Roja Santa Fe",
+            "telefono": "0342-455-3838",
+            "telefono_emergencia": "911",
+            "servicios": ["asistencia_social", "emergencias"]
+          }
+        },
+        {
+          "codigo": "MZA",
+          "nombre": "Mendoza",
+          "filial": {
+            "nombre": "Cruz Roja Mendoza",
+            "telefono": "0261-423-7676",
+            "telefono_emergencia": "911",
+            "servicios": ["asistencia_social", "emergencias"]
+          }
+        }
+      ]
+    },
+    {
+      "codigo_pais": "CL",
+      "nombre": "Chile",
+      "organizacion": "Cruz Roja Chilena",
+      "telefono_nacional": "1404",
+      "telefono_emergencias_multiple": ["131 (SAMU)", "132 (Bomberos)", "133 (Carabineros)"],
+      "web": "https://www.cruzroja.cl",
+      "sede_nacional": {
+        "nombre": "Cruz Roja Chilena - Sede Nacional",
+        "direccion": "Av. Santa María 0150, Providencia, Santiago",
+        "telefono": "2-2377-5900",
+        "email": "contacto@cruzroja.cl",
+        "servicios": ["coordinacion_nacional", "cooperacion"]
+      },
+      "regiones": [
+        {
+          "codigo": "RM",
+          "nombre": "Región Metropolitana",
+          "filial": {
+            "nombre": "Cruz Roja Chilena Santiago",
+            "telefono": "2-2377-5900",
+            "telefono_emergencia": "131",
+            "servicios": ["asistencia_social", "capacitacion", "ambulancias"]
+          }
+        },
+        {
+          "codigo": "VA",
+          "nombre": "Región de Valparaíso",
+          "filial": {
+            "nombre": "Cruz Roja Valparaíso",
+            "telefono": "32-226-6200",
+            "telefono_emergencia": "131",
+            "servicios": ["asistencia_social", "emergencias", "rescate_maritimo"]
+          }
+        },
+        {
+          "codigo": "BI",
+          "nombre": "Región del Biobío",
+          "filial": {
+            "nombre": "Cruz Roja Concepción",
+            "telefono": "41-222-2100",
+            "telefono_emergencia": "131",
+            "servicios": ["asistencia_social", "emergencias"]
+          }
+        }
+      ]
+    },
+    {
+      "codigo_pais": "PE",
+      "nombre": "Perú",
+      "organizacion": "Cruz Roja Peruana",
+      "telefono_nacional": "01-266-0481",
+      "telefono_emergencias": "105",
+      "web": "https://www.cruzroja.org.pe",
+      "sede_nacional": {
+        "nombre": "Cruz Roja Peruana - Sede Nacional",
+        "direccion": "Av. Camino Real 1061, San Isidro, Lima",
+        "telefono": "01-266-0481",
+        "email": "informes@cruzroja.org.pe",
+        "servicios": ["coordinacion_nacional", "capacitacion"]
+      },
+      "departamentos": [
+        {
+          "codigo": "LIM",
+          "nombre": "Lima",
+          "filial": {
+            "nombre": "Cruz Roja Lima",
+            "telefono": "01-266-0481",
+            "telefono_emergencia": "105",
+            "servicios": ["asistencia_social", "capacitacion"]
+          }
+        },
+        {
+          "codigo": "ARE",
+          "nombre": "Arequipa",
+          "filial": {
+            "nombre": "Cruz Roja Arequipa",
+            "telefono": "054-215-800",
+            "telefono_emergencia": "105",
+            "servicios": ["asistencia_social", "emergencias"]
+          }
+        },
+        {
+          "codigo": "CUS",
+          "nombre": "Cusco",
+          "filial": {
+            "nombre": "Cruz Roja Cusco",
+            "telefono": "084-226-200",
+            "telefono_emergencia": "105",
+            "servicios": ["asistencia_social", "emergencias"]
+          }
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "total_paises": 7,
+    "total_delegaciones": "Más de 1,000 delegaciones en todos los países",
+    "fuentes": [
+      "Sitios web oficiales de Cruz Roja de cada país",
+      "Federación Internacional de Sociedades de la Cruz Roja",
+      "Directorios nacionales de Cruz Roja"
+    ],
+    "notas_importantes": [
+      "Cruz Roja es parte del Movimiento Internacional de la Cruz Roja y de la Media Luna Roja",
+      "Todos los teléfonos de emergencia listados son gratuitos y funcionan 24/7",
+      "Las delegaciones locales pueden tener horarios administrativos diferentes",
+      "Se recomienda llamar al número nacional de emergencias (911, 112, 123) para acceder a Cruz Roja en situaciones urgentes"
+    ],
+    "servicios_principales": [
+      "Ambulancias y traslados médicos",
+      "Banco de sangre",
+      "Atención de emergencias y desastres",
+      "Capacitación en primeros auxilios",
+      "Asistencia social a poblaciones vulnerables",
+      "Búsqueda y rescate",
+      "Cooperación internacional"
+    ]
+  }
+}

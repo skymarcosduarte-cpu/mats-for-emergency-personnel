@@ -1,0 +1,2061 @@
+{
+  "version": "2.0.0",
+  "fecha_actualizacion": "2026-02-14",
+  "descripcion": "Directorio completo de números de emergencia y protección civil para México, España y América Latina",
+  "paises": [
+    {
+      "codigo_pais": "MX",
+      "nombre": "México",
+      "codigo_iso": "MEX",
+      "bandera": "🇲🇽",
+      "telefonos_nacionales": [
+        {
+          "servicio": "Emergencias Generales",
+          "numero": "911",
+          "descripcion": "Número único de emergencias nacional - Policía, Bomberos, Ambulancia, Protección Civil",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Protección Civil Nacional",
+          "numero": "800-00-413-00",
+          "descripcion": "Coordinación Nacional de Protección Civil",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Denuncia Anónima",
+          "numero": "089",
+          "descripcion": "Denuncias anónimas sobre delitos",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Ángeles Verdes (Turismo)",
+          "numero": "078",
+          "descripcion": "Asistencia turística y auxilio en carreteras",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "LOCATEL",
+          "numero": "5658-1111",
+          "descripcion": "Información y orientación ciudadana (CDMX)",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        }
+      ],
+      "division_tipo": "estados",
+      "estados": [
+        {
+          "codigo": "AGS",
+          "nombre": "Aguascalientes",
+          "capital": "Aguascalientes",
+          "coordenadas": {"latitud": 21.8853, "longitud": -102.2916},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Aguascalientes",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "449-910-2020",
+              "telefono_emergencia": "911",
+              "direccion": "Av. Tecnológico s/n, Ciudad de Aguascalientes",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "prevencion", "capacitacion", "atlas_riesgo"]
+            }
+          ]
+        },
+        {
+          "codigo": "BC",
+          "nombre": "Baja California",
+          "capital": "Mexicali",
+          "coordenadas": {"latitud": 32.6245, "longitud": -115.4523},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Baja California",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "686-558-3800",
+              "telefono_emergencia": "911",
+              "direccion": "Calzada Independencia 994, Mexicali",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sismos", "incendios", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "BCS",
+          "nombre": "Baja California Sur",
+          "capital": "La Paz",
+          "coordenadas": {"latitud": 24.1426, "longitud": -110.3128},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil BCS",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "612-123-8680",
+              "telefono_emergencia": "911",
+              "direccion": "Av. Forjadores s/n, La Paz",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "huracanes", "rescate_maritimo"]
+            }
+          ]
+        },
+        {
+          "codigo": "CAMP",
+          "nombre": "Campeche",
+          "capital": "San Francisco de Campeche",
+          "coordenadas": {"latitud": 19.8301, "longitud": -90.5349},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Campeche",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "981-811-6600",
+              "telefono_emergencia": "911",
+              "direccion": "Centro, San Francisco de Campeche",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "huracanes", "inundaciones"]
+            }
+          ]
+        },
+        {
+          "codigo": "CHIS",
+          "nombre": "Chiapas",
+          "capital": "Tuxtla Gutiérrez",
+          "coordenadas": {"latitud": 16.7516, "longitud": -93.1029},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Chiapas",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "961-617-4020",
+              "telefono_emergencia": "911",
+              "direccion": "Libramiento Norte Poniente, Tuxtla Gutiérrez",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sismos", "inundaciones", "volcanes"]
+            }
+          ]
+        },
+        {
+          "codigo": "CHIH",
+          "nombre": "Chihuahua",
+          "capital": "Chihuahua",
+          "coordenadas": {"latitud": 28.6353, "longitud": -106.0889},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Chihuahua",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "614-429-3300",
+              "telefono_emergencia": "911",
+              "direccion": "Av. Tecnológico, Chihuahua",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios_forestales", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "CDMX",
+          "nombre": "Ciudad de México",
+          "capital": "Ciudad de México",
+          "coordenadas": {"latitud": 19.4326, "longitud": -99.1332},
+          "dependencias": [
+            {
+              "nombre": "Secretaría de Gestión Integral de Riesgos y Protección Civil CDMX",
+              "tipo": "proteccion_civil_cdmx",
+              "telefono": "55-5683-2222",
+              "telefono_emergencia": "911",
+              "email": "proteccioncivil@cdmx.gob.mx",
+              "web": "https://www.proteccioncivil.cdmx.gob.mx",
+              "direccion": "Calle Liverpool 6, Col. Juárez, Cuauhtémoc",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sismos", "prevencion", "capacitacion", "rescate"]
+            },
+            {
+              "nombre": "Heroico Cuerpo de Bomberos CDMX",
+              "tipo": "bomberos",
+              "telefono": "55-5768-3700",
+              "telefono_emergencia": "911",
+              "direccion": "Fray Servando Teresa de Mier 686, Centro",
+              "horario": "24 horas",
+              "servicios": ["incendios", "rescate", "emergencias_quimicas"]
+            },
+            {
+              "nombre": "LOCATEL CDMX",
+              "tipo": "informacion_emergencias",
+              "telefono": "55-5658-1111",
+              "telefono_emergencia": "911",
+              "descripcion": "Información, orientación y reportes de personas",
+              "horario": "24 horas",
+              "servicios": ["informacion", "reporte_personas", "orientacion"]
+            }
+          ]
+        },
+        {
+          "codigo": "COAH",
+          "nombre": "Coahuila",
+          "capital": "Saltillo",
+          "coordenadas": {"latitud": 25.4232, "longitud": -101.0053},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Coahuila",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "844-411-8800",
+              "telefono_emergencia": "911",
+              "direccion": "Blvd. Venustiano Carranza, Saltillo",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "COL",
+          "nombre": "Colima",
+          "capital": "Colima",
+          "coordenadas": {"latitud": 19.2433, "longitud": -103.7250},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Colima",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "312-316-3333",
+              "telefono_emergencia": "911",
+              "direccion": "Av. Ejército Mexicano, Colima",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "volcanes", "sismos", "tsunamis"]
+            }
+          ]
+        },
+        {
+          "codigo": "DGO",
+          "nombre": "Durango",
+          "capital": "Victoria de Durango",
+          "coordenadas": {"latitud": 24.0277, "longitud": -104.6532},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Durango",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "618-137-7200",
+              "telefono_emergencia": "911",
+              "direccion": "Blvd. Domingo Arrieta, Durango",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios_forestales", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "GTO",
+          "nombre": "Guanajuato",
+          "capital": "Guanajuato",
+          "coordenadas": {"latitud": 21.0190, "longitud": -101.2574},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Guanajuato",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "473-735-0200",
+              "telefono_emergencia": "911",
+              "direccion": "Paseo de la Presa, Guanajuato",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "inundaciones", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "GRO",
+          "nombre": "Guerrero",
+          "capital": "Chilpancingo de los Bravo",
+          "coordenadas": {"latitud": 17.5506, "longitud": -99.5006},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Guerrero",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "747-471-9045",
+              "telefono_emergencia": "911",
+              "direccion": "Av. Ruffo Figueroa, Chilpancingo",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "huracanes", "sismos", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "HGO",
+          "nombre": "Hidalgo",
+          "capital": "Pachuca de Soto",
+          "coordenadas": {"latitud": 20.1011, "longitud": -98.7591},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Hidalgo",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "771-717-3650",
+              "telefono_emergencia": "911",
+              "direccion": "Carr. México-Pachuca, Pachuca",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "inundaciones", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "JAL",
+          "nombre": "Jalisco",
+          "capital": "Guadalajara",
+          "coordenadas": {"latitud": 20.6597, "longitud": -103.3496},
+          "dependencias": [
+            {
+              "nombre": "Unidad Estatal de Protección Civil Jalisco",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "33-3030-5000",
+              "telefono_emergencia": "911",
+              "email": "proteccioncivil@jalisco.gob.mx",
+              "web": "https://proteccioncivil.jalisco.gob.mx",
+              "direccion": "Av. Alcalde 500, Guadalajara",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "prevencion", "atlas_riesgo", "capacitacion"]
+            },
+            {
+              "nombre": "Bomberos Guadalajara",
+              "tipo": "bomberos",
+              "telefono": "33-3837-4760",
+              "telefono_emergencia": "911",
+              "direccion": "Calle Independencia 840, Guadalajara",
+              "horario": "24 horas",
+              "servicios": ["incendios", "rescate", "emergencias_quimicas"]
+            }
+          ]
+        },
+        {
+          "codigo": "MEX",
+          "nombre": "Estado de México",
+          "capital": "Toluca de Lerdo",
+          "coordenadas": {"latitud": 19.2827, "longitud": -99.6559},
+          "dependencias": [
+            {
+              "nombre": "Coordinación General de Protección Civil Edomex",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "722-226-1900",
+              "telefono_emergencia": "911",
+              "web": "https://cgproteccioncivil.edomex.gob.mx",
+              "direccion": "Carretera Toluca-Ixtapan km 15.5, Toluca",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "volcanes", "sismos", "inundaciones"]
+            }
+          ]
+        },
+        {
+          "codigo": "MICH",
+          "nombre": "Michoacán",
+          "capital": "Morelia",
+          "coordenadas": {"latitud": 19.7060, "longitud": -101.1949},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Michoacán",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "443-113-2500",
+              "telefono_emergencia": "911",
+              "direccion": "Av. Acueducto, Morelia",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "MOR",
+          "nombre": "Morelos",
+          "capital": "Cuernavaca",
+          "coordenadas": {"latitud": 18.9211, "longitud": -99.2339},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Morelos",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "777-329-7000",
+              "telefono_emergencia": "911",
+              "direccion": "Av. Morelos Sur, Cuernavaca",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sismos", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "NAY",
+          "nombre": "Nayarit",
+          "capital": "Tepic",
+          "coordenadas": {"latitud": 21.5074, "longitud": -104.8949},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Nayarit",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "311-133-1500",
+              "telefono_emergencia": "911",
+              "direccion": "Av. México, Tepic",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "huracanes", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "NL",
+          "nombre": "Nuevo León",
+          "capital": "Monterrey",
+          "coordenadas": {"latitud": 25.6866, "longitud": -100.3161},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Nuevo León",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "81-2020-5000",
+              "telefono_emergencia": "911",
+              "email": "contacto@nl.gob.mx",
+              "direccion": "Washington 2000, Monterrey",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios", "rescate", "inundaciones"]
+            }
+          ]
+        },
+        {
+          "codigo": "OAX",
+          "nombre": "Oaxaca",
+          "capital": "Oaxaca de Juárez",
+          "coordenadas": {"latitud": 17.0732, "longitud": -96.7266},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Oaxaca",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "951-501-5000",
+              "telefono_emergencia": "911",
+              "direccion": "Av. Universidad, Oaxaca",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sismos", "huracanes", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "PUE",
+          "nombre": "Puebla",
+          "capital": "Heroica Puebla de Zaragoza",
+          "coordenadas": {"latitud": 19.0414, "longitud": -98.2063},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Puebla",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "222-303-5300",
+              "telefono_emergencia": "911",
+              "direccion": "Vía Atlixcáyotl, Puebla",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "volcanes", "sismos", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "QRO",
+          "nombre": "Querétaro",
+          "capital": "Santiago de Querétaro",
+          "coordenadas": {"latitud": 20.5888, "longitud": -100.3899},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Querétaro",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "442-251-1000",
+              "telefono_emergencia": "911",
+              "direccion": "Av. Constituyentes, Querétaro",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "inundaciones", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "QROO",
+          "nombre": "Quintana Roo",
+          "capital": "Chetumal",
+          "coordenadas": {"latitud": 18.5036, "longitud": -88.2963},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Quintana Roo",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "983-835-0740",
+              "telefono_emergencia": "911",
+              "direccion": "Av. Insurgentes, Chetumal",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "huracanes", "rescate_maritimo", "turismo"]
+            }
+          ]
+        },
+        {
+          "codigo": "SLP",
+          "nombre": "San Luis Potosí",
+          "capital": "San Luis Potosí",
+          "coordenadas": {"latitud": 22.1565, "longitud": -100.9855},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil San Luis Potosí",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "444-833-8500",
+              "telefono_emergencia": "911",
+              "direccion": "Av. Venustiano Carranza, San Luis Potosí",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "inundaciones", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "SIN",
+          "nombre": "Sinaloa",
+          "capital": "Culiacán",
+          "coordenadas": {"latitud": 24.8091, "longitud": -107.3940},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Sinaloa",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "667-758-0800",
+              "telefono_emergencia": "911",
+              "direccion": "Blvd. Emiliano Zapata, Culiacán",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "huracanes", "inundaciones", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "SON",
+          "nombre": "Sonora",
+          "capital": "Hermosillo",
+          "coordenadas": {"latitud": 29.0729, "longitud": -110.9559},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Sonora",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "662-289-3500",
+              "telefono_emergencia": "911",
+              "direccion": "Blvd. Paseo del Río, Hermosillo",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios", "calor_extremo", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "TAB",
+          "nombre": "Tabasco",
+          "capital": "Villahermosa",
+          "coordenadas": {"latitud": 17.9897, "longitud": -92.9475},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Tabasco",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "993-316-1940",
+              "telefono_emergencia": "911",
+              "direccion": "Paseo Tabasco, Villahermosa",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "inundaciones", "huracanes", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "TAMPS",
+          "nombre": "Tamaulipas",
+          "capital": "Ciudad Victoria",
+          "coordenadas": {"latitud": 23.7369, "longitud": -99.1411},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Tamaulipas",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "834-318-6900",
+              "telefono_emergencia": "911",
+              "direccion": "Blvd. Emilio Portes Gil, Cd. Victoria",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "huracanes", "inundaciones", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "TLAX",
+          "nombre": "Tlaxcala",
+          "capital": "Tlaxcala de Xicohténcatl",
+          "coordenadas": {"latitud": 19.3139, "longitud": -98.2404},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Tlaxcala",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "246-465-0900",
+              "telefono_emergencia": "911",
+              "direccion": "Av. Independencia, Tlaxcala",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "volcanes", "sismos", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "VER",
+          "nombre": "Veracruz",
+          "capital": "Xalapa-Enríquez",
+          "coordenadas": {"latitud": 19.5438, "longitud": -96.9102},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Veracruz",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "228-841-7400",
+              "telefono_emergencia": "911",
+              "direccion": "Av. Lázaro Cárdenas, Xalapa",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "huracanes", "inundaciones", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "YUC",
+          "nombre": "Yucatán",
+          "capital": "Mérida",
+          "coordenadas": {"latitud": 20.9674, "longitud": -89.5926},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Yucatán",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "999-930-3000",
+              "telefono_emergencia": "911",
+              "direccion": "Calle 61, Centro, Mérida",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "huracanes", "incendios", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "ZAC",
+          "nombre": "Zacatecas",
+          "capital": "Zacatecas",
+          "coordenadas": {"latitud": 22.7709, "longitud": -102.5832},
+          "dependencias": [
+            {
+              "nombre": "Protección Civil Zacatecas",
+              "tipo": "proteccion_civil_estatal",
+              "telefono": "492-922-0630",
+              "telefono_emergencia": "911",
+              "direccion": "Av. González Ortega, Zacatecas",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios", "rescate"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo_pais": "ES",
+      "nombre": "España",
+      "codigo_iso": "ESP",
+      "bandera": "🇪🇸",
+      "telefonos_nacionales": [
+        {
+          "servicio": "Emergencias",
+          "numero": "112",
+          "descripcion": "Número único europeo de emergencias - Policía, Bomberos, Ambulancia, Protección Civil",
+          "disponibilidad": "24/7",
+          "gratuito": true,
+          "idiomas": ["Español", "Inglés", "Francés", "Alemán", "y más de 80 idiomas"]
+        },
+        {
+          "servicio": "Policía Nacional",
+          "numero": "091",
+          "descripcion": "Cuerpo Nacional de Policía",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Guardia Civil",
+          "numero": "062",
+          "descripcion": "Guardia Civil de España",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Emergencias Sanitarias",
+          "numero": "061",
+          "descripcion": "Servicios médicos de emergencia (algunas comunidades)",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Bomberos Local",
+          "numero": "080",
+          "descripcion": "Bomberos municipales",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Bomberos Provincial",
+          "numero": "085",
+          "descripcion": "Consorcio provincial de bomberos",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Policía Municipal",
+          "numero": "092",
+          "descripcion": "Policía Local/Municipal",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Violencia de Género",
+          "numero": "016",
+          "descripcion": "Atención a víctimas de violencia de género",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Información Autonómica",
+          "numero": "012",
+          "descripcion": "Información de servicios autonómicos",
+          "disponibilidad": "Horario comercial",
+          "gratuito": true
+        },
+        {
+          "servicio": "Tráfico (DGT)",
+          "numero": "011",
+          "descripcion": "Información y emergencias en carreteras",
+          "disponibilidad": "24/7",
+          "gratuito": false
+        }
+      ],
+      "division_tipo": "comunidades_autonomas",
+      "comunidades_autonomas": [
+        {
+          "codigo": "AN",
+          "nombre": "Andalucía",
+          "capital": "Sevilla",
+          "coordenadas": {"latitud": 37.3891, "longitud": -5.9845},
+          "dependencias": [
+            {
+              "nombre": "Emergencias 112 Andalucía",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "web": "https://www.andalucia.org/112",
+              "direccion": "Servicios descentralizados en toda Andalucía",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "coordinacion", "multilingue", "geolocalizacion"]
+            }
+          ]
+        },
+        {
+          "codigo": "AR",
+          "nombre": "Aragón",
+          "capital": "Zaragoza",
+          "coordenadas": {"latitud": 41.6488, "longitud": -0.8891},
+          "dependencias": [
+            {
+              "nombre": "112 Aragón",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "direccion": "Plaza San Francisco s/n, Zaragoza",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "coordinacion", "proteccion_civil"]
+            }
+          ]
+        },
+        {
+          "codigo": "AS",
+          "nombre": "Principado de Asturias",
+          "capital": "Oviedo",
+          "coordenadas": {"latitud": 43.3614, "longitud": -5.8593},
+          "dependencias": [
+            {
+              "nombre": "112 Asturias",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "direccion": "Oviedo",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "rescate_montana", "rescate_maritimo"]
+            }
+          ]
+        },
+        {
+          "codigo": "IB",
+          "nombre": "Islas Baleares",
+          "capital": "Palma de Mallorca",
+          "coordenadas": {"latitud": 39.5696, "longitud": 2.6502},
+          "dependencias": [
+            {
+              "nombre": "112 Illes Balears",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "direccion": "Palma de Mallorca",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "rescate_maritimo", "turismo"]
+            }
+          ]
+        },
+        {
+          "codigo": "CN",
+          "nombre": "Canarias",
+          "capital": "Las Palmas de Gran Canaria / Santa Cruz de Tenerife",
+          "coordenadas": {"latitud": 28.1236, "longitud": -15.4366},
+          "dependencias": [
+            {
+              "nombre": "112 Canarias",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "web": "https://www.112canarias.com",
+              "direccion": "Centros en Las Palmas y Tenerife",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "rescate_maritimo", "volcanes", "turismo"]
+            }
+          ]
+        },
+        {
+          "codigo": "CB",
+          "nombre": "Cantabria",
+          "capital": "Santander",
+          "coordenadas": {"latitud": 43.4623, "longitud": -3.8099},
+          "dependencias": [
+            {
+              "nombre": "112 Cantabria",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "direccion": "Santander",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "rescate_montana", "rescate_maritimo"]
+            }
+          ]
+        },
+        {
+          "codigo": "CL",
+          "nombre": "Castilla y León",
+          "capital": "Valladolid",
+          "coordenadas": {"latitud": 41.6528, "longitud": -4.7245},
+          "dependencias": [
+            {
+              "nombre": "112 Castilla y León",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "telefono_adicional": "061",
+              "direccion": "Valladolid",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sanitarias", "incendios_forestales"]
+            }
+          ]
+        },
+        {
+          "codigo": "CM",
+          "nombre": "Castilla-La Mancha",
+          "capital": "Toledo",
+          "coordenadas": {"latitud": 39.8628, "longitud": -4.0273},
+          "dependencias": [
+            {
+              "nombre": "112 Castilla-La Mancha",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "direccion": "Toledo",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "CT",
+          "nombre": "Cataluña",
+          "capital": "Barcelona",
+          "coordenadas": {"latitud": 41.3851, "longitud": 2.1734},
+          "dependencias": [
+            {
+              "nombre": "112 Catalunya",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "telefono_adicional": "061",
+              "web": "https://interior.gencat.cat/112",
+              "direccion": "Rambla de Catalunya 126, Barcelona",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "bomberos", "mossos", "sem"]
+            }
+          ]
+        },
+        {
+          "codigo": "EX",
+          "nombre": "Extremadura",
+          "capital": "Mérida",
+          "coordenadas": {"latitud": 38.9166, "longitud": -6.3433},
+          "dependencias": [
+            {
+              "nombre": "112 Extremadura",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "direccion": "Mérida",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "GA",
+          "nombre": "Galicia",
+          "capital": "Santiago de Compostela",
+          "coordenadas": {"latitud": 42.8782, "longitud": -8.5448},
+          "dependencias": [
+            {
+              "nombre": "112 Galicia",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "telefono_adicional": "061",
+              "web": "https://www.axega112.gal",
+              "direccion": "Santiago de Compostela",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "rescate_maritimo", "incendios_forestales"]
+            }
+          ]
+        },
+        {
+          "codigo": "MD",
+          "nombre": "Comunidad de Madrid",
+          "capital": "Madrid",
+          "coordenadas": {"latitud": 40.4168, "longitud": -3.7038},
+          "dependencias": [
+            {
+              "nombre": "Emergencias Madrid 112",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "web": "https://www.madrid.org/112",
+              "direccion": "C/ Embajadores 181, Madrid",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "summa112", "bomberos", "samur"]
+            },
+            {
+              "nombre": "SAMUR-Protección Civil",
+              "tipo": "emergencias_sanitarias",
+              "telefono": "112",
+              "telefono_directo": "91-537-37-00",
+              "direccion": "C/ Bustamante 16, Madrid",
+              "horario": "24 horas",
+              "servicios": ["emergencias_medicas", "accidentes", "catastrofes"]
+            }
+          ]
+        },
+        {
+          "codigo": "MC",
+          "nombre": "Región de Murcia",
+          "capital": "Murcia",
+          "coordenadas": {"latitud": 37.9922, "longitud": -1.1307},
+          "dependencias": [
+            {
+              "nombre": "112 Región de Murcia",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "direccion": "Murcia",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "NC",
+          "nombre": "Comunidad Foral de Navarra",
+          "capital": "Pamplona",
+          "coordenadas": {"latitud": 42.8125, "longitud": -1.6458},
+          "dependencias": [
+            {
+              "nombre": "112 Navarra - SOS Navarra",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "web": "https://www.navarra.es/112",
+              "direccion": "Pamplona",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "coordinacion", "proteccion_civil"]
+            },
+            {
+              "nombre": "Policía Foral de Navarra",
+              "tipo": "policia_autonomica",
+              "telefono": "112",
+              "telefono_directo": "948-012-012",
+              "horario": "24 horas",
+              "servicios": ["seguridad", "trafico", "emergencias"]
+            }
+          ]
+        },
+        {
+          "codigo": "PV",
+          "nombre": "País Vasco",
+          "capital": "Vitoria-Gasteiz",
+          "coordenadas": {"latitud": 42.8467, "longitud": -2.6716},
+          "dependencias": [
+            {
+              "nombre": "112 Euskadi",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "web": "https://www.euskadi.eus/112",
+              "direccion": "Vitoria-Gasteiz",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "coordinacion", "proteccion_civil"]
+            },
+            {
+              "nombre": "Ertzaintza",
+              "tipo": "policia_autonomica",
+              "telefono": "112",
+              "telefono_no_urgente": "900-103-584",
+              "horario": "24 horas",
+              "servicios": ["seguridad", "trafico", "emergencias"]
+            }
+          ]
+        },
+        {
+          "codigo": "RI",
+          "nombre": "La Rioja",
+          "capital": "Logroño",
+          "coordenadas": {"latitud": 42.4627, "longitud": -2.4449},
+          "dependencias": [
+            {
+              "nombre": "112 La Rioja",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "direccion": "Logroño",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "VC",
+          "nombre": "Comunitat Valenciana",
+          "capital": "Valencia",
+          "coordenadas": {"latitud": 39.4699, "longitud": -0.3763},
+          "dependencias": [
+            {
+              "nombre": "112 Comunitat Valenciana",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "web": "https://www.112cv.gva.es",
+              "direccion": "Valencia",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios", "inundaciones", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "CE",
+          "nombre": "Ceuta",
+          "capital": "Ceuta",
+          "coordenadas": {"latitud": 35.8894, "longitud": -5.3213},
+          "dependencias": [
+            {
+              "nombre": "112 Ceuta",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "direccion": "Ceuta",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "rescate_maritimo"]
+            }
+          ]
+        },
+        {
+          "codigo": "ML",
+          "nombre": "Melilla",
+          "capital": "Melilla",
+          "coordenadas": {"latitud": 35.2923, "longitud": -2.9381},
+          "dependencias": [
+            {
+              "nombre": "112 Melilla",
+              "tipo": "centro_112",
+              "telefono": "112",
+              "direccion": "Melilla",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "rescate_maritimo"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo_pais": "CO",
+      "nombre": "Colombia",
+      "codigo_iso": "COL",
+      "bandera": "🇨🇴",
+      "telefonos_nacionales": [
+        {
+          "servicio": "Línea Única de Emergencias",
+          "numero": "123",
+          "descripcion": "Número único nacional - Policía, Bomberos, Defensa Civil, Ambulancia",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Policía Nacional",
+          "numero": "112",
+          "descripcion": "Reporte de delitos y situaciones de orden público",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Bomberos",
+          "numero": "119",
+          "descripcion": "Incendios, rescates y emergencias con materiales peligrosos",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Emergencias Médicas",
+          "numero": "125",
+          "descripcion": "Ambulancias y atención médica urgente",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Policía de Tránsito",
+          "numero": "127",
+          "descripcion": "Accidentes de tránsito e infracciones viales",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Cruz Roja Colombiana",
+          "numero": "132",
+          "descripcion": "Emergencias de salud y apoyo humanitario",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Defensa Civil",
+          "numero": "144",
+          "descripcion": "Apoyo en desastres naturales y rescates",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Fiscalía General",
+          "numero": "122",
+          "descripcion": "Denuncias sobre delitos y desapariciones",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "ICBF - Protección Infantil",
+          "numero": "141",
+          "descripcion": "Maltrato, abuso y vulneración de derechos de niños",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Línea Mujer (Violencia de Género)",
+          "numero": "155",
+          "descripcion": "Orientación a mujeres víctimas de violencia",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "GAULA - Antisecuestro",
+          "numero": "165",
+          "descripcion": "Grupos de Acción Unificada por la Libertad Personal",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        }
+      ],
+      "division_tipo": "departamentos",
+      "departamentos": [
+        {
+          "codigo": "DC",
+          "nombre": "Bogotá D.C.",
+          "capital": "Bogotá",
+          "coordenadas": {"latitud": 4.7110, "longitud": -74.0721},
+          "dependencias": [
+            {
+              "nombre": "NUSE 123 Bogotá",
+              "tipo": "numero_unico_emergencias",
+              "telefono": "123",
+              "web": "https://www.scj.gov.co",
+              "descripcion": "Número Único de Seguridad y Emergencias Bogotá",
+              "horario": "24 horas",
+              "servicios": ["policia", "bomberos", "salud", "gestion_riesgos"]
+            },
+            {
+              "nombre": "Secretaría Distrital de Salud - Ambulancias",
+              "tipo": "ambulancias",
+              "telefono": "125",
+              "horario": "24 horas",
+              "servicios": ["urgencias_medicas", "traslados", "atencion_prehospitalaria"]
+            }
+          ]
+        },
+        {
+          "codigo": "ANT",
+          "nombre": "Antioquia",
+          "capital": "Medellín",
+          "coordenadas": {"latitud": 6.2442, "longitud": -75.5812},
+          "dependencias": [
+            {
+              "nombre": "DAGRD Antioquia",
+              "tipo": "gestion_riesgo_departamental",
+              "telefono": "604-383-9000",
+              "telefono_emergencia": "123",
+              "web": "https://www.dagrantioquia.gov.co",
+              "direccion": "Calle 42 No. 52-106, Medellín",
+              "horario": "Oficina: Lun-Vie 8:00-17:00, Emergencias 24/7",
+              "servicios": ["prevencion", "emergencias", "capacitacion", "atencion_desastres"]
+            },
+            {
+              "nombre": "DAGRD Medellín",
+              "tipo": "gestion_riesgo_municipal",
+              "telefono": "604-385-5555",
+              "telefono_emergencia": "123",
+              "direccion": "Carrera 53 No. 42-30, Medellín",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "bomberos", "rescate", "atencion_desastres"]
+            }
+          ]
+        },
+        {
+          "codigo": "ATL",
+          "nombre": "Atlántico",
+          "capital": "Barranquilla",
+          "coordenadas": {"latitud": 10.9639, "longitud": -74.7964},
+          "dependencias": [
+            {
+              "nombre": "UNGRD Atlántico",
+              "tipo": "gestion_riesgo_departamental",
+              "telefono": "605-330-2300",
+              "telefono_emergencia": "123",
+              "direccion": "Barranquilla",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "inundaciones", "huracanes"]
+            }
+          ]
+        },
+        {
+          "codigo": "BOL",
+          "nombre": "Bolívar",
+          "capital": "Cartagena",
+          "coordenadas": {"latitud": 10.3910, "longitud": -75.4794},
+          "dependencias": [
+            {
+              "nombre": "Gestión del Riesgo Bolívar",
+              "tipo": "gestion_riesgo_departamental",
+              "telefono": "605-664-0600",
+              "telefono_emergencia": "123",
+              "direccion": "Cartagena de Indias",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "huracanes", "inundaciones"]
+            }
+          ]
+        },
+        {
+          "codigo": "CAL",
+          "nombre": "Caldas",
+          "capital": "Manizales",
+          "coordenadas": {"latitud": 5.0700, "longitud": -75.5138},
+          "dependencias": [
+            {
+              "nombre": "Gestión del Riesgo Caldas",
+              "tipo": "gestion_riesgo_departamental",
+              "telefono": "606-887-9770",
+              "telefono_emergencia": "123",
+              "direccion": "Manizales",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "volcanes", "sismos", "deslizamientos"]
+            }
+          ]
+        },
+        {
+          "codigo": "CAU",
+          "nombre": "Cauca",
+          "capital": "Popayán",
+          "coordenadas": {"latitud": 2.4448, "longitud": -76.6147},
+          "dependencias": [
+            {
+              "nombre": "Gestión del Riesgo Cauca",
+              "tipo": "gestion_riesgo_departamental",
+              "telefono": "602-820-4900",
+              "telefono_emergencia": "123",
+              "direccion": "Popayán",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sismos", "volcanes"]
+            }
+          ]
+        },
+        {
+          "codigo": "CUN",
+          "nombre": "Cundinamarca",
+          "capital": "Bogotá",
+          "coordenadas": {"latitud": 4.7110, "longitud": -74.0721},
+          "dependencias": [
+            {
+              "nombre": "Gestión del Riesgo Cundinamarca",
+              "tipo": "gestion_riesgo_departamental",
+              "telefono": "601-749-1050",
+              "telefono_emergencia": "123",
+              "direccion": "Bogotá",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "inundaciones", "deslizamientos"]
+            }
+          ]
+        },
+        {
+          "codigo": "RIS",
+          "nombre": "Risaralda",
+          "capital": "Pereira",
+          "coordenadas": {"latitud": 4.8133, "longitud": -75.6961},
+          "dependencias": [
+            {
+              "nombre": "Gestión del Riesgo Risaralda",
+              "tipo": "gestion_riesgo_departamental",
+              "telefono": "606-311-4600",
+              "telefono_emergencia": "123",
+              "direccion": "Pereira",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sismos", "deslizamientos"]
+            }
+          ]
+        },
+        {
+          "codigo": "SAN",
+          "nombre": "Santander",
+          "capital": "Bucaramanga",
+          "coordenadas": {"latitud": 7.1193, "longitud": -73.1227},
+          "dependencias": [
+            {
+              "nombre": "Gestión del Riesgo Santander",
+              "tipo": "gestion_riesgo_departamental",
+              "telefono": "607-697-7000",
+              "telefono_emergencia": "123",
+              "direccion": "Bucaramanga",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sismos", "inundaciones"]
+            }
+          ]
+        },
+        {
+          "codigo": "VAC",
+          "nombre": "Valle del Cauca",
+          "capital": "Cali",
+          "coordenadas": {"latitud": 3.4516, "longitud": -76.5320},
+          "dependencias": [
+            {
+              "nombre": "DAGRD Valle del Cauca",
+              "tipo": "gestion_riesgo_departamental",
+              "telefono": "602-620-0000",
+              "telefono_emergencia": "123",
+              "direccion": "Cali",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sismos", "inundaciones", "deslizamientos"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo_pais": "AR",
+      "nombre": "Argentina",
+      "codigo_iso": "ARG",
+      "bandera": "🇦🇷",
+      "telefonos_nacionales": [
+        {
+          "servicio": "Emergencias",
+          "numero": "911",
+          "descripcion": "Número de emergencias - Policía, Bomberos, Ambulancia",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Defensa Civil",
+          "numero": "103",
+          "descripcion": "Defensa Civil Nacional",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Bomberos",
+          "numero": "100",
+          "descripcion": "Bomberos (algunos municipios)",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "SAME (Ambulancias)",
+          "numero": "107",
+          "descripcion": "Sistema de Atención Médica de Emergencias",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Violencia de Género",
+          "numero": "144",
+          "descripcion": "Línea nacional contra violencia de género",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        }
+      ],
+      "division_tipo": "provincias",
+      "provincias": [
+        {
+          "codigo": "BA",
+          "nombre": "Buenos Aires (Provincia)",
+          "capital": "La Plata",
+          "coordenadas": {"latitud": -34.9215, "longitud": -57.9545},
+          "dependencias": [
+            {
+              "nombre": "Defensa Civil Buenos Aires",
+              "tipo": "defensa_civil_provincial",
+              "telefono": "0221-429-3700",
+              "telefono_emergencia": "103",
+              "direccion": "Calle 6 e/ 53 y 54, La Plata",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "prevencion", "coordinacion", "inundaciones"]
+            }
+          ]
+        },
+        {
+          "codigo": "CABA",
+          "nombre": "Ciudad Autónoma de Buenos Aires",
+          "capital": "Buenos Aires",
+          "coordenadas": {"latitud": -34.6037, "longitud": -58.3816},
+          "dependencias": [
+            {
+              "nombre": "SAME Buenos Aires",
+              "tipo": "emergencias_medicas",
+              "telefono": "107",
+              "telefono_emergencia": "911",
+              "web": "https://www.buenosaires.gob.ar/same",
+              "direccion": "Av. Paseo Colón 1331, CABA",
+              "horario": "24 horas",
+              "servicios": ["emergencias_medicas", "ambulancias", "atencion_catastrofes"]
+            },
+            {
+              "nombre": "Defensa Civil CABA",
+              "tipo": "defensa_civil",
+              "telefono": "103",
+              "telefono_emergencia": "911",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "inundaciones", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "CBA",
+          "nombre": "Córdoba",
+          "capital": "Córdoba",
+          "coordenadas": {"latitud": -31.4201, "longitud": -64.1888},
+          "dependencias": [
+            {
+              "nombre": "Defensa Civil Córdoba",
+              "tipo": "defensa_civil_provincial",
+              "telefono": "0351-434-1033",
+              "telefono_emergencia": "103",
+              "direccion": "Córdoba Capital",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "MZA",
+          "nombre": "Mendoza",
+          "capital": "Mendoza",
+          "coordenadas": {"latitud": -32.8895, "longitud": -68.8458},
+          "dependencias": [
+            {
+              "nombre": "Defensa Civil Mendoza",
+              "tipo": "defensa_civil_provincial",
+              "telefono": "0261-429-2020",
+              "telefono_emergencia": "103",
+              "direccion": "Mendoza Capital",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sismos", "aluviones", "rescate_montana"]
+            }
+          ]
+        },
+        {
+          "codigo": "SF",
+          "nombre": "Santa Fe",
+          "capital": "Santa Fe",
+          "coordenadas": {"latitud": -31.6333, "longitud": -60.7000},
+          "dependencias": [
+            {
+              "nombre": "Defensa Civil Santa Fe",
+              "tipo": "defensa_civil_provincial",
+              "telefono": "0342-457-2520",
+              "telefono_emergencia": "103",
+              "direccion": "Santa Fe Capital",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "inundaciones", "rescate"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo_pais": "CL",
+      "nombre": "Chile",
+      "codigo_iso": "CHL",
+      "bandera": "🇨🇱",
+      "telefonos_nacionales": [
+        {
+          "servicio": "SAMU - Ambulancias",
+          "numero": "131",
+          "descripcion": "Servicio de Atención Médica de Urgencia",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Bomberos",
+          "numero": "132",
+          "descripcion": "Cuerpo de Bomberos de Chile",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Carabineros",
+          "numero": "133",
+          "descripcion": "Policía de Chile",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "PDI - Policía de Investigaciones",
+          "numero": "134",
+          "descripcion": "Policía de Investigaciones de Chile",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "ONEMI",
+          "numero": "1407",
+          "descripcion": "Oficina Nacional de Emergencia - SENAPRED",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "CONAF (Incendios Forestales)",
+          "numero": "130",
+          "descripcion": "Corporación Nacional Forestal",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Emergencias Móvil",
+          "numero": "911",
+          "descripcion": "Comisaría más cercana (solo móviles)",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Fono Drogas",
+          "numero": "135",
+          "descripcion": "Información y orientación sobre drogas",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Rescate Marítimo",
+          "numero": "137",
+          "descripcion": "Búsqueda y salvamento marítimo",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Rescate Aéreo",
+          "numero": "138",
+          "descripcion": "Búsqueda y salvamento aéreo",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Violencia Intrafamiliar",
+          "numero": "149",
+          "descripcion": "Fono Familia - SERNAMEG",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        }
+      ],
+      "division_tipo": "regiones",
+      "regiones": [
+        {
+          "codigo": "RM",
+          "nombre": "Región Metropolitana de Santiago",
+          "capital": "Santiago",
+          "coordenadas": {"latitud": -33.4489, "longitud": -70.6693},
+          "dependencias": [
+            {
+              "nombre": "SENAPRED Región Metropolitana",
+              "tipo": "servicio_nacional_prevencion",
+              "telefono": "2-2927-5300",
+              "telefono_emergencia": "1407",
+              "web": "https://www.senapred.cl",
+              "direccion": "Beauchef 1671, Santiago",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "alertas", "coordinacion", "sismos", "aluviones"]
+            }
+          ]
+        },
+        {
+          "codigo": "VA",
+          "nombre": "Región de Valparaíso",
+          "capital": "Valparaíso",
+          "coordenadas": {"latitud": -33.0472, "longitud": -71.6127},
+          "dependencias": [
+            {
+              "nombre": "SENAPRED Valparaíso",
+              "tipo": "servicio_nacional_prevencion",
+              "telefono": "32-228-1500",
+              "telefono_emergencia": "1407",
+              "direccion": "Valparaíso",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "incendios_forestales", "tsunamis", "sismos"]
+            }
+          ]
+        },
+        {
+          "codigo": "BI",
+          "nombre": "Región del Biobío",
+          "capital": "Concepción",
+          "coordenadas": {"latitud": -36.8201, "longitud": -73.0444},
+          "dependencias": [
+            {
+              "nombre": "SENAPRED Biobío",
+              "tipo": "servicio_nacional_prevencion",
+              "telefono": "41-273-1500",
+              "telefono_emergencia": "1407",
+              "direccion": "Concepción",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sismos", "tsunamis", "volcanes"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo_pais": "PE",
+      "nombre": "Perú",
+      "codigo_iso": "PER",
+      "bandera": "🇵🇪",
+      "telefonos_nacionales": [
+        {
+          "servicio": "Policía Nacional",
+          "numero": "105",
+          "descripcion": "Policía Nacional del Perú - Emergencias",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Defensa Civil (INDECI)",
+          "numero": "115",
+          "descripcion": "Instituto Nacional de Defensa Civil",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Bomberos",
+          "numero": "116",
+          "descripcion": "Cuerpo General de Bomberos Voluntarios del Perú",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "SAMU - Sistema de Atención Móvil de Urgencia",
+          "numero": "106",
+          "descripcion": "Ambulancias y emergencias médicas",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Buzón de Emergencias",
+          "numero": "119",
+          "descripcion": "Dejar y recoger mensajes en caso de saturación",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Línea 100 (Violencia)",
+          "numero": "100",
+          "descripcion": "Línea contra la violencia familiar y sexual",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        }
+      ],
+      "division_tipo": "departamentos",
+      "departamentos": [
+        {
+          "codigo": "LIM",
+          "nombre": "Lima",
+          "capital": "Lima",
+          "coordenadas": {"latitud": -12.0464, "longitud": -77.0428},
+          "dependencias": [
+            {
+              "nombre": "INDECI Lima",
+              "tipo": "defensa_civil_regional",
+              "telefono": "01-225-9898",
+              "telefono_emergencia": "115",
+              "web": "https://www.indeci.gob.pe",
+              "direccion": "Av. Nicolás de Piérola 1355, Lima",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sismos", "tsunamis", "huaicos", "coordinacion"]
+            },
+            {
+              "nombre": "Bomberos Lima",
+              "tipo": "bomberos",
+              "telefono": "01-222-0222",
+              "telefono_emergencia": "116",
+              "horario": "24 horas",
+              "servicios": ["incendios", "rescate", "emergencias"]
+            }
+          ]
+        },
+        {
+          "codigo": "CUS",
+          "nombre": "Cusco",
+          "capital": "Cusco",
+          "coordenadas": {"latitud": -13.5319, "longitud": -71.9675},
+          "dependencias": [
+            {
+              "nombre": "INDECI Cusco",
+              "tipo": "defensa_civil_regional",
+              "telefono": "084-227-364",
+              "telefono_emergencia": "115",
+              "direccion": "Cusco",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "sismos", "deslizamientos", "rescate"]
+            }
+          ]
+        },
+        {
+          "codigo": "ARE",
+          "nombre": "Arequipa",
+          "capital": "Arequipa",
+          "coordenadas": {"latitud": -16.4090, "longitud": -71.5375},
+          "dependencias": [
+            {
+              "nombre": "INDECI Arequipa",
+              "tipo": "defensa_civil_regional",
+              "telefono": "054-215-555",
+              "telefono_emergencia": "115",
+              "direccion": "Arequipa",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "volcanes", "sismos", "rescate"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo_pais": "EC",
+      "nombre": "Ecuador",
+      "codigo_iso": "ECU",
+      "bandera": "🇪🇨",
+      "telefonos_nacionales": [
+        {
+          "servicio": "Emergencias ECU 911",
+          "numero": "911",
+          "descripcion": "Número único de emergencias - Policía, Bomberos, Ambulancia, Gestión de Riesgos",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Defensa Civil (SGR)",
+          "numero": "1800-RIESGOS",
+          "descripcion": "Secretaría de Gestión de Riesgos",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        }
+      ],
+      "division_tipo": "provincias",
+      "provincias": [
+        {
+          "codigo": "PIC",
+          "nombre": "Pichincha",
+          "capital": "Quito",
+          "coordenadas": {"latitud": -0.1807, "longitud": -78.4678},
+          "dependencias": [
+            {
+              "nombre": "ECU 911 Quito",
+              "tipo": "centro_911",
+              "telefono": "911",
+              "web": "https://www.ecu911.gob.ec",
+              "direccion": "Quito",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "coordinacion", "video_vigilancia", "geolocalizacion"]
+            }
+          ]
+        },
+        {
+          "codigo": "GUA",
+          "nombre": "Guayas",
+          "capital": "Guayaquil",
+          "coordenadas": {"latitud": -2.1709, "longitud": -79.9224},
+          "dependencias": [
+            {
+              "nombre": "ECU 911 Guayaquil",
+              "tipo": "centro_911",
+              "telefono": "911",
+              "direccion": "Guayaquil",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "coordinacion", "video_vigilancia"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo_pais": "UY",
+      "nombre": "Uruguay",
+      "codigo_iso": "URY",
+      "bandera": "🇺🇾",
+      "telefonos_nacionales": [
+        {
+          "servicio": "Emergencias",
+          "numero": "911",
+          "descripcion": "Número único de emergencias",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Bomberos",
+          "numero": "104",
+          "descripcion": "Dirección Nacional de Bomberos",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "SAMU - Ambulancias",
+          "numero": "105",
+          "descripcion": "Sistema de Atención Médica de Urgencia",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Sistema Nacional de Emergencias",
+          "numero": "*0911",
+          "descripcion": "Desde celulares",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        }
+      ],
+      "division_tipo": "departamentos",
+      "departamentos": [
+        {
+          "codigo": "MVD",
+          "nombre": "Montevideo",
+          "capital": "Montevideo",
+          "coordenadas": {"latitud": -34.9011, "longitud": -56.1645},
+          "dependencias": [
+            {
+              "nombre": "Sistema Nacional de Emergencias",
+              "tipo": "emergencias_nacional",
+              "telefono": "911",
+              "web": "https://www.gub.uy/sistema-nacional-emergencias",
+              "direccion": "Montevideo",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "coordinacion", "prevencion"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo_pais": "PY",
+      "nombre": "Paraguay",
+      "codigo_iso": "PRY",
+      "bandera": "🇵🇾",
+      "telefonos_nacionales": [
+        {
+          "servicio": "Emergencias",
+          "numero": "911",
+          "descripcion": "Número único de emergencias",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Policía Nacional",
+          "numero": "112",
+          "descripcion": "Policía Nacional del Paraguay",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Bomberos Voluntarios",
+          "numero": "132",
+          "descripcion": "Cuerpo de Bomberos Voluntarios",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "SEM - Emergencias Médicas",
+          "numero": "141",
+          "descripcion": "Sistema de Emergencias Médicas",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        }
+      ],
+      "division_tipo": "departamentos",
+      "departamentos": [
+        {
+          "codigo": "ASU",
+          "nombre": "Asunción",
+          "capital": "Asunción",
+          "coordenadas": {"latitud": -25.2637, "longitud": -57.5759},
+          "dependencias": [
+            {
+              "nombre": "SEN - Sistema de Emergencias Nacional",
+              "tipo": "emergencias_nacional",
+              "telefono": "911",
+              "direccion": "Asunción",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "coordinacion"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo_pais": "BO",
+      "nombre": "Bolivia",
+      "codigo_iso": "BOL",
+      "bandera": "🇧🇴",
+      "telefonos_nacionales": [
+        {
+          "servicio": "Policía",
+          "numero": "110",
+          "descripcion": "Policía Nacional de Bolivia",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Bomberos",
+          "numero": "119",
+          "descripcion": "Cuerpo de Bomberos",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Ambulancias",
+          "numero": "118",
+          "descripcion": "Servicio de ambulancias",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Defensa Civil",
+          "numero": "115",
+          "descripcion": "Sistema Nacional de Defensa Civil - VIDECI",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        }
+      ],
+      "division_tipo": "departamentos",
+      "departamentos": [
+        {
+          "codigo": "LPZ",
+          "nombre": "La Paz",
+          "capital": "La Paz",
+          "coordenadas": {"latitud": -16.5000, "longitud": -68.1500},
+          "dependencias": [
+            {
+              "nombre": "Defensa Civil La Paz",
+              "tipo": "defensa_civil_departamental",
+              "telefono": "115",
+              "direccion": "La Paz",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "deslizamientos", "inundaciones"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo_pais": "CR",
+      "nombre": "Costa Rica",
+      "codigo_iso": "CRI",
+      "bandera": "🇨🇷",
+      "telefonos_nacionales": [
+        {
+          "servicio": "Emergencias",
+          "numero": "911",
+          "descripcion": "Número único de emergencias nacional",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Cruz Roja",
+          "numero": "128",
+          "descripcion": "Cruz Roja Costarricense",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Bomberos",
+          "numero": "118",
+          "descripcion": "Cuerpo de Bomberos",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "Comisión Nacional de Emergencias",
+          "numero": "2210-2828",
+          "descripcion": "CNE - Emergencias y desastres",
+          "disponibilidad": "24/7",
+          "gratuito": false
+        }
+      ],
+      "division_tipo": "provincias",
+      "provincias": [
+        {
+          "codigo": "SJ",
+          "nombre": "San José",
+          "capital": "San José",
+          "coordenadas": {"latitud": 9.9281, "longitud": -84.0907},
+          "dependencias": [
+            {
+              "nombre": "Sistema de Emergencias 911",
+              "tipo": "centro_911",
+              "telefono": "911",
+              "web": "https://www.911.go.cr",
+              "direccion": "San José",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "coordinacion", "gps"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo_pais": "PA",
+      "nombre": "Panamá",
+      "codigo_iso": "PAN",
+      "bandera": "🇵🇦",
+      "telefonos_nacionales": [
+        {
+          "servicio": "Emergencias",
+          "numero": "911",
+          "descripcion": "Sistema Único de Emergencias - Policía, Bomberos, SENAFRONT",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        },
+        {
+          "servicio": "SINAPROC",
+          "numero": "199",
+          "descripcion": "Sistema Nacional de Protección Civil",
+          "disponibilidad": "24/7",
+          "gratuito": true
+        }
+      ],
+      "division_tipo": "provincias",
+      "provincias": [
+        {
+          "codigo": "PAN",
+          "nombre": "Panamá",
+          "capital": "Ciudad de Panamá",
+          "coordenadas": {"latitud": 9.0000, "longitud": -79.5000},
+          "dependencias": [
+            {
+              "nombre": "Sistema 911 Panamá",
+              "tipo": "centro_911",
+              "telefono": "911",
+              "direccion": "Ciudad de Panamá",
+              "horario": "24 horas",
+              "servicios": ["emergencias", "seguridad", "salud", "bomberos"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "autor": "MATS Emergency App",
+    "fuentes": [
+      "Sitios oficiales gubernamentales de protección civil",
+      "Ministerios del Interior y Seguridad Pública",
+      "Sistemas nacionales de emergencias",
+      "Directorios oficiales de cada país"
+    ],
+    "notas_importantes": [
+      "Todos los números de emergencia principales (911, 112, 123) son gratuitos y funcionan 24/7",
+      "Se recomienda verificar números locales con autoridades",
+      "Actualizar periódicamente los datos de contacto",
+      "En emergencias, siempre llamar primero al número nacional principal",
+      "Algunos números pueden variar según la región o municipio"
+    ],
+    "actualizacion_recomendada": "Trimestral",
+    "cobertura_geografica": "México, España, y 12 países de América Latina",
+    "total_paises": 12,
+    "ultima_revision": "2026-02-14"
+  }
+}
