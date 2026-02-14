@@ -2,7 +2,8 @@
 // Road + Flight transit tracking with incident reports
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge, Mic, MicOff, MessageCircle, ArrowLeft, Share2, X } from 'lucide-react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge, Mic, MicOff, MessageCircle, Share2, X } from 'lucide-react';
+import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { ShareTripToWhatsApp } from '@/components/ShareTripToWhatsApp';
 import { ShareArrivalToWhatsApp } from '@/components/ShareArrivalToWhatsApp';
 import { GpsStatusBanner } from '@/components/GpsStatusBanner';
@@ -918,15 +919,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {onGoHome && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onGoHome}
-                className="h-8 w-8 shrink-0"
-                title="Volver a Inicio"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
+              <BackToHomeButton onClick={onGoHome} />
             )}
             <h1 className="text-xl font-bold text-foreground">Tránsito Seguro</h1>
           </div>

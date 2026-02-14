@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, WifiOff, Navigation, CloudRain, Route, X, CheckCircle2, Map, MessageCircle, Car, Plane, BookOpen, Radio, Activity, ArrowLeft } from 'lucide-react';
+import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
 import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
 import { useMexicoAlerts, TropicalCycloneAlert, FireHotspot } from '@/hooks/useMexicoAlerts';
@@ -489,15 +490,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         <div className="p-4 space-y-2">
           <div className="flex items-center gap-2">
             {onGoHome && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onGoHome}
-                className="h-10 w-10 shrink-0"
-                title="Volver a Inicio"
-              >
-                <ArrowLeft className="w-6 h-6" />
-              </Button>
+              <BackToHomeButton onClick={onGoHome} />
             )}
             <h1 className="text-3xl font-bold text-foreground">Sismos</h1>
           </div>
