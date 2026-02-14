@@ -6,6 +6,7 @@ import {
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
   Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingCart, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play, Pencil, Camera, Briefcase
 } from 'lucide-react';
+import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
 import { MemoryGallery } from '@/components/MemoryGallery';
 import { MarketScreen } from '@/pages/MarketScreen';
@@ -570,15 +571,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
         <div className="p-4 space-y-2">
           <div className="flex items-center gap-2">
             {onGoHome && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onGoHome}
-                className="h-10 w-10 shrink-0"
-                title="Volver a Inicio"
-              >
-                <ArrowLeft className="w-6 h-6" />
-              </Button>
+              <BackToHomeButton onClick={onGoHome} />
             )}
             <h1 className="text-3xl font-bold text-foreground">Comunidad</h1>
           </div>
