@@ -8,7 +8,8 @@ import {
   Activity, 
   Settings,
   Users,
-  BookOpen
+  BookOpen,
+  ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUpdateAvailable } from '@/hooks/useUpdateCheck';
@@ -41,12 +42,13 @@ const StarOfLifeIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'home', label: 'Inicio', icon: <Home className="w-5 h-5" /> },
-  { id: 'map', label: 'Mapa', icon: <Map className="w-5 h-5" /> },
-  { id: 'alerts', label: 'Sismos', icon: <Activity className="w-5 h-5" /> },
-  { id: 'transit', label: 'Tránsito', icon: <Car className="w-5 h-5" /> },
-  { id: 'community', label: 'Comunidad', icon: <Users className="w-5 h-5" /> },
-  { id: 'settings', label: 'Ajustes', icon: <Settings className="w-5 h-5" /> },
+  { id: 'home', label: 'Inicio', icon: <Home className="w-4 h-4" /> },
+  { id: 'map', label: 'Mapa', icon: <Map className="w-4 h-4" /> },
+  { id: 'alerts', label: 'Sismos', icon: <Activity className="w-4 h-4" /> },
+  { id: 'transit', label: 'Tránsito', icon: <Car className="w-4 h-4" /> },
+  { id: 'resources', label: 'RecurSOS', icon: <ShieldAlert className="w-4 h-4" /> },
+  { id: 'community', label: 'Social', icon: <Users className="w-4 h-4" /> },
+  { id: 'settings', label: 'Ajustes', icon: <Settings className="w-4 h-4" /> },
 ];
 
 interface BottomNavigationProps {
@@ -78,7 +80,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
   return (
     <nav className="bottom-nav">
-      <div className="flex items-center justify-around h-16 px-2">
+      <div className="flex items-center justify-around h-14 px-1">
         {visibleItems.map((item) => {
           const isActive = activeTab === item.id;
           const showUpdateBadge = item.id === 'settings' && updateAvailable;
@@ -122,7 +124,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
               </div>
               
               <span className={cn(
-                'text-[10px] font-medium',
+                'text-[9px] font-medium leading-tight truncate max-w-full',
                 isActive && 'font-semibold'
               )}>
                 {item.label}
