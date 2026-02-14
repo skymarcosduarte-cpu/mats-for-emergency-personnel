@@ -710,7 +710,11 @@ export default function EmergencyDirectory() {
 
             {/* Expanded country detail */}
             {expandedCountry && countries.filter(c => c.codigo_pais === expandedCountry).map((country) => (
-              <div key={country.codigo_pais} className="animate-fade-in border-2 border-primary/30 rounded-2xl p-4 bg-card space-y-3">
+              <div
+                key={country.codigo_pais}
+                ref={(el) => { if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100); }}
+                className="animate-fade-in border-2 border-primary/30 rounded-2xl p-4 bg-card space-y-3"
+              >
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">{country.bandera}</span>
                   <div>
@@ -721,6 +725,7 @@ export default function EmergencyDirectory() {
                   </div>
                 </div>
 
+                <NationalBanner country={country} />
 
                 <Accordion type="single" collapsible className="space-y-2">
                   {country.divisiones.map((div) => (
