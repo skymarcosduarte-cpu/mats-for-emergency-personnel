@@ -48,7 +48,7 @@ interface GuidePageData {
   accentColor: string;
 }
 
-const GUIDE_PAGES: GuidePageData[] = [
+export const GUIDE_PAGES: GuidePageData[] = [
   // ── 1. BIENVENIDA ──
   {
     icon: <Heart className="w-14 h-14" />,
@@ -624,10 +624,11 @@ const GUIDE_PAGES: GuidePageData[] = [
 ];
 
 interface UserGuideStepByStepProps {
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 export const UserGuideStepByStep: React.FC<UserGuideStepByStepProps> = ({ onClose }) => {
+  const handleClose = onClose || (() => window.history.back());
   const [currentPage, setCurrentPage] = useState(0);
   const page = GUIDE_PAGES[currentPage];
   const isFirst = currentPage === 0;
@@ -645,7 +646,7 @@ export const UserGuideStepByStep: React.FC<UserGuideStepByStepProps> = ({ onClos
           <h1 className="text-lg font-bold text-foreground">Guía Paso a Paso</h1>
         </div>
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="p-2 rounded-full hover:bg-muted transition-colors"
           aria-label="Cerrar"
         >
@@ -746,7 +747,7 @@ export const UserGuideStepByStep: React.FC<UserGuideStepByStepProps> = ({ onClos
           </Button>
         )}
         <Button
-          onClick={() => isLast ? onClose() : setCurrentPage(p => p + 1)}
+          onClick={() => isLast ? handleClose() : setCurrentPage(p => p + 1)}
           className={cn('flex-1 h-14 text-lg gap-2', isLast && 'bg-safe hover:bg-safe/90')}
         >
           {isLast ? (
