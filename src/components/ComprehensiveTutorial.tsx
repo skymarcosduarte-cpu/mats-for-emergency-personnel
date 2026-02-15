@@ -181,11 +181,11 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
                 <Radio className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-warning">En Vivo</p>
-                  <p className="text-xs text-muted-foreground">Sismos (USGS + SSN México), incendios activos y ciclones</p>
+                  <p className="text-xs text-muted-foreground">Sismos, incendios, ciclones + radar de lluvia y alertas SMN</p>
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2 text-xs text-center">
+            <div className="grid grid-cols-2 gap-2 text-xs text-center">
               <div className="bg-muted rounded p-2">
                 <Bell className="w-4 h-4 mx-auto mb-1 text-warning" />
                 <p>Sismos</p>
@@ -198,6 +198,13 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
                 <Radio className="w-4 h-4 mx-auto mb-1 text-blue-500" />
                 <p>Ciclones</p>
               </div>
+              <div className="bg-muted rounded p-2">
+                <span className="text-base">🌧️</span>
+                <p>Radar lluvia</p>
+              </div>
+            </div>
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 text-xs">
+              <p className="font-medium text-blue-600">🌧️ El radar de precipitación y las alertas del SMN/CONAGUA se muestran siempre visibles sobre el mapa.</p>
             </div>
           </div>
         ),
