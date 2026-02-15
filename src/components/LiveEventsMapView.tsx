@@ -272,7 +272,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
 }) => {
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const radarLayerRef = useRef<L.TileLayer | null>(null);
+  const satelliteLayerRef = useRef<L.TileLayer | null>(null);
   const radarTimestampRef = useRef<string | null>(null);
+  const satelliteTimestampRef = useRef<string | null>(null);
   const [radarActive, setRadarActive] = useState(true);
   const [events, setEvents] = useState<EventsState>({
     earthquakes: [],
@@ -285,7 +287,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     lastUpdate: null,
   });
 
-  // Fetch RainViewer radar timestamp and add tile layer
+  // Fetch RainViewer radar + satellite layers
   const setupRadarLayer = useCallback(async () => {
     if (!map) return;
     
@@ -294,52 +296,82 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (!response.ok) return;
       const data = await response.json();
       
-      // Get the most recent radar frame
+      // --- Ground-based radar (good for US, limited in Mexico) ---
       const radarFrames = data?.radar?.past || [];
-      if (radarFrames.length === 0) return;
-      
-      const latestFrame = radarFrames[radarFrames.length - 1];
-      const path = latestFrame.path;
-      
-      // Don't recreate if same timestamp
-      if (radarTimestampRef.current === path) return;
-      radarTimestampRef.current = path;
-      
-      // Remove old radar layer
-      if (radarLayerRef.current && map.hasLayer(radarLayerRef.current)) {
-        map.removeLayer(radarLayerRef.current);
+      if (radarFrames.length > 0) {
+        const latestFrame = radarFrames[radarFrames.length - 1];
+        const path = latestFrame.path;
+        
+        if (radarTimestampRef.current !== path) {
+          radarTimestampRef.current = path;
+          
+          if (radarLayerRef.current && map.hasLayer(radarLayerRef.current)) {
+            map.removeLayer(radarLayerRef.current);
+          }
+          
+          const radarLayer = L.tileLayer(
+            `https://tilecache.rainviewer.com${path}/256/{z}/{x}/{y}/2/1_1.png`,
+            {
+              opacity: 0.55,
+              zIndex: 5,
+              attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>',
+            }
+          );
+          
+          radarLayer.addTo(map);
+          radarLayerRef.current = radarLayer;
+          console.log('[LiveEvents] Radar layer added:', path);
+        }
       }
       
-      // Add new radar tile layer
-      // Color scheme: 2 = Universal Blue, Size: 256, Smooth: 1, Snow: 1
-      const radarLayer = L.tileLayer(
-        `https://tilecache.rainviewer.com${path}/256/{z}/{x}/{y}/2/1_1.png`,
-        {
-          opacity: 0.55,
-          zIndex: 5,
-          attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>',
+      // --- Satellite infrared (global coverage including Mexico) ---
+      const satelliteFrames = data?.satellite?.infrared || [];
+      if (satelliteFrames.length > 0) {
+        const latestSat = satelliteFrames[satelliteFrames.length - 1];
+        const satPath = latestSat.path;
+        
+        if (satelliteTimestampRef.current !== satPath) {
+          satelliteTimestampRef.current = satPath;
+          
+          if (satelliteLayerRef.current && map.hasLayer(satelliteLayerRef.current)) {
+            map.removeLayer(satelliteLayerRef.current);
+          }
+          
+          const satLayer = L.tileLayer(
+            `https://tilecache.rainviewer.com${satPath}/256/{z}/{x}/{y}/0/0_0.png`,
+            {
+              opacity: 0.35,
+              zIndex: 4,
+              attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer Sat</a>',
+            }
+          );
+          
+          satLayer.addTo(map);
+          satelliteLayerRef.current = satLayer;
+          console.log('[LiveEvents] Satellite IR layer added:', satPath);
         }
-      );
-      
-      radarLayer.addTo(map);
-      radarLayerRef.current = radarLayer;
-      
-      console.log('[LiveEvents] Radar layer added:', path);
+      }
     } catch (error) {
       console.warn('[LiveEvents] Error setting up radar:', error);
     }
   }, [map]);
 
-  // Toggle radar visibility
+  // Toggle radar + satellite visibility
   useEffect(() => {
-    if (!map || !radarLayerRef.current) return;
+    if (!map) return;
     if (radarActive) {
-      if (!map.hasLayer(radarLayerRef.current)) {
+      if (radarLayerRef.current && !map.hasLayer(radarLayerRef.current)) {
         radarLayerRef.current.addTo(map);
       }
+      if (satelliteLayerRef.current && !map.hasLayer(satelliteLayerRef.current)) {
+        satelliteLayerRef.current.addTo(map);
+      }
     } else {
-      if (map.hasLayer(radarLayerRef.current)) {
+      if (radarLayerRef.current && map.hasLayer(radarLayerRef.current)) {
         map.removeLayer(radarLayerRef.current);
+      }
+      if (satelliteLayerRef.current && map.hasLayer(satelliteLayerRef.current)) {
+        map.removeLayer(satelliteLayerRef.current);
       }
     }
   }, [map, radarActive]);
@@ -856,7 +888,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
             {radarActive && (
               <span className="flex items-center gap-1 text-sky-500 font-medium">
                 <CloudRain className="w-3 h-3" />
-                Radar
+                Radar+Sat
               </span>
             )}
             {events.smnAlerts.length > 0 && (
