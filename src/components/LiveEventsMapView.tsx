@@ -3,6 +3,7 @@
 // Designed for lazy loading - only fetches data when view is active
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import L from 'leaflet';
 import { Loader2, AlertTriangle, Flame, CloudLightning, Radio, RefreshCw, CloudRain, Zap, Wind, ThermometerSun, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -286,6 +287,8 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   const radarLayerRef = useRef<L.TileLayer | null>(null);
   const satelliteLayerRef = useRef<L.TileLayer | null>(null);
   const nowcastLayerRef = useRef<L.TileLayer | null>(null);
+  const owmLayerRef = useRef<L.TileLayer | null>(null);
+  const owmKeyRef = useRef<string | null>(null);
   const radarTimestampRef = useRef<string | null>(null);
   const satelliteTimestampRef = useRef<string | null>(null);
   const nowcastTimestampRef = useRef<string | null>(null);
@@ -395,6 +398,31 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           nowLayer.addTo(map);
           nowcastLayerRef.current = nowLayer;
           console.log('[LiveEvents] Nowcast layer added:', nowPath);
+        }
+      }
+
+      // --- OpenWeatherMap precipitation layer (better Mexico coverage) ---
+      if (!owmLayerRef.current) {
+        try {
+          let apiKey = owmKeyRef.current;
+          if (!apiKey) {
+            const { data } = await supabase.functions.invoke('get-owm-key');
+            if (data?.key) {
+              apiKey = data.key;
+              owmKeyRef.current = apiKey;
+            }
+          }
+          if (apiKey) {
+            const owmLayer = L.tileLayer(
+              `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${apiKey}`,
+              { opacity: 0.6, zIndex: 3, attribution: '© OpenWeatherMap' }
+            );
+            owmLayer.addTo(map);
+            owmLayerRef.current = owmLayer;
+            console.log('[LiveEvents] OWM precipitation layer added');
+          }
+        } catch (err) {
+          console.warn('[LiveEvents] OWM layer error:', err);
         }
       }
 
@@ -522,6 +550,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (nowcastLayerRef.current && !map.hasLayer(nowcastLayerRef.current)) {
         nowcastLayerRef.current.addTo(map);
       }
+      if (owmLayerRef.current && !map.hasLayer(owmLayerRef.current)) {
+        owmLayerRef.current.addTo(map);
+      }
       // Show station markers + coverage circles
       radarStationMarkersRef.current.forEach(m => {
         if (!map.hasLayer(m)) m.addTo(map);
@@ -538,6 +569,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       }
       if (nowcastLayerRef.current && map.hasLayer(nowcastLayerRef.current)) {
         map.removeLayer(nowcastLayerRef.current);
+      }
+      if (owmLayerRef.current && map.hasLayer(owmLayerRef.current)) {
+        map.removeLayer(owmLayerRef.current);
       }
       // Hide station markers + coverage circles
       radarStationMarkersRef.current.forEach(m => {
@@ -873,6 +907,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (nowcastLayerRef.current && map.hasLayer(nowcastLayerRef.current)) {
         map.removeLayer(nowcastLayerRef.current);
       }
+      if (owmLayerRef.current && map.hasLayer(owmLayerRef.current)) {
+        map.removeLayer(owmLayerRef.current);
+        owmLayerRef.current = null;
+      }
       // Remove radar station markers + coverage circles
       radarStationMarkersRef.current.forEach(m => {
         if (map.hasLayer(m)) map.removeLayer(m);
@@ -1067,7 +1105,8 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
                 <span>Torrencial</span>
               </div>
               <div className="mt-1 text-[9px] opacity-70">☁️ Nubes IR siempre visibles</div>
-              <div className="text-[9px] opacity-70">🌧️ Radar solo con lluvia activa</div>
+              <div className="text-[9px] opacity-70">🌧️ RainViewer + OpenWeather</div>
+              <div className="text-[9px] opacity-70">🇲🇽 Cobertura mejorada México</div>
             </div>
           )}
         </div>
