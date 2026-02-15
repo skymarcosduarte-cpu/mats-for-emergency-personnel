@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.notify-clave100-chat]
 verify_jwt = false
+
+[functions.fetch-smn-alerts]
+verify_jwt = false
