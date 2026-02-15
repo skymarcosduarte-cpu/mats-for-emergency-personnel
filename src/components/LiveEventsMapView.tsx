@@ -318,8 +318,8 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       map.removeLayer(radarLayerRef.current);
     }
     const layer = L.tileLayer(
-      `https://tilecache.rainviewer.com${framePath}/256/{z}/{x}/{y}/6/1_1.png`,
-      { opacity: 0.65, zIndex: 5, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>' }
+      `https://tilecache.rainviewer.com${framePath}/256/{z}/{x}/{y}/2/1_1.png`,
+      { opacity: 0.85, zIndex: 5, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>' }
     );
     layer.addTo(map);
     radarLayerRef.current = layer;
@@ -365,8 +365,8 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           }
           
           const satLayer = L.tileLayer(
-            `https://tilecache.rainviewer.com${satPath}/256/{z}/{x}/{y}/0/0_0.png`,
-            { opacity: 0.5, zIndex: 4, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer Sat</a>' }
+            `https://tilecache.rainviewer.com${satPath}/256/{z}/{x}/{y}/0/0_1.png`,
+            { opacity: 0.7, zIndex: 4, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer Sat</a>' }
           );
           
           satLayer.addTo(map);
@@ -389,7 +389,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
 
           const nowLayer = L.tileLayer(
             `https://tilecache.rainviewer.com${nowPath}/256/{z}/{x}/{y}/2/1_1.png`,
-            { opacity: 0.3, zIndex: 6, attribution: 'RainViewer Nowcast' }
+            { opacity: 0.5, zIndex: 6, attribution: 'RainViewer Nowcast' }
           );
 
           nowLayer.addTo(map);
@@ -1032,21 +1032,45 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         </div>
       )}
 
-      {/* Radar toggle button */}
+      {/* Radar toggle button + legend */}
       {!events.loading && (
-        <button
-          onClick={() => setRadarActive(!radarActive)}
-          className={cn(
-            "absolute top-16 right-2 z-[1000] rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
-            radarActive 
-              ? "bg-sky-500/90 text-white border-sky-400" 
-              : "bg-background/90 text-muted-foreground border-border"
+        <div className="absolute top-16 right-2 z-[1000] flex flex-col items-end gap-1">
+          <button
+            onClick={() => setRadarActive(!radarActive)}
+            className={cn(
+              "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
+              radarActive 
+                ? "bg-sky-500/90 text-white border-sky-400" 
+                : "bg-background/90 text-muted-foreground border-border"
+            )}
+            title={radarActive ? 'Desactivar radar de lluvia' : 'Activar radar de lluvia'}
+          >
+            <CloudRain className="w-4 h-4" />
+            <span className="text-xs font-medium">Radar</span>
+          </button>
+          {radarActive && (
+            <div className="bg-background/90 backdrop-blur-sm rounded-lg shadow border border-border px-2 py-1.5 text-[10px] text-muted-foreground max-w-[140px] leading-tight">
+              <div className="flex items-center gap-1 mb-1">
+                <div className="w-2 h-2 rounded-full bg-green-500" />
+                <span>Lluvia ligera</span>
+              </div>
+              <div className="flex items-center gap-1 mb-1">
+                <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                <span>Moderada</span>
+              </div>
+              <div className="flex items-center gap-1 mb-1">
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <span>Fuerte / tormenta</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-purple-600" />
+                <span>Torrencial</span>
+              </div>
+              <div className="mt-1 text-[9px] opacity-70">☁️ Nubes IR siempre visibles</div>
+              <div className="text-[9px] opacity-70">🌧️ Radar solo con lluvia activa</div>
+            </div>
           )}
-          title={radarActive ? 'Desactivar radar de lluvia' : 'Activar radar de lluvia'}
-        >
-          <CloudRain className="w-4 h-4" />
-          <span className="text-xs font-medium">Radar</span>
-        </button>
+        </div>
       )}
 
       {/* Radar Animation Player */}
