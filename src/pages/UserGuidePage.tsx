@@ -560,16 +560,52 @@ export default function UserGuidePage() {
           </h2>
           <div className="prose prose-slate max-w-none">
             <p className="text-gray-700 leading-relaxed mb-4">
-              RecurSOS es una colección de <strong className="text-gray-900">tarjetas informativas con protocolos y acciones rápidas</strong> para 
-              usar en caso de emergencia. Cada tarjeta contiene pasos claros y concisos para actuar correctamente 
-              ante diferentes situaciones de crisis.
+              RecurSOS es la sección central de recursos de emergencia de M.A.T.S., accesible desde el menú principal.
+              Incluye el <strong className="text-gray-900">Directorio de Protección Civil y Cruz Roja Internacional</strong> y las
+              <strong className="text-gray-900"> Guías de Emergencia</strong> con protocolos y acciones rápidas.
+            </p>
+
+            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">📞 Directorio PC y Cruz Roja Internacional</h3>
+            <p className="text-gray-700 mb-4">
+              Directorio completo de <strong className="text-gray-900">Protección Civil y la Cruz Roja</strong> de 12 países,
+              con teléfonos, ubicaciones y servicios por país.
+            </p>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+              <h4 className="font-medium text-gray-900 mb-2">Funciones del Directorio:</h4>
+              <ul className="space-y-1 text-sm text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-orange-500">•</span>
+                  <span>Búsqueda por país, ciudad o proximidad GPS</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-orange-500">•</span>
+                  <span>Marcado rápido (tap para llamar) y navegación GPS</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-orange-500">•</span>
+                  <span>Expansión en línea para ver detalles de cada país (bandera, banner, divisiones)</span>
+                </li>
+              </ul>
+            </div>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 print:bg-green-50">
+              <p className="text-green-800 text-sm flex items-start gap-2">
+                <span className="text-green-600 font-bold">📥</span>
+                <span><strong>Disponible sin conexión:</strong> El directorio se descarga automáticamente en tu dispositivo 
+                y se almacena en caché para que siempre esté disponible, incluso sin internet.</span>
+              </p>
+            </div>
+
+            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">📚 Guías de Emergencias</h3>
+            <p className="text-gray-700 mb-4">
+              Colección de <strong className="text-gray-900">tarjetas informativas con protocolos y acciones rápidas</strong> para 
+              usar en caso de emergencia.
             </p>
             
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 print:bg-amber-50">
               <p className="text-amber-800 text-sm flex items-start gap-2">
                 <span className="text-amber-600 font-bold">⚠️</span>
-                <span><strong>Importante:</strong> RecurSOS NO sustituye la capacitación formal ni la certificación profesional. 
-                Es una herramienta de referencia rápida para situaciones de emergencia.</span>
+                <span><strong>Importante:</strong> Las guías NO sustituyen la capacitación formal ni la certificación profesional. 
+                Son herramientas de referencia rápida para situaciones de emergencia.</span>
               </p>
             </div>
 
@@ -622,7 +658,7 @@ export default function UserGuidePage() {
               </div>
             </div>
 
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Funcionalidades</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Funcionalidades de Búsqueda</h3>
             <ul className="space-y-2 text-gray-700">
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
@@ -842,6 +878,20 @@ export default function UserGuidePage() {
                 <span>Ruta del rescatista en tiempo real</span>
               </li>
             </ul>
+
+            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">📧 Guardia Virtual 24/7</h3>
+            <p className="text-gray-700 mb-4">
+              Toda alerta SOS, solicitud de ayuda o activación de emergencia también genera una 
+              <strong className="text-gray-900"> notificación por correo electrónico</strong> a una lista de distribución 
+              de miembros activos de la comunidad, asegurando que siempre haya alguien al pendiente.
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 print:bg-blue-50">
+              <p className="text-blue-800 text-sm flex items-start gap-2">
+                <span className="text-blue-600 font-bold">📨</span>
+                <span>La lista de distribución incluye rescatistas y coordinadores que reciben notificaciones 
+                automáticas tanto de alertas de pánico como de solicitudes de ayuda.</span>
+              </p>
+            </div>
           </div>
         </section>
 
