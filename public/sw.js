@@ -3,14 +3,48 @@
 const CACHE_NAME = 'mats-v1';
 const CRITICAL_ALERT_TYPES = ['SEISMIC', 'AMBULANCE', 'PANIC', 'SOS', 'SKYALERT'];
 
+const PRECACHE_URLS = [
+  '/directorio_emergencias_completo.json',
+  '/cruz_roja_directorio_completo.json',
+  '/resources_pack.json',
+  '/fuentes_otras.json',
+];
+
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker...');
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('[SW] Pre-caching directory files');
+      return cache.addAll(PRECACHE_URLS);
+    })
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   console.log('[SW] Service worker activated');
   event.waitUntil(clients.claim());
+});
+
+// Cache-first for JSON data files, network-first for everything else
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (PRECACHE_URLS.some(p => url.pathname === p)) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        // Try network first, fall back to cache
+        try {
+          const networkResponse = await fetch(event.request);
+          cache.put(event.request, networkResponse.clone());
+          return networkResponse;
+        } catch (e) {
+          const cached = await cache.match(event.request);
+          if (cached) return cached;
+          throw e;
+        }
+      })
+    );
+  }
 });
 
 // Periodic background sync for keeping connections alive

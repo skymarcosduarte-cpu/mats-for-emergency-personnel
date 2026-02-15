@@ -36,6 +36,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/hooks/useLocation';
 import { toast } from 'sonner';
+import { cacheDirectoryData, getCachedDirectoryData } from '@/lib/directoryCache';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -138,13 +139,18 @@ const SERVICE_LABELS: Record<string, string> = {
 // ─── Data Loading ───────────────────────────────────────────────
 
 async function loadDirectories(): Promise<Country[]> {
+  console.log('[EmergencyDirectory] Fetching directory JSON files...');
   const [pcRes, crRes] = await Promise.all([
     fetch('/directorio_emergencias_completo.json'),
     fetch('/cruz_roja_directorio_completo.json'),
   ]);
 
+  if (!pcRes.ok) throw new Error(`PC fetch failed: ${pcRes.status}`);
+  if (!crRes.ok) throw new Error(`CR fetch failed: ${crRes.status}`);
+
   const pcData = await pcRes.json();
   const crData = await crRes.json();
+  console.log('[EmergencyDirectory] Loaded PC countries:', pcData.paises?.length, 'CR countries:', crData.paises?.length);
 
   const countries: Country[] = [];
 
@@ -434,16 +440,41 @@ export default function EmergencyDirectory() {
 
   // Load data
   useEffect(() => {
-    loadDirectories()
-      .then((data) => {
-        setCountries(data);
+    let cancelled = false;
+
+    async function loadData() {
+      // 1. Try cache first for instant load
+      const cached = await getCachedDirectoryData();
+      if (cached.data && !cancelled) {
+        setCountries(cached.data);
         setLoading(false);
-      })
-      .catch((e) => {
-        console.error('[EmergencyDirectory] Load error:', e);
-        setLoading(false);
-        toast.error('Error al cargar el directorio');
-      });
+      }
+
+      // 2. Fetch fresh data from network
+      try {
+        const freshData = await loadDirectories();
+        if (!cancelled) {
+          setCountries(freshData);
+          setLoading(false);
+          // Save to cache for offline use
+          cacheDirectoryData(freshData);
+        }
+      } catch (e) {
+        console.error('[EmergencyDirectory] Network load error:', e);
+        if (!cancelled) {
+          if (!cached.data) {
+            // No cache and no network — show error
+            setLoading(false);
+            toast.error('Error al cargar el directorio. Verifica tu conexión.');
+          } else {
+            toast.info('Usando directorio en caché (sin conexión)');
+          }
+        }
+      }
+    }
+
+    loadData();
+    return () => { cancelled = true; };
   }, []);
 
   // Auto-detect country from position
