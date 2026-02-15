@@ -49,40 +49,39 @@ export function useMemoryGallery() {
 
       if (photosError) throw photosError;
 
-      // Fetch all likes counts
-      const { data: likesData } = await supabase
-        .from('memory_gallery_likes')
-        .select('photo_id');
-
-      // Fetch all comments counts
-      const { data: commentsData } = await supabase
-        .from('memory_gallery_comments')
-        .select('photo_id');
-
-      // Fetch user's likes if logged in
-      let userLikes: string[] = [];
-      if (userId) {
-        const { data: userLikesData } = await supabase
-          .from('memory_gallery_likes')
-          .select('photo_id')
-          .eq('user_id', userId);
-        userLikes = (userLikesData || []).map(l => l.photo_id);
+      if (!photosData || photosData.length === 0) {
+        setPhotos([]);
+        setLoading(false);
+        return;
       }
+
+      // Fetch likes, comments, and user likes in parallel
+      const photoIds = photosData.map(p => p.id);
+
+      const [likesResult, commentsResult, userLikesResult] = await Promise.all([
+        supabase.from('memory_gallery_likes').select('photo_id').in('photo_id', photoIds),
+        supabase.from('memory_gallery_comments').select('photo_id').in('photo_id', photoIds),
+        userId
+          ? supabase.from('memory_gallery_likes').select('photo_id').eq('user_id', userId).in('photo_id', photoIds)
+          : Promise.resolve({ data: [] as { photo_id: string }[] }),
+      ]);
+
+      const userLikes = ((userLikesResult as any).data || []).map((l: any) => l.photo_id);
 
       // Count likes and comments per photo
       const likesCount: Record<string, number> = {};
       const commentsCount: Record<string, number> = {};
       
-      (likesData || []).forEach(l => {
+      (likesResult.data || []).forEach(l => {
         likesCount[l.photo_id] = (likesCount[l.photo_id] || 0) + 1;
       });
       
-      (commentsData || []).forEach(c => {
+      (commentsResult.data || []).forEach(c => {
         commentsCount[c.photo_id] = (commentsCount[c.photo_id] || 0) + 1;
       });
 
       // Merge data
-      const enrichedPhotos: MemoryPhoto[] = (photosData || []).map(photo => ({
+      const enrichedPhotos: MemoryPhoto[] = photosData.map(photo => ({
         ...photo,
         likes_count: likesCount[photo.id] || 0,
         user_has_liked: userLikes.includes(photo.id),
