@@ -23,6 +23,18 @@ const CORS_PROXIES = [
 // RainViewer API for precipitation radar (free, no API key)
 const RAINVIEWER_API = 'https://api.rainviewer.com/public/weather-maps.json';
 
+// SMN/CONAGUA Doppler Radar stations in Mexico
+const SMN_RADAR_STATIONS = [
+  { name: 'Guasave', estado: 'Sinaloa', lat: 25.5731, lng: -108.4658 },
+  { name: 'San Fernando', estado: 'Tamaulipas', lat: 24.8389, lng: -98.1553 },
+  { name: 'Valle de México', estado: 'CDMX', lat: 19.4326, lng: -99.1332 },
+  { name: 'El Mozotal', estado: 'Veracruz', lat: 19.2000, lng: -96.1500, dualPol: true },
+  { name: 'Sabancuy', estado: 'Campeche', lat: 18.9667, lng: -91.1833, dualPol: true },
+  { name: 'Puerto Ángel', estado: 'Oaxaca', lat: 15.6667, lng: -96.4833 },
+  { name: 'Acapulco', estado: 'Guerrero', lat: 16.8531, lng: -99.8237 },
+  { name: 'Manzanillo', estado: 'Colima', lat: 19.0519, lng: -104.3190 },
+];
+
 // SSN Earthquake interface
 interface SSNEarthquake {
   id: string;
@@ -273,9 +285,13 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const radarLayerRef = useRef<L.TileLayer | null>(null);
   const satelliteLayerRef = useRef<L.TileLayer | null>(null);
+  const nowcastLayerRef = useRef<L.TileLayer | null>(null);
   const radarTimestampRef = useRef<string | null>(null);
   const satelliteTimestampRef = useRef<string | null>(null);
+  const nowcastTimestampRef = useRef<string | null>(null);
+  const radarStationMarkersRef = useRef<L.Marker[]>([]);
   const [radarActive, setRadarActive] = useState(true);
+  const [showRadarStations, setShowRadarStations] = useState(true);
   const [events, setEvents] = useState<EventsState>({
     earthquakes: [],
     ssnEarthquakes: [],
@@ -351,12 +367,84 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           console.log('[LiveEvents] Satellite IR layer added:', satPath);
         }
       }
+
+      // --- Nowcast / forecast layer (30-60 min prediction) ---
+      const nowcastFrames = data?.radar?.nowcast || [];
+      if (nowcastFrames.length > 0) {
+        const latestNow = nowcastFrames[nowcastFrames.length - 1];
+        const nowPath = latestNow.path;
+
+        if (nowcastTimestampRef.current !== nowPath) {
+          nowcastTimestampRef.current = nowPath;
+
+          if (nowcastLayerRef.current && map.hasLayer(nowcastLayerRef.current)) {
+            map.removeLayer(nowcastLayerRef.current);
+          }
+
+          const nowLayer = L.tileLayer(
+            `https://tilecache.rainviewer.com${nowPath}/256/{z}/{x}/{y}/2/1_1.png`,
+            {
+              opacity: 0.3,
+              zIndex: 6,
+              attribution: 'RainViewer Nowcast',
+            }
+          );
+
+          nowLayer.addTo(map);
+          nowcastLayerRef.current = nowLayer;
+          console.log('[LiveEvents] Nowcast layer added:', nowPath);
+        }
+      }
+
+      // --- SMN Radar station markers ---
+      if (showRadarStations && radarStationMarkersRef.current.length === 0) {
+        SMN_RADAR_STATIONS.forEach((station) => {
+          const icon = L.divIcon({
+            className: 'smn-radar-station',
+            html: `
+              <div style="
+                width: 22px; height: 22px;
+                background: rgba(14,165,233,0.15);
+                border: 2px solid #0ea5e9;
+                border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+              ">
+                <div style="width: 6px; height: 6px; background: #0ea5e9; border-radius: 50%;"></div>
+              </div>
+              <div style="
+                width: 80px; height: 80px;
+                border: 1px dashed rgba(14,165,233,0.25);
+                border-radius: 50%;
+                position: absolute;
+                top: -29px; left: -29px;
+                pointer-events: none;
+              "></div>
+            `,
+            iconSize: [22, 22],
+            iconAnchor: [11, 11],
+            popupAnchor: [0, -14],
+          });
+
+          const m = L.marker([station.lat, station.lng], { icon, zIndexOffset: -100 })
+            .addTo(map)
+            .bindPopup(`
+              <div style="text-align:center;min-width:130px;">
+                <div style="font-size:12px;font-weight:bold;color:#0ea5e9;">📡 Radar Doppler</div>
+                <div style="font-size:11px;font-weight:600;margin-top:2px;">${station.name}</div>
+                <div style="font-size:10px;color:#666;">${station.estado}</div>
+                ${station.dualPol ? '<div style="font-size:9px;color:#059669;margin-top:2px;">Doble polaridad</div>' : ''}
+                <div style="font-size:9px;color:#999;margin-top:4px;">SMN / CONAGUA</div>
+              </div>
+            `);
+          radarStationMarkersRef.current.push(m);
+        });
+      }
     } catch (error) {
       console.warn('[LiveEvents] Error setting up radar:', error);
     }
-  }, [map]);
+  }, [map, showRadarStations]);
 
-  // Toggle radar + satellite visibility
+  // Toggle radar + satellite + nowcast visibility
   useEffect(() => {
     if (!map) return;
     if (radarActive) {
@@ -366,6 +454,13 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (satelliteLayerRef.current && !map.hasLayer(satelliteLayerRef.current)) {
         satelliteLayerRef.current.addTo(map);
       }
+      if (nowcastLayerRef.current && !map.hasLayer(nowcastLayerRef.current)) {
+        nowcastLayerRef.current.addTo(map);
+      }
+      // Show station markers
+      radarStationMarkersRef.current.forEach(m => {
+        if (!map.hasLayer(m)) m.addTo(map);
+      });
     } else {
       if (radarLayerRef.current && map.hasLayer(radarLayerRef.current)) {
         map.removeLayer(radarLayerRef.current);
@@ -373,6 +468,13 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (satelliteLayerRef.current && map.hasLayer(satelliteLayerRef.current)) {
         map.removeLayer(satelliteLayerRef.current);
       }
+      if (nowcastLayerRef.current && map.hasLayer(nowcastLayerRef.current)) {
+        map.removeLayer(nowcastLayerRef.current);
+      }
+      // Hide station markers
+      radarStationMarkersRef.current.forEach(m => {
+        if (map.hasLayer(m)) map.removeLayer(m);
+      });
     }
   }, [map, radarActive]);
 
@@ -682,10 +784,21 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       });
       markersRef.current.clear();
       
-      // Remove radar layer
+      // Remove radar, satellite, nowcast layers
       if (radarLayerRef.current && map.hasLayer(radarLayerRef.current)) {
         map.removeLayer(radarLayerRef.current);
       }
+      if (satelliteLayerRef.current && map.hasLayer(satelliteLayerRef.current)) {
+        map.removeLayer(satelliteLayerRef.current);
+      }
+      if (nowcastLayerRef.current && map.hasLayer(nowcastLayerRef.current)) {
+        map.removeLayer(nowcastLayerRef.current);
+      }
+      // Remove radar station markers
+      radarStationMarkersRef.current.forEach(m => {
+        if (map.hasLayer(m)) map.removeLayer(m);
+      });
+      radarStationMarkersRef.current = [];
     }
   }, [isActive, map]);
 
@@ -888,7 +1001,12 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
             {radarActive && (
               <span className="flex items-center gap-1 text-sky-500 font-medium">
                 <CloudRain className="w-3 h-3" />
-                Radar+Sat
+                Radar+Sat+FC
+              </span>
+            )}
+            {radarActive && (
+              <span className="flex items-center gap-1 text-sky-400 font-medium">
+                📡 {SMN_RADAR_STATIONS.length} Radares
               </span>
             )}
             {events.smnAlerts.length > 0 && (

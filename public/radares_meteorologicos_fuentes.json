@@ -1,0 +1,469 @@
+{
+  "version": "1.0.0",
+  "fecha_actualizacion": "2026-02-14",
+  "descripcion": "Fuentes de radares meteorológicos en tiempo real, APIs y servicios de mapas de clima para México, España y América Latina",
+  "nota_importante": "Todas estas fuentes son accesibles para integración en aplicaciones web y móviles. Algunas requieren API keys pero ofrecen planes gratuitos.",
+  
+  "fuentes_globales": {
+    "apis_principales": [
+      {
+        "nombre": "RainViewer API",
+        "tipo": "radar_global",
+        "descripcion": "API gratuita con cobertura global de radar meteorológico en tiempo real",
+        "url_api": "https://api.rainviewer.com/public/weather-maps.json",
+        "url_tiles": "https://tilecache.rainviewer.com/v2/radar/{timestamp}/{tileSize}/{z}/{x}/{y}/{color}/{smooth}_{snow}.png",
+        "documentacion": "https://www.rainviewer.com/api.html",
+        "github": "https://github.com/rainviewer/rainviewer-api-example",
+        "caracteristicas": {
+          "gratis": true,
+          "requiere_api_key": false,
+          "cobertura": "Global incluyendo México y América Latina",
+          "actualizacion": "Cada 5 minutos",
+          "delay": "1-6 minutos",
+          "formatos": ["tiles", "PNG", "WebP"],
+          "historico": "Últimas 2 horas",
+          "pronostico": "Próximas 30-60 minutos",
+          "datos_incluidos": ["precipitacion", "radar_doppler", "satelite_infrarrojo"]
+        },
+        "ejemplo_uso": {
+          "obtener_datos": "fetch('https://api.rainviewer.com/public/weather-maps.json')",
+          "tile_url": "https://tilecache.rainviewer.com/v2/radar/{timestamp}/256/{z}/{x}/{y}/2/1_1.png",
+          "parametros": {
+            "timestamp": "Unix timestamp del frame",
+            "tileSize": "256 o 512 píxeles",
+            "z": "Nivel de zoom",
+            "x": "Coordenada X del tile",
+            "y": "Coordenada Y del tile",
+            "color": "Esquema de color (0-8)",
+            "smooth": "Suavizado (0-1)",
+            "snow": "Mostrar nieve (0-1)"
+          }
+        },
+        "ventajas": [
+          "100% gratuito sin límites",
+          "No requiere autenticación",
+          "Cobertura de México completa",
+          "Fácil integración con Leaflet, MapBox, Google Maps",
+          "Soporte para animaciones",
+          "Datos de satélite y radar combinados"
+        ],
+        "ideal_para": "Mostrar radar animado en mapa de México en tiempo real"
+      },
+      {
+        "nombre": "OpenWeatherMap API",
+        "tipo": "api_clima_completa",
+        "descripcion": "API completa de clima con capas de radar, precipitación y satélite",
+        "url_base": "https://api.openweathermap.org/data/2.5",
+        "url_mapas": "https://tile.openweathermap.org/map",
+        "documentacion": "https://openweathermap.org/api",
+        "caracteristicas": {
+          "gratis": "1,000 llamadas/día plan gratuito",
+          "requiere_api_key": true,
+          "cobertura": "Global",
+          "capas_disponibles": [
+            "precipitation",
+            "clouds",
+            "pressure",
+            "wind",
+            "temp",
+            "radar"
+          ]
+        },
+        "endpoints": {
+          "clima_actual": "https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API_KEY}",
+          "pronostico": "https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={API_KEY}",
+          "capa_precipitacion": "https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid={API_KEY}",
+          "capa_nubes": "https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid={API_KEY}"
+        },
+        "registro": "https://home.openweathermap.org/users/sign_up",
+        "precio_gratuito": {
+          "llamadas_dia": 1000,
+          "llamadas_minuto": 60
+        }
+      },
+      {
+        "nombre": "Open-Meteo API",
+        "tipo": "api_clima_abierta",
+        "descripcion": "API meteorológica 100% gratuita sin límites y sin API key requerida",
+        "url_base": "https://api.open-meteo.com/v1",
+        "documentacion": "https://open-meteo.com/en/docs",
+        "caracteristicas": {
+          "gratis": true,
+          "requiere_api_key": false,
+          "sin_limites": true,
+          "cobertura": "Global con alta resolución",
+          "datos": ["temperatura", "precipitacion", "viento", "nubes", "presion"]
+        },
+        "endpoints": {
+          "pronostico": "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=precipitation",
+          "historico": "https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={date}&end_date={date}"
+        },
+        "ejemplo_mexico": "https://api.open-meteo.com/v1/forecast?latitude=19.43&longitude=-99.13&current_weather=true&hourly=precipitation,rain",
+        "ventajas": [
+          "Totalmente gratuito",
+          "Sin necesidad de registro",
+          "Sin límites de llamadas",
+          "Actualización cada hora",
+          "Código abierto"
+        ]
+      },
+      {
+        "nombre": "WeatherAPI.com",
+        "tipo": "api_clima",
+        "descripcion": "API de clima con datos en tiempo real y pronósticos",
+        "url_base": "https://api.weatherapi.com/v1",
+        "documentacion": "https://www.weatherapi.com/docs/",
+        "caracteristicas": {
+          "gratis": "1 millón de llamadas/mes plan gratuito",
+          "requiere_api_key": true,
+          "cobertura": "Global incluyendo México"
+        },
+        "endpoints": {
+          "actual": "https://api.weatherapi.com/v1/current.json?key={API_KEY}&q={location}",
+          "pronostico": "https://api.weatherapi.com/v1/forecast.json?key={API_KEY}&q={location}&days=7"
+        },
+        "registro": "https://www.weatherapi.com/signup.aspx"
+      },
+      {
+        "nombre": "MapTiler Weather API",
+        "tipo": "api_tiles_clima",
+        "descripcion": "API con tiles de radar, viento, temperatura y precipitación",
+        "url_base": "https://api.maptiler.com/weather",
+        "documentacion": "https://docs.maptiler.com/cloud/api/weather/",
+        "caracteristicas": {
+          "gratis": "Plan gratuito con límites",
+          "requiere_api_key": true,
+          "tiles_animados": true,
+          "visualizacion_3d": true
+        },
+        "capas": ["radar", "precipitation", "clouds", "wind", "temperature", "pressure"]
+      }
+    ]
+  },
+  
+  "fuentes_mexico": {
+    "oficiales": [
+      {
+        "nombre": "Servicio Meteorológico Nacional (SMN) - CONAGUA",
+        "organizacion": "Comisión Nacional del Agua - Gobierno de México",
+        "tipo": "fuente_oficial_mexico",
+        "url_principal": "https://smn.conagua.gob.mx",
+        "descripcion": "Sistema oficial de meteorología de México con 8 radares Doppler en todo el país",
+        "radares": {
+          "cantidad": 8,
+          "tipo": "Doppler",
+          "doble_polaridad": ["Sabancuy", "El Mozotal"],
+          "ubicaciones": [
+            {
+              "nombre": "Guasave",
+              "estado": "Sinaloa",
+              "region": "Noroeste",
+              "coordenadas": {"latitud": 25.5731, "longitud": -108.4658}
+            },
+            {
+              "nombre": "San Fernando",
+              "estado": "Tamaulipas", 
+              "region": "Noreste",
+              "coordenadas": {"latitud": 24.8389, "longitud": -98.1553}
+            },
+            {
+              "nombre": "Valle de México",
+              "estado": "Ciudad de México",
+              "region": "Centro",
+              "coordenadas": {"latitud": 19.4326, "longitud": -99.1332}
+            },
+            {
+              "nombre": "El Mozotal",
+              "estado": "Veracruz",
+              "region": "Golfo",
+              "tecnologia": "Doble polaridad",
+              "coordenadas": {"latitud": 19.2000, "longitud": -96.1500}
+            },
+            {
+              "nombre": "Sabancuy",
+              "estado": "Campeche",
+              "region": "Sureste",
+              "tecnologia": "Doble polaridad",
+              "coordenadas": {"latitud": 18.9667, "longitud": -91.1833}
+            },
+            {
+              "nombre": "Puerto Ángel",
+              "estado": "Oaxaca",
+              "region": "Pacífico Sur",
+              "coordenadas": {"latitud": 15.6667, "longitud": -96.4833}
+            },
+            {
+              "nombre": "Acapulco",
+              "estado": "Guerrero",
+              "region": "Pacífico",
+              "coordenadas": {"latitud": 16.8531, "longitud": -99.8237}
+            },
+            {
+              "nombre": "Manzanillo",
+              "estado": "Colima",
+              "region": "Pacífico Centro",
+              "coordenadas": {"latitud": 19.0519, "longitud": -104.3190}
+            }
+          ]
+        },
+        "servicios_disponibles": {
+          "visor_radares": {
+            "url": "https://smn.conagua.gob.mx/es/observando-el-tiempo/radares-meteorologicos-separador/visor-radares-v3",
+            "descripcion": "Visor interactivo de mosaico de radares",
+            "tipo": "web_viewer",
+            "requiere_login": false
+          },
+          "mapa_seguimiento": {
+            "url": "https://smn.conagua.gob.mx/es/observando-el-tiempo/mapa-de-seguimiento-meteorologico",
+            "descripcion": "Mapa de seguimiento meteorológico en tiempo real",
+            "tipo": "web_viewer"
+          },
+          "imagenes_satelite": {
+            "url": "https://smn.conagua.gob.mx/es/observando-el-tiempo/imagenes-de-satelite",
+            "descripcion": "Imágenes de satélite GOES en tiempo real",
+            "actualizacion": "Cada 30 minutos"
+          },
+          "estimacion_lluvias_satelite": {
+            "url": "https://smn.conagua.gob.mx/es/14-smn-general/observando-el-tiempo/41-estimacion-de-lluvias-con-satelite-a-tiempo-real",
+            "descripcion": "Estimación de lluvia por satélite",
+            "periodos": ["1 hora", "3 horas", "24 horas"]
+          },
+          "web_service_api": {
+            "url": "https://smn.conagua.gob.mx/es/web-service-api",
+            "descripcion": "Web Service JSON para pronósticos",
+            "formato": "JSON",
+            "actualizacion": "Cada hora a los 15 minutos",
+            "endpoints": {
+              "pronostico_actual": "https://smn.conagua.gob.mx/webservices/?method=1&ides={ID_ESTADO}&idmun={ID_MUNICIPIO}",
+              "pronostico_3_dias": "https://smn.conagua.gob.mx/webservices/?method=2&ides={ID_ESTADO}&idmun={ID_MUNICIPIO}",
+              "pronostico_48_horas": "https://smn.conagua.gob.mx/webservices/?method=3&ides={ID_ESTADO}&idmun={ID_MUNICIPIO}"
+            },
+            "ejemplo_cdmx": "https://smn.conagua.gob.mx/webservices/?method=1&ides=9&idmun=15",
+            "datos_incluidos": [
+              "temperatura",
+              "precipitacion",
+              "probabilidad_precipitacion",
+              "direccion_viento",
+              "velocidad_viento",
+              "rafagas",
+              "humedad_relativa",
+              "punto_rocio",
+              "descripcion_cielo"
+            ]
+          }
+        },
+        "nota_tecnica": "Las imágenes de radar de CONAGUA no están disponibles directamente como tiles/API pública, pero se pueden acceder a través del visor web. Para integración programática se recomienda usar RainViewer que incluye datos de CONAGUA.",
+        "twitter": "@conagua_clima"
+      },
+      {
+        "nombre": "Radar Meteorológico SACMEX",
+        "organizacion": "Sistema de Aguas de la Ciudad de México",
+        "tipo": "radar_local_cdmx",
+        "url": "https://aplicaciones.sacmex.cdmx.gob.mx/radar-meteorologico/",
+        "descripcion": "Radar meteorológico específico para la Ciudad de México",
+        "cobertura": "Valle de México y zonas aledañas",
+        "caracteristicas": {
+          "actualizacion": "Tiempo real",
+          "tipo_viewer": "Web interactivo",
+          "enfoque": "Prevención de inundaciones CDMX"
+        }
+      }
+    ],
+    "servicios_terceros": [
+      {
+        "nombre": "Meteored México - Radar",
+        "tipo": "agregador_radar",
+        "url": "https://www.meteored.mx/radar/",
+        "descripcion": "Animación de radares meteorológicos de México (datos de SMN-CONAGUA)",
+        "caracteristicas": {
+          "fuente_datos": "Sistema Meteorológico Nacional - CONAGUA",
+          "visualizacion": "Animada",
+          "gratis": true
+        }
+      },
+      {
+        "nombre": "Txopi Clima México",
+        "tipo": "visor_satelite",
+        "url": "https://txopi.com/clima/",
+        "descripcion": "Mapas satelitales de clima en tiempo real de SMN/CONAGUA",
+        "caracteristicas": {
+          "fuente_datos": "SMN/CONAGUA",
+          "tipo": "Satélite",
+          "gratis": true
+        }
+      },
+      {
+        "nombre": "AccuWeather Radar México",
+        "tipo": "radar_comercial",
+        "url": "https://www.accuweather.com/es/mx/national/weather-radar",
+        "descripcion": "Radar Doppler de AccuWeather para México",
+        "caracteristicas": {
+          "tipo": "Doppler interactivo",
+          "gratis": "Con publicidad",
+          "propio": true
+        }
+      }
+    ]
+  },
+  
+  "fuentes_latinoamerica": {
+    "colombia": {
+      "oficial": {
+        "nombre": "IDEAM - Instituto de Hidrología, Meteorología y Estudios Ambientales",
+        "url": "http://www.ideam.gov.co/web/tiempo-y-clima/radar-meteorologico",
+        "descripcion": "Sistema de radares meteorológicos de Colombia",
+        "radares": ["Bogotá", "Cali", "Cúcuta", "Medellín", "Cartagena", "Barranquilla"],
+        "acceso": "Visor web institucional"
+      }
+    },
+    "argentina": {
+      "oficial": {
+        "nombre": "SMN Argentina - Servicio Meteorológico Nacional",
+        "url": "https://www.smn.gob.ar/radar",
+        "descripcion": "Red de radares meteorológicos de Argentina",
+        "radares": ["Buenos Aires", "Córdoba", "Mendoza", "Neuquén", "Resistencia", "Paraná"],
+        "tipo": "Radares Doppler"
+      }
+    },
+    "chile": {
+      "oficial": {
+        "nombre": "DMC - Dirección Meteorológica de Chile",
+        "url": "https://www.meteorologia.cl/",
+        "descripcion": "Servicio meteorológico de Chile",
+        "acceso": "Mapas e imágenes satelitales"
+      }
+    },
+    "peru": {
+      "oficial": {
+        "nombre": "SENAMHI - Servicio Nacional de Meteorología e Hidrología",
+        "url": "https://www.senamhi.gob.pe/",
+        "descripcion": "Servicio meteorológico de Perú",
+        "imagenes_satelite": true
+      }
+    },
+    "brasil": {
+      "oficial": {
+        "nombre": "INMET - Instituto Nacional de Meteorologia",
+        "url": "https://portal.inmet.gov.br/",
+        "radares": "Red de radares meteorológicos en principales ciudades"
+      }
+    }
+  },
+  
+  "recomendaciones_implementacion": {
+    "para_mats_app": {
+      "opcion_recomendada": "RainViewer API",
+      "razones": [
+        "100% gratuito sin límites",
+        "No requiere registro ni API key",
+        "Cobertura completa de México",
+        "Fácil integración con mapas (Leaflet, MapBox, Google Maps)",
+        "Datos en tiempo real cada 5 minutos",
+        "Incluye animaciones de radar",
+        "Documentación excelente y ejemplos de código",
+        "Incluye pronóstico (nowcast) de 30-60 minutos"
+      ],
+      "implementacion_basica": {
+        "paso_1": "Obtener JSON con timestamps: fetch('https://api.rainviewer.com/public/weather-maps.json')",
+        "paso_2": "Agregar capa de tiles al mapa usando los timestamps",
+        "paso_3": "Crear animación iterando por los frames",
+        "ejemplo_codigo_url": "https://github.com/rainviewer/rainviewer-api-example/blob/master/rainviewer-api-example.html"
+      }
+    },
+    "opcion_backup": {
+      "nombre": "OpenWeatherMap",
+      "uso": "Para datos meteorológicos adicionales (temperatura, viento, etc.)",
+      "plan_gratuito": "1,000 llamadas/día"
+    },
+    "datos_oficiales_mexico": {
+      "uso": "SMN-CONAGUA Web Service API",
+      "para": "Pronósticos oficiales por municipio",
+      "formato": "JSON",
+      "gratis": true
+    }
+  },
+  
+  "ejemplos_integracion": {
+    "leaflet_rainviewer": {
+      "descripcion": "Integración básica con Leaflet.js",
+      "codigo_ejemplo": "https://github.com/rainviewer/rainviewer-api-example",
+      "demo_online": "https://rainviewer.github.io/rainviewer-api-example/",
+      "librerias_necesarias": ["leaflet.js", "jquery (opcional)"]
+    },
+    "react_native": {
+      "descripcion": "Para apps móviles React Native",
+      "componente_recomendado": "react-native-maps con overlays de tiles",
+      "consideraciones": "Usar react-native-fast-image para tiles"
+    },
+    "flutter": {
+      "descripcion": "Para apps Flutter",
+      "plugin": "flutter_map con TileLayerOptions"
+    }
+  },
+  
+  "tipos_datos_disponibles": {
+    "radar_precipitacion": {
+      "descripcion": "Intensidad de precipitación detectada por radar",
+      "unidades": "dBZ (decibeles de reflectividad)",
+      "colores_tipicos": {
+        "verde": "Lluvia ligera",
+        "amarillo": "Lluvia moderada",
+        "naranja": "Lluvia fuerte",
+        "rojo": "Lluvia muy fuerte / tormenta",
+        "morado": "Lluvia torrencial / granizo"
+      }
+    },
+    "satelite_infrarrojo": {
+      "descripcion": "Temperatura de tope de nubes",
+      "uso": "Identificar sistemas nubosos y su altura"
+    },
+    "pronostico_nowcast": {
+      "descripcion": "Predicción a muy corto plazo (30-120 minutos)",
+      "tecnologia": "Extrapolación de movimiento de celdas de precipitación"
+    }
+  },
+  
+  "limitaciones_consideraciones": {
+    "radar": [
+      "Los radares tienen alcance limitado (típicamente 250-400 km)",
+      "Zonas de montaña pueden tener sombras de radar",
+      "El radar detecta precipitación pero no necesariamente lo que llega al suelo",
+      "Puede confundir granizo, nieve, lluvia sin distinguir perfectamente"
+    ],
+    "apis": [
+      "RainViewer no garantiza disponibilidad permanente de fuentes",
+      "APIs comerciales tienen límites de llamadas en planes gratuitos",
+      "Latencia de 1-10 minutos en datos 'tiempo real'",
+      "Considerar caché local para reducir llamadas a APIs"
+    ],
+    "legales": [
+      "Verificar términos de uso de cada API",
+      "RainViewer permite modificar imágenes sin restricciones",
+      "OpenWeatherMap requiere atribución",
+      "Datos de CONAGUA son públicos pero verificar términos para uso comercial"
+    ]
+  },
+  
+  "recursos_adicionales": {
+    "tutoriales": [
+      {
+        "titulo": "Implementar RainViewer en React",
+        "url": "https://github.com/rainviewer/rainviewer-api-example"
+      },
+      {
+        "titulo": "Weather API Comparison",
+        "url": "https://publicapis.dev/category/weather"
+      }
+    ],
+    "comunidad": {
+      "rainviewer_github": "https://github.com/rainviewer",
+      "openweather_community": "https://community.openweathermap.org/"
+    }
+  },
+  
+  "actualizacion_datos": {
+    "frecuencia_recomendada": "5-10 minutos para radar en tiempo real",
+    "cache_sugerido": "60 segundos para reducir llamadas",
+    "websockets": "No disponible en APIs gratuitas, usar polling"
+  }
+}
