@@ -208,7 +208,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             onPointerUp={handlePointerUp}
             onClick={handleClick}
             onKeyDown={handleKeyDown}
-            className="relative flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-panic to-red-600 text-white shadow-lg shadow-panic/40 touch-manipulation select-none active:scale-95 transition-all hover:shadow-panic/60"
+            className="relative flex items-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-panic via-red-500 to-red-600 text-white touch-manipulation select-none active:scale-90 transition-all hover:scale-105 animate-sos-glow"
             aria-label="Botón de pánico - SOS"
             type="button"
             style={{
@@ -218,15 +218,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               WebkitUserSelect: "none",
             }}
           >
-            <AlertTriangle className="w-5 h-5 pointer-events-none" />
-            <span className="font-bold text-sm pointer-events-none">SOS</span>
+            <AlertTriangle className="w-5 h-5 pointer-events-none animate-pulse" />
+            <span className="font-extrabold text-sm tracking-wider pointer-events-none">SOS</span>
 
-            {/* Pulsing border effect */}
-            <span className="absolute inset-0 rounded-full border-2 border-white/50 animate-ping opacity-40 pointer-events-none" />
+            {/* Outer pulsing ring */}
+            <span className="absolute -inset-1 rounded-full border-2 border-red-400/60 animate-ping opacity-30 pointer-events-none" />
+            {/* Inner breathing glow */}
+            <span className="absolute inset-0 rounded-full bg-white/10 animate-pulse pointer-events-none" />
 
             {/* Visual feedback overlay */}
             {showFeedback && (
-              <span className="absolute inset-0 rounded-full bg-white/30 pointer-events-none animate-pulse" />
+              <span className="absolute inset-0 rounded-full bg-white/40 pointer-events-none animate-pulse" />
             )}
           </button>
         </div>
