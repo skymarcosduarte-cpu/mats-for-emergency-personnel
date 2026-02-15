@@ -304,10 +304,12 @@ export const useInternalMessagesStore = () => {
           .in('user_id', newUserIds);
 
         (usersData || []).forEach((u) => {
-          userNamesMapRef.current.set(u.user_id!, u.show_name_on_map ? u.display_name : null);
+          if (u.show_name_on_map && u.display_name) {
+            userNamesMapRef.current.set(u.user_id!, u.display_name);
+          }
         });
 
-        // Fallback to profiles for users not found in the view (e.g. share_location=false)
+        // Fallback to profiles for users not found or without visible name
         const missingIds = newUserIds.filter((id) => !userNamesMapRef.current.has(id));
         if (missingIds.length > 0) {
           const { data: profilesData } = await supabase
