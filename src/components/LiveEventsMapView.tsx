@@ -416,7 +416,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           if (apiKey) {
             const owmLayer = L.tileLayer(
               `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 0.6, zIndex: 3, attribution: '© OpenWeatherMap' }
+              { opacity: 0.75, zIndex: 3, attribution: '© OpenWeatherMap' }
             );
             owmLayer.addTo(map);
             owmLayerRef.current = owmLayer;
