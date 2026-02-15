@@ -1,10 +1,10 @@
 // Live Events Map View for COMUNIDAD EX SOS
-// Shows real-time events: earthquakes, fires, cyclones, global alerts
+// Shows real-time events: earthquakes, fires, cyclones, global alerts, weather radar, lightning
 // Designed for lazy loading - only fetches data when view is active
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
-import { Loader2, AlertTriangle, Flame, CloudLightning, Radio, RefreshCw } from 'lucide-react';
+import { Loader2, AlertTriangle, Flame, CloudLightning, Radio, RefreshCw, CloudRain, Zap, Wind, ThermometerSun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { USGSEarthquake } from '@/types';
@@ -14,14 +14,14 @@ import type { GDACSAlert } from '@/hooks/useGDACSAlerts';
 // USGS feed for earthquakes
 const USGS_FEED_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
 
-// SSN (Servicio Sismológico Nacional México) - últimos sismos
-const SSN_URL = 'https://www.ssn.unam.mx/sismicidad/ultimos/';
-
 // CORS proxies for external feeds
 const CORS_PROXIES = [
   'https://api.allorigins.win/raw?url=',
   'https://corsproxy.io/?',
 ];
+
+// RainViewer API for precipitation radar (free, no API key)
+const RAINVIEWER_API = 'https://api.rainviewer.com/public/weather-maps.json';
 
 // SSN Earthquake interface
 interface SSNEarthquake {
@@ -36,6 +36,16 @@ interface SSNEarthquake {
   timestamp: Date;
 }
 
+// SMN Weather Alert interface
+interface SMNAlert {
+  id: string;
+  title: string;
+  description: string;
+  link: string;
+  pubDate: string;
+  category: string;
+}
+
 interface LiveEventsMapViewProps {
   map: L.Map | null;
   isActive: boolean;
@@ -48,6 +58,7 @@ interface EventsState {
   cyclones: TropicalCycloneAlert[];
   fires: FireHotspot[];
   gdacsAlerts: GDACSAlert[];
+  smnAlerts: SMNAlert[];
   loading: boolean;
   lastUpdate: Date | null;
 }
@@ -99,7 +110,7 @@ const createEarthquakeIcon = (magnitude: number) => {
   });
 };
 
-// Create SSN (Mexico) earthquake marker - distinctive green/teal with "MX" badge
+// Create SSN (Mexico) earthquake marker
 const createSSNEarthquakeIcon = (magnitude: number) => {
   const size = Math.max(22, Math.min(50, magnitude * 9));
   const color = magnitude >= 5 ? '#059669' : magnitude >= 4 ? '#10b981' : '#34d399';
@@ -229,21 +240,109 @@ const createGDACSIcon = (category: GDACSAlert['category'], alertLevel?: GDACSAle
   });
 };
 
+// Create SMN weather alert marker
+const createSMNAlertIcon = () => {
+  return L.divIcon({
+    className: 'smn-alert-marker',
+    html: `
+      <div style="
+        width: 30px;
+        height: 30px;
+        background: linear-gradient(135deg, #0ea5e9, #6366f1);
+        border: 2px solid white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        box-shadow: 0 2px 8px rgba(14,165,233,0.5);
+        animation: pulseEvent 2s infinite;
+      ">⛈️</div>
+    `,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -15],
+  });
+};
+
 export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   map,
   isActive,
   userPosition,
 }) => {
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const radarLayerRef = useRef<L.TileLayer | null>(null);
+  const radarTimestampRef = useRef<string | null>(null);
+  const [radarActive, setRadarActive] = useState(true);
   const [events, setEvents] = useState<EventsState>({
     earthquakes: [],
     ssnEarthquakes: [],
     cyclones: [],
     fires: [],
     gdacsAlerts: [],
+    smnAlerts: [],
     loading: false,
     lastUpdate: null,
   });
+
+  // Fetch RainViewer radar timestamp and add tile layer
+  const setupRadarLayer = useCallback(async () => {
+    if (!map) return;
+    
+    try {
+      const response = await fetch(RAINVIEWER_API);
+      if (!response.ok) return;
+      const data = await response.json();
+      
+      // Get the most recent radar frame
+      const radarFrames = data?.radar?.past || [];
+      if (radarFrames.length === 0) return;
+      
+      const latestFrame = radarFrames[radarFrames.length - 1];
+      const path = latestFrame.path;
+      
+      // Don't recreate if same timestamp
+      if (radarTimestampRef.current === path) return;
+      radarTimestampRef.current = path;
+      
+      // Remove old radar layer
+      if (radarLayerRef.current && map.hasLayer(radarLayerRef.current)) {
+        map.removeLayer(radarLayerRef.current);
+      }
+      
+      // Add new radar tile layer
+      // Color scheme: 2 = Universal Blue, Size: 256, Smooth: 1, Snow: 1
+      const radarLayer = L.tileLayer(
+        `https://tilecache.rainviewer.com${path}/256/{z}/{x}/{y}/2/1_1.png`,
+        {
+          opacity: 0.55,
+          zIndex: 5,
+          attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>',
+        }
+      );
+      
+      radarLayer.addTo(map);
+      radarLayerRef.current = radarLayer;
+      
+      console.log('[LiveEvents] Radar layer added:', path);
+    } catch (error) {
+      console.warn('[LiveEvents] Error setting up radar:', error);
+    }
+  }, [map]);
+
+  // Toggle radar visibility
+  useEffect(() => {
+    if (!map || !radarLayerRef.current) return;
+    if (radarActive) {
+      if (!map.hasLayer(radarLayerRef.current)) {
+        radarLayerRef.current.addTo(map);
+      }
+    } else {
+      if (map.hasLayer(radarLayerRef.current)) {
+        map.removeLayer(radarLayerRef.current);
+      }
+    }
+  }, [map, radarActive]);
 
   // Fetch earthquakes from USGS
   const fetchEarthquakes = useCallback(async (): Promise<USGSEarthquake[]> => {
@@ -283,7 +382,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
             const description = item.querySelector('description')?.textContent || '';
             const link = item.querySelector('link')?.textContent || '';
             
-            // Only add if it looks like a storm
             if (title.toLowerCase().includes('hurricane') || 
                 title.toLowerCase().includes('tropical') ||
                 title.toLowerCase().includes('storm')) {
@@ -293,7 +391,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
               else if (title.toLowerCase().includes('tropical storm')) type = 'tropical_storm';
               else if (title.toLowerCase().includes('depression')) type = 'tropical_depression';
               
-              // Extract coordinates if available
               let coordinates: [number, number] | undefined;
               const coordMatch = description.match(/(\d+\.?\d*)\s*([NS])\s+(\d+\.?\d*)\s*([EW])/i);
               if (coordMatch) {
@@ -331,7 +428,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
   }, []);
 
-  // Fetch fire hotspots (Mexico) via edge function
+  // Fetch fire hotspots via edge function
   const fetchFires = useCallback(async (): Promise<FireHotspot[]> => {
     try {
       const { supabase } = await import('@/integrations/supabase/client');
@@ -354,7 +451,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
   }, []);
 
-  // Fetch SSN earthquakes (last 24 hours from Mexico's Servicio Sismológico Nacional)
+  // Fetch SSN earthquakes
   const fetchSSNEarthquakes = useCallback(async (): Promise<SSNEarthquake[]> => {
     try {
       const { supabase } = await import('@/integrations/supabase/client');
@@ -374,7 +471,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
-      // SSN uses a table with class "content" for earthquake data
       const rows = doc.querySelectorAll('table tr');
       const earthquakes: SSNEarthquake[] = [];
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -384,25 +480,21 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           const cells = row.querySelectorAll('td');
           if (cells.length < 4) return;
           
-          // Parse magnitude from first cell
           const magText = cells[0]?.textContent?.trim() || '';
           const magnitude = parseFloat(magText);
           if (isNaN(magnitude)) return;
           
-          // Parse date/time from the second cell
           const dateTimeCell = cells[1]?.textContent?.replace(/\s+/g, ' ').trim() || '';
           const dateMatch = dateTimeCell.match(/(\d{4}-\d{2}-\d{2})/);
           const timeMatch = dateTimeCell.match(/(\d{2}:\d{2}:\d{2})/);
           const date = dateMatch ? dateMatch[1] : '';
           const time = timeMatch ? timeMatch[1] : '';
 
-          // Parse location + coordinates from the third cell
           const locationCell = cells[2]?.textContent?.replace(/\s+/g, ' ').trim() || '';
           if (!locationCell) return;
 
           const location = (locationCell.split(':')[0] || 'México').trim();
 
-          // Extract coordinates (SSN sometimes returns "Â°" in text)
           const coordMatch = locationCell.match(/:\s*(-?[\d.]+)\s*(?:Â?°)?\s*,\s*(-?[\d.]+)\s*(?:Â?°)?/);
           if (!coordMatch) return;
 
@@ -410,11 +502,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           const lng = parseFloat(coordMatch[2]);
           if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-          // Parse depth (usually "10.6 km")
           const depthText = cells[3]?.textContent?.trim() || '';
           const depth = Number.isFinite(parseFloat(depthText)) ? parseFloat(depthText) : 0;
 
-          // Parse timestamp and filter to last 24 hours
           if (date && time) {
             const timestamp = new Date(`${date}T${time}`);
             if (timestamp < twentyFourHoursAgo) return;
@@ -444,6 +534,49 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
   }, []);
 
+  // Fetch SMN/CONAGUA weather alerts via edge function
+  const fetchSMNAlerts = useCallback(async (): Promise<SMNAlert[]> => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('fetch-smn-alerts');
+
+      if (error || !data?.success || !data?.xml) {
+        console.warn('[LiveEvents] Error fetching SMN alerts:', error);
+        return [];
+      }
+
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(data.xml, 'text/xml');
+      const items = xml.querySelectorAll('item');
+      const alerts: SMNAlert[] = [];
+
+      items.forEach((item, index) => {
+        const title = item.querySelector('title')?.textContent || '';
+        const description = item.querySelector('description')?.textContent || '';
+        const link = item.querySelector('link')?.textContent || '';
+        const pubDate = item.querySelector('pubDate')?.textContent || '';
+        const category = item.querySelector('category')?.textContent || 'Alerta Meteorológica';
+
+        if (title) {
+          alerts.push({
+            id: `smn-${index}-${Date.now()}`,
+            title,
+            description: description.replace(/<[^>]*>/g, '').trim(),
+            link,
+            pubDate,
+            category,
+          });
+        }
+      });
+
+      console.log(`[LiveEvents] SMN: Found ${alerts.length} weather alerts`);
+      return alerts;
+    } catch (error) {
+      console.warn('[LiveEvents] Error fetching SMN alerts:', error);
+      return [];
+    }
+  }, []);
+
   // Fetch all events
   const fetchAllEvents = useCallback(async () => {
     if (!isActive) return;
@@ -452,11 +585,12 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     
     try {
       // Fetch all in parallel for speed
-      const [earthquakes, ssnEarthquakes, cyclones, fires] = await Promise.all([
+      const [earthquakes, ssnEarthquakes, cyclones, fires, smnAlerts] = await Promise.all([
         fetchEarthquakes(),
         fetchSSNEarthquakes(),
         fetchCyclones(),
         fetchFires(),
+        fetchSMNAlerts(),
       ]);
       
       setEvents({
@@ -465,6 +599,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         cyclones,
         fires,
         gdacsAlerts: [],
+        smnAlerts,
         loading: false,
         lastUpdate: new Date(),
       });
@@ -472,25 +607,33 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       console.error('[LiveEvents] Error fetching events:', error);
       setEvents(prev => ({ ...prev, loading: false }));
     }
-  }, [isActive, fetchEarthquakes, fetchSSNEarthquakes, fetchCyclones, fetchFires]);
+  }, [isActive, fetchEarthquakes, fetchSSNEarthquakes, fetchCyclones, fetchFires, fetchSMNAlerts]);
 
-  // Fetch events when view becomes active
+  // Fetch events and setup radar when view becomes active
   useEffect(() => {
     if (isActive && !events.lastUpdate) {
       fetchAllEvents();
     }
   }, [isActive, events.lastUpdate, fetchAllEvents]);
 
+  // Setup radar layer when active
+  useEffect(() => {
+    if (isActive && map) {
+      setupRadarLayer();
+      // Refresh radar every 5 minutes
+      const radarInterval = setInterval(setupRadarLayer, 5 * 60 * 1000);
+      return () => clearInterval(radarInterval);
+    }
+  }, [isActive, map, setupRadarLayer]);
+
   // Auto-center map on Mexico when SSN earthquakes are found
   useEffect(() => {
     if (!map || !isActive || events.ssnEarthquakes.length === 0) return;
     
-    // Calculate bounds from SSN earthquakes
     const bounds = L.latLngBounds(
       events.ssnEarthquakes.map(eq => [eq.lat, eq.lng] as [number, number])
     );
     
-    // Fit map to SSN earthquake bounds with padding
     map.fitBounds(bounds, { 
       padding: [50, 50],
       maxZoom: 8,
@@ -499,13 +642,18 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     });
   }, [map, isActive, events.ssnEarthquakes]);
 
-  // Clear markers when view becomes inactive
+  // Clear markers and radar when view becomes inactive
   useEffect(() => {
     if (!isActive && map) {
       markersRef.current.forEach((marker) => {
         map.removeLayer(marker);
       });
       markersRef.current.clear();
+      
+      // Remove radar layer
+      if (radarLayerRef.current && map.hasLayer(radarLayerRef.current)) {
+        map.removeLayer(radarLayerRef.current);
+      }
     }
   }, [isActive, map]);
 
@@ -550,7 +698,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       markersRef.current.set(key, marker);
     });
 
-    // Add fire markers (cluster nearby fires for performance)
+    // Add fire markers
     events.fires.slice(0, 100).forEach((fire) => {
       const key = `fire-${fire.id}`;
       
@@ -604,13 +752,13 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       markersRef.current.set(key, marker);
     });
 
-    // Add SSN earthquake markers (Mexico, last 24 hours) - render on top
+    // Add SSN earthquake markers (Mexico, last 24 hours)
     events.ssnEarthquakes.forEach((quake) => {
       const key = `ssn-${quake.id}`;
       
       const marker = L.marker([quake.lat, quake.lng], {
         icon: createSSNEarthquakeIcon(quake.magnitude),
-        zIndexOffset: Math.round(quake.magnitude * 150), // Higher z-index than USGS
+        zIndexOffset: Math.round(quake.magnitude * 150),
       })
         .addTo(map)
         .bindPopup(`
@@ -637,14 +785,18 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       markersRef.current.set(key, marker);
     });
 
+    // Add SMN weather alert markers (centered on Mexico, as SMN doesn't provide coordinates)
+    // Show as an info panel rather than map markers since they're country-level alerts
+    // We'll show them in the stats bar below
+
   }, [map, isActive, events]);
 
-  // Don't render anything if not active (keeps it lightweight)
+  // Don't render anything if not active
   if (!isActive) return null;
 
   return (
     <>
-      {/* Loading indicator - compact for mobile */}
+      {/* Loading indicator */}
       {events.loading && (
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[1000] bg-background/95 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin text-primary" />
@@ -652,10 +804,67 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         </div>
       )}
 
-      {/* Stats bar - only show when loaded */}
+      {/* Radar toggle button */}
+      {!events.loading && (
+        <button
+          onClick={() => setRadarActive(!radarActive)}
+          className={cn(
+            "absolute top-16 right-2 z-[1000] rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
+            radarActive 
+              ? "bg-sky-500/90 text-white border-sky-400" 
+              : "bg-background/90 text-muted-foreground border-border"
+          )}
+          title={radarActive ? 'Desactivar radar de lluvia' : 'Activar radar de lluvia'}
+        >
+          <CloudRain className="w-4 h-4" />
+          <span className="text-xs font-medium">Radar</span>
+        </button>
+      )}
+
+      {/* SMN Weather Alerts panel */}
+      {events.smnAlerts.length > 0 && (
+        <div className="absolute top-28 right-2 z-[1000] max-w-[200px] bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border border-sky-500/30 overflow-hidden">
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-sky-500/10 border-b border-sky-500/20">
+            <CloudLightning className="w-3.5 h-3.5 text-sky-500" />
+            <span className="text-xs font-semibold text-sky-600">SMN / CONAGUA</span>
+          </div>
+          <div className="max-h-[150px] overflow-y-auto">
+            {events.smnAlerts.slice(0, 5).map((alert) => (
+              <a
+                key={alert.id}
+                href={alert.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block px-2.5 py-1.5 text-xs hover:bg-accent/50 transition-colors border-b border-border/50 last:border-0"
+              >
+                <div className="font-medium text-foreground line-clamp-2">{alert.title}</div>
+                {alert.pubDate && (
+                  <div className="text-muted-foreground text-[10px] mt-0.5">
+                    {new Date(alert.pubDate).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                  </div>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Stats bar */}
       {!events.loading && events.lastUpdate && (
         <div className="absolute bottom-20 left-2 right-2 z-[1000] flex items-center justify-between bg-background/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
           <div className="flex items-center gap-2 text-xs flex-wrap">
+            {radarActive && (
+              <span className="flex items-center gap-1 text-sky-500 font-medium">
+                <CloudRain className="w-3 h-3" />
+                Radar
+              </span>
+            )}
+            {events.smnAlerts.length > 0 && (
+              <span className="flex items-center gap-1 text-sky-600 font-medium">
+                <CloudLightning className="w-3 h-3" />
+                {events.smnAlerts.length} SMN
+              </span>
+            )}
             {events.ssnEarthquakes.length > 0 && (
               <span className="flex items-center gap-1 text-emerald-600 font-medium">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
