@@ -4,7 +4,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
-import { Loader2, AlertTriangle, Flame, CloudLightning, Radio, RefreshCw, CloudRain, Zap, Wind, ThermometerSun } from 'lucide-react';
+import { Loader2, AlertTriangle, Flame, CloudLightning, Radio, RefreshCw, CloudRain, Zap, Wind, ThermometerSun, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { USGSEarthquake } from '@/types';
@@ -293,6 +293,13 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   const radarCoverageCirclesRef = useRef<L.Circle[]>([]);
   const [radarActive, setRadarActive] = useState(true);
   const [showRadarStations, setShowRadarStations] = useState(true);
+
+  // Radar animation state
+  const radarFramesRef = useRef<{ path: string; time: number }[]>([]);
+  const [radarAnimPlaying, setRadarAnimPlaying] = useState(false);
+  const [radarAnimFrame, setRadarAnimFrame] = useState(-1); // -1 = latest (live)
+  const radarAnimIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const [events, setEvents] = useState<EventsState>({
     earthquakes: [],
     ssnEarthquakes: [],
@@ -304,6 +311,20 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     lastUpdate: null,
   });
 
+  // Show a specific radar frame on the map
+  const showRadarFrame = useCallback((framePath: string) => {
+    if (!map) return;
+    if (radarLayerRef.current && map.hasLayer(radarLayerRef.current)) {
+      map.removeLayer(radarLayerRef.current);
+    }
+    const layer = L.tileLayer(
+      `https://tilecache.rainviewer.com${framePath}/256/{z}/{x}/{y}/6/1_1.png`,
+      { opacity: 0.65, zIndex: 5, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>' }
+    );
+    layer.addTo(map);
+    radarLayerRef.current = layer;
+  }, [map]);
+
   // Fetch RainViewer radar + satellite layers
   const setupRadarLayer = useCallback(async () => {
     if (!map) return;
@@ -313,31 +334,20 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (!response.ok) return;
       const data = await response.json();
       
-      // --- Ground-based radar (good for US, limited in Mexico) ---
-      const radarFrames = data?.radar?.past || [];
-      if (radarFrames.length > 0) {
+      // --- Store all radar frames for animation ---
+      const radarFrames: { path: string; time: number }[] = (data?.radar?.past || []).map((f: any) => ({ path: f.path, time: f.time }));
+      // Add nowcast frames too
+      const nowcastFrames: { path: string; time: number }[] = (data?.radar?.nowcast || []).map((f: any) => ({ path: f.path, time: f.time }));
+      const allFrames = [...radarFrames, ...nowcastFrames];
+      radarFramesRef.current = allFrames;
+
+      // Show latest radar frame (only if not animating)
+      if (!radarAnimPlaying && radarAnimFrame === -1 && radarFrames.length > 0) {
         const latestFrame = radarFrames[radarFrames.length - 1];
-        const path = latestFrame.path;
-        
-        if (radarTimestampRef.current !== path) {
-          radarTimestampRef.current = path;
-          
-          if (radarLayerRef.current && map.hasLayer(radarLayerRef.current)) {
-            map.removeLayer(radarLayerRef.current);
-          }
-          
-          const radarLayer = L.tileLayer(
-            `https://tilecache.rainviewer.com${path}/256/{z}/{x}/{y}/6/1_1.png`,
-            {
-              opacity: 0.65,
-              zIndex: 5,
-              attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>',
-            }
-          );
-          
-          radarLayer.addTo(map);
-          radarLayerRef.current = radarLayer;
-          console.log('[LiveEvents] Radar layer added:', path);
+        if (radarTimestampRef.current !== latestFrame.path) {
+          radarTimestampRef.current = latestFrame.path;
+          showRadarFrame(latestFrame.path);
+          console.log('[LiveEvents] Radar layer added:', latestFrame.path);
         }
       }
       
@@ -356,11 +366,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           
           const satLayer = L.tileLayer(
             `https://tilecache.rainviewer.com${satPath}/256/{z}/{x}/{y}/0/0_0.png`,
-            {
-              opacity: 0.5,
-              zIndex: 4,
-              attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer Sat</a>',
-            }
+            { opacity: 0.5, zIndex: 4, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer Sat</a>' }
           );
           
           satLayer.addTo(map);
@@ -369,9 +375,8 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         }
       }
 
-      // --- Nowcast / forecast layer (30-60 min prediction) ---
-      const nowcastFrames = data?.radar?.nowcast || [];
-      if (nowcastFrames.length > 0) {
+      // --- Nowcast layer (only when NOT animating — animation includes nowcast frames) ---
+      if (!radarAnimPlaying && nowcastFrames.length > 0) {
         const latestNow = nowcastFrames[nowcastFrames.length - 1];
         const nowPath = latestNow.path;
 
@@ -384,11 +389,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
 
           const nowLayer = L.tileLayer(
             `https://tilecache.rainviewer.com${nowPath}/256/{z}/{x}/{y}/2/1_1.png`,
-            {
-              opacity: 0.3,
-              zIndex: 6,
-              attribution: 'RainViewer Nowcast',
-            }
+            { opacity: 0.3, zIndex: 6, attribution: 'RainViewer Nowcast' }
           );
 
           nowLayer.addTo(map);
@@ -400,9 +401,8 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       // --- SMN Radar station markers with coverage circles ---
       if (showRadarStations && radarStationMarkersRef.current.length === 0) {
         SMN_RADAR_STATIONS.forEach((station) => {
-          // Coverage circle (250km range for Doppler radar)
           const coverageCircle = L.circle([station.lat, station.lng], {
-            radius: 250000, // 250 km
+            radius: 250000,
             color: '#0ea5e9',
             weight: 1,
             opacity: 0.4,
@@ -463,7 +463,51 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     } catch (error) {
       console.warn('[LiveEvents] Error setting up radar:', error);
     }
-  }, [map, showRadarStations]);
+  }, [map, showRadarStations, radarAnimPlaying, radarAnimFrame, showRadarFrame]);
+
+  // Radar animation: play/pause logic
+  useEffect(() => {
+    if (radarAnimPlaying && radarFramesRef.current.length > 0) {
+      // Hide nowcast layer during animation
+      if (nowcastLayerRef.current && map && map.hasLayer(nowcastLayerRef.current)) {
+        map.removeLayer(nowcastLayerRef.current);
+      }
+
+      const frames = radarFramesRef.current;
+      let idx = radarAnimFrame >= 0 ? radarAnimFrame : 0;
+
+      radarAnimIntervalRef.current = setInterval(() => {
+        idx = (idx + 1) % frames.length;
+        setRadarAnimFrame(idx);
+        showRadarFrame(frames[idx].path);
+      }, 700);
+
+      return () => {
+        if (radarAnimIntervalRef.current) clearInterval(radarAnimIntervalRef.current);
+      };
+    } else {
+      if (radarAnimIntervalRef.current) {
+        clearInterval(radarAnimIntervalRef.current);
+        radarAnimIntervalRef.current = null;
+      }
+    }
+  }, [radarAnimPlaying, map, showRadarFrame]);
+
+  // When animation stops, restore live frame
+  const stopAnimation = useCallback(() => {
+    setRadarAnimPlaying(false);
+    setRadarAnimFrame(-1);
+    // Restore latest radar frame
+    const frames = radarFramesRef.current;
+    const pastFrames = frames.filter(f => f.time <= Date.now() / 1000);
+    if (pastFrames.length > 0) {
+      showRadarFrame(pastFrames[pastFrames.length - 1].path);
+    }
+    // Restore nowcast
+    if (nowcastLayerRef.current && map && !map.hasLayer(nowcastLayerRef.current)) {
+      nowcastLayerRef.current.addTo(map);
+    }
+  }, [map, showRadarFrame]);
 
   // Toggle radar + satellite + nowcast visibility
   useEffect(() => {
@@ -806,6 +850,14 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   // Clear markers and radar when view becomes inactive
   useEffect(() => {
     if (!isActive && map) {
+      // Stop radar animation
+      setRadarAnimPlaying(false);
+      setRadarAnimFrame(-1);
+      if (radarAnimIntervalRef.current) {
+        clearInterval(radarAnimIntervalRef.current);
+        radarAnimIntervalRef.current = null;
+      }
+
       markersRef.current.forEach((marker) => {
         map.removeLayer(marker);
       });
@@ -995,6 +1047,67 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           <CloudRain className="w-4 h-4" />
           <span className="text-xs font-medium">Radar</span>
         </button>
+      )}
+
+      {/* Radar Animation Player */}
+      {radarActive && radarFramesRef.current.length > 0 && (
+        <div className="absolute top-16 left-2 z-[1000] bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border border-border p-2 flex items-center gap-2">
+          <button
+            onClick={() => {
+              if (radarAnimPlaying) {
+                stopAnimation();
+              } else {
+                setRadarAnimPlaying(true);
+              }
+            }}
+            className={cn(
+              'w-8 h-8 rounded-full flex items-center justify-center transition-colors',
+              radarAnimPlaying
+                ? 'bg-warning/20 text-warning'
+                : 'bg-primary/20 text-primary'
+            )}
+            title={radarAnimPlaying ? 'Pausar animación' : 'Reproducir últimos frames de radar'}
+          >
+            {radarAnimPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          </button>
+
+          {radarAnimPlaying && radarAnimFrame >= 0 && (
+            <>
+              {/* Frame progress */}
+              <div className="flex flex-col items-center min-w-[80px]">
+                <div className="flex gap-[2px]">
+                  {radarFramesRef.current.map((_, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        'h-1.5 rounded-full transition-colors',
+                        i <= radarAnimFrame ? 'bg-primary' : 'bg-muted',
+                        radarFramesRef.current.length > 15 ? 'w-1' : 'w-1.5'
+                      )}
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] text-muted-foreground mt-1">
+                  {(() => {
+                    const frame = radarFramesRef.current[radarAnimFrame];
+                    if (!frame) return '';
+                    const d = new Date(frame.time * 1000);
+                    const isFuture = frame.time > Date.now() / 1000;
+                    return `${d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}${isFuture ? ' ⟶' : ''}`;
+                  })()}
+                </span>
+              </div>
+
+              <button
+                onClick={stopAnimation}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors px-1"
+                title="Volver a EN VIVO"
+              >
+                EN VIVO
+              </button>
+            </>
+          )}
+        </div>
       )}
 
       {/* SMN Weather Alerts panel */}
