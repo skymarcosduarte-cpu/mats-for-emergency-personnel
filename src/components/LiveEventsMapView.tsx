@@ -290,6 +290,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   const satelliteTimestampRef = useRef<string | null>(null);
   const nowcastTimestampRef = useRef<string | null>(null);
   const radarStationMarkersRef = useRef<L.Marker[]>([]);
+  const radarCoverageCirclesRef = useRef<L.Circle[]>([]);
   const [radarActive, setRadarActive] = useState(true);
   const [showRadarStations, setShowRadarStations] = useState(true);
   const [events, setEvents] = useState<EventsState>({
@@ -326,9 +327,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           }
           
           const radarLayer = L.tileLayer(
-            `https://tilecache.rainviewer.com${path}/256/{z}/{x}/{y}/2/1_1.png`,
+            `https://tilecache.rainviewer.com${path}/256/{z}/{x}/{y}/6/1_1.png`,
             {
-              opacity: 0.55,
+              opacity: 0.65,
               zIndex: 5,
               attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>',
             }
@@ -356,7 +357,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           const satLayer = L.tileLayer(
             `https://tilecache.rainviewer.com${satPath}/256/{z}/{x}/{y}/0/0_0.png`,
             {
-              opacity: 0.35,
+              opacity: 0.5,
               zIndex: 4,
               attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer Sat</a>',
             }
@@ -396,43 +397,63 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         }
       }
 
-      // --- SMN Radar station markers ---
+      // --- SMN Radar station markers with coverage circles ---
       if (showRadarStations && radarStationMarkersRef.current.length === 0) {
         SMN_RADAR_STATIONS.forEach((station) => {
+          // Coverage circle (250km range for Doppler radar)
+          const coverageCircle = L.circle([station.lat, station.lng], {
+            radius: 250000, // 250 km
+            color: '#0ea5e9',
+            weight: 1,
+            opacity: 0.4,
+            fillColor: '#0ea5e9',
+            fillOpacity: 0.06,
+            dashArray: '6 4',
+            interactive: false,
+          });
+          coverageCircle.addTo(map);
+          radarCoverageCirclesRef.current.push(coverageCircle);
+
           const icon = L.divIcon({
             className: 'smn-radar-station',
             html: `
               <div style="
-                width: 22px; height: 22px;
-                background: rgba(14,165,233,0.15);
-                border: 2px solid #0ea5e9;
-                border-radius: 50%;
+                width: 28px; height: 28px;
+                position: relative;
                 display: flex; align-items: center; justify-content: center;
               ">
-                <div style="width: 6px; height: 6px; background: #0ea5e9; border-radius: 50%;"></div>
+                <div style="
+                  position: absolute;
+                  width: 28px; height: 28px;
+                  border: 2px solid #0ea5e9;
+                  border-radius: 50%;
+                  animation: radarSweep 3s linear infinite;
+                  opacity: 0.6;
+                "></div>
+                <div style="
+                  width: 16px; height: 16px;
+                  background: radial-gradient(circle, #0ea5e9 40%, rgba(14,165,233,0.3) 100%);
+                  border: 2px solid white;
+                  border-radius: 50%;
+                  z-index: 1;
+                  box-shadow: 0 0 8px rgba(14,165,233,0.6);
+                "></div>
               </div>
-              <div style="
-                width: 80px; height: 80px;
-                border: 1px dashed rgba(14,165,233,0.25);
-                border-radius: 50%;
-                position: absolute;
-                top: -29px; left: -29px;
-                pointer-events: none;
-              "></div>
             `,
-            iconSize: [22, 22],
-            iconAnchor: [11, 11],
-            popupAnchor: [0, -14],
+            iconSize: [28, 28],
+            iconAnchor: [14, 14],
+            popupAnchor: [0, -16],
           });
 
           const m = L.marker([station.lat, station.lng], { icon, zIndexOffset: -100 })
             .addTo(map)
             .bindPopup(`
-              <div style="text-align:center;min-width:130px;">
-                <div style="font-size:12px;font-weight:bold;color:#0ea5e9;">📡 Radar Doppler</div>
-                <div style="font-size:11px;font-weight:600;margin-top:2px;">${station.name}</div>
+              <div style="text-align:center;min-width:140px;">
+                <div style="font-size:12px;font-weight:bold;color:#0ea5e9;">📡 Radar Doppler EN VIVO</div>
+                <div style="font-size:12px;font-weight:600;margin-top:3px;">${station.name}</div>
                 <div style="font-size:10px;color:#666;">${station.estado}</div>
-                ${station.dualPol ? '<div style="font-size:9px;color:#059669;margin-top:2px;">Doble polaridad</div>' : ''}
+                <div style="font-size:9px;color:#0ea5e9;margin-top:3px;">Cobertura: ~250 km</div>
+                ${station.dualPol ? '<div style="font-size:9px;color:#059669;margin-top:2px;">✓ Doble polaridad</div>' : ''}
                 <div style="font-size:9px;color:#999;margin-top:4px;">SMN / CONAGUA</div>
               </div>
             `);
@@ -457,9 +478,12 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (nowcastLayerRef.current && !map.hasLayer(nowcastLayerRef.current)) {
         nowcastLayerRef.current.addTo(map);
       }
-      // Show station markers
+      // Show station markers + coverage circles
       radarStationMarkersRef.current.forEach(m => {
         if (!map.hasLayer(m)) m.addTo(map);
+      });
+      radarCoverageCirclesRef.current.forEach(c => {
+        if (!map.hasLayer(c)) c.addTo(map);
       });
     } else {
       if (radarLayerRef.current && map.hasLayer(radarLayerRef.current)) {
@@ -471,9 +495,12 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (nowcastLayerRef.current && map.hasLayer(nowcastLayerRef.current)) {
         map.removeLayer(nowcastLayerRef.current);
       }
-      // Hide station markers
+      // Hide station markers + coverage circles
       radarStationMarkersRef.current.forEach(m => {
         if (map.hasLayer(m)) map.removeLayer(m);
+      });
+      radarCoverageCirclesRef.current.forEach(c => {
+        if (map.hasLayer(c)) map.removeLayer(c);
       });
     }
   }, [map, radarActive]);
@@ -794,11 +821,15 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (nowcastLayerRef.current && map.hasLayer(nowcastLayerRef.current)) {
         map.removeLayer(nowcastLayerRef.current);
       }
-      // Remove radar station markers
+      // Remove radar station markers + coverage circles
       radarStationMarkersRef.current.forEach(m => {
         if (map.hasLayer(m)) map.removeLayer(m);
       });
       radarStationMarkersRef.current = [];
+      radarCoverageCirclesRef.current.forEach(c => {
+        if (map.hasLayer(c)) map.removeLayer(c);
+      });
+      radarCoverageCirclesRef.current = [];
     }
   }, [isActive, map]);
 
@@ -1057,6 +1088,12 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         @keyframes rotateCyclone {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        @keyframes radarSweep {
+          0% { transform: scale(1); opacity: 0.6; box-shadow: 0 0 4px rgba(14,165,233,0.4); }
+          50% { transform: scale(1.6); opacity: 0; box-shadow: 0 0 12px rgba(14,165,233,0); }
+          51% { transform: scale(1); opacity: 0; }
+          100% { transform: scale(1); opacity: 0.6; box-shadow: 0 0 4px rgba(14,165,233,0.4); }
         }
       `}</style>
     </>
