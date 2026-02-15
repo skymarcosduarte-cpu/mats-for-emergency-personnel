@@ -295,6 +295,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   const radarStationMarkersRef = useRef<L.Marker[]>([]);
   const radarCoverageCirclesRef = useRef<L.Circle[]>([]);
   const [radarActive, setRadarActive] = useState(true);
+  const [owmActive, setOwmActive] = useState(true);
   const [showRadarStations, setShowRadarStations] = useState(true);
 
   // Radar animation state
@@ -537,7 +538,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
   }, [map, showRadarFrame]);
 
-  // Toggle radar + satellite + nowcast visibility
+  // Toggle radar + satellite + nowcast visibility (excludes OWM)
   useEffect(() => {
     if (!map) return;
     if (radarActive) {
@@ -549,9 +550,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       }
       if (nowcastLayerRef.current && !map.hasLayer(nowcastLayerRef.current)) {
         nowcastLayerRef.current.addTo(map);
-      }
-      if (owmLayerRef.current && !map.hasLayer(owmLayerRef.current)) {
-        owmLayerRef.current.addTo(map);
       }
       // Show station markers + coverage circles
       radarStationMarkersRef.current.forEach(m => {
@@ -570,9 +568,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (nowcastLayerRef.current && map.hasLayer(nowcastLayerRef.current)) {
         map.removeLayer(nowcastLayerRef.current);
       }
-      if (owmLayerRef.current && map.hasLayer(owmLayerRef.current)) {
-        map.removeLayer(owmLayerRef.current);
-      }
       // Hide station markers + coverage circles
       radarStationMarkersRef.current.forEach(m => {
         if (map.hasLayer(m)) map.removeLayer(m);
@@ -582,6 +577,20 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       });
     }
   }, [map, radarActive]);
+
+  // Toggle OWM layer independently
+  useEffect(() => {
+    if (!map) return;
+    if (owmActive) {
+      if (owmLayerRef.current && !map.hasLayer(owmLayerRef.current)) {
+        owmLayerRef.current.addTo(map);
+      }
+    } else {
+      if (owmLayerRef.current && map.hasLayer(owmLayerRef.current)) {
+        map.removeLayer(owmLayerRef.current);
+      }
+    }
+  }, [map, owmActive]);
 
   // Fetch earthquakes from USGS
   const fetchEarthquakes = useCallback(async (): Promise<USGSEarthquake[]> => {
@@ -1081,12 +1090,25 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
                 ? "bg-sky-500/90 text-white border-sky-400" 
                 : "bg-background/90 text-muted-foreground border-border"
             )}
-            title={radarActive ? 'Desactivar radar de lluvia' : 'Activar radar de lluvia'}
+            title={radarActive ? 'Desactivar radar RainViewer' : 'Activar radar RainViewer'}
           >
             <CloudRain className="w-4 h-4" />
             <span className="text-xs font-medium">Radar</span>
           </button>
-          {radarActive && (
+          <button
+            onClick={() => setOwmActive(!owmActive)}
+            className={cn(
+              "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
+              owmActive 
+                ? "bg-orange-500/90 text-white border-orange-400" 
+                : "bg-background/90 text-muted-foreground border-border"
+            )}
+            title={owmActive ? 'Desactivar capa OpenWeather' : 'Activar capa OpenWeather (mejor cobertura MX)'}
+          >
+            <ThermometerSun className="w-4 h-4" />
+            <span className="text-xs font-medium">OWM</span>
+          </button>
+          {(radarActive || owmActive) && (
             <div className="bg-background/90 backdrop-blur-sm rounded-lg shadow border border-border px-2 py-1.5 text-[10px] text-muted-foreground max-w-[140px] leading-tight">
               <div className="flex items-center gap-1 mb-1">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
@@ -1104,9 +1126,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
                 <div className="w-2 h-2 rounded-full bg-purple-600" />
                 <span>Torrencial</span>
               </div>
-              <div className="mt-1 text-[9px] opacity-70">☁️ Nubes IR siempre visibles</div>
-              <div className="text-[9px] opacity-70">🌧️ RainViewer + OpenWeather</div>
-              <div className="text-[9px] opacity-70">🇲🇽 Cobertura mejorada México</div>
+              {radarActive && <div className="mt-1 text-[9px] opacity-70">☁️ Nubes IR siempre visibles</div>}
+              {radarActive && <div className="text-[9px] opacity-70">🌧️ RainViewer</div>}
+              {owmActive && <div className="text-[9px] opacity-70">🌤️ OpenWeather MX</div>}
             </div>
           )}
         </div>
