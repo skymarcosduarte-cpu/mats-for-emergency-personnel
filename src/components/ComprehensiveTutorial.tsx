@@ -23,7 +23,9 @@ import {
   Radio,
   Flame,
   Users,
-  Video
+  Video,
+  Phone,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatsLogo } from '@/components/MatsLogo';
@@ -340,6 +342,44 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
           </div>
         ),
         tip: 'Conecta con otros miembros para oportunidades laborales',
+      },
+    ],
+  },
+  {
+    id: 'recursos',
+    title: 'RecurSOS',
+    icon: <Shield className="w-6 h-6" />,
+    color: 'text-primary',
+    steps: [
+      {
+        title: '📞 RecurSOS — Directorio y Guías',
+        content: (
+          <div className="space-y-4">
+            <p>
+              <strong>RecurSOS</strong> está en el menú principal y contiene dos secciones clave:
+            </p>
+            <div className="space-y-2">
+              <div className="flex items-start gap-3 p-3 bg-destructive/10 rounded-lg border border-destructive/30">
+                <Phone className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-destructive">Directorio PC y Cruz Roja</p>
+                  <p className="text-xs text-muted-foreground">Protección Civil y Cruz Roja de 12 países — teléfonos, ubicaciones y marcado rápido</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-accent/10 rounded-lg border border-accent/30">
+                <BookOpen className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-accent">Guías de Emergencias</p>
+                  <p className="text-xs text-muted-foreground">Tarjetas con protocolos de primeros auxilios, evacuación, seguridad y más</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-safe/10 border border-safe/30 rounded-lg p-2 text-xs">
+              <p className="font-medium text-safe">📥 El directorio se descarga automáticamente y funciona SIN INTERNET</p>
+            </div>
+          </div>
+        ),
+        tip: 'Busca por país, ciudad o usa tu GPS para encontrar números de emergencia cercanos',
       },
     ],
   },
