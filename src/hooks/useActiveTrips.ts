@@ -187,6 +187,18 @@ export function useActiveTrips() {
         profilesResult.data?.map(p => [p.user_id, p.nickname]) || []
       );
 
+      // Fallback: fetch nicknames from profiles for users not in profiles_public (share_location=false)
+      const missingNicknameIds = userIds.filter(id => !nicknameMap.has(id));
+      if (missingNicknameIds.length > 0) {
+        const { data: fallbackProfiles } = await supabase
+          .from('profiles')
+          .select('id, nickname')
+          .in('id', missingNicknameIds);
+        fallbackProfiles?.forEach(p => {
+          nicknameMap.set(p.id, p.nickname || null);
+        });
+      }
+
       const locationMap = new Map(
         locationsResult.data?.map(l => [l.user_id, { 
           lat: l.lat, 
