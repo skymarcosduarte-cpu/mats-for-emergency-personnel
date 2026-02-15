@@ -307,9 +307,53 @@ export default function UserGuidePage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">En Vivo:</strong> Modo de respuesta a desastres con información filtrada</span>
+                <span><strong className="text-gray-900">En Vivo:</strong> Modo de respuesta a desastres con sismos, incendios, ciclones y datos meteorológicos en tiempo real</span>
               </li>
             </ul>
+
+            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Mapa En Vivo — Capas Meteorológicas</h3>
+            <p className="text-gray-700 leading-relaxed mb-4">
+              El modo <strong>En Vivo</strong> integra datos meteorológicos en tiempo real directamente sobre el mapa,
+              siempre visibles para monitoreo continuo:
+            </p>
+            <div className="grid gap-4 md:grid-cols-2 print:grid-cols-2">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
+                  🌧️ Radar de Lluvia
+                </h4>
+                <p className="text-sm text-gray-600">
+                  Capa de precipitación en tiempo real proporcionada por RainViewer. Se actualiza automáticamente 
+                  cada 5 minutos mostrando lluvias, tormentas y precipitaciones sobre el territorio.
+                </p>
+              </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
+                  ⚠️ Alertas SMN/CONAGUA
+                </h4>
+                <p className="text-sm text-gray-600">
+                  Avisos oficiales del Servicio Meteorológico Nacional de México incluyendo ciclones tropicales, 
+                  frentes fríos, lluvias intensas y otros fenómenos meteorológicos.
+                </p>
+              </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
+                  🌀 Ciclones Tropicales (NHC)
+                </h4>
+                <p className="text-sm text-gray-600">
+                  Monitoreo de huracanes y tormentas tropicales del Atlántico y Pacífico con trayectoria, 
+                  categoría y distancia estimada.
+                </p>
+              </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
+                  🔥 Incendios Activos (NASA FIRMS)
+                </h4>
+                <p className="text-sm text-gray-600">
+                  Puntos de calor detectados por satélite en las últimas 24 horas, con nivel de confianza 
+                  y distancia al usuario.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
