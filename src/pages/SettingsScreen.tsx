@@ -36,7 +36,8 @@ import {
   Database,
   FileDown,
   GraduationCap,
-  Users
+  Users,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,6 +80,7 @@ import { cn } from '@/lib/utils';
 import { useUserDataExport } from '@/hooks/useUserDataExport';
 import { Badge } from '@/components/ui/badge';
 import { ComprehensiveTutorial } from '@/components/ComprehensiveTutorial';
+import { UserGuideStepByStep } from '@/components/UserGuideStepByStep';
 import { Clave100DrillScheduler } from '@/components/Clave100DrillScheduler';
 import QRCode from 'qrcode';
 import { toast } from 'sonner';
@@ -170,6 +172,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   );
   const [savingSpecialties, setSavingSpecialties] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showUserGuide, setShowUserGuide] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showDrillScheduler, setShowDrillScheduler] = useState(false);
 
@@ -683,6 +686,33 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 className="border-safe/30 text-safe hover:bg-safe/10"
               >
                 Ver Tutorial
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* User Guide Step by Step */}
+        <Card className="bg-card border-border border-primary/30">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Guía Paso a Paso</p>
+                  <p className="text-xs text-muted-foreground">
+                    Guía detallada con letras grandes de todas las funciones
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowUserGuide(true)}
+                className="border-primary/30 text-primary hover:bg-primary/10"
+              >
+                Ver Guía
               </Button>
             </div>
           </CardContent>
@@ -2720,7 +2750,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         />
       )}
 
-      {/* Admin Panel */}
+      {/* User Guide Step by Step */}
+      {showUserGuide && (
+        <UserGuideStepByStep onClose={() => setShowUserGuide(false)} />
+      )}
+
       <AdminPanel
         open={showAdminPanel}
         onClose={() => setShowAdminPanel(false)}
