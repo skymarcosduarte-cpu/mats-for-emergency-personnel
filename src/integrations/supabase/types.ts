@@ -932,7 +932,7 @@ export type Database = {
           medical_conditions: string | null
           nickname: string
           opt_out_drills: boolean
-          phone: string
+          phone: string | null
           privacy_consent_at: string | null
           share_location: boolean
           share_medical_info: boolean
@@ -960,7 +960,7 @@ export type Database = {
           medical_conditions?: string | null
           nickname: string
           opt_out_drills?: boolean
-          phone: string
+          phone?: string | null
           privacy_consent_at?: string | null
           share_location?: boolean
           share_medical_info?: boolean
@@ -988,7 +988,7 @@ export type Database = {
           medical_conditions?: string | null
           nickname?: string
           opt_out_drills?: boolean
-          phone?: string
+          phone?: string | null
           privacy_consent_at?: string | null
           share_location?: boolean
           share_medical_info?: boolean

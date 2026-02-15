@@ -661,7 +661,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
   // Handle profile creation - show privacy consent first
   const handleProfileSubmit = async () => {
-    if (!profileForm.fullName.trim() || !profileForm.phone.trim() || !profileForm.role) {
+    if (!profileForm.fullName.trim() || !profileForm.role) {
       setError('Completa todos los campos obligatorios');
       return;
     }
@@ -1250,7 +1250,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
               </div>
 
               <div>
-                <Label>Teléfono *</Label>
+                <Label>Teléfono <span className="text-muted-foreground text-xs">(opcional)</span></Label>
                 <Input
                   type="tel"
                   value={profileForm.phone}
