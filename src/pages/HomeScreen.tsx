@@ -138,12 +138,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   // Fetch online users count
   const fetchOnlineCount = useCallback(async () => {
     try {
-      const fiveMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
       const { count, error } = await supabase
         .from('user_locations')
         .select('*', { count: 'exact', head: true })
         .eq('is_online', true)
-        .gte('updated_at', fiveMinutesAgo);
+        .gte('updated_at', thirtyMinutesAgo);
       
       if (!error && count !== null) {
         setOnlineCount(count);

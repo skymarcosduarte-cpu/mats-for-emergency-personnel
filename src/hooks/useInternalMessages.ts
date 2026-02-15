@@ -297,6 +297,7 @@ export const useInternalMessagesStore = () => {
       const newUserIds = userIds.filter((id) => !userNamesMapRef.current.has(id));
 
       if (newUserIds.length > 0) {
+        // First try user_locations_with_roles (for users sharing location)
         const { data: usersData } = await supabase
           .from('user_locations_with_roles')
           .select('user_id, display_name, show_name_on_map')
@@ -305,6 +306,19 @@ export const useInternalMessagesStore = () => {
         (usersData || []).forEach((u) => {
           userNamesMapRef.current.set(u.user_id!, u.show_name_on_map ? u.display_name : null);
         });
+
+        // Fallback to profiles for users not found in the view (e.g. share_location=false)
+        const missingIds = newUserIds.filter((id) => !userNamesMapRef.current.has(id));
+        if (missingIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, nickname')
+            .in('id', missingIds);
+
+          (profilesData || []).forEach((p) => {
+            userNamesMapRef.current.set(p.id, p.nickname || null);
+          });
+        }
       }
 
       const convList: Conversation[] = userIds.map((userId) => ({
@@ -823,13 +837,25 @@ export const useInternalMessagesStore = () => {
 
               if (!senderName) {
                 try {
+                  // Try user_locations_with_roles first
                   const { data } = await supabase
                     .from('user_locations_with_roles')
                     .select('display_name, show_name_on_map')
                     .eq('user_id', newMessage.sender_id)
                     .single();
 
-                  senderName = data?.show_name_on_map && data?.display_name ? data.display_name : 'Usuario';
+                  senderName = data?.show_name_on_map && data?.display_name ? data.display_name : null;
+
+                  // Fallback to profiles if not found (e.g. share_location=false)
+                  if (!senderName) {
+                    const { data: profile } = await supabase
+                      .from('profiles')
+                      .select('nickname')
+                      .eq('id', newMessage.sender_id)
+                      .single();
+                    senderName = profile?.nickname || 'Usuario';
+                  }
+
                   senderNamesCache.current.set(newMessage.sender_id, senderName);
                 } catch (e) {
                   console.warn('[Realtime] Failed to fetch sender name, using default:', e);
