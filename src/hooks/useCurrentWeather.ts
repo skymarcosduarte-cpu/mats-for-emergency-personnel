@@ -1,5 +1,6 @@
-// Hook to fetch current weather based on user's GPS coordinates using Open-Meteo API
+// Hook to fetch current weather based on user's GPS coordinates using Open-Meteo API + OWM
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WeatherData {
   temperature: number;
@@ -7,6 +8,17 @@ interface WeatherData {
   description: string;
   icon: string;
   locationName: string;
+  // OWM additional data
+  owmTemperature?: number;
+  owmFeelsLike?: number;
+  owmHumidity?: number;
+  owmPressure?: number;
+  owmWindSpeed?: number;
+  owmWindDeg?: number;
+  owmDescription?: string;
+  owmIcon?: string;
+  owmClouds?: number;
+  owmVisibility?: number;
 }
 
 // WMO Weather interpretation codes to description and icon
@@ -100,12 +112,41 @@ export function useCurrentWeather(lat: number | null, lng: number | null) {
       const weatherCode = weatherData.current?.weather_code ?? 0;
       const { description, icon } = getWeatherInfo(weatherCode);
 
+      // Fetch OWM additional data via edge function
+      let owmExtras: Partial<WeatherData> = {};
+      try {
+        const { data: owm, error: owmError } = await supabase.functions.invoke('fetch-owm-weather', {
+          body: { lat, lon: lng },
+        });
+
+        if (!owmError && owm && !owm.error) {
+          owmExtras = {
+            owmTemperature: owm.main?.temp,
+            owmFeelsLike: owm.main?.feels_like,
+            owmHumidity: owm.main?.humidity,
+            owmPressure: owm.main?.pressure,
+            owmWindSpeed: owm.wind?.speed,
+            owmWindDeg: owm.wind?.deg,
+            owmDescription: owm.weather?.[0]?.description,
+            owmIcon: owm.weather?.[0]?.icon,
+            owmClouds: owm.clouds?.all,
+            owmVisibility: owm.visibility,
+          };
+          console.log('[useCurrentWeather] OWM data fetched:', owm.name);
+        } else {
+          console.warn('[useCurrentWeather] OWM error:', owmError || owm?.error);
+        }
+      } catch (owmErr) {
+        console.warn('[useCurrentWeather] OWM fetch failed:', owmErr);
+      }
+
       setWeather({
         temperature: Math.round(weatherData.current?.temperature_2m ?? 0),
         weatherCode,
         description,
         icon,
         locationName: locationName || 'Obteniendo ubicación...',
+        ...owmExtras,
       });
     } catch (err) {
       console.error('[useCurrentWeather] Error:', err);
