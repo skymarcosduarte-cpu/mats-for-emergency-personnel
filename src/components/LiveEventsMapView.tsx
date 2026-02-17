@@ -429,7 +429,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           if (!owmCloudsLayerRef.current && apiKey) {
             const cloudsLayer = L.tileLayer(
               `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 0.6, zIndex: 4, attribution: '© OpenWeatherMap' }
+              { opacity: 0.9, zIndex: 4, attribution: '© OpenWeatherMap' }
             );
             cloudsLayer.addTo(map);
             owmCloudsLayerRef.current = cloudsLayer;
