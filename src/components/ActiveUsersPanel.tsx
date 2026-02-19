@@ -305,12 +305,17 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                           const until = user.zello_transmitting_until;
                           const isActive = until && new Date(until) > new Date();
                           return isActive ? (
-                            <span
-                              className="absolute -top-1.5 -right-1.5 text-[11px] animate-pulse"
-                              title={user.zello_username ? `🎙️ @${user.zello_username} transmitiendo en Zello` : '🎙️ Transmitiendo en Zello'}
-                            >
-                              🎙️
-                            </span>
+                            <>
+                              {/* Outer glow ring */}
+                              <span className="absolute -inset-2 rounded-full bg-orange-500/20 animate-ping" />
+                              <span
+                                className="absolute -top-2 -right-2 text-[14px] drop-shadow-[0_0_6px_rgba(249,115,22,1)]"
+                                style={{ filter: 'drop-shadow(0 0 4px #f97316)' }}
+                                title={user.zello_username ? `🎙️ @${user.zello_username} transmitiendo en Zello` : '🎙️ Transmitiendo en Zello'}
+                              >
+                                🎙️
+                              </span>
+                            </>
                           ) : null;
                         })()}
                       </div>
@@ -328,10 +333,23 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                         {user.zello_username && (() => {
                           const until = user.zello_transmitting_until;
                           const isActive = until && new Date(until) > new Date();
-                          return (
-                            <div className={`text-[10px] mt-0.5 flex items-center gap-0.5 font-medium ${isActive ? 'text-orange-500' : 'text-muted-foreground'}`}>
+                          return isActive ? (
+                            <div className="mt-1 flex items-center gap-1">
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black text-white"
+                                style={{
+                                  background: 'linear-gradient(90deg, #f97316, #ef4444)',
+                                  boxShadow: '0 0 8px rgba(249,115,22,0.9), 0 0 2px rgba(249,115,22,0.5)',
+                                  animation: 'zello-badge-pulse 0.8s ease-in-out infinite alternate',
+                                }}
+                              >
+                                🎙️ EN VIVO
+                              </span>
+                              <span className="text-[10px] text-orange-400 font-medium">@{user.zello_username}</span>
+                            </div>
+                          ) : (
+                            <div className="text-[10px] mt-0.5 flex items-center gap-0.5 font-medium text-muted-foreground">
                               📻 @{user.zello_username}
-                              {isActive && <span className="ml-0.5 animate-pulse">• EN VIVO</span>}
                             </div>
                           );
                         })()}
