@@ -34,6 +34,9 @@ interface UserLocation {
   transit_origin_lat: number | null;
   transit_origin_lng: number | null;
   transit_eta: string | null;
+  // Zello integration
+  zello_username?: string | null;
+  zello_transmitting_until?: string | null;
 }
 
 interface HelpRequest {
@@ -117,11 +120,39 @@ export function useUserLocations() {
       .select('*');
 
     if (!error && data) {
-      console.log('[useUserLocations] Fetched locations with roles:', data.length);
-      setLocations(data as UserLocation[]);
+      // Also fetch Zello fields from profiles for active transmitters
+      const userIds = data.map((d: any) => d.user_id).filter(Boolean);
+      let zelloMap: Record<string, { zello_username: string | null; zello_transmitting_until: string | null }> = {};
+      
+      if (userIds.length > 0) {
+        const { data: zelloData } = await supabase
+          .from('profiles')
+          .select('id, zello_username, zello_transmitting_until')
+          .in('id', userIds)
+          .not('zello_username', 'is', null);
+        
+        if (zelloData) {
+          zelloData.forEach((p: any) => {
+            zelloMap[p.id] = { 
+              zello_username: p.zello_username, 
+              zello_transmitting_until: p.zello_transmitting_until 
+            };
+          });
+        }
+      }
+
+      // Merge Zello fields into location data
+      const enriched = data.map((loc: any) => ({
+        ...loc,
+        zello_username: zelloMap[loc.user_id]?.zello_username || null,
+        zello_transmitting_until: zelloMap[loc.user_id]?.zello_transmitting_until || null,
+      }));
+
+      console.log('[useUserLocations] Fetched locations with roles:', enriched.length);
+      setLocations(enriched as UserLocation[]);
       setInitialLoaded(true);
       // Cache for instant load next time
-      cacheUserLocations(data as UserLocation[]);
+      cacheUserLocations(enriched as UserLocation[]);
     } else if (error) {
       console.error('[useUserLocations] Error fetching locations:', error);
     }

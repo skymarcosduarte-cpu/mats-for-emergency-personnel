@@ -37,7 +37,10 @@ import {
   FileDown,
   GraduationCap,
   Users,
-  BookOpen
+  BookOpen,
+  Radio,
+  Mic,
+  MicOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -175,6 +178,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [showUserGuide, setShowUserGuide] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showDrillScheduler, setShowDrillScheduler] = useState(false);
+
+  // Zello integration state
+  const [zelloUsername, setZelloUsername] = useState((profile as any)?.zello_username || '');
+  const [savingZello, setSavingZello] = useState(false);
+  const [isTransmitting, setIsTransmitting] = useState(false);
+  const [transmittingUntil, setTransmittingUntil] = useState<Date | null>(null);
+  const [transmitCountdown, setTransmitCountdown] = useState(0);
 
   const handleRequestPermission = async () => {
     setRequestingPermission(true);
@@ -321,8 +331,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         emergency_medical_notes: profile.emergency_medical_notes || '',
       });
       setSelectedSpecialties(Array.isArray(profile.specialty) ? profile.specialty : []);
+      setZelloUsername((profile as any).zello_username || '');
+      // Check if currently transmitting
+      const zelloUntil = (profile as any).zello_transmitting_until;
+      if (zelloUntil) {
+        const until = new Date(zelloUntil);
+        if (until > new Date()) {
+          setIsTransmitting(true);
+          setTransmittingUntil(until);
+        } else {
+          setIsTransmitting(false);
+          setTransmittingUntil(null);
+        }
+      }
     }
   }, [profile]);
+
+  // Countdown timer for Zello transmission
+  React.useEffect(() => {
+    if (!isTransmitting || !transmittingUntil) return;
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.floor((transmittingUntil.getTime() - Date.now()) / 1000));
+      setTransmitCountdown(remaining);
+      if (remaining === 0) {
+        setIsTransmitting(false);
+        setTransmittingUntil(null);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isTransmitting, transmittingUntil]);
 
   // If user arrived via password recovery link, open password dialog automatically
   useEffect(() => {
@@ -596,6 +633,57 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     }
   };
 
+  // Zello: save username
+  const handleSaveZelloUsername = async () => {
+    setSavingZello(true);
+    try {
+      const trimmed = zelloUsername.trim();
+      await updateProfile({ zello_username: trimmed || null } as any);
+      toast.success(trimmed ? `Usuario Zello guardado: @${trimmed}` : 'Usuario Zello eliminado');
+    } catch {
+      toast.error('Error al guardar usuario Zello');
+    } finally {
+      setSavingZello(false);
+    }
+  };
+
+  // Zello: toggle transmitting state (15 min)
+  const handleToggleTransmitting = async () => {
+    if (!user) return;
+    if (isTransmitting) {
+      // Stop transmitting
+      try {
+        await supabase
+          .from('profiles')
+          .update({ zello_transmitting_until: null })
+          .eq('id', user.id);
+        setIsTransmitting(false);
+        setTransmittingUntil(null);
+        setTransmitCountdown(0);
+        toast.success('Transmisión Zello desactivada');
+      } catch {
+        toast.error('Error al desactivar');
+      }
+    } else {
+      // Start transmitting for 15 minutes
+      const until = new Date(Date.now() + 15 * 60 * 1000);
+      try {
+        await supabase
+          .from('profiles')
+          .update({ zello_transmitting_until: until.toISOString() })
+          .eq('id', user.id);
+        setIsTransmitting(true);
+        setTransmittingUntil(until);
+        setTransmitCountdown(15 * 60);
+        toast.success('¡Transmitiendo en Zello! Tu posición aparece en el mapa por 15 min', {
+          duration: 5000,
+        });
+      } catch {
+        toast.error('Error al activar transmisión');
+      }
+    }
+  };
+
   // Handle logout
   const handleLogout = async () => {
     if (confirm('¿Seguro que deseas cerrar sesión?')) {
@@ -786,6 +874,112 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </CardHeader>
           <CardContent>
             <ConnectionStatusIndicator />
+          </CardContent>
+        </Card>
+
+        {/* Zello Integration Card */}
+        <Card className="bg-card border-border border-orange-500/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Radio className="w-5 h-5 text-orange-500" />
+              Integración Zello
+              <span className="ml-auto px-2 py-0.5 rounded-full text-xs font-bold bg-orange-500/20 text-orange-500 border border-orange-500/30">
+                EMERGENCIAS ARABA
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Conecta tu cuenta de Zello para que tu posición aparezca en el mapa cuando estés transmitiendo en el canal EMERGENCIAS ARABA.
+            </p>
+
+            {/* Username field */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-foreground">
+                <Radio className="w-4 h-4 text-orange-500" />
+                Tu usuario de Zello
+              </Label>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                  <Input
+                    value={zelloUsername}
+                    onChange={(e) => setZelloUsername(e.target.value.replace(/[^a-zA-Z0-9_.-]/g, ''))}
+                    placeholder="tu_usuario_zello"
+                    className="pl-7"
+                    maxLength={50}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSaveZelloUsername}
+                  disabled={savingZello}
+                  className="border-orange-500/30 text-orange-500 hover:bg-orange-500/10"
+                >
+                  {savingZello ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                </Button>
+              </div>
+              {(profile as any)?.zello_username && (
+                <p className="text-xs text-muted-foreground">
+                  Guardado: @{(profile as any).zello_username}
+                </p>
+              )}
+            </div>
+
+            {/* Transmitting button */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-foreground">
+                <Mic className="w-4 h-4 text-orange-500" />
+                Estado de transmisión
+              </Label>
+              <Button
+                className={cn(
+                  "w-full gap-2 font-semibold transition-all",
+                  isTransmitting
+                    ? "bg-orange-500 hover:bg-orange-600 text-white border-0"
+                    : "border-orange-500/40 text-orange-500 hover:bg-orange-500/10"
+                )}
+                variant={isTransmitting ? "default" : "outline"}
+                onClick={handleToggleTransmitting}
+              >
+                {isTransmitting ? (
+                  <>
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                    </span>
+                    Transmitiendo en Zello
+                    {transmitCountdown > 0 && (
+                      <span className="ml-auto text-xs opacity-80">
+                        {Math.floor(transmitCountdown / 60)}:{String(transmitCountdown % 60).padStart(2, '0')}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-4 h-4" />
+                    🎙️ Voy a transmitir en Zello
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                {isTransmitting
+                  ? 'Tu posición se muestra en el mapa con un badge 🎙️ naranja animado'
+                  : 'Al activar, tu marcador en el mapa mostrará que estás activo en Zello por 15 min'}
+              </p>
+            </div>
+
+            {/* Open channel button */}
+            <a
+              href="https://zelp.me/EmergenciasAraba"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-md border border-orange-500/30 text-orange-500 hover:bg-orange-500/10 transition-colors text-sm font-medium no-underline"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Abrir canal EMERGENCIAS ARABA en Zello
+            </a>
           </CardContent>
         </Card>
 

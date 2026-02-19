@@ -2001,6 +2001,43 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         badgeColor = '#2e8b57';
       }
       
+      // Zello: check if actively transmitting — wrap icon with orange 🎙️ badge overlay
+      const zelloTransmittingUntil = (loc as any).zello_transmitting_until;
+      const isZelloActive = zelloTransmittingUntil && new Date(zelloTransmittingUntil) > new Date();
+      if (isZelloActive) {
+        // Wrap the current icon in a container that adds the 🎙️ orange pulsing badge
+        const baseHtml = `
+          <div style="position: relative; display: inline-block;">
+            <div class="mats-marker" style="position: relative;">
+              ${icon.options.html}
+              <div style="
+                position: absolute;
+                top: -8px;
+                right: -8px;
+                width: 18px;
+                height: 18px;
+                background: #f97316;
+                border: 2px solid #fff;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 9px;
+                box-shadow: 0 0 6px rgba(249,115,22,0.8);
+                animation: pulse-zello 1s ease-in-out infinite;
+                z-index: 10;
+              ">🎙️</div>
+            </div>
+          </div>`;
+        icon = L.divIcon({
+          className: 'mats-marker zello-active-marker',
+          html: baseHtml,
+          iconSize: icon.options.iconSize as [number, number],
+          iconAnchor: icon.options.iconAnchor as [number, number],
+          popupAnchor: icon.options.popupAnchor as [number, number],
+        });
+      }
+      
       const displayName = loc.display_name ? sanitize(loc.display_name) : null;
       
       // Speed info for users in transit or moving - only show if location is fresh
@@ -2029,6 +2066,16 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       // Specialties info (reuse userSpecialties from above)
       const specialtiesInfo = userSpecialties && userSpecialties.length > 0
         ? `<div style="font-size: 10px; color: #3b82f6; margin-top: 4px; max-width: 200px; word-wrap: break-word;">📋 ${userSpecialties.join(', ')}</div>`
+        : '';
+
+      // Zello info (reuse isZelloActive and loc fields already computed above)
+      const zelloUsername = (loc as any).zello_username;
+      const isZelloTransmitting = isZelloActive;
+      const zelloInfo = zelloUsername || isZelloTransmitting
+        ? `<div style="font-size: 10px; color: #f97316; margin-top: 6px; padding: 4px 6px; background: rgba(249,115,22,0.1); border-radius: 4px; border: 1px solid rgba(249,115,22,0.3);">
+            ${isZelloTransmitting ? '<span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #f97316; margin-right: 4px;"></span>' : ''}
+            🎙️ ${isZelloTransmitting ? 'TRANSMITIENDO' : 'en Zello'}${zelloUsername ? `: @${sanitize(zelloUsername)}` : ''}
+           </div>`
         : '';
 
       // Badge HTML for role
@@ -2060,6 +2107,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           </div>
           ${specialtiesInfo}
           ${medicalInfo}
+          ${zelloInfo}
           ${speedInfo}
           ${transitInfo}
           ${staleWarning}
