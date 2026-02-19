@@ -5,7 +5,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import L from 'leaflet';
-import { Loader2, AlertTriangle, Flame, CloudLightning, Radio, RefreshCw, CloudRain, Zap, Wind, ThermometerSun, Play, Pause, SkipBack, SkipForward, Cloud } from 'lucide-react';
+import { Loader2, AlertTriangle, Flame, CloudLightning, Radio, RefreshCw, CloudRain, Zap, Wind, ThermometerSun, Play, Pause, SkipBack, SkipForward, Cloud, Thermometer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { USGSEarthquake } from '@/types';
@@ -289,6 +289,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   const nowcastLayerRef = useRef<L.TileLayer | null>(null);
   const owmLayerRef = useRef<L.TileLayer | null>(null);
   const owmCloudsLayerRef = useRef<L.TileLayer | null>(null);
+  const owmTempLayerRef = useRef<L.TileLayer | null>(null);
   const owmKeyRef = useRef<string | null>(null);
   const radarTimestampRef = useRef<string | null>(null);
   const satelliteTimestampRef = useRef<string | null>(null);
@@ -298,6 +299,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   const [radarActive, setRadarActive] = useState(true);
   const [owmActive, setOwmActive] = useState(true);
   const [owmCloudsActive, setOwmCloudsActive] = useState(true);
+  const [owmTempActive, setOwmTempActive] = useState(false);
   const [showRadarStations, setShowRadarStations] = useState(true);
 
   // Radar animation state
@@ -434,6 +436,17 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
             cloudsLayer.addTo(map);
             owmCloudsLayerRef.current = cloudsLayer;
             console.log('[LiveEvents] OWM clouds layer added');
+          }
+
+          // Temperature layer (off by default, added only if enabled)
+          if (owmTempActive && !owmTempLayerRef.current && apiKey) {
+            const tempLayer = L.tileLayer(
+              `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
+              { opacity: 0.7, zIndex: 5, attribution: '© OpenWeatherMap' }
+            );
+            tempLayer.addTo(map);
+            owmTempLayerRef.current = tempLayer;
+            console.log('[LiveEvents] OWM temperature layer added');
           }
         } catch (err) {
           console.warn('[LiveEvents] OWM layer error:', err);
@@ -917,6 +930,28 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     });
   }, [map, isActive, events.ssnEarthquakes]);
 
+  // Toggle temperature layer on/off
+  useEffect(() => {
+    if (!map || !isActive) return;
+    const apiKey = owmKeyRef.current;
+    if (owmTempActive) {
+      if (!owmTempLayerRef.current && apiKey) {
+        const tempLayer = L.tileLayer(
+          `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
+          { opacity: 0.7, zIndex: 5, attribution: '© OpenWeatherMap' }
+        );
+        tempLayer.addTo(map);
+        owmTempLayerRef.current = tempLayer;
+      } else if (owmTempLayerRef.current && !map.hasLayer(owmTempLayerRef.current)) {
+        owmTempLayerRef.current.addTo(map);
+      }
+    } else {
+      if (owmTempLayerRef.current && map.hasLayer(owmTempLayerRef.current)) {
+        map.removeLayer(owmTempLayerRef.current);
+      }
+    }
+  }, [map, isActive, owmTempActive]);
+
   // Clear markers and radar when view becomes inactive
   useEffect(() => {
     if (!isActive && map) {
@@ -950,6 +985,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (owmCloudsLayerRef.current && map.hasLayer(owmCloudsLayerRef.current)) {
         map.removeLayer(owmCloudsLayerRef.current);
         owmCloudsLayerRef.current = null;
+      }
+      if (owmTempLayerRef.current && map.hasLayer(owmTempLayerRef.current)) {
+        map.removeLayer(owmTempLayerRef.current);
+        owmTempLayerRef.current = null;
       }
       // Remove radar station markers + coverage circles
       radarStationMarkersRef.current.forEach(m => {
@@ -1152,28 +1191,65 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
             <Cloud className="w-4 h-4" />
             <span className="text-xs font-medium">Nubes</span>
           </button>
-          {(radarActive || owmActive || owmCloudsActive) && (
+          <button
+            onClick={() => setOwmTempActive(!owmTempActive)}
+            className={cn(
+              "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
+              owmTempActive 
+                ? "bg-red-500/90 text-white border-red-400" 
+                : "bg-background/90 text-muted-foreground border-border"
+            )}
+            title={owmTempActive ? 'Desactivar capa de temperatura' : 'Activar capa de temperatura OWM'}
+          >
+            <Thermometer className="w-4 h-4" />
+            <span className="text-xs font-medium">Temp</span>
+          </button>
+          {(radarActive || owmActive || owmCloudsActive || owmTempActive) && (
             <div className="bg-background/90 backdrop-blur-sm rounded-lg shadow border border-border px-2 py-1.5 text-[10px] text-muted-foreground max-w-[140px] leading-tight">
-              <div className="flex items-center gap-1 mb-1">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span>Lluvia ligera</span>
-              </div>
-              <div className="flex items-center gap-1 mb-1">
-                <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                <span>Moderada</span>
-              </div>
-              <div className="flex items-center gap-1 mb-1">
-                <div className="w-2 h-2 rounded-full bg-red-500" />
-                <span>Fuerte / tormenta</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-purple-600" />
-                <span>Torrencial</span>
-              </div>
-              {radarActive && <div className="mt-1 text-[9px] opacity-70">☁️ Nubes IR siempre visibles</div>}
-              {radarActive && <div className="text-[9px] opacity-70">🌧️ RainViewer</div>}
+              {!owmTempActive && (
+                <>
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span>Lluvia ligera</span>
+                  </div>
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                    <span>Moderada</span>
+                  </div>
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                    <span>Fuerte / tormenta</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-purple-600" />
+                    <span>Torrencial</span>
+                  </div>
+                </>
+              )}
+              {owmTempActive && (
+                <>
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span>Frío (&lt;0°C)</span>
+                  </div>
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-cyan-400" />
+                    <span>Fresco (0–15°C)</span>
+                  </div>
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                    <span>Templado (15–25°C)</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                    <span>Calor (&gt;25°C)</span>
+                  </div>
+                </>
+              )}
+              {radarActive && <div className="mt-1 text-[9px] opacity-70">🌧️ RainViewer</div>}
               {owmActive && <div className="text-[9px] opacity-70">🌤️ OpenWeather Precip</div>}
               {owmCloudsActive && <div className="text-[9px] opacity-70">☁️ OpenWeather Nubes</div>}
+              {owmTempActive && <div className="text-[9px] opacity-70">🌡️ OpenWeather Temp</div>}
             </div>
           )}
         </div>
