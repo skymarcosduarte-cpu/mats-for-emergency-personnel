@@ -3741,6 +3741,18 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           <span className="font-semibold text-sm">Chat Clave 100</span>
         </button>
       )}
+
+      {/* Floating Zello Channel Button */}
+      <a
+        href="https://on.zello.com/7lk8s2"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-24 left-4 z-[1500] flex items-center gap-2 px-3 py-2.5 bg-orange-500 text-white rounded-full shadow-lg hover:bg-orange-600 active:scale-95 transition-all"
+        aria-label="Abrir canal de Zello"
+      >
+        <Radio className="w-4 h-4" />
+        <span className="font-semibold text-sm">Zello</span>
+      </a>
     </div>
   );
 };
