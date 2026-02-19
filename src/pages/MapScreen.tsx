@@ -205,30 +205,48 @@ const createFamiliarIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bool
   html: `
     <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : (updatedAgo ? '48px' : '32px')};">
       ${isCurrentUser ? `
+        <!-- Outer far glow ring -->
         <div style="
           position: absolute;
-          top: 0;
-          left: 0;
-          width: 32px;
-          height: 32px;
-          background: rgba(251, 191, 36, 0.4);
+          top: -16px; left: -16px;
+          width: 64px; height: 64px;
           border-radius: 50%;
-          animation: pulse-current-user 1.5s ease-out infinite;
+          background: radial-gradient(circle, rgba(251,191,36,0.25) 0%, rgba(251,191,36,0) 70%);
+          animation: current-user-glow-far 2s ease-in-out infinite;
+          pointer-events: none;
+        "></div>
+        <!-- Mid pulsing ring -->
+        <div style="
+          position: absolute;
+          top: -8px; left: -8px;
+          width: 48px; height: 48px;
+          border-radius: 50%;
+          border: 2px solid rgba(251,191,36,0.6);
+          animation: current-user-ring 2s ease-in-out infinite;
+          pointer-events: none;
+        "></div>
+        <!-- Inner fill pulse -->
+        <div style="
+          position: absolute;
+          top: 0; left: 0;
+          width: 32px; height: 32px;
+          background: rgba(251,191,36,0.35);
+          border-radius: 50%;
+          animation: current-user-inner 1.5s ease-out infinite;
+          pointer-events: none;
         "></div>
       ` : ''}
       <div style="
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 32px;
-        height: 32px;
+        top: 0; left: 0;
+        width: 32px; height: 32px;
         background: #2e8b57;
         border: 2px solid ${isCurrentUser ? '#fbbf24' : '#0a0a0a'};
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)'};
+        box-shadow: ${isCurrentUser ? '0 0 0 2px #fbbf24, 0 0 18px rgba(251,191,36,0.9), 0 0 40px rgba(251,191,36,0.4), 0 2px 8px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.3)'};
       ">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path d="M12 2L14 8H20L15 12L17 18L12 14L7 18L9 12L4 8H10L12 2Z" fill="#0a0a0a"/>
@@ -237,10 +255,8 @@ const createFamiliarIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bool
       ${hasFirstAidKit ? `
         <div style="
           position: absolute;
-          top: -4px;
-          right: -4px;
-          width: 16px;
-          height: 16px;
+          top: -4px; right: -4px;
+          width: 16px; height: 16px;
           background: #ef4444;
           border: 2px solid #fff;
           border-radius: 50%;
@@ -267,16 +283,15 @@ const createFamiliarIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bool
           padding: 1px 4px;
           border-radius: 3px;
           white-space: nowrap;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+          box-shadow: 0 0 6px rgba(251,191,36,0.8), 0 1px 3px rgba(0,0,0,0.3);
         ">TÚ</div>
       ` : ''}
       ${!isCurrentUser && updatedAgo ? `
         <div style="
           position: absolute;
-          bottom: 0;
-          left: 50%;
+          bottom: 0; left: 50%;
           transform: translateX(-50%);
-          background: rgba(0, 0, 0, 0.75);
+          background: rgba(0,0,0,0.75);
           color: #fff;
           font-size: 8px;
           font-weight: 600;
@@ -299,30 +314,48 @@ const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bo
   html: `
     <div style="position: relative; width: 32px; height: ${isCurrentUser ? '40px' : (updatedAgo ? '48px' : '32px')};">
       ${isCurrentUser ? `
+        <!-- Outer far glow ring -->
         <div style="
           position: absolute;
-          top: 0;
-          left: 0;
-          width: 32px;
-          height: 32px;
-          background: rgba(251, 191, 36, 0.4);
+          top: -16px; left: -16px;
+          width: 64px; height: 64px;
           border-radius: 50%;
-          animation: pulse-current-user 1.5s ease-out infinite;
+          background: radial-gradient(circle, rgba(251,191,36,0.25) 0%, rgba(251,191,36,0) 70%);
+          animation: current-user-glow-far 2s ease-in-out infinite;
+          pointer-events: none;
+        "></div>
+        <!-- Mid pulsing ring -->
+        <div style="
+          position: absolute;
+          top: -8px; left: -8px;
+          width: 48px; height: 48px;
+          border-radius: 50%;
+          border: 2px solid rgba(251,191,36,0.6);
+          animation: current-user-ring 2s ease-in-out infinite;
+          pointer-events: none;
+        "></div>
+        <!-- Inner fill pulse -->
+        <div style="
+          position: absolute;
+          top: 0; left: 0;
+          width: 32px; height: 32px;
+          background: rgba(251,191,36,0.35);
+          border-radius: 50%;
+          animation: current-user-inner 1.5s ease-out infinite;
+          pointer-events: none;
         "></div>
       ` : ''}
       <div style="
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 32px;
-        height: 32px;
+        top: 0; left: 0;
+        width: 32px; height: 32px;
         background: #ffffff;
         border: 2px solid ${isCurrentUser ? '#fbbf24' : '#16a34a'};
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: ${isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(22,163,74,0.4)' : '0 2px 8px rgba(22,163,74,0.4)'};
+        box-shadow: ${isCurrentUser ? '0 0 0 2px #fbbf24, 0 0 18px rgba(251,191,36,0.9), 0 0 40px rgba(251,191,36,0.4), 0 2px 8px rgba(0,0,0,0.4)' : '0 2px 8px rgba(22,163,74,0.4)'};
       ">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path d="M12 4v16M4 12h16" stroke="#16a34a" stroke-width="4" stroke-linecap="round"/>
@@ -331,10 +364,8 @@ const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bo
       ${hasFirstAidKit ? `
         <div style="
           position: absolute;
-          top: -4px;
-          right: -4px;
-          width: 16px;
-          height: 16px;
+          top: -4px; right: -4px;
+          width: 16px; height: 16px;
           background: #ef4444;
           border: 2px solid #fff;
           border-radius: 50%;
@@ -361,16 +392,15 @@ const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bo
           padding: 1px 4px;
           border-radius: 3px;
           white-space: nowrap;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+          box-shadow: 0 0 6px rgba(251,191,36,0.8), 0 1px 3px rgba(0,0,0,0.3);
         ">TÚ</div>
       ` : ''}
       ${!isCurrentUser && updatedAgo ? `
         <div style="
           position: absolute;
-          bottom: 0;
-          left: 50%;
+          bottom: 0; left: 50%;
           transform: translateX(-50%);
-          background: rgba(0, 0, 0, 0.75);
+          background: rgba(0,0,0,0.75);
           color: #fff;
           font-size: 8px;
           font-weight: 600;
@@ -1826,6 +1856,20 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       @keyframes pulse-current-user {
         0% { transform: scale(1); opacity: 0.6; }
         50% { transform: scale(1.8); opacity: 0; }
+        100% { transform: scale(1); opacity: 0; }
+      }
+      @keyframes current-user-glow-far {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.5); opacity: 1; }
+      }
+      @keyframes current-user-ring {
+        0% { transform: scale(0.8); opacity: 0.8; }
+        50% { transform: scale(1.1); opacity: 0.3; }
+        100% { transform: scale(0.8); opacity: 0.8; }
+      }
+      @keyframes current-user-inner {
+        0% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.5); opacity: 0; }
         100% { transform: scale(1); opacity: 0; }
       }
       @keyframes pulse-highlight {
