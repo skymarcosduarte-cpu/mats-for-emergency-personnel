@@ -972,7 +972,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
             {/* Open channel button */}
             <a
-              href="https://zello.com/EmergenciasAraba"
+              href="https://on.zello.com/7lk8s2"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-md border border-orange-500/30 text-orange-500 hover:bg-orange-500/10 transition-colors text-sm font-medium no-underline"

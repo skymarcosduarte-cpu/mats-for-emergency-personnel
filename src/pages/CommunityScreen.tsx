@@ -702,7 +702,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
 
           {/* Zello Canal Button */}
           <a
-            href="https://zello.com/EmergenciasAraba"
+            href="https://on.zello.com/7lk8s2"
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
