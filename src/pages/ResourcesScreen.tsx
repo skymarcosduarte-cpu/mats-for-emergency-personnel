@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { HeartPulse, BookOpen, Phone } from 'lucide-react';
+import { BookOpen, Phone, Radio } from 'lucide-react';
 import { SectionLanding, SectionLandingItem } from '@/components/SectionLanding';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import EmergencyGuidesScreen from '@/components/EmergencyGuidesScreen';
 import EmergencyDirectory from '@/components/EmergencyDirectory';
 
-type SubView = 'landing' | 'guides' | 'directory';
+type SubView = 'landing' | 'guides' | 'directory' | 'zello';
 
 interface ResourcesScreenProps {
   onGoHome?: () => void;
@@ -40,6 +40,15 @@ export default function ResourcesScreen({ onGoHome, initialSubView }: ResourcesS
       iconBg: 'bg-[hsl(25,100%,50%)]',
       borderColor: 'border-[hsl(25,100%,50%)]/40',
       onClick: () => setSubView('guides'),
+    },
+    {
+      id: 'zello',
+      label: 'Canal Zello',
+      description: 'Únete al canal de radio PoC de la comunidad EMERGENCIAS ARABA en Zello',
+      icon: <Radio className="w-8 h-8 text-white" strokeWidth={2.5} />,
+      iconBg: 'bg-[hsl(28,100%,45%)]',
+      borderColor: 'border-[hsl(28,100%,45%)]/40',
+      onClick: () => window.open('https://on.zello.com/7lk8s2', '_blank', 'noopener,noreferrer'),
     },
   ];
 
