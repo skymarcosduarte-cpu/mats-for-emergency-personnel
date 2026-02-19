@@ -434,7 +434,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           if (!owmCloudsLayerRef.current && apiKey) {
             const cloudsLayer = L.tileLayer(
               `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 0.9, zIndex: 4, attribution: '© OpenWeatherMap' }
+              { opacity: 1, zIndex: 4, attribution: '© OpenWeatherMap' }
             );
             cloudsLayer.addTo(map);
             owmCloudsLayerRef.current = cloudsLayer;
@@ -445,7 +445,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           if (owmTempActive && !owmTempLayerRef.current && apiKey) {
             const tempLayer = L.tileLayer(
               `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 0.7, zIndex: 5, attribution: '© OpenWeatherMap' }
+              { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap' }
             );
             tempLayer.addTo(map);
             owmTempLayerRef.current = tempLayer;
@@ -941,7 +941,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (!owmTempLayerRef.current && apiKey) {
         const tempLayer = L.tileLayer(
           `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-          { opacity: 0.7, zIndex: 5, attribution: '© OpenWeatherMap' }
+          { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap' }
         );
         tempLayer.addTo(map);
         owmTempLayerRef.current = tempLayer;
