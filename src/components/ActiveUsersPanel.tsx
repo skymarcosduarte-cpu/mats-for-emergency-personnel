@@ -21,6 +21,8 @@ export interface UserLocationSummary {
   show_name_on_map?: boolean | null;
   can_provide_medical_assistance?: boolean | null;
   has_first_aid_kit?: boolean | null;
+  zello_username?: string | null;
+  zello_transmitting_until?: string | null;
 }
 
 interface ActiveUsersPanelProps {
@@ -294,9 +296,24 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                     className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/50 active:bg-accent/70 transition-colors group"
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-lg flex-shrink-0">
-                        {getRoleIcon(user.role, user.is_in_transit)}
-                      </span>
+                      {/* Role icon with optional Zello pulsing badge */}
+                      <div className="relative flex-shrink-0">
+                        <span className="text-lg">
+                          {getRoleIcon(user.role, user.is_in_transit)}
+                        </span>
+                        {(() => {
+                          const until = user.zello_transmitting_until;
+                          const isActive = until && new Date(until) > new Date();
+                          return isActive ? (
+                            <span
+                              className="absolute -top-1.5 -right-1.5 text-[11px] animate-pulse"
+                              title={user.zello_username ? `🎙️ @${user.zello_username} transmitiendo en Zello` : '🎙️ Transmitiendo en Zello'}
+                            >
+                              🎙️
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
                       <div className="min-w-0 flex-1">
                         {/* Show name if allowed */}
                         {user.show_name_on_map && user.display_name && (
@@ -307,6 +324,17 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                         <div className="flex items-center gap-1">
                           {getRoleBadge(user.role, user.is_in_transit)}
                         </div>
+                        {/* Zello username + transmission status */}
+                        {user.zello_username && (() => {
+                          const until = user.zello_transmitting_until;
+                          const isActive = until && new Date(until) > new Date();
+                          return (
+                            <div className={`text-[10px] mt-0.5 flex items-center gap-0.5 font-medium ${isActive ? 'text-orange-500' : 'text-muted-foreground'}`}>
+                              📻 @{user.zello_username}
+                              {isActive && <span className="ml-0.5 animate-pulse">• EN VIVO</span>}
+                            </div>
+                          );
+                        })()}
                         {user.is_in_transit && user.transit_destination && (
                           <div className="text-[10px] text-amber-500 truncate max-w-[100px] mt-0.5" title={user.transit_destination}>
                             → {user.transit_destination}
