@@ -180,7 +180,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [showDrillScheduler, setShowDrillScheduler] = useState(false);
 
   // Zello integration state
-  const [zelloUsername, setZelloUsername] = useState((profile as any)?.zello_username || '');
+  const [zelloUsername, setZelloUsername] = useState(profile?.zello_username || '');
   const [savingZello, setSavingZello] = useState(false);
   const [isTransmitting, setIsTransmitting] = useState(false);
   const [transmittingUntil, setTransmittingUntil] = useState<Date | null>(null);
@@ -331,9 +331,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         emergency_medical_notes: profile.emergency_medical_notes || '',
       });
       setSelectedSpecialties(Array.isArray(profile.specialty) ? profile.specialty : []);
-      setZelloUsername((profile as any).zello_username || '');
+      setZelloUsername(profile.zello_username || '');
       // Check if currently transmitting
-      const zelloUntil = (profile as any).zello_transmitting_until;
+      const zelloUntil = profile.zello_transmitting_until;
       if (zelloUntil) {
         const until = new Date(zelloUntil);
         if (until > new Date()) {
@@ -638,7 +638,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     setSavingZello(true);
     try {
       const trimmed = zelloUsername.trim();
-      await updateProfile({ zello_username: trimmed || null } as any);
+      await updateProfile({ zello_username: trimmed || null });
       toast.success(trimmed ? `Usuario Zello guardado: @${trimmed}` : 'Usuario Zello eliminado');
     } catch {
       toast.error('Error al guardar usuario Zello');
@@ -920,9 +920,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   {savingZello ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 </Button>
               </div>
-              {(profile as any)?.zello_username && (
+              {profile?.zello_username && (
                 <p className="text-xs text-muted-foreground">
-                  Guardado: @{(profile as any).zello_username}
+                  Guardado: @{profile.zello_username}
                 </p>
               )}
             </div>
