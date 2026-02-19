@@ -290,6 +290,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   const owmLayerRef = useRef<L.TileLayer | null>(null);
   const owmCloudsLayerRef = useRef<L.TileLayer | null>(null);
   const owmTempLayerRef = useRef<L.TileLayer | null>(null);
+  const owmWindLayerRef = useRef<L.TileLayer | null>(null);
   const owmKeyRef = useRef<string | null>(null);
   const radarTimestampRef = useRef<string | null>(null);
   const satelliteTimestampRef = useRef<string | null>(null);
@@ -300,6 +301,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   const [owmActive, setOwmActive] = useState(true);
   const [owmCloudsActive, setOwmCloudsActive] = useState(true);
   const [owmTempActive, setOwmTempActive] = useState(false);
+  const [owmWindActive, setOwmWindActive] = useState(false);
   const [showRadarStations, setShowRadarStations] = useState(true);
   const [showSSN, setShowSSN] = useState(true);
   const [showUSGS, setShowUSGS] = useState(true);
@@ -634,6 +636,28 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       }
     }
   }, [map, owmCloudsActive]);
+
+  // Toggle OWM wind layer on/off
+  useEffect(() => {
+    if (!map || !isActive) return;
+    const apiKey = owmKeyRef.current;
+    if (owmWindActive) {
+      if (!owmWindLayerRef.current && apiKey) {
+        const windLayer = L.tileLayer(
+          `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${apiKey}`,
+          { opacity: 0.85, zIndex: 6, attribution: '© OpenWeatherMap' }
+        );
+        windLayer.addTo(map);
+        owmWindLayerRef.current = windLayer;
+      } else if (owmWindLayerRef.current && !map.hasLayer(owmWindLayerRef.current)) {
+        owmWindLayerRef.current.addTo(map);
+      }
+    } else {
+      if (owmWindLayerRef.current && map.hasLayer(owmWindLayerRef.current)) {
+        map.removeLayer(owmWindLayerRef.current);
+      }
+    }
+  }, [map, isActive, owmWindActive]);
 
   // Fetch earthquakes from USGS
   const fetchEarthquakes = useCallback(async (): Promise<USGSEarthquake[]> => {
@@ -993,6 +1017,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         map.removeLayer(owmTempLayerRef.current);
         owmTempLayerRef.current = null;
       }
+      if (owmWindLayerRef.current && map.hasLayer(owmWindLayerRef.current)) {
+        map.removeLayer(owmWindLayerRef.current);
+        owmWindLayerRef.current = null;
+      }
       // Remove radar station markers + coverage circles
       radarStationMarkersRef.current.forEach(m => {
         if (map.hasLayer(m)) map.removeLayer(m);
@@ -1211,6 +1239,19 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
               <Thermometer className="w-4 h-4" />
               <span className="text-xs font-medium">Temp</span>
             </button>
+            <button
+              onClick={() => setOwmWindActive(!owmWindActive)}
+              className={cn(
+                "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
+                owmWindActive
+                  ? "bg-teal-500/90 text-white border-teal-400"
+                  : "bg-background/90 text-muted-foreground border-border"
+              )}
+              title={owmWindActive ? 'Desactivar capa de viento' : 'Activar capa de viento OWM'}
+            >
+              <Wind className="w-4 h-4" />
+              <span className="text-xs font-medium">Viento</span>
+            </button>
           </div>
 
           {/* Divider */}
@@ -1260,9 +1301,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           </div>
 
           {/* Legend */}
-          {(radarActive || owmActive || owmCloudsActive || owmTempActive) && (
+          {(radarActive || owmActive || owmCloudsActive || owmTempActive || owmWindActive) && (
             <div className="bg-background/90 backdrop-blur-sm rounded-lg shadow border border-border px-2 py-1.5 text-[10px] text-muted-foreground max-w-[140px] leading-tight">
-              {!owmTempActive && (
+              {!owmTempActive && !owmWindActive && (
                 <>
                   <div className="flex items-center gap-1 mb-1">
                     <div className="w-2 h-2 rounded-full bg-green-500" />
@@ -1302,10 +1343,31 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
                   </div>
                 </>
               )}
+              {owmWindActive && (
+                <>
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-teal-300" />
+                    <span>Brisa (&lt;20 km/h)</span>
+                  </div>
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-teal-500" />
+                    <span>Moderado (20–50)</span>
+                  </div>
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-teal-700" />
+                    <span>Fuerte (50–100)</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-teal-900" />
+                    <span>Tormenta (&gt;100)</span>
+                  </div>
+                </>
+              )}
               {radarActive && <div className="mt-1 text-[9px] opacity-70">🌧️ RainViewer</div>}
               {owmActive && <div className="text-[9px] opacity-70">🌤️ OpenWeather Precip</div>}
               {owmCloudsActive && <div className="text-[9px] opacity-70">☁️ OpenWeather Nubes</div>}
               {owmTempActive && <div className="text-[9px] opacity-70">🌡️ OpenWeather Temp</div>}
+              {owmWindActive && <div className="text-[9px] opacity-70">💨 OpenWeather Viento</div>}
             </div>
           )}
         </div>
