@@ -941,6 +941,8 @@ export type Database = {
           terms_accepted_at: string | null
           tutorial_disclaimer_accepted_at: string | null
           updated_at: string | null
+          zello_transmitting_until: string | null
+          zello_username: string | null
         }
         Insert: {
           allergies?: string | null
@@ -969,6 +971,8 @@ export type Database = {
           terms_accepted_at?: string | null
           tutorial_disclaimer_accepted_at?: string | null
           updated_at?: string | null
+          zello_transmitting_until?: string | null
+          zello_username?: string | null
         }
         Update: {
           allergies?: string | null
@@ -997,6 +1001,8 @@ export type Database = {
           terms_accepted_at?: string | null
           tutorial_disclaimer_accepted_at?: string | null
           updated_at?: string | null
+          zello_transmitting_until?: string | null
+          zello_username?: string | null
         }
         Relationships: []
       }
