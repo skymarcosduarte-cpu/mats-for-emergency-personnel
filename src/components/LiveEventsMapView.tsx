@@ -5,7 +5,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import L from 'leaflet';
-import { Loader2, AlertTriangle, Flame, CloudLightning, Radio, RefreshCw, CloudRain, Zap, Wind, ThermometerSun, Play, Pause, SkipBack, SkipForward, Cloud, Thermometer } from 'lucide-react';
+import { Loader2, AlertTriangle, Flame, CloudLightning, Radio, RefreshCw, CloudRain, Zap, Wind, ThermometerSun, Play, Pause, SkipBack, SkipForward, Cloud, Thermometer, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { USGSEarthquake } from '@/types';
@@ -301,6 +301,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   const [owmCloudsActive, setOwmCloudsActive] = useState(true);
   const [owmTempActive, setOwmTempActive] = useState(false);
   const [showRadarStations, setShowRadarStations] = useState(true);
+  const [showSSN, setShowSSN] = useState(true);
+  const [showUSGS, setShowUSGS] = useState(true);
+  const [showFires, setShowFires] = useState(true);
 
   // Radar animation state
   const radarFramesRef = useRef<{ path: string; time: number }[]>([]);
@@ -1012,62 +1015,66 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     });
     markersRef.current.clear();
 
-    // Add earthquake markers
-    events.earthquakes.forEach((quake) => {
-      const [lng, lat] = quake.geometry.coordinates;
-      const key = `quake-${quake.id}`;
-      
-      const marker = L.marker([lat, lng], {
-        icon: createEarthquakeIcon(quake.properties.mag),
-        zIndexOffset: Math.round(quake.properties.mag * 100),
-      })
-        .addTo(map)
-        .bindPopup(`
-          <div style="text-align: center; min-width: 150px;">
-            <div style="font-size: 16px; font-weight: bold; color: #dc2626;">
-              M${quake.properties.mag.toFixed(1)}
+    // Add USGS earthquake markers
+    if (showUSGS) {
+      events.earthquakes.forEach((quake) => {
+        const [lng, lat] = quake.geometry.coordinates;
+        const key = `quake-${quake.id}`;
+        
+        const marker = L.marker([lat, lng], {
+          icon: createEarthquakeIcon(quake.properties.mag),
+          zIndexOffset: Math.round(quake.properties.mag * 100),
+        })
+          .addTo(map)
+          .bindPopup(`
+            <div style="text-align: center; min-width: 150px;">
+              <div style="font-size: 16px; font-weight: bold; color: #dc2626;">
+                M${quake.properties.mag.toFixed(1)}
+              </div>
+              <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                ${quake.properties.place}
+              </div>
+              <div style="font-size: 11px; color: #999; margin-top: 4px;">
+                ${new Date(quake.properties.time).toLocaleString()}
+              </div>
+              <a href="${quake.properties.url}" target="_blank" 
+                 style="display: block; margin-top: 8px; font-size: 11px; color: #3b82f6;">
+                Ver detalles USGS →
+              </a>
             </div>
-            <div style="font-size: 12px; color: #666; margin-top: 4px;">
-              ${quake.properties.place}
-            </div>
-            <div style="font-size: 11px; color: #999; margin-top: 4px;">
-              ${new Date(quake.properties.time).toLocaleString()}
-            </div>
-            <a href="${quake.properties.url}" target="_blank" 
-               style="display: block; margin-top: 8px; font-size: 11px; color: #3b82f6;">
-              Ver detalles USGS →
-            </a>
-          </div>
-        `);
-      
-      markersRef.current.set(key, marker);
-    });
+          `);
+        
+        markersRef.current.set(key, marker);
+      });
+    }
 
-    // Add fire markers
-    events.fires.slice(0, 100).forEach((fire) => {
-      const key = `fire-${fire.id}`;
-      
-      const marker = L.marker([fire.lat, fire.lng], {
-        icon: createFireIcon(fire.confidence),
-        zIndexOffset: 50,
-      })
-        .addTo(map)
-        .bindPopup(`
-          <div style="text-align: center;">
-            <div style="font-size: 14px; font-weight: bold;">🔥 Incendio</div>
-            <div style="font-size: 11px; color: #666;">
-              Confianza: ${fire.confidence === 'high' ? 'Alta' : fire.confidence === 'nominal' ? 'Media' : 'Baja'}
+    // Add NASA fire markers
+    if (showFires) {
+      events.fires.slice(0, 100).forEach((fire) => {
+        const key = `fire-${fire.id}`;
+        
+        const marker = L.marker([fire.lat, fire.lng], {
+          icon: createFireIcon(fire.confidence),
+          zIndexOffset: 50,
+        })
+          .addTo(map)
+          .bindPopup(`
+            <div style="text-align: center;">
+              <div style="font-size: 14px; font-weight: bold;">🔥 Incendio</div>
+              <div style="font-size: 11px; color: #666;">
+                Confianza: ${fire.confidence === 'high' ? 'Alta' : fire.confidence === 'nominal' ? 'Media' : 'Baja'}
+              </div>
+              <div style="font-size: 11px; color: #999;">
+                ${fire.acqDate} ${fire.acqTime}
+              </div>
             </div>
-            <div style="font-size: 11px; color: #999;">
-              ${fire.acqDate} ${fire.acqTime}
-            </div>
-          </div>
-        `);
-      
-      markersRef.current.set(key, marker);
-    });
+          `);
+        
+        markersRef.current.set(key, marker);
+      });
+    }
 
-    // Add cyclone markers
+    // Add cyclone markers (always visible)
     events.cyclones.forEach((cyclone) => {
       if (!cyclone.coordinates) return;
       const [lat, lng] = cyclone.coordinates;
@@ -1098,43 +1105,41 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     });
 
     // Add SSN earthquake markers (Mexico, last 24 hours)
-    events.ssnEarthquakes.forEach((quake) => {
-      const key = `ssn-${quake.id}`;
-      
-      const marker = L.marker([quake.lat, quake.lng], {
-        icon: createSSNEarthquakeIcon(quake.magnitude),
-        zIndexOffset: Math.round(quake.magnitude * 150),
-      })
-        .addTo(map)
-        .bindPopup(`
-          <div style="text-align: center; min-width: 160px;">
-            <div style="font-size: 10px; color: #059669; font-weight: 600; margin-bottom: 2px;">
-              🇲🇽 SSN México (Últimas 24h)
+    if (showSSN) {
+      events.ssnEarthquakes.forEach((quake) => {
+        const key = `ssn-${quake.id}`;
+        
+        const marker = L.marker([quake.lat, quake.lng], {
+          icon: createSSNEarthquakeIcon(quake.magnitude),
+          zIndexOffset: Math.round(quake.magnitude * 150),
+        })
+          .addTo(map)
+          .bindPopup(`
+            <div style="text-align: center; min-width: 160px;">
+              <div style="font-size: 10px; color: #059669; font-weight: 600; margin-bottom: 2px;">
+                🇲🇽 SSN México (Últimas 24h)
+              </div>
+              <div style="font-size: 18px; font-weight: bold; color: #059669;">
+                M${quake.magnitude.toFixed(1)}
+              </div>
+              <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                ${quake.location}
+              </div>
+              <div style="font-size: 11px; color: #999; margin-top: 4px;">
+                ${quake.date} ${quake.time}
+              </div>
+              <a href="http://www.ssn.unam.mx/sismicidad/ultimos/" target="_blank" 
+                 style="display: block; margin-top: 8px; font-size: 11px; color: #059669;">
+                Ver en SSN →
+              </a>
             </div>
-            <div style="font-size: 18px; font-weight: bold; color: #059669;">
-              M${quake.magnitude.toFixed(1)}
-            </div>
-            <div style="font-size: 12px; color: #666; margin-top: 4px;">
-              ${quake.location}
-            </div>
-            <div style="font-size: 11px; color: #999; margin-top: 4px;">
-              ${quake.date} ${quake.time}
-            </div>
-            <a href="http://www.ssn.unam.mx/sismicidad/ultimos/" target="_blank" 
-               style="display: block; margin-top: 8px; font-size: 11px; color: #059669;">
-              Ver en SSN →
-            </a>
-          </div>
-        `);
-      
-      markersRef.current.set(key, marker);
-    });
+          `);
+        
+        markersRef.current.set(key, marker);
+      });
+    }
 
-    // Add SMN weather alert markers (centered on Mexico, as SMN doesn't provide coordinates)
-    // Show as an info panel rather than map markers since they're country-level alerts
-    // We'll show them in the stats bar below
-
-  }, [map, isActive, events]);
+  }, [map, isActive, events, showUSGS, showFires, showSSN]);
 
   // Don't render anything if not active
   if (!isActive) return null;
@@ -1149,61 +1154,112 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         </div>
       )}
 
-      {/* Radar toggle button + legend */}
+      {/* Map layer toggles */}
       {!events.loading && (
         <div className="absolute top-16 right-2 z-[1000] flex flex-col items-end gap-1">
-          <button
-            onClick={() => setRadarActive(!radarActive)}
-            className={cn(
-              "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
-              radarActive 
-                ? "bg-sky-500/90 text-white border-sky-400" 
-                : "bg-background/90 text-muted-foreground border-border"
-            )}
-            title={radarActive ? 'Desactivar radar RainViewer' : 'Activar radar RainViewer'}
-          >
-            <CloudRain className="w-4 h-4" />
-            <span className="text-xs font-medium">Radar</span>
-          </button>
-          <button
-            onClick={() => setOwmActive(!owmActive)}
-            className={cn(
-              "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
-              owmActive 
-                ? "bg-orange-500/90 text-white border-orange-400" 
-                : "bg-background/90 text-muted-foreground border-border"
-            )}
-            title={owmActive ? 'Desactivar capa OpenWeather' : 'Activar capa OpenWeather (mejor cobertura MX)'}
-          >
-            <ThermometerSun className="w-4 h-4" />
-            <span className="text-xs font-medium">OWM</span>
-          </button>
-          <button
-            onClick={() => setOwmCloudsActive(!owmCloudsActive)}
-            className={cn(
-              "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
-              owmCloudsActive 
-                ? "bg-sky-500/90 text-white border-sky-400" 
-                : "bg-background/90 text-muted-foreground border-border"
-            )}
-            title={owmCloudsActive ? 'Desactivar capa de nubes' : 'Activar capa de nubes OWM'}
-          >
-            <Cloud className="w-4 h-4" />
-            <span className="text-xs font-medium">Nubes</span>
-          </button>
-          <button
-            onClick={() => setOwmTempActive(!owmTempActive)}
-            className={cn(
-              "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
-              owmTempActive 
-                ? "bg-red-500/90 text-white border-red-400" 
-                : "bg-background/90 text-muted-foreground border-border"
-            )}
-            title={owmTempActive ? 'Desactivar capa de temperatura' : 'Activar capa de temperatura OWM'}
-          >
-            <Thermometer className="w-4 h-4" />
-            <span className="text-xs font-medium">Temp</span>
-          </button>
+          {/* Weather layers */}
+          <div className="flex flex-col items-end gap-1">
+            <button
+              onClick={() => setRadarActive(!radarActive)}
+              className={cn(
+                "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
+                radarActive 
+                  ? "bg-sky-500/90 text-white border-sky-400" 
+                  : "bg-background/90 text-muted-foreground border-border"
+              )}
+              title={radarActive ? 'Desactivar radar RainViewer' : 'Activar radar RainViewer'}
+            >
+              <CloudRain className="w-4 h-4" />
+              <span className="text-xs font-medium">Radar</span>
+            </button>
+            <button
+              onClick={() => setOwmActive(!owmActive)}
+              className={cn(
+                "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
+                owmActive 
+                  ? "bg-orange-500/90 text-white border-orange-400" 
+                  : "bg-background/90 text-muted-foreground border-border"
+              )}
+              title={owmActive ? 'Desactivar capa OpenWeather' : 'Activar capa OpenWeather (mejor cobertura MX)'}
+            >
+              <ThermometerSun className="w-4 h-4" />
+              <span className="text-xs font-medium">OWM</span>
+            </button>
+            <button
+              onClick={() => setOwmCloudsActive(!owmCloudsActive)}
+              className={cn(
+                "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
+                owmCloudsActive 
+                  ? "bg-sky-500/90 text-white border-sky-400" 
+                  : "bg-background/90 text-muted-foreground border-border"
+              )}
+              title={owmCloudsActive ? 'Desactivar capa de nubes' : 'Activar capa de nubes OWM'}
+            >
+              <Cloud className="w-4 h-4" />
+              <span className="text-xs font-medium">Nubes</span>
+            </button>
+            <button
+              onClick={() => setOwmTempActive(!owmTempActive)}
+              className={cn(
+                "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
+                owmTempActive 
+                  ? "bg-red-500/90 text-white border-red-400" 
+                  : "bg-background/90 text-muted-foreground border-border"
+              )}
+              title={owmTempActive ? 'Desactivar capa de temperatura' : 'Activar capa de temperatura OWM'}
+            >
+              <Thermometer className="w-4 h-4" />
+              <span className="text-xs font-medium">Temp</span>
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="w-full h-px bg-border/50 my-0.5" />
+
+          {/* Event layers */}
+          <div className="flex flex-col items-end gap-1">
+            <button
+              onClick={() => setShowSSN(!showSSN)}
+              className={cn(
+                "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
+                showSSN
+                  ? "bg-emerald-600/90 text-white border-emerald-500"
+                  : "bg-background/90 text-muted-foreground border-border"
+              )}
+              title={showSSN ? 'Ocultar sismos SSN México' : 'Mostrar sismos SSN México'}
+            >
+              <Activity className="w-4 h-4" />
+              <span className="text-xs font-medium">SSN</span>
+            </button>
+            <button
+              onClick={() => setShowUSGS(!showUSGS)}
+              className={cn(
+                "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
+                showUSGS
+                  ? "bg-yellow-500/90 text-white border-yellow-400"
+                  : "bg-background/90 text-muted-foreground border-border"
+              )}
+              title={showUSGS ? 'Ocultar sismos USGS' : 'Mostrar sismos USGS'}
+            >
+              <Activity className="w-4 h-4" />
+              <span className="text-xs font-medium">USGS</span>
+            </button>
+            <button
+              onClick={() => setShowFires(!showFires)}
+              className={cn(
+                "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
+                showFires
+                  ? "bg-orange-600/90 text-white border-orange-500"
+                  : "bg-background/90 text-muted-foreground border-border"
+              )}
+              title={showFires ? 'Ocultar incendios NASA FIRMS' : 'Mostrar incendios NASA FIRMS'}
+            >
+              <Flame className="w-4 h-4" />
+              <span className="text-xs font-medium">🔥 NASA</span>
+            </button>
+          </div>
+
+          {/* Legend */}
           {(radarActive || owmActive || owmCloudsActive || owmTempActive) && (
             <div className="bg-background/90 backdrop-blur-sm rounded-lg shadow border border-border px-2 py-1.5 text-[10px] text-muted-foreground max-w-[140px] leading-tight">
               {!owmTempActive && (
