@@ -2001,39 +2001,82 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         badgeColor = '#2e8b57';
       }
       
-      // Zello: check if actively transmitting — wrap icon with orange 🎙️ badge overlay
+      // Zello: check if actively transmitting — wrap icon with dramatic glowing badge overlay
       const zelloTransmittingUntil = (loc as any).zello_transmitting_until;
       const isZelloActive = zelloTransmittingUntil && new Date(zelloTransmittingUntil) > new Date();
       if (isZelloActive) {
-        // Wrap the current icon in a container that adds the 🎙️ orange pulsing badge
+        const zelloUsername = (loc as any).zello_username || '';
         const baseHtml = `
           <div style="position: relative; display: inline-block;">
-            <div class="mats-marker" style="position: relative;">
+            <!-- Outer glow ring -->
+            <div style="
+              position: absolute;
+              top: 50%; left: 50%;
+              transform: translate(-50%, -50%);
+              width: 70px; height: 70px;
+              border-radius: 50%;
+              background: radial-gradient(circle, rgba(249,115,22,0.35) 0%, rgba(249,115,22,0) 70%);
+              animation: zello-glow-pulse 1.2s ease-in-out infinite;
+              z-index: 0;
+              pointer-events: none;
+            "></div>
+            <!-- Spinning ring -->
+            <div style="
+              position: absolute;
+              top: 50%; left: 50%;
+              transform: translate(-50%, -50%);
+              width: 56px; height: 56px;
+              border-radius: 50%;
+              border: 2.5px dashed rgba(249,115,22,0.7);
+              animation: zello-spin 3s linear infinite;
+              z-index: 1;
+              pointer-events: none;
+            "></div>
+            <div class="mats-marker" style="position: relative; z-index: 2;">
               ${icon.options.html}
+              <!-- Main mic badge -->
               <div style="
                 position: absolute;
-                top: -8px;
-                right: -8px;
-                width: 18px;
-                height: 18px;
-                background: #f97316;
-                border: 2px solid #fff;
+                top: -12px;
+                right: -12px;
+                width: 26px;
+                height: 26px;
+                background: linear-gradient(135deg, #f97316, #ea580c);
+                border: 2.5px solid #fff;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 9px;
-                box-shadow: 0 0 6px rgba(249,115,22,0.8);
-                animation: pulse-zello 1s ease-in-out infinite;
+                font-size: 13px;
+                box-shadow: 0 0 0 3px rgba(249,115,22,0.4), 0 0 16px rgba(249,115,22,0.9), 0 2px 6px rgba(0,0,0,0.4);
+                animation: zello-badge-pulse 0.8s ease-in-out infinite alternate;
                 z-index: 10;
               ">🎙️</div>
             </div>
+            <!-- "EN VIVO" label -->
+            <div style="
+              position: absolute;
+              bottom: -18px;
+              left: 50%;
+              transform: translateX(-50%);
+              background: linear-gradient(90deg, #f97316, #ef4444);
+              color: white;
+              font-size: 9px;
+              font-weight: 900;
+              padding: 2px 6px;
+              border-radius: 10px;
+              white-space: nowrap;
+              box-shadow: 0 0 8px rgba(249,115,22,0.8);
+              letter-spacing: 0.05em;
+              animation: zello-label-blink 1s step-end infinite;
+              z-index: 10;
+            ">● EN VIVO${zelloUsername ? ' @' + zelloUsername : ''}</div>
           </div>`;
         icon = L.divIcon({
           className: 'mats-marker zello-active-marker',
           html: baseHtml,
-          iconSize: icon.options.iconSize as [number, number],
-          iconAnchor: icon.options.iconAnchor as [number, number],
+          iconSize: [56, 72],
+          iconAnchor: [28, 50],
           popupAnchor: icon.options.popupAnchor as [number, number],
         });
       }

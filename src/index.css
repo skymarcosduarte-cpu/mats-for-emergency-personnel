@@ -694,3 +694,42 @@ html, body {
   animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* ===== ZELLO LIVE TRANSMISSION ANIMATIONS ===== */
+@keyframes zello-glow-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.4);
+  }
+}
+
+@keyframes zello-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes zello-badge-pulse {
+  from {
+    box-shadow: 0 0 0 3px rgba(249,115,22,0.4), 0 0 12px rgba(249,115,22,0.7), 0 2px 6px rgba(0,0,0,0.4);
+    transform: scale(1);
+  }
+  to {
+    box-shadow: 0 0 0 6px rgba(249,115,22,0.15), 0 0 24px rgba(249,115,22,1), 0 2px 6px rgba(0,0,0,0.4);
+    transform: scale(1.15);
+  }
+}
+
+@keyframes zello-label-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.5; }
+}
+
+/* Marker override so it doesn't clip the extended size */
+.zello-active-marker {
+  overflow: visible !important;
+}
+
+
