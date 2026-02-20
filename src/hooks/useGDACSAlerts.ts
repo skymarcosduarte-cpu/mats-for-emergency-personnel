@@ -1,5 +1,5 @@
 // Multi-source International Alerts Hook
-// Integrates GDACS, AEMET, CONAGUA, NASA EONET, ReliefWeb, and other sources
+// Integrates GDACS, AEMET, CONAGUA, NASA EONET, ReliefWeb, Tsunami Centers, and other sources
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
@@ -9,14 +9,20 @@ const GDACS_FEEDS = {
   all_7d: 'https://gdacs.org/xml/rss_7d.xml',
   tc_7d: 'https://gdacs.org/xml/rss_tc_7d.xml',
   fl_7d: 'https://gdacs.org/xml/rss_fl_7d.xml',
+  vo_7d: 'https://gdacs.org/xml/rss_vo_7d.xml', // Volcano feed
 };
 
-// Additional RSS Feed URLs from fuentes_otras.json
+// Additional RSS Feed URLs
 const ADDITIONAL_FEEDS = {
   conagua: 'https://smn.conagua.gob.mx/rss/avisos.xml',
-  nasa_eonet: 'https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=20',
+  nasa_eonet: 'https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=30&category=volcanoes,severeStorms,floods',
   reliefweb: 'https://reliefweb.int/disasters/rss.xml',
   aemet: 'https://www.aemet.es/es/rss_info/avisos/esp',
+  // NOAA Tsunami Warning Center (Pacific + Atlantic)
+  tsunami_pac: 'https://www.tsunami.gov/rss.php?basin=pac',
+  tsunami_atl: 'https://www.tsunami.gov/rss.php?basin=at',
+  // USGS Volcano Hazards
+  usgs_volcano: 'https://volcanoes.usgs.gov/vsc/rss/vhpNewUpdateRSS.xml',
 };
 
 // CORS proxy for fetching external feeds
@@ -31,12 +37,12 @@ export interface GDACSAlert {
   description: string;
   link: string;
   pubDate: string;
-  category: 'earthquake' | 'cyclone' | 'flood' | 'volcano' | 'drought' | 'wildfire' | 'weather' | 'security' | 'humanitarian' | 'other';
+  category: 'earthquake' | 'cyclone' | 'flood' | 'volcano' | 'drought' | 'wildfire' | 'weather' | 'security' | 'humanitarian' | 'other' | 'tsunami';
   alertLevel?: 'green' | 'orange' | 'red';
   country?: string;
   coordinates?: [number, number];
   magnitude?: number;
-  source: 'GDACS' | 'CONAGUA' | 'NASA' | 'ReliefWeb' | 'Interpol' | 'ERCC';
+  source: 'GDACS' | 'CONAGUA' | 'NASA' | 'ReliefWeb' | 'Interpol' | 'ERCC' | 'NOAA-Tsunami' | 'USGS-Volcano';
 }
 
 export interface AEMETAlert {
@@ -422,6 +428,102 @@ async function parseAEMETFeed(): Promise<AEMETAlert[]> {
   }
 }
 
+// Parse NOAA Tsunami Warning Center RSS feed
+async function parseTsunamiWarningFeed(feedUrl: string, basin: string): Promise<GDACSAlert[]> {
+  try {
+    const response = await fetchWithCorsProxy(feedUrl);
+    if (!response) return [];
+    const text = await response.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, 'text/xml');
+    if (xml.querySelector('parsererror')) return [];
+
+    const items = xml.querySelectorAll('item');
+    const alerts: GDACSAlert[] = [];
+
+    items.forEach((item, index) => {
+      const title = item.querySelector('title')?.textContent || '';
+      const description = item.querySelector('description')?.textContent || '';
+      const link = item.querySelector('link')?.textContent || '';
+      const pubDate = item.querySelector('pubDate')?.textContent || '';
+      const titleLower = title.toLowerCase();
+
+      if (titleLower.includes('test') || titleLower.includes('no advisory') || titleLower.includes('cancellation')) return;
+
+      let alertLevel: GDACSAlert['alertLevel'] = 'orange';
+      if (titleLower.includes('warning')) alertLevel = 'red';
+      else if (titleLower.includes('watch')) alertLevel = 'orange';
+      else if (titleLower.includes('advisory') || titleLower.includes('information')) alertLevel = 'green';
+
+      let coordinates: [number, number] | undefined;
+      const coordMatch = description.match(/(\d+\.?\d*)[°\s]*([NS])[,\s]+(\d+\.?\d*)[°\s]*([EW])/i);
+      if (coordMatch) {
+        const lat = parseFloat(coordMatch[1]) * (coordMatch[2].toUpperCase() === 'S' ? -1 : 1);
+        const lng = parseFloat(coordMatch[3]) * (coordMatch[4].toUpperCase() === 'W' ? -1 : 1);
+        if (!isNaN(lat) && !isNaN(lng)) coordinates = [lat, lng];
+      }
+
+      alerts.push({
+        id: `tsunami-${basin}-${index}-${Date.now()}`,
+        title: title.replace(/<[^>]*>/g, '').trim(),
+        description: description.replace(/<[^>]*>/g, '').substring(0, 400).trim(),
+        link,
+        pubDate,
+        category: 'tsunami',
+        alertLevel,
+        coordinates,
+        source: 'NOAA-Tsunami',
+      });
+    });
+    return alerts;
+  } catch (error) {
+    console.warn(`[Tsunami-${basin}] Error:`, error);
+    return [];
+  }
+}
+
+// Parse USGS Volcano Hazards RSS feed
+async function parseUSGSVolcanoFeed(): Promise<GDACSAlert[]> {
+  try {
+    const response = await fetchWithCorsProxy(ADDITIONAL_FEEDS.usgs_volcano);
+    if (!response) return [];
+    const text = await response.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, 'text/xml');
+    if (xml.querySelector('parsererror')) return [];
+
+    const alerts: GDACSAlert[] = [];
+    Array.from(xml.querySelectorAll('item')).slice(0, 15).forEach((item, index) => {
+      const title = item.querySelector('title')?.textContent || '';
+      const description = item.querySelector('description')?.textContent || '';
+      const link = item.querySelector('link')?.textContent || '';
+      const pubDate = item.querySelector('pubDate')?.textContent || '';
+      const titleLower = title.toLowerCase();
+
+      if (!titleLower.includes('volcano') && !titleLower.includes('eruption') && !titleLower.includes('lava') && !titleLower.includes('ash')) return;
+
+      let alertLevel: GDACSAlert['alertLevel'] = 'green';
+      if (titleLower.includes('red') || titleLower.includes('eruption') || titleLower.includes('erupting')) alertLevel = 'red';
+      else if (titleLower.includes('orange') || titleLower.includes('elevated')) alertLevel = 'orange';
+
+      alerts.push({
+        id: `usgs-volcano-${index}-${Date.now()}`,
+        title: title.replace(/<[^>]*>/g, '').trim(),
+        description: description.replace(/<[^>]*>/g, '').substring(0, 400).trim(),
+        link,
+        pubDate,
+        category: 'volcano',
+        alertLevel,
+        source: 'USGS-Volcano',
+      });
+    });
+    return alerts;
+  } catch (error) {
+    console.warn('[USGS-Volcano] Error:', error);
+    return [];
+  }
+}
+
 interface UseGDACSAlertsOptions {
   onNewRedAlert?: (alert: GDACSAlert) => void;
 }
@@ -435,7 +537,6 @@ export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
     lastChecked: null,
   });
 
-  // Track already notified red alerts to avoid duplicates
   const notifiedRedAlertsRef = useRef<Set<string>>(new Set());
 
   const fetchAlerts = useCallback(async () => {
@@ -447,18 +548,26 @@ export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
         gdacs24h,
         gdacsTc,
         gdacsFl,
+        gdacsVo,
         conaguaAlerts,
         nasaAlerts,
         reliefwebAlerts,
         aemetAlerts,
+        tsunamiPac,
+        tsunamiAtl,
+        usgsVolcano,
       ] = await Promise.all([
         parseGDACSFeed(GDACS_FEEDS.all_24h),
         parseGDACSFeed(GDACS_FEEDS.tc_7d),
         parseGDACSFeed(GDACS_FEEDS.fl_7d),
+        parseGDACSFeed(GDACS_FEEDS.vo_7d),
         parseCONAGUAFeed(),
         parseNASAEONET(),
         parseReliefWebFeed(),
         parseAEMETFeed(),
+        parseTsunamiWarningFeed(ADDITIONAL_FEEDS.tsunami_pac, 'pac'),
+        parseTsunamiWarningFeed(ADDITIONAL_FEEDS.tsunami_atl, 'atl'),
+        parseUSGSVolcanoFeed(),
       ]);
 
       // Combine all alerts
@@ -466,9 +575,13 @@ export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
         ...gdacs24h,
         ...gdacsTc,
         ...gdacsFl,
+        ...gdacsVo,
         ...conaguaAlerts,
         ...nasaAlerts,
         ...reliefwebAlerts,
+        ...tsunamiPac,
+        ...tsunamiAtl,
+        ...usgsVolcano,
       ];
       
       // Deduplicate by title
@@ -535,6 +648,7 @@ export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
       case 'earthquake': return '🌍';
       case 'cyclone': return '🌀';
       case 'flood': return '🌊';
+      case 'tsunami': return '🌊';
       case 'volcano': return '🌋';
       case 'drought': return '☀️';
       case 'wildfire': return '🔥';
@@ -550,6 +664,7 @@ export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
       case 'earthquake': return 'Terremoto';
       case 'cyclone': return 'Ciclón';
       case 'flood': return 'Inundación';
+      case 'tsunami': return 'Tsunami';
       case 'volcano': return 'Volcán';
       case 'drought': return 'Sequía';
       case 'wildfire': return 'Incendio';

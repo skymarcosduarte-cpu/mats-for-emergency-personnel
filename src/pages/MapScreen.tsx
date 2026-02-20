@@ -8,6 +8,7 @@ import { ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame, Ale
 import { GpsStatusBanner } from '@/components/GpsStatusBanner';
 import { MapControlsMenu } from '@/components/MapControlsMenu';
 import { ImOkButton } from '@/components/ImOkButton';
+import { GlobalHazardPanel } from '@/components/GlobalHazardPanel';
 import { useLocation } from '@/hooks/useLocation';
 import type { GeoPosition } from '@/types';
 import { useUserLocations, useHelpRequests, useRoadReports, useMedicalProviders, usePanicEvents, useActiveResponders } from '@/hooks/useRealtime';
@@ -1500,6 +1501,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   const [forceCloseMenus, setForceCloseMenus] = useState(0);
   // Messaging state
   const [messagingOpen, setMessagingOpen] = useState(false);
+  // Global hazard panel state
+  const [hazardPanelOpen, setHazardPanelOpen] = useState(false);
   
   // Active users panel state for legend auto-hide
   const [usersPanelOpen, setUsersPanelOpen] = useState(false);
@@ -3753,6 +3756,13 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         <Radio className="w-4 h-4" />
         <span className="font-semibold text-sm">Zello</span>
       </a>
+
+      {/* Global Hazard Panel - tsunamis, volcanoes, storms, security */}
+      <GlobalHazardPanel
+        map={mapInstanceRef.current}
+        visible={hazardPanelOpen}
+        onToggle={() => setHazardPanelOpen(prev => !prev)}
+      />
     </div>
   );
 };
