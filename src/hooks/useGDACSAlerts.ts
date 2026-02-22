@@ -1,35 +1,8 @@
 // Multi-source International Alerts Hook
-// Integrates GDACS, AEMET, CONAGUA, NASA EONET, ReliefWeb, Tsunami Centers, and other sources
+// Fetches hazard feeds via backend edge function to avoid CORS issues
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-
-// GDACS RSS Feed URLs
-const GDACS_FEEDS = {
-  all_24h: 'https://gdacs.org/xml/rss_24h.xml',
-  all_7d: 'https://gdacs.org/xml/rss_7d.xml',
-  tc_7d: 'https://gdacs.org/xml/rss_tc_7d.xml',
-  fl_7d: 'https://gdacs.org/xml/rss_fl_7d.xml',
-  vo_7d: 'https://gdacs.org/xml/rss_vo_7d.xml', // Volcano feed
-};
-
-// Additional RSS Feed URLs
-const ADDITIONAL_FEEDS = {
-  conagua: 'https://smn.conagua.gob.mx/rss/avisos.xml',
-  nasa_eonet: 'https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=30&category=volcanoes,severeStorms,floods',
-  reliefweb: 'https://reliefweb.int/disasters/rss.xml',
-  aemet: 'https://www.aemet.es/es/rss_info/avisos/esp',
-  // NOAA Tsunami Warning Center (Pacific + Atlantic)
-  tsunami_pac: 'https://www.tsunami.gov/rss.php?basin=pac',
-  tsunami_atl: 'https://www.tsunami.gov/rss.php?basin=at',
-  // USGS Volcano Hazards
-  usgs_volcano: 'https://volcanoes.usgs.gov/vsc/rss/vhpNewUpdateRSS.xml',
-};
-
-// CORS proxy for fetching external feeds
-const CORS_PROXIES = [
-  'https://api.allorigins.win/raw?url=',
-  'https://corsproxy.io/?',
-];
+import { supabase } from '@/integrations/supabase/client';
 
 export interface GDACSAlert {
   id: string;
@@ -64,384 +37,169 @@ export interface GDACSAlertsState {
   lastChecked: Date | null;
 }
 
-// Fetch with CORS proxy fallback
-async function fetchWithCorsProxy(url: string): Promise<Response | null> {
-  for (const proxy of CORS_PROXIES) {
-    try {
-      const proxyUrl = proxy + encodeURIComponent(url);
-      const response = await fetch(proxyUrl, { 
-        signal: AbortSignal.timeout(15000) 
-      });
-      if (response.ok) {
-        return response;
-      }
-    } catch (error) {
-      console.warn(`[Proxy ${proxy}] Failed for ${url}`);
-    }
-  }
-  return null;
-}
+// ─── XML Parsers ───
 
-// Parse GDACS RSS feed
-async function parseGDACSFeed(feedUrl: string): Promise<GDACSAlert[]> {
+function parseGDACSXml(xmlText: string, feedKey: string): GDACSAlert[] {
   try {
-    const response = await fetchWithCorsProxy(feedUrl);
-    if (!response) {
-      console.warn(`[GDACS] Failed to fetch ${feedUrl}`);
-      return [];
-    }
-    
-    const text = await response.text();
     const parser = new DOMParser();
-    const xml = parser.parseFromString(text, 'text/xml');
-    
-    const parseError = xml.querySelector('parsererror');
-    if (parseError) {
-      console.warn('[GDACS] XML parse error');
-      return [];
-    }
-    
-    const items = xml.querySelectorAll('item');
-    const alerts: GDACSAlert[] = [];
-    
-    items.forEach((item, index) => {
-      const title = item.querySelector('title')?.textContent || '';
-      const description = item.querySelector('description')?.textContent || '';
-      const link = item.querySelector('link')?.textContent || '';
-      const pubDate = item.querySelector('pubDate')?.textContent || '';
-      const categoryEl = item.querySelector('category')?.textContent?.toLowerCase() || '';
-      
-      // Parse category
-      let category: GDACSAlert['category'] = 'other';
-      const titleLower = title.toLowerCase();
-      if (titleLower.includes('earthquake') || titleLower.includes('terremoto') || categoryEl.includes('eq')) {
-        category = 'earthquake';
-      } else if (titleLower.includes('cyclone') || titleLower.includes('typhoon') || titleLower.includes('hurricane') || categoryEl.includes('tc')) {
-        category = 'cyclone';
-      } else if (titleLower.includes('flood') || titleLower.includes('inundación') || categoryEl.includes('fl')) {
-        category = 'flood';
-      } else if (titleLower.includes('volcano') || titleLower.includes('volcán') || categoryEl.includes('vo')) {
-        category = 'volcano';
-      } else if (titleLower.includes('drought') || titleLower.includes('sequía') || categoryEl.includes('dr')) {
-        category = 'drought';
-      } else if (titleLower.includes('wildfire') || titleLower.includes('incendio') || categoryEl.includes('wf')) {
-        category = 'wildfire';
-      }
-      
-      // Parse alert level
-      let alertLevel: GDACSAlert['alertLevel'];
-      if (titleLower.includes('red') || titleLower.includes('rojo')) {
-        alertLevel = 'red';
-      } else if (titleLower.includes('orange') || titleLower.includes('naranja')) {
-        alertLevel = 'orange';
-      } else if (titleLower.includes('green') || titleLower.includes('verde')) {
-        alertLevel = 'green';
-      }
-      
-      // Extract magnitude for earthquakes
-      let magnitude: number | undefined;
-      const magMatch = title.match(/M\s*([\d.]+)/i) || description.match(/magnitude\s*([\d.]+)/i);
-      if (magMatch) {
-        magnitude = parseFloat(magMatch[1]);
-      }
-      
-      // Extract country
-      let country: string | undefined;
-      const countryMatch = title.match(/in\s+([A-Z][a-zA-Z\s]+?)(?:\s*-|\s*$|,)/);
-      if (countryMatch) {
-        country = countryMatch[1].trim();
-      }
-      
-      // Extract coordinates
-      let coordinates: [number, number] | undefined;
-      const geoLat = item.querySelector('geo\\:lat, lat')?.textContent;
-      const geoLong = item.querySelector('geo\\:long, long')?.textContent;
-      if (geoLat && geoLong) {
-        coordinates = [parseFloat(geoLat), parseFloat(geoLong)];
-      }
-      
-      alerts.push({
-        id: `gdacs-${index}-${Date.now()}`,
-        title: title.replace(/<[^>]*>/g, '').trim(),
-        description: description.replace(/<[^>]*>/g, '').trim(),
-        link,
-        pubDate,
-        category,
-        alertLevel,
-        country,
-        coordinates,
-        magnitude,
-        source: 'GDACS',
-      });
-    });
-    
-    return alerts;
-  } catch (error) {
-    console.error('[GDACS] Error fetching feed:', error);
-    return [];
-  }
-}
-
-// Parse CONAGUA RSS feed (Mexico weather alerts)
-async function parseCONAGUAFeed(): Promise<GDACSAlert[]> {
-  try {
-    const response = await fetchWithCorsProxy(ADDITIONAL_FEEDS.conagua);
-    if (!response) {
-      console.warn('[CONAGUA] Failed to fetch');
-      return [];
-    }
-    
-    const text = await response.text();
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, 'text/xml');
-    
-    const parseError = xml.querySelector('parsererror');
-    if (parseError) {
-      console.warn('[CONAGUA] XML parse error');
-      return [];
-    }
-    
-    const items = xml.querySelectorAll('item');
-    const alerts: GDACSAlert[] = [];
-    
-    items.forEach((item, index) => {
-      const title = item.querySelector('title')?.textContent || '';
-      const description = item.querySelector('description')?.textContent || '';
-      const link = item.querySelector('link')?.textContent || '';
-      const pubDate = item.querySelector('pubDate')?.textContent || new Date().toISOString();
-      
-      // Determine category from content
-      let category: GDACSAlert['category'] = 'weather';
-      const titleLower = title.toLowerCase();
-      if (titleLower.includes('huracán') || titleLower.includes('ciclón') || titleLower.includes('tormenta tropical')) {
-        category = 'cyclone';
-      } else if (titleLower.includes('lluvia') || titleLower.includes('inundación')) {
-        category = 'flood';
-      }
-      
-      // Determine alert level
-      let alertLevel: GDACSAlert['alertLevel'];
-      if (titleLower.includes('rojo') || titleLower.includes('extremo') || titleLower.includes('mayor')) {
-        alertLevel = 'red';
-      } else if (titleLower.includes('naranja') || titleLower.includes('alto')) {
-        alertLevel = 'orange';
-      } else {
-        alertLevel = 'green';
-      }
-      
-      alerts.push({
-        id: `conagua-${index}-${Date.now()}`,
-        title: title.replace(/<[^>]*>/g, '').trim(),
-        description: description.replace(/<[^>]*>/g, '').trim(),
-        link,
-        pubDate,
-        category,
-        alertLevel,
-        country: 'México',
-        source: 'CONAGUA',
-      });
-    });
-    
-    return alerts;
-  } catch (error) {
-    console.error('[CONAGUA] Error fetching feed:', error);
-    return [];
-  }
-}
-
-// Parse NASA EONET API (natural events)
-async function parseNASAEONET(): Promise<GDACSAlert[]> {
-  try {
-    const response = await fetchWithCorsProxy(ADDITIONAL_FEEDS.nasa_eonet);
-    if (!response) {
-      console.warn('[NASA EONET] Failed to fetch');
-      return [];
-    }
-    
-    const data = await response.json();
-    const alerts: GDACSAlert[] = [];
-    
-    if (data.events && Array.isArray(data.events)) {
-      data.events.forEach((event: any, index: number) => {
-        // Map NASA category to our categories
-        let category: GDACSAlert['category'] = 'other';
-        const categoryId = event.categories?.[0]?.id || '';
-        
-        if (categoryId === 'wildfires') category = 'wildfire';
-        else if (categoryId === 'volcanoes') category = 'volcano';
-        else if (categoryId === 'severeStorms') category = 'cyclone';
-        else if (categoryId === 'floods') category = 'flood';
-        else if (categoryId === 'drought') category = 'drought';
-        else if (categoryId === 'earthquakes') category = 'earthquake';
-        
-        // Get coordinates from geometry
-        let coordinates: [number, number] | undefined;
-        const geometry = event.geometry?.[0];
-        if (geometry?.coordinates) {
-          coordinates = [geometry.coordinates[1], geometry.coordinates[0]]; // [lat, lng]
-        }
-        
-        alerts.push({
-          id: `nasa-${event.id || index}-${Date.now()}`,
-          title: event.title || 'NASA EONET Event',
-          description: `Categoría: ${event.categories?.[0]?.title || 'Evento natural'}. Fuente: ${event.sources?.[0]?.id || 'NASA'}`,
-          link: event.sources?.[0]?.url || 'https://eonet.gsfc.nasa.gov/',
-          pubDate: geometry?.date || new Date().toISOString(),
-          category,
-          alertLevel: 'orange',
-          coordinates,
-          source: 'NASA',
-        });
-      });
-    }
-    
-    return alerts;
-  } catch (error) {
-    console.error('[NASA EONET] Error fetching:', error);
-    return [];
-  }
-}
-
-// Parse ReliefWeb RSS feed (humanitarian alerts)
-async function parseReliefWebFeed(): Promise<GDACSAlert[]> {
-  try {
-    const response = await fetchWithCorsProxy(ADDITIONAL_FEEDS.reliefweb);
-    if (!response) {
-      console.warn('[ReliefWeb] Failed to fetch');
-      return [];
-    }
-    
-    const text = await response.text();
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, 'text/xml');
-    
-    const parseError = xml.querySelector('parsererror');
-    if (parseError) {
-      console.warn('[ReliefWeb] XML parse error');
-      return [];
-    }
-    
-    const items = xml.querySelectorAll('item');
-    const alerts: GDACSAlert[] = [];
-    
-    // Only take latest 10 items
-    const itemsArray = Array.from(items).slice(0, 10);
-    
-    itemsArray.forEach((item, index) => {
-      const title = item.querySelector('title')?.textContent || '';
-      const description = item.querySelector('description')?.textContent || '';
-      const link = item.querySelector('link')?.textContent || '';
-      const pubDate = item.querySelector('pubDate')?.textContent || new Date().toISOString();
-      
-      // Determine category from content
-      let category: GDACSAlert['category'] = 'humanitarian';
-      const titleLower = title.toLowerCase();
-      if (titleLower.includes('earthquake') || titleLower.includes('terremoto')) {
-        category = 'earthquake';
-      } else if (titleLower.includes('flood') || titleLower.includes('inundación')) {
-        category = 'flood';
-      } else if (titleLower.includes('conflict') || titleLower.includes('crisis') || titleLower.includes('emergency')) {
-        category = 'security';
-      }
-      
-      alerts.push({
-        id: `reliefweb-${index}-${Date.now()}`,
-        title: title.replace(/<[^>]*>/g, '').trim(),
-        description: description.replace(/<[^>]*>/g, '').substring(0, 300).trim(),
-        link,
-        pubDate,
-        category,
-        alertLevel: 'orange',
-        source: 'ReliefWeb',
-      });
-    });
-    
-    return alerts;
-  } catch (error) {
-    console.error('[ReliefWeb] Error fetching feed:', error);
-    return [];
-  }
-}
-
-// Parse AEMET RSS feed
-async function parseAEMETFeed(): Promise<AEMETAlert[]> {
-  try {
-    const response = await fetchWithCorsProxy(ADDITIONAL_FEEDS.aemet);
-    if (!response) {
-      console.warn('[AEMET] Failed to fetch');
-      return [];
-    }
-    
-    const text = await response.text();
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, 'text/xml');
-    
-    const parseError = xml.querySelector('parsererror');
-    if (parseError) {
-      console.warn('[AEMET] XML parse error');
-      return [];
-    }
-    
-    const items = xml.querySelectorAll('item');
-    const alerts: AEMETAlert[] = [];
-    
-    items.forEach((item, index) => {
-      const title = item.querySelector('title')?.textContent || '';
-      const description = item.querySelector('description')?.textContent || '';
-      const link = item.querySelector('link')?.textContent || '';
-      const pubDate = item.querySelector('pubDate')?.textContent || '';
-      
-      // Parse alert level from title
-      let level: AEMETAlert['level'];
-      const titleLower = title.toLowerCase();
-      if (titleLower.includes('rojo')) {
-        level = 'rojo';
-      } else if (titleLower.includes('naranja')) {
-        level = 'naranja';
-      } else if (titleLower.includes('amarillo')) {
-        level = 'amarillo';
-      }
-      
-      // Extract zone from title
-      let zone: string | undefined;
-      const zoneMatch = title.match(/(?:en|para)\s+([^.]+)/i);
-      if (zoneMatch) {
-        zone = zoneMatch[1].trim();
-      }
-      
-      alerts.push({
-        id: `aemet-${index}-${Date.now()}`,
-        title: title.replace(/<[^>]*>/g, '').trim(),
-        description: description.replace(/<[^>]*>/g, '').trim(),
-        link,
-        pubDate,
-        level,
-        zone,
-        source: 'AEMET',
-      });
-    });
-    
-    return alerts;
-  } catch (error) {
-    console.error('[AEMET] Error fetching feed:', error);
-    return [];
-  }
-}
-
-// Parse NOAA Tsunami Warning Center RSS feed
-async function parseTsunamiWarningFeed(feedUrl: string, basin: string): Promise<GDACSAlert[]> {
-  try {
-    const response = await fetchWithCorsProxy(feedUrl);
-    if (!response) return [];
-    const text = await response.text();
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, 'text/xml');
+    const xml = parser.parseFromString(xmlText, 'text/xml');
     if (xml.querySelector('parsererror')) return [];
 
     const items = xml.querySelectorAll('item');
     const alerts: GDACSAlert[] = [];
 
     items.forEach((item, index) => {
+      const title = item.querySelector('title')?.textContent || '';
+      const description = item.querySelector('description')?.textContent || '';
+      const link = item.querySelector('link')?.textContent || '';
+      const pubDate = item.querySelector('pubDate')?.textContent || '';
+      const categoryEl = item.querySelector('category')?.textContent?.toLowerCase() || '';
+      const titleLower = title.toLowerCase();
+
+      let category: GDACSAlert['category'] = 'other';
+      if (titleLower.includes('earthquake') || titleLower.includes('terremoto') || categoryEl.includes('eq')) category = 'earthquake';
+      else if (titleLower.includes('cyclone') || titleLower.includes('typhoon') || titleLower.includes('hurricane') || categoryEl.includes('tc')) category = 'cyclone';
+      else if (titleLower.includes('flood') || titleLower.includes('inundación') || categoryEl.includes('fl')) category = 'flood';
+      else if (titleLower.includes('volcano') || titleLower.includes('volcán') || categoryEl.includes('vo')) category = 'volcano';
+      else if (titleLower.includes('drought') || titleLower.includes('sequía') || categoryEl.includes('dr')) category = 'drought';
+      else if (titleLower.includes('wildfire') || titleLower.includes('incendio') || categoryEl.includes('wf')) category = 'wildfire';
+
+      let alertLevel: GDACSAlert['alertLevel'];
+      if (titleLower.includes('red') || titleLower.includes('rojo')) alertLevel = 'red';
+      else if (titleLower.includes('orange') || titleLower.includes('naranja')) alertLevel = 'orange';
+      else if (titleLower.includes('green') || titleLower.includes('verde')) alertLevel = 'green';
+
+      let magnitude: number | undefined;
+      const magMatch = title.match(/M\s*([\d.]+)/i) || description.match(/magnitude\s*([\d.]+)/i);
+      if (magMatch) magnitude = parseFloat(magMatch[1]);
+
+      let country: string | undefined;
+      const countryMatch = title.match(/in\s+([A-Z][a-zA-Z\s]+?)(?:\s*-|\s*$|,)/);
+      if (countryMatch) country = countryMatch[1].trim();
+
+      let coordinates: [number, number] | undefined;
+      const geoLat = item.querySelector('geo\\:lat, lat')?.textContent;
+      const geoLong = item.querySelector('geo\\:long, long')?.textContent;
+      if (geoLat && geoLong) {
+        coordinates = [parseFloat(geoLat), parseFloat(geoLong)];
+      }
+
+      alerts.push({
+        id: `gdacs-${feedKey}-${index}`,
+        title: title.replace(/<[^>]*>/g, '').trim(),
+        description: description.replace(/<[^>]*>/g, '').trim(),
+        link, pubDate, category, alertLevel, country, coordinates, magnitude,
+        source: 'GDACS',
+      });
+    });
+    return alerts;
+  } catch { return []; }
+}
+
+function parseCONAGUAXml(xmlText: string): GDACSAlert[] {
+  try {
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(xmlText, 'text/xml');
+    if (xml.querySelector('parsererror')) return [];
+
+    const alerts: GDACSAlert[] = [];
+    xml.querySelectorAll('item').forEach((item, index) => {
+      const title = item.querySelector('title')?.textContent || '';
+      const description = item.querySelector('description')?.textContent || '';
+      const link = item.querySelector('link')?.textContent || '';
+      const pubDate = item.querySelector('pubDate')?.textContent || new Date().toISOString();
+      const titleLower = title.toLowerCase();
+
+      let category: GDACSAlert['category'] = 'weather';
+      if (titleLower.includes('huracán') || titleLower.includes('ciclón') || titleLower.includes('tormenta tropical')) category = 'cyclone';
+      else if (titleLower.includes('lluvia') || titleLower.includes('inundación')) category = 'flood';
+
+      let alertLevel: GDACSAlert['alertLevel'] = 'green';
+      if (titleLower.includes('rojo') || titleLower.includes('extremo') || titleLower.includes('mayor')) alertLevel = 'red';
+      else if (titleLower.includes('naranja') || titleLower.includes('alto')) alertLevel = 'orange';
+
+      alerts.push({
+        id: `conagua-${index}`,
+        title: title.replace(/<[^>]*>/g, '').trim(),
+        description: description.replace(/<[^>]*>/g, '').trim(),
+        link, pubDate, category, alertLevel, country: 'México',
+        source: 'CONAGUA',
+      });
+    });
+    return alerts;
+  } catch { return []; }
+}
+
+function parseNASAEONETJson(jsonText: string): GDACSAlert[] {
+  try {
+    const data = JSON.parse(jsonText);
+    if (!data.events || !Array.isArray(data.events)) return [];
+
+    return data.events.map((event: any, index: number) => {
+      const categoryId = event.categories?.[0]?.id || '';
+      let category: GDACSAlert['category'] = 'other';
+      if (categoryId === 'wildfires') category = 'wildfire';
+      else if (categoryId === 'volcanoes') category = 'volcano';
+      else if (categoryId === 'severeStorms') category = 'cyclone';
+      else if (categoryId === 'floods') category = 'flood';
+      else if (categoryId === 'earthquakes') category = 'earthquake';
+
+      let coordinates: [number, number] | undefined;
+      const geometry = event.geometry?.[0];
+      if (geometry?.coordinates) coordinates = [geometry.coordinates[1], geometry.coordinates[0]];
+
+      return {
+        id: `nasa-${event.id || index}`,
+        title: event.title || 'NASA EONET Event',
+        description: `Categoría: ${event.categories?.[0]?.title || 'Evento natural'}. Fuente: ${event.sources?.[0]?.id || 'NASA'}`,
+        link: event.sources?.[0]?.url || 'https://eonet.gsfc.nasa.gov/',
+        pubDate: geometry?.date || new Date().toISOString(),
+        category, alertLevel: 'orange' as const, coordinates,
+        source: 'NASA' as const,
+      };
+    });
+  } catch { return []; }
+}
+
+function parseReliefWebXml(xmlText: string): GDACSAlert[] {
+  try {
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(xmlText, 'text/xml');
+    if (xml.querySelector('parsererror')) return [];
+
+    const alerts: GDACSAlert[] = [];
+    Array.from(xml.querySelectorAll('item')).slice(0, 10).forEach((item, index) => {
+      const title = item.querySelector('title')?.textContent || '';
+      const description = item.querySelector('description')?.textContent || '';
+      const link = item.querySelector('link')?.textContent || '';
+      const pubDate = item.querySelector('pubDate')?.textContent || new Date().toISOString();
+      const titleLower = title.toLowerCase();
+
+      let category: GDACSAlert['category'] = 'humanitarian';
+      if (titleLower.includes('earthquake') || titleLower.includes('terremoto')) category = 'earthquake';
+      else if (titleLower.includes('flood') || titleLower.includes('inundación')) category = 'flood';
+      else if (titleLower.includes('conflict') || titleLower.includes('crisis') || titleLower.includes('emergency')) category = 'security';
+
+      alerts.push({
+        id: `reliefweb-${index}`,
+        title: title.replace(/<[^>]*>/g, '').trim(),
+        description: description.replace(/<[^>]*>/g, '').substring(0, 300).trim(),
+        link, pubDate, category, alertLevel: 'orange',
+        source: 'ReliefWeb',
+      });
+    });
+    return alerts;
+  } catch { return []; }
+}
+
+function parseTsunamiXml(xmlText: string, basin: string): GDACSAlert[] {
+  try {
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(xmlText, 'text/xml');
+    if (xml.querySelector('parsererror')) return [];
+
+    const alerts: GDACSAlert[] = [];
+    xml.querySelectorAll('item').forEach((item, index) => {
       const title = item.querySelector('title')?.textContent || '';
       const description = item.querySelector('description')?.textContent || '';
       const link = item.querySelector('link')?.textContent || '';
@@ -464,32 +222,21 @@ async function parseTsunamiWarningFeed(feedUrl: string, basin: string): Promise<
       }
 
       alerts.push({
-        id: `tsunami-${basin}-${index}-${Date.now()}`,
+        id: `tsunami-${basin}-${index}`,
         title: title.replace(/<[^>]*>/g, '').trim(),
         description: description.replace(/<[^>]*>/g, '').substring(0, 400).trim(),
-        link,
-        pubDate,
-        category: 'tsunami',
-        alertLevel,
-        coordinates,
+        link, pubDate, category: 'tsunami', alertLevel, coordinates,
         source: 'NOAA-Tsunami',
       });
     });
     return alerts;
-  } catch (error) {
-    console.warn(`[Tsunami-${basin}] Error:`, error);
-    return [];
-  }
+  } catch { return []; }
 }
 
-// Parse USGS Volcano Hazards RSS feed
-async function parseUSGSVolcanoFeed(): Promise<GDACSAlert[]> {
+function parseUSGSVolcanoXml(xmlText: string): GDACSAlert[] {
   try {
-    const response = await fetchWithCorsProxy(ADDITIONAL_FEEDS.usgs_volcano);
-    if (!response) return [];
-    const text = await response.text();
     const parser = new DOMParser();
-    const xml = parser.parseFromString(text, 'text/xml');
+    const xml = parser.parseFromString(xmlText, 'text/xml');
     if (xml.querySelector('parsererror')) return [];
 
     const alerts: GDACSAlert[] = [];
@@ -507,22 +254,18 @@ async function parseUSGSVolcanoFeed(): Promise<GDACSAlert[]> {
       else if (titleLower.includes('orange') || titleLower.includes('elevated')) alertLevel = 'orange';
 
       alerts.push({
-        id: `usgs-volcano-${index}-${Date.now()}`,
+        id: `usgs-volcano-${index}`,
         title: title.replace(/<[^>]*>/g, '').trim(),
         description: description.replace(/<[^>]*>/g, '').substring(0, 400).trim(),
-        link,
-        pubDate,
-        category: 'volcano',
-        alertLevel,
+        link, pubDate, category: 'volcano', alertLevel,
         source: 'USGS-Volcano',
       });
     });
     return alerts;
-  } catch (error) {
-    console.warn('[USGS-Volcano] Error:', error);
-    return [];
-  }
+  } catch { return []; }
 }
+
+// ─── Main Hook ───
 
 interface UseGDACSAlertsOptions {
   onNewRedAlert?: (alert: GDACSAlert) => void;
@@ -543,47 +286,34 @@ export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      // Fetch all feeds in parallel
-      const [
-        gdacs24h,
-        gdacsTc,
-        gdacsFl,
-        gdacsVo,
-        conaguaAlerts,
-        nasaAlerts,
-        reliefwebAlerts,
-        aemetAlerts,
-        tsunamiPac,
-        tsunamiAtl,
-        usgsVolcano,
-      ] = await Promise.all([
-        parseGDACSFeed(GDACS_FEEDS.all_24h),
-        parseGDACSFeed(GDACS_FEEDS.tc_7d),
-        parseGDACSFeed(GDACS_FEEDS.fl_7d),
-        parseGDACSFeed(GDACS_FEEDS.vo_7d),
-        parseCONAGUAFeed(),
-        parseNASAEONET(),
-        parseReliefWebFeed(),
-        parseAEMETFeed(),
-        parseTsunamiWarningFeed(ADDITIONAL_FEEDS.tsunami_pac, 'pac'),
-        parseTsunamiWarningFeed(ADDITIONAL_FEEDS.tsunami_atl, 'atl'),
-        parseUSGSVolcanoFeed(),
-      ]);
+      console.log('[Alerts] Fetching hazard feeds via edge function...');
 
-      // Combine all alerts
-      const allAlerts = [
-        ...gdacs24h,
-        ...gdacsTc,
-        ...gdacsFl,
-        ...gdacsVo,
-        ...conaguaAlerts,
-        ...nasaAlerts,
-        ...reliefwebAlerts,
-        ...tsunamiPac,
-        ...tsunamiAtl,
-        ...usgsVolcano,
-      ];
-      
+      const { data, error } = await supabase.functions.invoke('fetch-hazard-feeds');
+
+      if (error) {
+        console.error('[Alerts] Edge function error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        console.warn('[Alerts] No data returned from edge function');
+        setState(prev => ({ ...prev, loading: false }));
+        return;
+      }
+
+      // Parse each feed result
+      const allAlerts: GDACSAlert[] = [];
+
+      if (data.gdacs_24h) allAlerts.push(...parseGDACSXml(data.gdacs_24h, '24h'));
+      if (data.gdacs_tc) allAlerts.push(...parseGDACSXml(data.gdacs_tc, 'tc'));
+      if (data.gdacs_fl) allAlerts.push(...parseGDACSXml(data.gdacs_fl, 'fl'));
+      if (data.gdacs_vo) allAlerts.push(...parseGDACSXml(data.gdacs_vo, 'vo'));
+      if (data.conagua) allAlerts.push(...parseCONAGUAXml(data.conagua));
+      if (data.nasa_eonet) allAlerts.push(...parseNASAEONETJson(data.nasa_eonet));
+      if (data.reliefweb) allAlerts.push(...parseReliefWebXml(data.reliefweb));
+      if (data.usgs_volcano) allAlerts.push(...parseUSGSVolcanoXml(data.usgs_volcano));
+      if (data.smithsonian_volc) allAlerts.push(...parseUSGSVolcanoXml(data.smithsonian_volc));
+
       // Deduplicate by title
       const seenTitles = new Set<string>();
       const uniqueAlerts = allAlerts.filter(alert => {
@@ -593,34 +323,35 @@ export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
         return true;
       });
 
-      // Check for new red alerts and notify
+      // Check for new red alerts
       if (options?.onNewRedAlert) {
-        const redAlerts = uniqueAlerts.filter(alert => alert.alertLevel === 'red');
-        for (const alert of redAlerts) {
-          // Create a stable key based on title (first 50 chars)
+        for (const alert of uniqueAlerts.filter(a => a.alertLevel === 'red')) {
           const alertKey = alert.title.toLowerCase().substring(0, 50);
           if (!notifiedRedAlertsRef.current.has(alertKey)) {
             notifiedRedAlertsRef.current.add(alertKey);
-            console.log('[Alerts] New RED alert detected:', alert.title);
+            console.log('[Alerts] New RED alert:', alert.title);
             options.onNewRedAlert(alert);
           }
         }
       }
 
-      // Sort by alert level (red > orange > green > undefined) then by date
+      // Sort: red > orange > green > undefined, then by date
       const levelOrder = { red: 0, orange: 1, green: 2 };
       uniqueAlerts.sort((a, b) => {
-        const levelA = a.alertLevel ? levelOrder[a.alertLevel] : 3;
-        const levelB = b.alertLevel ? levelOrder[b.alertLevel] : 3;
-        if (levelA !== levelB) return levelA - levelB;
+        const la = a.alertLevel ? levelOrder[a.alertLevel] : 3;
+        const lb = b.alertLevel ? levelOrder[b.alertLevel] : 3;
+        if (la !== lb) return la - lb;
         return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
       });
 
-      console.log(`[Alerts] Fetched: GDACS=${gdacs24h.length + gdacsTc.length + gdacsFl.length}, CONAGUA=${conaguaAlerts.length}, NASA=${nasaAlerts.length}, ReliefWeb=${reliefwebAlerts.length}, AEMET=${aemetAlerts.length}`);
+      // Count sources for logging
+      const sourceCounts: Record<string, number> = {};
+      uniqueAlerts.forEach(a => { sourceCounts[a.source] = (sourceCounts[a.source] || 0) + 1; });
+      console.log(`[Alerts] Total: ${uniqueAlerts.length}`, sourceCounts);
 
       setState({
         gdacsAlerts: uniqueAlerts,
-        aemetAlerts,
+        aemetAlerts: [],
         loading: false,
         error: null,
         lastChecked: new Date(),
@@ -635,44 +366,29 @@ export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
     }
   }, [options?.onNewRedAlert]);
 
-  // Initial fetch and periodic refresh
+  // Initial fetch and periodic refresh (every 5 minutes)
   useEffect(() => {
     fetchAlerts();
-    const interval = setInterval(fetchAlerts, 5 * 60 * 1000); // Refresh every 5 minutes
+    const interval = setInterval(fetchAlerts, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchAlerts]);
 
-  // Helper functions
   const getCategoryIcon = (category: GDACSAlert['category']) => {
-    switch (category) {
-      case 'earthquake': return '🌍';
-      case 'cyclone': return '🌀';
-      case 'flood': return '🌊';
-      case 'tsunami': return '🌊';
-      case 'volcano': return '🌋';
-      case 'drought': return '☀️';
-      case 'wildfire': return '🔥';
-      case 'weather': return '🌤️';
-      case 'security': return '🛡️';
-      case 'humanitarian': return '🆘';
-      default: return '⚠️';
-    }
+    const map: Record<string, string> = {
+      earthquake: '🌍', cyclone: '🌀', flood: '🌊', tsunami: '🌊',
+      volcano: '🌋', drought: '☀️', wildfire: '🔥', weather: '🌤️',
+      security: '🛡️', humanitarian: '🆘',
+    };
+    return map[category] || '⚠️';
   };
 
   const getCategoryLabel = (category: GDACSAlert['category']) => {
-    switch (category) {
-      case 'earthquake': return 'Terremoto';
-      case 'cyclone': return 'Ciclón';
-      case 'flood': return 'Inundación';
-      case 'tsunami': return 'Tsunami';
-      case 'volcano': return 'Volcán';
-      case 'drought': return 'Sequía';
-      case 'wildfire': return 'Incendio';
-      case 'weather': return 'Clima';
-      case 'security': return 'Seguridad';
-      case 'humanitarian': return 'Humanitario';
-      default: return 'Otro';
-    }
+    const map: Record<string, string> = {
+      earthquake: 'Terremoto', cyclone: 'Ciclón', flood: 'Inundación', tsunami: 'Tsunami',
+      volcano: 'Volcán', drought: 'Sequía', wildfire: 'Incendio', weather: 'Clima',
+      security: 'Seguridad', humanitarian: 'Humanitario',
+    };
+    return map[category] || 'Otro';
   };
 
   const getAlertLevelColor = (level?: GDACSAlert['alertLevel']) => {
