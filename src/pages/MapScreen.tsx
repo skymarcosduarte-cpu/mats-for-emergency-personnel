@@ -24,6 +24,7 @@ import { ActiveUsersPanel } from '@/components/ActiveUsersPanel';
 import { InternalMessaging } from '@/components/InternalMessaging';
 import { SpecialtyFilter } from '@/components/SpecialtyFilter';
 import { LiveEventsMapView } from '@/components/LiveEventsMapView';
+import { WazeLiveMapOverlay } from '@/components/WazeLiveMapOverlay';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -1503,7 +1504,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   const [messagingOpen, setMessagingOpen] = useState(false);
   // Global hazard panel state
   const [hazardPanelOpen, setHazardPanelOpen] = useState(false);
-  
+  // Waze Live Map overlay state
+  const [wazeOverlayOpen, setWazeOverlayOpen] = useState(false);
   // Active users panel state for legend auto-hide
   const [usersPanelOpen, setUsersPanelOpen] = useState(false);
   const [messagingUserId, setMessagingUserId] = useState<string | null>(null);
@@ -3744,6 +3746,25 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           <span className="font-semibold text-sm">Chat Clave 100</span>
         </button>
       )}
+
+      {/* Waze Live Traffic Button */}
+      <button
+        onClick={() => setWazeOverlayOpen(true)}
+        className="fixed bottom-24 right-4 z-[1500] flex items-center gap-2 px-3 py-2.5 bg-[#33ccff] text-white rounded-full shadow-lg hover:bg-[#28b8e8] active:scale-95 transition-all"
+        aria-label="Ver tráfico en Waze"
+      >
+        <span className="text-base">🚗</span>
+        <span className="font-semibold text-sm">Waze</span>
+      </button>
+
+      {/* Waze Live Map Overlay */}
+      <WazeLiveMapOverlay
+        isOpen={wazeOverlayOpen}
+        onClose={() => setWazeOverlayOpen(false)}
+        lat={position?.lat ?? 23.6345}
+        lng={position?.lng ?? -102.5528}
+        zoom={position ? 12 : 6}
+      />
 
       {/* Floating Zello Channel Button */}
       <a
