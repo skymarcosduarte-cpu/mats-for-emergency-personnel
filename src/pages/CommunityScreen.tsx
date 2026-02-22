@@ -580,30 +580,6 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
 
         {/* Large Button Cards */}
         <div className="px-4 space-y-4">
-          {/* AviSOS Button */}
-          <button
-            onClick={() => handleEnterSection('tablero')}
-            className={cn(
-              "w-full flex items-center gap-4 p-5 rounded-2xl",
-              "bg-card border-2 shadow-sm",
-              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
-              "transition-all duration-200 animate-fade-in",
-              "subsection-card-avisos"
-            )}
-            style={{ animationDelay: '0ms' }}
-          >
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-avisos">
-              <Clipboard className="w-10 h-10" strokeWidth={2.5} />
-            </div>
-            <div className="flex-1 text-left min-w-0">
-              <h3 className="font-bold text-foreground text-xl">AviSOS</h3>
-              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
-                Cumpleaños, eventos y anuncios de la comunidad
-              </p>
-            </div>
-            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
-          </button>
-
           {/* Últimas Noticias Button */}
           <button
             onClick={() => handleEnterSection('noticias')}
@@ -614,7 +590,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
               "transition-all duration-200 animate-fade-in",
               "subsection-card-noticias"
             )}
-            style={{ animationDelay: '50ms' }}
+            style={{ animationDelay: '0ms' }}
           >
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-noticias">
               <Newspaper className="w-10 h-10" strokeWidth={2.5} />
@@ -623,6 +599,30 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
               <h3 className="font-bold text-foreground text-xl">Últimas Noticias</h3>
               <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
                 Viajes activos y noticias de última hora
+              </p>
+            </div>
+            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
+          </button>
+
+          {/* AviSOS Button */}
+          <button
+            onClick={() => handleEnterSection('tablero')}
+            className={cn(
+              "w-full flex items-center gap-4 p-5 rounded-2xl",
+              "bg-card border-2 shadow-sm",
+              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
+              "transition-all duration-200 animate-fade-in",
+              "subsection-card-avisos"
+            )}
+            style={{ animationDelay: '50ms' }}
+          >
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-avisos">
+              <Clipboard className="w-10 h-10" strokeWidth={2.5} />
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <h3 className="font-bold text-foreground text-xl">AviSOS</h3>
+              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
+                Cumpleaños, eventos y anuncios de la comunidad
               </p>
             </div>
             <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
