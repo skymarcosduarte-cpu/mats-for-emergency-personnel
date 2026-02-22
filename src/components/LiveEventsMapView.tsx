@@ -332,7 +332,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
     const layer = L.tileLayer(
       `https://tilecache.rainviewer.com${framePath}/256/{z}/{x}/{y}/2/1_1.png`,
-      { opacity: 0.85, zIndex: 5, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>' }
+      { opacity: 1.0, zIndex: 5, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>' }
     );
     layer.addTo(map);
     radarLayerRef.current = layer;
@@ -379,7 +379,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           
           const satLayer = L.tileLayer(
             `https://tilecache.rainviewer.com${satPath}/256/{z}/{x}/{y}/0/0_1.png`,
-            { opacity: 0.7, zIndex: 4, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer Sat</a>' }
+            { opacity: 0.95, zIndex: 4, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer Sat</a>' }
           );
           
           satLayer.addTo(map);
@@ -402,7 +402,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
 
           const nowLayer = L.tileLayer(
             `https://tilecache.rainviewer.com${nowPath}/256/{z}/{x}/{y}/2/1_1.png`,
-            { opacity: 0.5, zIndex: 6, attribution: 'RainViewer Nowcast' }
+            { opacity: 0.9, zIndex: 6, attribution: 'RainViewer Nowcast' }
           );
 
           nowLayer.addTo(map);
@@ -645,7 +645,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (!owmWindLayerRef.current && apiKey) {
         const windLayer = L.tileLayer(
           `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-          { opacity: 0.85, zIndex: 6, attribution: '© OpenWeatherMap' }
+          { opacity: 1.0, zIndex: 6, attribution: '© OpenWeatherMap' }
         );
         windLayer.addTo(map);
         owmWindLayerRef.current = windLayer;
