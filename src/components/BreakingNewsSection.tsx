@@ -11,13 +11,16 @@ import {
   Filter,
   Radio,
   AlertTriangle,
-  ThumbsUp
+  ThumbsUp,
+  MapPin,
+  Navigation
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useBreakingNews, NewsItem } from '@/hooks/useBreakingNews';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -222,6 +225,34 @@ interface RoadReportItem {
   image_url?: string | null;
 }
 
+// Emergency alert types for panic/help events
+const EMERGENCY_TYPE_LABELS: Record<string, { label: string; emoji: string }> = {
+  'AMBULANCIA_PROPIA': { label: 'Ambulancia para mí', emoji: '🚑' },
+  'AMBULANCIA_TERCERO': { label: 'Ambulancia Tercero', emoji: '🚑' },
+  'PATRULLA': { label: 'Patrulla', emoji: '🚔' },
+  'MECANICO': { label: 'Mecánico', emoji: '🔧' },
+  'PROTECCION_CIVIL': { label: 'Protección Civil', emoji: '🆘' },
+  'BOMBEROS': { label: 'Bomberos', emoji: '🚒' },
+  'GRUA': { label: 'Grúa', emoji: '🚚' },
+  'SISMO_AYUDA_14': { label: 'Ayuda por Sismo', emoji: '🏚️' },
+  'medical': { label: 'Ayuda Médica', emoji: '🏥' },
+  'supplies': { label: 'Suministros', emoji: '📦' },
+  'transport': { label: 'Transporte', emoji: '🚗' },
+  'shelter': { label: 'Refugio', emoji: '🏠' },
+  'other': { label: 'Ayuda General', emoji: '🤝' },
+};
+
+interface ActiveEmergency {
+  id: string;
+  type: 'panic' | 'help';
+  alertType: string;
+  lat: number;
+  lng: number;
+  message: string | null;
+  createdAt: string;
+  creatorName: string;
+}
+
 const INITIAL_ITEMS_COUNT = 10;
 const LOAD_MORE_COUNT = 10;
 const MAX_ITEMS_COUNT = 30;
@@ -291,9 +322,11 @@ const ReportCard: React.FC<{ report: RoadReportItem }> = ({ report }) => {
 
 export const BreakingNewsSection: React.FC = () => {
   const { items, loading, error, fetchedAt, refresh } = useBreakingNews();
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [visibleCount, setVisibleCount] = useState(INITIAL_ITEMS_COUNT);
   const [roadReports, setRoadReports] = useState<RoadReportItem[]>([]);
+  const [activeEmergencies, setActiveEmergencies] = useState<ActiveEmergency[]>([]);
 
   // Fetch road reports from last 12 hours
   const fetchRoadReports = useCallback(async () => {
@@ -369,11 +402,102 @@ export const BreakingNewsSection: React.FC = () => {
     }
   }, []);
 
+  // Fetch active emergency alerts (panic events + help requests)
+  const fetchActiveEmergencies = useCallback(async () => {
+    try {
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+      
+      const [panicRes, helpRes] = await Promise.all([
+        supabase
+          .from('panic_events')
+          .select('id, panic_type, lat, lng, message, created_at, user_id')
+          .eq('resolved', false)
+          .gte('created_at', twoHoursAgo)
+          .order('created_at', { ascending: false })
+          .limit(5),
+        supabase
+          .from('help_requests')
+          .select('id, kind, lat, lng, message, created_at, user_id')
+          .eq('resolved', false)
+          .gte('created_at', twoHoursAgo)
+          .order('created_at', { ascending: false })
+          .limit(5),
+      ]);
+
+      const userIds = new Set<string>();
+      panicRes.data?.forEach(e => userIds.add(e.user_id));
+      helpRes.data?.forEach(r => userIds.add(r.user_id));
+
+      let profilesMap: Record<string, string> = {};
+      if (userIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles_public')
+          .select('user_id, nickname')
+          .in('user_id', Array.from(userIds));
+        profiles?.forEach(p => { profilesMap[p.user_id] = p.nickname || 'Usuario'; });
+      }
+
+      const emergencies: ActiveEmergency[] = [];
+
+      panicRes.data?.forEach(e => {
+        if (e.user_id === user?.id) return;
+        emergencies.push({
+          id: e.id,
+          type: 'panic',
+          alertType: e.panic_type,
+          lat: e.lat,
+          lng: e.lng,
+          message: e.message,
+          createdAt: e.created_at!,
+          creatorName: profilesMap[e.user_id] || 'Usuario',
+        });
+      });
+
+      helpRes.data?.forEach(r => {
+        if (r.user_id === user?.id) return;
+        emergencies.push({
+          id: r.id,
+          type: 'help',
+          alertType: r.kind,
+          lat: r.lat,
+          lng: r.lng,
+          message: r.message,
+          createdAt: r.created_at!,
+          creatorName: profilesMap[r.user_id] || 'Usuario',
+        });
+      });
+
+      emergencies.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setActiveEmergencies(emergencies);
+    } catch (err) {
+      console.error('[BreakingNews] Error fetching emergencies:', err);
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     fetchRoadReports();
-    const interval = setInterval(fetchRoadReports, 5 * 60 * 1000);
+    fetchActiveEmergencies();
+    const interval = setInterval(() => {
+      fetchRoadReports();
+      fetchActiveEmergencies();
+    }, 60 * 1000); // Refresh every minute for emergencies
     return () => clearInterval(interval);
-  }, [fetchRoadReports]);
+  }, [fetchRoadReports, fetchActiveEmergencies]);
+
+  // Subscribe to realtime emergency updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('breaking-news-emergencies')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'panic_events' }, () => {
+        fetchActiveEmergencies();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'help_requests' }, () => {
+        fetchActiveEmergencies();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchActiveEmergencies]);
   
   // Get all valid items (filtered by date only)
   const allValidItems = useMemo(() => {
@@ -538,7 +662,95 @@ export const BreakingNewsSection: React.FC = () => {
           </a>
         ))}
 
-        {/* Road Reports from Community - Last 12 hours */}
+        {/* Active Emergency Alerts */}
+        {activeEmergencies.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 pt-1">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive" />
+              </span>
+              <span className="text-sm font-bold text-destructive uppercase tracking-wide">
+                {activeEmergencies.length === 1 ? 'Emergencia Activa' : `${activeEmergencies.length} Emergencias Activas`}
+              </span>
+            </div>
+            {activeEmergencies.map(emergency => {
+              const typeInfo = EMERGENCY_TYPE_LABELS[emergency.alertType] || { label: 'Emergencia', emoji: '🆘' };
+              const timeAgo = formatNewsTime(emergency.createdAt);
+              return (
+                <div
+                  key={emergency.id}
+                  className={cn(
+                    "p-3 rounded-lg border-2 shadow-sm",
+                    emergency.type === 'panic'
+                      ? "border-destructive bg-destructive/10"
+                      : "border-orange-500 bg-orange-500/10"
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center",
+                      emergency.type === 'panic' ? "bg-destructive/20" : "bg-orange-500/20"
+                    )}>
+                      <span className="text-lg">{typeInfo.emoji}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <Badge variant="outline" className={cn(
+                          "text-xs px-2 py-0.5",
+                          emergency.type === 'panic'
+                            ? "bg-destructive/10 text-destructive border-destructive/30"
+                            : "bg-orange-500/10 text-orange-600 border-orange-500/30"
+                        )}>
+                          {emergency.type === 'panic' ? '🚨 ALERTA SOS' : '🆘 AYUDA'}
+                        </Badge>
+                        {timeAgo && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {timeAgo}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-base font-semibold text-foreground">
+                        {typeInfo.label}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        por <span className="font-medium text-foreground">{emergency.creatorName}</span>
+                      </p>
+                      {emergency.message && (
+                        <p className="text-sm text-muted-foreground italic mt-1 line-clamp-2">
+                          "{emergency.message}"
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => window.open(`https://www.google.com/maps?q=${emergency.lat},${emergency.lng}`, '_blank')}
+                        >
+                          <MapPin className="w-3 h-3" />
+                          Ver ubicación
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${emergency.lat},${emergency.lng}&travelmode=driving`, '_blank')}
+                        >
+                          <Navigation className="w-3 h-3" />
+                          Cómo llegar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+
         {roadReports.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-2 pt-1">
