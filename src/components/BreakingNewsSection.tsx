@@ -610,7 +610,7 @@ export const BreakingNewsSection: React.FC = () => {
     setVisibleCount(prev => prev + LOAD_MORE_COUNT);
   };
 
-  const categories = ['all', 'nacionales', 'internacionales', 'deportes', 'emergencias'];
+  const categories = ['all', 'seguridad', 'nacionales', 'internacionales', 'deportes', 'emergencias'];
 
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border">
