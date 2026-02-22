@@ -3757,14 +3757,16 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         <span className="font-semibold text-sm">Waze</span>
       </button>
 
-      {/* Waze Live Map Overlay */}
-      <WazeLiveMapOverlay
-        isOpen={wazeOverlayOpen}
-        onClose={() => setWazeOverlayOpen(false)}
-        lat={position?.lat ?? 23.6345}
-        lng={position?.lng ?? -102.5528}
-        zoom={position ? 12 : 6}
-      />
+      {/* Waze Live Map Overlay - only render when open to avoid GPS-driven re-renders */}
+      {wazeOverlayOpen && (
+        <WazeLiveMapOverlay
+          isOpen
+          onClose={() => setWazeOverlayOpen(false)}
+          lat={position?.lat ?? 23.6345}
+          lng={position?.lng ?? -102.5528}
+          zoom={position ? 12 : 6}
+        />
+      )}
 
       {/* Floating Zello Channel Button */}
       <a

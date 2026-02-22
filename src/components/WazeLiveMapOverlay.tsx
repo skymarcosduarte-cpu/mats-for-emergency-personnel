@@ -1,6 +1,6 @@
 // Waze Live Map Overlay - embeds Waze traffic map as a full-screen overlay
-// Only mounts the iframe when explicitly opened by the user
-import React, { useState, useEffect } from 'react';
+// Captures coordinates once on open to prevent re-renders from GPS updates
+import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -19,22 +19,28 @@ export const WazeLiveMapOverlay: React.FC<WazeLiveMapOverlayProps> = ({
   lng = -102.5528,
   zoom = 6,
 }) => {
-  // Only mount iframe after overlay is confirmed open (prevents flash)
   const [iframeMounted, setIframeMounted] = useState(false);
+  // Capture coordinates once when overlay opens, so GPS updates don't re-render
+  const capturedCoordsRef = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      // Small delay to let the overlay background render first
-      const timer = setTimeout(() => setIframeMounted(true), 100);
+      // Freeze the coordinates at the moment of opening
+      if (!capturedCoordsRef.current) {
+        capturedCoordsRef.current = { lat, lng, zoom };
+      }
+      const timer = setTimeout(() => setIframeMounted(true), 300);
       return () => clearTimeout(timer);
     } else {
       setIframeMounted(false);
+      capturedCoordsRef.current = null;
     }
-  }, [isOpen]);
+  }, [isOpen]); // intentionally exclude lat/lng/zoom to prevent re-triggering
 
   if (!isOpen) return null;
 
-  const iframeSrc = `https://embed.waze.com/iframe?zoom=${zoom}&lat=${lat}&lon=${lng}&pin=0`;
+  const coords = capturedCoordsRef.current ?? { lat, lng, zoom };
+  const iframeSrc = `https://embed.waze.com/iframe?zoom=${coords.zoom}&lat=${coords.lat}&lon=${coords.lng}&pin=0`;
 
   return (
     <div className="fixed inset-0 z-[2000] bg-background flex flex-col">
@@ -57,7 +63,7 @@ export const WazeLiveMapOverlay: React.FC<WazeLiveMapOverlayProps> = ({
         </Button>
       </div>
 
-      {/* Waze iframe - only mounted after delay */}
+      {/* Waze iframe */}
       <div className="flex-1 relative bg-muted">
         {iframeMounted ? (
           <iframe
@@ -65,7 +71,6 @@ export const WazeLiveMapOverlay: React.FC<WazeLiveMapOverlayProps> = ({
             width="100%"
             height="100%"
             allowFullScreen
-            loading="lazy"
             className="absolute inset-0 w-full h-full border-0"
             title="Waze Live Map - Tráfico en tiempo real"
           />
