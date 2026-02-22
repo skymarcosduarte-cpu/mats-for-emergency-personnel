@@ -26,7 +26,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
 // Available sources with category info
-const SOURCE_CONFIG: Record<string, { category: 'nacionales' | 'internacionales' | 'deportes' | 'emergencias'; color: string }> = {
+const SOURCE_CONFIG: Record<string, { category: 'nacionales' | 'internacionales' | 'deportes' | 'emergencias' | 'seguridad'; color: string }> = {
   // Nacionales (expanded)
   'Milenio': { category: 'nacionales', color: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
   'El Universal': { category: 'nacionales', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
@@ -67,10 +67,17 @@ const SOURCE_CONFIG: Record<string, { category: 'nacionales' | 'internacionales'
   // Emergencias (solo fuentes dedicadas a emergencias)
   'CENAPRED': { category: 'emergencias', color: 'bg-orange-600/10 text-orange-600 border-orange-600/30' },
   'ReliefWeb México': { category: 'emergencias', color: 'bg-blue-600/10 text-blue-600 border-blue-600/30' },
+
+  // Seguridad México
+  'Milenio Policía': { category: 'seguridad', color: 'bg-red-700/10 text-red-700 border-red-700/30' },
+  'Informador Jalisco': { category: 'seguridad', color: 'bg-rose-600/10 text-rose-600 border-rose-600/30' },
+  'La Jornada Seguridad': { category: 'seguridad', color: 'bg-red-600/10 text-red-600 border-red-600/30' },
+  'Aristegui Noticias': { category: 'seguridad', color: 'bg-violet-600/10 text-violet-600 border-violet-600/30' },
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
   all: 'Todas',
+  seguridad: '🚨 Seguridad',
   nacionales: 'Nacionales',
   internacionales: 'Internacionales',
   deportes: 'Deportes',
@@ -99,11 +106,32 @@ const EMERGENCY_KEYWORDS = [
   'muertos por', 'víctimas del', 'heridos en el'
 ];
 
+// Keywords to auto-classify security news from any source
+const SECURITY_KEYWORDS = [
+  'bloqueo', 'narcobloqueo', 'narco bloqueo', 'bloqueo carretero', 'bloqueos en',
+  'tiroteo', 'balacera', 'enfrentamiento armado', 'enfrentamiento entre',
+  'captura de', 'detención de', 'detenido', 'operativo militar', 'operativo policial',
+  'cartel', 'cártel', 'crimen organizado', 'grupo criminal', 'sicarios',
+  'cierre de carretera', 'cierre vial', 'corte de carretera',
+  'secuestro', 'levantón', 'extorsión', 'cobro de piso',
+  'homicidio', 'asesinato', 'emboscada', 'persecución',
+  'guardia nacional', 'ejército mexicano', 'sedena', 'marina',
+  'narco', 'narcotráfico', 'narcoviolencia', 'narcomanta',
+  'quema de vehículos', 'quema de autos', 'vehículos incendiados',
+  'toque de queda', 'alerta de seguridad', 'zona de riesgo',
+  'robo de vehículo', 'asalto en carretera', 'robo en carretera',
+];
+
 // Check if a news item matches emergency keywords
 function isEmergencyNews(item: NewsItem): boolean {
   const textToSearch = `${item.title} ${item.description || ''}`.toLowerCase();
-  // Require more specific phrase matching to avoid false positives
   return EMERGENCY_KEYWORDS.some(keyword => textToSearch.includes(keyword.toLowerCase()));
+}
+
+// Check if a news item matches security keywords
+function isSecurityNews(item: NewsItem): boolean {
+  const textToSearch = `${item.title} ${item.description || ''}`.toLowerCase();
+  return SECURITY_KEYWORDS.some(keyword => textToSearch.includes(keyword.toLowerCase()));
 }
 
 // Format relative time for news items (only for past dates)
@@ -508,6 +536,7 @@ export const BreakingNewsSection: React.FC = () => {
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {
       all: Math.min(allValidItems.length, MAX_ITEMS_COUNT),
+      seguridad: 0,
       nacionales: 0,
       internacionales: 0,
       deportes: 0,
@@ -521,9 +550,14 @@ export const BreakingNewsSection: React.FC = () => {
       }
       // Also count emergency news by keywords
       if (isEmergencyNews(item)) {
-        // Only count if not already counted as emergency source
         if (sourceConfig?.category !== 'emergencias') {
           counts.emergencias++;
+        }
+      }
+      // Also count security news by keywords
+      if (isSecurityNews(item)) {
+        if (sourceConfig?.category !== 'seguridad') {
+          counts.seguridad++;
         }
       }
     });
@@ -547,6 +581,13 @@ export const BreakingNewsSection: React.FC = () => {
           const sourceConfig = SOURCE_CONFIG[item.source];
           const isEmergencySource = sourceConfig?.category === 'emergencias';
           return isEmergencySource || isEmergencyNews(item);
+        }
+
+        // For security, check both source AND content keywords
+        if (selectedCategory === 'seguridad') {
+          const sourceConfig = SOURCE_CONFIG[item.source];
+          const isSecuritySource = sourceConfig?.category === 'seguridad';
+          return isSecuritySource || isSecurityNews(item);
         }
         
         const sourceConfig = SOURCE_CONFIG[item.source];

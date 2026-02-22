@@ -44,6 +44,14 @@ const PRIORITY_FEEDS: { url: string; source: string; category: string }[] = [
   
   // Emergencias
   { url: 'https://reliefweb.int/updates/rss.xml?country=170', source: 'ReliefWeb México', category: 'emergencias' },
+  
+  // Seguridad México - Bloqueos, cierres, narco, violencia
+  { url: 'https://www.milenio.com/policia/rss', source: 'Milenio Policía', category: 'seguridad' },
+  { url: 'https://www.informador.mx/rss/jalisco.xml', source: 'Informador Jalisco', category: 'seguridad' },
+  { url: 'https://www.jornada.com.mx/rss/seguridad.xml', source: 'La Jornada Seguridad', category: 'seguridad' },
+  { url: 'https://www.eluniversal.com.mx/rss.xml', source: 'El Universal', category: 'seguridad' },
+  { url: 'https://www.proceso.com.mx/rss/', source: 'Proceso', category: 'seguridad' },
+  { url: 'https://aristeguinoticias.com/feed/', source: 'Aristegui Noticias', category: 'seguridad' },
 ];
 
 // Strip all HTML tags from text
