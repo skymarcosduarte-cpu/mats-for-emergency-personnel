@@ -40,7 +40,7 @@ export const WazeLiveMapOverlay: React.FC<WazeLiveMapOverlayProps> = ({
   if (!isOpen) return null;
 
   const coords = capturedCoordsRef.current ?? { lat, lng, zoom };
-  const iframeSrc = `https://embed.waze.com/iframe?zoom=${coords.zoom}&lat=${coords.lat}&lon=${coords.lng}&pin=0`;
+  const iframeSrc = `https://embed.waze.com/iframe?zoom=${coords.zoom}&lat=${coords.lat}&lon=${coords.lng}&pin=0&locale=es`;
 
   return (
     <div className="fixed inset-0 z-[2000] bg-background flex flex-col">
