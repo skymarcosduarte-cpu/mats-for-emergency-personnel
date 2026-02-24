@@ -53,18 +53,40 @@ export function useLocation(options: UseLocationOptions = {}) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      await supabase
+      const payload = {
+        user_id: user.id,
+        lat: pos.lat,
+        lng: pos.lng,
+        accuracy: pos.accuracy,
+        heading: pos.heading,
+        speed: pos.speed,
+        is_online: true,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
         .from('user_locations')
-        .upsert({
-          user_id: user.id,
-          lat: pos.lat,
-          lng: pos.lng,
-          accuracy: pos.accuracy,
-          heading: pos.heading,
-          speed: pos.speed,
-          is_online: true,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
+        .upsert(payload, { onConflict: 'user_id' });
+
+      // If RLS error, try refreshing session and retry once
+      if (error && (error.code === '42501' || error.message?.includes('row-level security'))) {
+        console.warn('[useLocation] RLS error, refreshing session and retrying...');
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (!refreshError) {
+          const { error: retryError } = await supabase
+            .from('user_locations')
+            .upsert(payload, { onConflict: 'user_id' });
+          if (retryError) {
+            console.error('[useLocation] Retry after refresh failed:', retryError.message);
+          } else {
+            console.log('[useLocation] Location synced after session refresh');
+          }
+        } else {
+          console.error('[useLocation] Session refresh failed:', refreshError.message);
+        }
+      } else if (error) {
+        console.error('Error syncing location to DB:', error.message);
+      }
     } catch (error) {
       console.error('Error syncing location to DB:', error);
     }
