@@ -50,8 +50,18 @@ export function useLocation(options: UseLocationOptions = {}) {
   // Sync position to database for other users to see
   const syncPositionToDb = useCallback(async (pos: GeoPosition) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      let { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        // Session may have expired — try refreshing before giving up
+        console.warn('[useLocation] No user from getUser, refreshing session...');
+        const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession();
+        if (refreshErr || !refreshData.user) {
+          console.error('[useLocation] Session refresh failed, cannot sync location');
+          return;
+        }
+        user = refreshData.user;
+        console.log('[useLocation] Session recovered after refresh');
+      }
 
       const payload = {
         user_id: user.id,
