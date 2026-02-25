@@ -183,7 +183,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         forgotPasswordEmail,
         {
-          redirectTo: `${window.location.origin}/settings`,
+          redirectTo: `${window.location.origin}/reset-password`,
         }
       );
       
