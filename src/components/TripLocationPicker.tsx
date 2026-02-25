@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
-import { MapPin, Search, X, Loader2, Navigation, Route, Clock } from 'lucide-react';
+import { MapPin, Search, X, Loader2, Navigation, MapPinned } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { calculateDistance, formatDistance } from '@/hooks/useLocation';
 import 'leaflet/dist/leaflet.css';
 
 // Fix Leaflet default marker icon issue
@@ -50,7 +49,10 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<LocationResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchDone, setSearchDone] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
+  const [manualName, setManualName] = useState('');
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -65,37 +67,45 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
       ? [currentPosition.lat, currentPosition.lng] 
       : [19.4326, -99.1332]; // Mexico City default
 
-    const map = L.map(mapContainerRef.current, {
-      center: defaultCenter,
-      zoom: 14,
-      zoomControl: true,
-    });
+    const timer = setTimeout(() => {
+      if (!mapContainerRef.current || mapInstanceRef.current) return;
+      
+      const map = L.map(mapContainerRef.current, {
+        center: defaultCenter,
+        zoom: 14,
+        zoomControl: true,
+        touchZoom: true,
+      });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap',
-    }).addTo(map);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap',
+      }).addTo(map);
 
-    // Click on map to select location
-    map.on('click', async (e: L.LeafletMouseEvent) => {
-      const { lat, lng } = e.latlng;
-      await reverseGeocode(lat, lng);
-    });
+      // Click on map to select location (works on both desktop and mobile)
+      map.on('click', async (e: L.LeafletMouseEvent) => {
+        const { lat, lng } = e.latlng;
+        await reverseGeocode(lat, lng, map);
+      });
 
-    mapInstanceRef.current = map;
-    setMapReady(true);
+      mapInstanceRef.current = map;
+      setMapReady(true);
 
-    // If there's already a value, show the marker
-    if (value) {
-      const icon = createMarkerIcon(markerColor);
-      markerRef.current = L.marker([value.lat, value.lng], { icon }).addTo(map);
-      map.setView([value.lat, value.lng], 15);
-    }
+      // If there's already a value, show the marker
+      if (value) {
+        const icon = createMarkerIcon(markerColor);
+        markerRef.current = L.marker([value.lat, value.lng], { icon }).addTo(map);
+        map.setView([value.lat, value.lng], 15);
+      }
+    }, 100); // Small delay to ensure DOM is ready
 
     return () => {
-      map.remove();
-      mapInstanceRef.current = null;
-      markerRef.current = null;
-      setMapReady(false);
+      clearTimeout(timer);
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+        markerRef.current = null;
+        setMapReady(false);
+      }
     };
   }, [isOpen]);
 
@@ -131,40 +141,63 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
   const searchLocations = useCallback(async (query: string) => {
     if (query.length < 3) {
       setSearchResults([]);
+      setSearchDone(false);
       return;
     }
 
     setSearching(true);
+    setSearchDone(false);
     try {
-      // Bias towards Mexico for better results
+      // First try with Mexico bias, then without if no results
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=mx&limit=5&addressdetails=1`,
         {
           headers: {
             'Accept-Language': 'es',
+            'User-Agent': 'MATS-App/1.0',
           },
         }
       );
       
       if (response.ok) {
-        const data: LocationResult[] = await response.json();
+        let data: LocationResult[] = await response.json();
+        
+        // If no results with Mexico filter, try without country filter
+        if (data.length === 0) {
+          const response2 = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
+            {
+              headers: {
+                'Accept-Language': 'es',
+                'User-Agent': 'MATS-App/1.0',
+              },
+            }
+          );
+          if (response2.ok) {
+            data = await response2.json();
+          }
+        }
+        
         setSearchResults(data);
       }
     } catch (error) {
       console.error('Error searching locations:', error);
     } finally {
       setSearching(false);
+      setSearchDone(true);
     }
   }, []);
 
   // Reverse geocode coordinates to address
-  const reverseGeocode = async (lat: number, lng: number) => {
+  const reverseGeocode = async (lat: number, lng: number, mapInstance?: L.Map) => {
+    const map = mapInstance || mapInstanceRef.current;
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
         {
           headers: {
             'Accept-Language': 'es',
+            'User-Agent': 'MATS-App/1.0',
           },
         }
       );
@@ -172,31 +205,30 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
       if (response.ok) {
         const data = await response.json();
         const displayName = data.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-        selectLocation({
+        updateMarkerAndNotify({
           name: simplifyAddress(displayName),
           lat,
           lng,
-        });
+        }, map);
       } else {
-        selectLocation({
+        updateMarkerAndNotify({
           name: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
           lat,
           lng,
-        });
+        }, map);
       }
     } catch (error) {
       console.error('Error reverse geocoding:', error);
-      selectLocation({
+      updateMarkerAndNotify({
         name: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
         lat,
         lng,
-      });
+      }, map);
     }
   };
 
   // Simplify long addresses
   const simplifyAddress = (address: string): string => {
-    // Take first 2-3 parts of address for display
     const parts = address.split(',').slice(0, 3);
     return parts.join(',').trim();
   };
@@ -204,6 +236,7 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
   // Handle search input with debounce
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
+    setSearchDone(false);
     
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -219,7 +252,7 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
     const lat = parseFloat(result.lat);
     const lng = parseFloat(result.lon);
     
-    selectLocation({
+    updateMarkerAndNotify({
       name: simplifyAddress(result.display_name),
       lat,
       lng,
@@ -227,12 +260,17 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
     
     setSearchQuery('');
     setSearchResults([]);
+    setSearchDone(false);
   };
 
   // Update marker and notify parent
-  const selectLocation = (location: SelectedLocation) => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
+  const updateMarkerAndNotify = (location: SelectedLocation, mapInstance?: L.Map) => {
+    const map = mapInstance || mapInstanceRef.current;
+    if (!map) {
+      // Even without map, still update the value
+      onChange(location);
+      return;
+    }
 
     // Update marker
     if (markerRef.current) {
@@ -253,6 +291,21 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
     }
   };
 
+  // Use search text as manual location with current map center
+  const useManualLocation = () => {
+    const map = mapInstanceRef.current;
+    if (map && manualName.trim()) {
+      const center = map.getCenter();
+      updateMarkerAndNotify({
+        name: manualName.trim(),
+        lat: center.lat,
+        lng: center.lng,
+      });
+      setManualMode(false);
+      setManualName('');
+    }
+  };
+
   // Clear selection
   const clearSelection = () => {
     onChange(null);
@@ -260,6 +313,14 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
       mapInstanceRef.current.removeLayer(markerRef.current);
       markerRef.current = null;
     }
+  };
+
+  // Place pin at map center (for mobile users who have trouble tapping)
+  const placeMarkerAtCenter = () => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    const center = map.getCenter();
+    reverseGeocode(center.lat, center.lng, map);
   };
 
   return (
@@ -306,55 +367,118 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
             {/* Header */}
             <div className="p-4 border-b border-border flex items-center justify-between">
               <h3 className="font-semibold">Seleccionar {label}</h3>
-              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+              <Button variant="ghost" size="icon" onClick={() => { setIsOpen(false); setManualMode(false); }}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
 
             {/* Search */}
-            <div className="p-4 space-y-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Buscar dirección, colonia, ciudad..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  className="pl-10"
-                  autoFocus
-                />
-                {searching && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
-                )}
-              </div>
-              
-              {/* Current location button */}
-              {currentPosition && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={useCurrentLocation}
-                >
-                  <Navigation className="w-4 h-4 mr-2" />
-                  Usar mi ubicación actual
-                </Button>
-              )}
-
-              {/* Search results */}
-              {searchResults.length > 0 && (
-                <div className="border border-border rounded-lg overflow-hidden">
-                  {searchResults.map((result) => (
-                    <button
-                      key={result.place_id}
+            <div className="p-4 space-y-2 overflow-y-auto max-h-[40vh]">
+              {!manualMode ? (
+                <>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Buscar dirección, colonia, ciudad..."
+                      value={searchQuery}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="pl-10"
+                      autoFocus
+                    />
+                    {searching && (
+                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  
+                  {/* Current location button */}
+                  {currentPosition && (
+                    <Button
                       type="button"
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors border-b border-border last:border-b-0"
-                      onClick={() => handleSelectResult(result)}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={useCurrentLocation}
                     >
-                      <span className="line-clamp-2">{result.display_name}</span>
-                    </button>
-                  ))}
+                      <Navigation className="w-4 h-4 mr-2" />
+                      Usar mi ubicación actual
+                    </Button>
+                  )}
+
+                  {/* Search results */}
+                  {searchResults.length > 0 && (
+                    <div className="border border-border rounded-lg overflow-hidden">
+                      {searchResults.map((result) => (
+                        <button
+                          key={result.place_id}
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors border-b border-border last:border-b-0"
+                          onClick={() => handleSelectResult(result)}
+                        >
+                          <span className="line-clamp-2">{result.display_name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* No results message */}
+                  {searchDone && searchResults.length === 0 && searchQuery.length >= 3 && (
+                    <div className="text-center py-3 space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        No se encontraron resultados para "{searchQuery}"
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Puedes tocar el mapa para seleccionar la ubicación, o escribir el nombre manualmente:
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setManualName(searchQuery);
+                          setManualMode(true);
+                        }}
+                      >
+                        <MapPinned className="w-4 h-4 mr-2" />
+                        Escribir nombre manualmente
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Manual name entry mode */
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Escribe el nombre del lugar y luego centra el mapa en la ubicación:
+                  </p>
+                  <Input
+                    type="text"
+                    placeholder="Nombre del lugar..."
+                    value={manualName}
+                    onChange={(e) => setManualName(e.target.value)}
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setManualMode(false)}
+                    >
+                      Volver a buscar
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="flex-1"
+                      disabled={!manualName.trim()}
+                      onClick={useManualLocation}
+                    >
+                      <MapPinned className="w-4 h-4 mr-2" />
+                      Usar centro del mapa
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -367,9 +491,28 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
                   <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                 </div>
               )}
-              <div className="absolute bottom-2 left-2 right-2 text-xs text-center text-muted-foreground bg-background/80 rounded px-2 py-1">
-                Toca el mapa para seleccionar ubicación
-              </div>
+              {/* Crosshair in center for easier pin placement */}
+              {mapReady && (
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-[400]">
+                  <div className="w-6 h-6 flex items-center justify-center">
+                    <div className="w-[2px] h-6 bg-foreground/30 absolute" />
+                    <div className="h-[2px] w-6 bg-foreground/30 absolute" />
+                  </div>
+                </div>
+              )}
+              {/* Button to place pin at center */}
+              {mapReady && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="absolute bottom-2 left-1/2 -translate-x-1/2 z-[500] shadow-md text-xs"
+                  onClick={placeMarkerAtCenter}
+                >
+                  <MapPinned className="w-3 h-3 mr-1" />
+                  Seleccionar este punto
+                </Button>
+              )}
             </div>
 
             {/* Footer */}
@@ -378,7 +521,7 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
                 type="button"
                 variant="outline"
                 className="flex-1"
-                onClick={() => setIsOpen(false)}
+                onClick={() => { setIsOpen(false); setManualMode(false); }}
               >
                 Cancelar
               </Button>
@@ -386,7 +529,7 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
                 type="button"
                 className="flex-1"
                 disabled={!value}
-                onClick={() => setIsOpen(false)}
+                onClick={() => { setIsOpen(false); setManualMode(false); }}
               >
                 Confirmar
               </Button>
