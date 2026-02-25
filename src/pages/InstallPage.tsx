@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -41,13 +41,13 @@ export default function InstallPage() {
   const [detectedPlatform, setDetectedPlatform] = useState<Platform>("windows");
   const [installing, setInstalling] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+  const installUrl = typeof window !== 'undefined' ? `${window.location.origin}/install` : 'https://safe-guard-link.lovable.app/install';
 
   // Generate QR code
   useEffect(() => {
     const generateQR = async () => {
       try {
-        const url = await QRCode.toDataURL("https://mats-app.com/install", {
+        const url = await QRCode.toDataURL(installUrl, {
           width: 200,
           margin: 2,
           color: {
@@ -61,7 +61,7 @@ export default function InstallPage() {
       }
     };
     generateQR();
-  }, []);
+  }, [installUrl]);
 
   // Hide the native splash screen on mount (for public pages that don't go through SplashScreen)
   useLayoutEffect(() => {
@@ -190,19 +190,31 @@ export default function InstallPage() {
           {/* QR Code Section */}
           {qrCodeUrl && (
             <div className="mt-8 flex flex-col items-center">
-              <div className="p-4 bg-white rounded-2xl shadow-lg border border-border">
+              <a
+                href={installUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-4 bg-white rounded-2xl shadow-lg border border-border inline-block cursor-pointer hover:scale-[1.02] transition-transform"
+                aria-label="Abrir enlace de instalación"
+                title="Toca el código para abrir el enlace de instalación"
+              >
                 <img 
                   src={qrCodeUrl} 
                   alt="Código QR para instalar la app" 
                   className="w-40 h-40 md:w-48 md:h-48"
                 />
-              </div>
-              <p className="mt-3 text-sm text-muted-foreground">
+              </a>
+              <p className="mt-3 text-sm text-muted-foreground text-center">
                 Escanea el código QR para abrir esta página en otro dispositivo
               </p>
-              <p className="text-xs text-muted-foreground/70 mt-1">
-                mats-app.com/install
-              </p>
+              <a
+                href={installUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary mt-1 underline underline-offset-2"
+              >
+                ¿Estás en el mismo teléfono? Toca aquí para abrir la instalación
+              </a>
             </div>
           )}
         </div>
