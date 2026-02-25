@@ -2,7 +2,7 @@
 // Road + Flight transit tracking with incident reports
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge, Mic, MicOff, MessageCircle, Share2, X } from 'lucide-react';
+import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge, Mic, MicOff, MessageCircle, Share2, X, ExternalLink } from 'lucide-react';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { ShareTripToWhatsApp } from '@/components/ShareTripToWhatsApp';
 import { ShareArrivalToWhatsApp } from '@/components/ShareArrivalToWhatsApp';
@@ -103,6 +103,12 @@ const VoiceDictationButton: React.FC<{
       )}
     </div>
   );
+};
+// Open flight in Flightradar24
+const openFlightTracker = (flightNumber: string) => {
+  // Clean flight number: remove spaces/dashes for URL
+  const clean = flightNumber.replace(/[\s\-]/g, '').toUpperCase();
+  window.open(`https://www.flightradar24.com/${clean}`, '_blank');
 };
 
 interface TransitScreenProps {
@@ -1179,8 +1185,16 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                           )}
                         </div>
                         {trip.flight_number && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            ✈️ {trip.airline} {trip.flight_number}
+                          <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                            <span>✈️ {trip.airline} {trip.flight_number}</span>
+                            <button
+                              type="button"
+                              onClick={() => openFlightTracker(trip.flight_number!)}
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              Rastrear
+                            </button>
                           </div>
                         )}
                         
@@ -1597,8 +1611,18 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                   )}
                                 </div>
                                 {trip.transit_type === 'FLIGHT' && trip.airline && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    ✈️ {trip.airline} {trip.flight_number || ''}
+                                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                                    <span>✈️ {trip.airline} {trip.flight_number || ''}</span>
+                                    {trip.flight_number && (
+                                      <button
+                                        type="button"
+                                        onClick={() => openFlightTracker(trip.flight_number!)}
+                                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                                      >
+                                        <ExternalLink className="w-3 h-3" />
+                                        Rastrear
+                                      </button>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -1829,6 +1853,14 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             <>
                               <span>•</span>
                               <span>✈️ {trip.flight_number}</span>
+                              <button
+                                type="button"
+                                onClick={() => openFlightTracker(trip.flight_number!)}
+                                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                Rastrear
+                              </button>
                             </>
                           )}
                         </div>
