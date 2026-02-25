@@ -23,6 +23,7 @@ import InstallPage from '@/pages/InstallPage';
 import SharedTripPage from '@/pages/SharedTripPage';
 import UserGuidePage from '@/pages/UserGuidePage';
 import StepByStepGuidePage from '@/pages/StepByStepGuidePage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt, UpdateIndicator } from '@/components/UpdatePrompt';
 import { SplashScreen } from '@/components/SplashScreen';
@@ -888,6 +889,7 @@ const App = () => (
           <Route path="/trip/:shareToken" element={<SharedTripPage />} />
           <Route path="/guia" element={<UserGuidePage />} />
           <Route path="/guia-paso-a-paso" element={<StepByStepGuidePage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           {/* Main app with internal messages provider */}
           <Route path="/" element={
             <InternalMessagesProvider>
