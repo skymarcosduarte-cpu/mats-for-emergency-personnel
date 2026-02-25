@@ -18,12 +18,11 @@ interface ActiveTrip {
 }
 
 export function useAutoArrivalDetection() {
-  const checkedRef = useRef(false);
   const processingRef = useRef(false);
 
   // Check if user has arrived at destination based on GPS
   const checkArrival = useCallback(async () => {
-    if (checkedRef.current || processingRef.current) return;
+    if (processingRef.current) return;
     processingRef.current = true;
 
     try {
@@ -118,7 +117,7 @@ export function useAutoArrivalDetection() {
             }
           }
 
-          checkedRef.current = true;
+          
           processingRef.current = false;
         },
         (error) => {
@@ -137,14 +136,20 @@ export function useAutoArrivalDetection() {
     }
   }, []);
 
-  // Run check on mount (when app opens)
+  // Run check on mount and periodically every 60 seconds
   useEffect(() => {
-    // Small delay to let auth settle
     const timer = setTimeout(() => {
       checkArrival();
     }, 2000);
 
-    return () => clearTimeout(timer);
+    const interval = setInterval(() => {
+      checkArrival();
+    }, 60000); // Check every 60 seconds
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [checkArrival]);
 
   return { checkArrival };
