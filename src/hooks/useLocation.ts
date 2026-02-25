@@ -50,10 +50,18 @@ export function useLocation(options: UseLocationOptions = {}) {
   // Sync position to database for other users to see
   const syncPositionToDb = useCallback(async (pos: GeoPosition) => {
     try {
-      let { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      let user = session?.user ?? null;
+
+      if (!user) {
+        // Fallback to getUser + refresh for cases where session cache is stale
+        const { data: userData } = await supabase.auth.getUser();
+        user = userData.user;
+      }
+
       if (!user) {
         // Session may have expired — try refreshing before giving up
-        console.warn('[useLocation] No user from getUser, refreshing session...');
+        console.warn('[useLocation] No user from session/getUser, refreshing session...');
         const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession();
         if (refreshErr || !refreshData.user) {
           console.error('[useLocation] Session refresh failed, cannot sync location');
@@ -223,6 +231,21 @@ export function useLocation(options: UseLocationOptions = {}) {
         timeout: opts.timeout,
         // Use at least 2000ms maximumAge to get more frequent updates
         maximumAge: Math.min(opts.maximumAge ?? 0, 2000),
+      }
+    );
+
+    // Seed initial location immediately so user appears on map even before watch emits
+    navigator.geolocation.getCurrentPosition(
+      handlePosition,
+      (err) => {
+        const code = (err as any)?.code;
+        // Ignore timeout here; watchPosition will keep retrying in background
+        if (code !== 3) handleError(err);
+      },
+      {
+        enableHighAccuracy: opts.enableHighAccuracy,
+        timeout: Math.min(opts.timeout ?? 30000, 10000),
+        maximumAge: Math.max(opts.maximumAge ?? 0, 3000),
       }
     );
   }, [opts.enableHighAccuracy, opts.timeout, opts.maximumAge, handlePosition, handleError]);
