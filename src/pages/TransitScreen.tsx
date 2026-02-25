@@ -642,6 +642,49 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         }
       }
 
+      // For flights, geocode airport codes to coordinates for auto-arrival detection
+      let flightOriginLat: number | null = null;
+      let flightOriginLng: number | null = null;
+      let flightDestLat: number | null = null;
+      let flightDestLng: number | null = null;
+
+      if (transitType === 'FLIGHT') {
+        const geocodeAirport = async (code: string): Promise<{ lat: number; lng: number } | null> => {
+          if (!code || code.trim().length < 2) return null;
+          try {
+            const query = `${code.trim()} aeropuerto México`;
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+              { headers: { 'Accept-Language': 'es' } }
+            );
+            if (res.ok) {
+              const results = await res.json();
+              if (results.length > 0) {
+                return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
+              }
+            }
+          } catch (e) {
+            console.warn('[TransitScreen] Geocode airport failed:', code, e);
+          }
+          return null;
+        };
+
+        const [depCoords, arrCoords] = await Promise.all([
+          geocodeAirport(tripForm.departureAirport),
+          geocodeAirport(tripForm.arrivalAirport),
+        ]);
+
+        if (depCoords) {
+          flightOriginLat = depCoords.lat;
+          flightOriginLng = depCoords.lng;
+        }
+        if (arrCoords) {
+          flightDestLat = arrCoords.lat;
+          flightDestLng = arrCoords.lng;
+        }
+        console.log('[TransitScreen] Flight geocode results:', { depCoords, arrCoords });
+      }
+
       const tripData = {
         user_id: user.id,
         transit_type: transitType,
@@ -660,13 +703,10 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         flight_number: transitType === 'FLIGHT' ? tripForm.flightNumber : null,
         departure_airport: transitType === 'FLIGHT' ? tripForm.departureAirport : null,
         arrival_airport: transitType === 'FLIGHT' ? tripForm.arrivalAirport : null,
-        // Use form origin coords if provided, otherwise fall back to GPS position
-        origin_lat: tripForm.originLat ?? pos.lat,
-        origin_lng: tripForm.originLng ?? pos.lng,
-        // Store destination coordinates if provided
-        destination_lat: tripForm.destinationLat,
-        destination_lng: tripForm.destinationLng,
-        // Optional photos
+        origin_lat: transitType === 'FLIGHT' ? (flightOriginLat ?? pos.lat) : (tripForm.originLat ?? pos.lat),
+        origin_lng: transitType === 'FLIGHT' ? (flightOriginLng ?? pos.lng) : (tripForm.originLng ?? pos.lng),
+        destination_lat: transitType === 'FLIGHT' ? flightDestLat : tripForm.destinationLat,
+        destination_lng: transitType === 'FLIGHT' ? flightDestLng : tripForm.destinationLng,
         vehicle_photo_url: vehiclePhotoUrl,
         boarding_pass_url: boardingPassUrl,
       };
