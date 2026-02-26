@@ -1254,9 +1254,9 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                 <Input
                   type="tel"
                   value={profileForm.phone}
-                  onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value.replace(/\D/g, '') })}
-                  placeholder="5512345678"
-                  maxLength={10}
+                  onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value.replace(/[^\d+]/g, '').replace(/(?!^)\+/g, '') })}
+                  placeholder="+525512345678"
+                  maxLength={13}
                 />
               </div>
 
