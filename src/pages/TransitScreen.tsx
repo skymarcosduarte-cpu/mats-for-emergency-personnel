@@ -2051,7 +2051,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md bg-card border-border flex flex-col p-0 max-h-[100dvh] h-[100dvh] sm:h-auto sm:max-h-[90vh]">
+        <DialogContent className="sm:max-w-md bg-card border-border flex flex-col p-0 max-h-[90dvh] sm:max-h-[90vh]">
           <DialogHeader className="px-6 pt-6 pb-2 flex-shrink-0">
             <DialogTitle>Registrar Viaje</DialogTitle>
           </DialogHeader>
@@ -2085,8 +2085,11 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                     <Label>Placas del vehículo</Label>
                     <Input
                       value={tripForm.plates}
-                      onChange={(e) => setTripForm({ ...tripForm, plates: e.target.value })}
+                      onChange={(e) => setTripForm({ ...tripForm, plates: e.target.value.toUpperCase() })}
                       placeholder="ABC-123"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      inputMode="text"
                     />
                   </div>
                   <div>
@@ -2095,6 +2098,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                       value={tripForm.companions}
                       onChange={(e) => setTripForm({ ...tripForm, companions: e.target.value })}
                       placeholder="Juan, María..."
+                      autoComplete="off"
+                      autoCorrect="off"
                     />
                   </div>
                   {/* Origin location picker */}
@@ -2211,6 +2216,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                       value={tripForm.vehicleType}
                       onChange={(e) => setTripForm({ ...tripForm, vehicleType: e.target.value })}
                       placeholder="Sedan, SUV, Pickup..."
+                      autoComplete="off"
+                      autoCorrect="off"
                     />
                   </div>
                   
