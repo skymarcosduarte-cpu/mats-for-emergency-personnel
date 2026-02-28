@@ -85,6 +85,7 @@ import { Badge } from '@/components/ui/badge';
 import { ComprehensiveTutorial } from '@/components/ComprehensiveTutorial';
 import { UserGuideStepByStep } from '@/components/UserGuideStepByStep';
 import { Clave100DrillScheduler } from '@/components/Clave100DrillScheduler';
+import { ProfileEditDialog } from '@/components/ProfileEditDialog';
 import QRCode from 'qrcode';
 import { toast } from 'sonner';
 
@@ -178,6 +179,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [showUserGuide, setShowUserGuide] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showDrillScheduler, setShowDrillScheduler] = useState(false);
+  const [showProfileEditDialog, setShowProfileEditDialog] = useState(false);
 
   // Zello integration state
   const [zelloUsername, setZelloUsername] = useState(profile?.zello_username || '');
@@ -714,6 +716,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <p className="text-sm text-muted-foreground">
                   @{profile?.nickname || 'usuario'}
                 </p>
+                {profile?.phone && (
+                  <p className="text-xs text-muted-foreground">{profile.phone}</p>
+                )}
                 <span className={cn(
                   'inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium',
                   role === 'SOS_ACTIVO'
@@ -725,6 +730,15 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   {role === 'SOS_ACTIVO' ? 'SOS Activo' : role === 'EX_SOS' ? 'EX-SOS' : 'Familiar'}
                 </span>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowProfileEditDialog(true)}
+                className="flex-shrink-0"
+              >
+                <UserCog className="w-4 h-4 mr-1" />
+                Editar
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -2958,6 +2972,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       <Clave100DrillScheduler
         open={showDrillScheduler}
         onClose={() => setShowDrillScheduler(false)}
+      />
+
+      {/* Profile Edit Dialog */}
+      <ProfileEditDialog
+        open={showProfileEditDialog}
+        onClose={() => setShowProfileEditDialog(false)}
+        profile={profile}
+        onSave={updateProfile}
       />
     </div>
   );
