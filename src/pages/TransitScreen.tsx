@@ -1630,15 +1630,33 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             </div>
 
                             <div className="mt-3 flex gap-2 flex-wrap">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="flex-1 text-xs gap-2"
-                                onClick={() => setSelectedCommunityTrip(trip)}
-                              >
-                                <Map className="w-3.5 h-3.5" />
-                                Ver en mapa
-                              </Button>
+                              {trip.transit_type === 'FLIGHT' && trip.flight_number ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 text-xs gap-2"
+                                  asChild
+                                >
+                                  <a
+                                    href={getFlightTrackerUrl(trip.flight_number)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    Track en FlightRadar24
+                                  </a>
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 text-xs gap-2"
+                                  onClick={() => setSelectedCommunityTrip(trip)}
+                                >
+                                  <Map className="w-3.5 h-3.5" />
+                                  Ver en mapa
+                                </Button>
+                              )}
                               {/* Share community trip to WhatsApp */}
                               <ShareTripToWhatsApp
                                 trip={{
