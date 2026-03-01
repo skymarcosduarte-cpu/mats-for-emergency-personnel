@@ -15,7 +15,7 @@ export interface GDACSAlert {
   country?: string;
   coordinates?: [number, number];
   magnitude?: number;
-  source: 'GDACS' | 'CONAGUA' | 'NASA' | 'ReliefWeb' | 'Interpol' | 'ERCC' | 'NOAA-Tsunami' | 'USGS-Volcano';
+  source: 'GDACS' | 'CONAGUA' | 'NASA' | 'ReliefWeb' | 'Interpol' | 'ERCC' | 'NOAA-Tsunami' | 'USGS-Volcano' | 'GDELT';
 }
 
 export interface AEMETAlert {
@@ -265,6 +265,61 @@ function parseUSGSVolcanoXml(xmlText: string): GDACSAlert[] {
   } catch { return []; }
 }
 
+function parseGDELTArticles(jsonText: string): GDACSAlert[] {
+  try {
+    const data = JSON.parse(jsonText);
+    const articles = data.articles || [];
+    if (!Array.isArray(articles) || articles.length === 0) return [];
+
+    return articles.slice(0, 15).map((article: any, index: number) => {
+      const title = article.title || 'Conflict Event';
+      const url = article.url || '';
+      const domain = article.domain || '';
+      const seenDate = article.seendate || '';
+      const lang = article.language || '';
+      const socialImage = article.socialimage || '';
+
+      const titleLower = title.toLowerCase();
+      let alertLevel: GDACSAlert['alertLevel'] = 'orange';
+      if (titleLower.includes('bombing') || titleLower.includes('airstrike') || titleLower.includes('terrorism') || titleLower.includes('massacre')) {
+        alertLevel = 'red';
+      } else if (titleLower.includes('shooting') || titleLower.includes('explosion') || titleLower.includes('attack')) {
+        alertLevel = 'orange';
+      }
+
+      // Extract country from title
+      let country: string | undefined;
+      const countryMatch = title.match(/in\s+([A-Z][a-zA-Z\s]+?)(?:\s*[-–|,:.!]|\s*$)/);
+      if (countryMatch) country = countryMatch[1].trim();
+
+      // Parse seendate "20260301T162900Z" format
+      let pubDate = new Date().toISOString();
+      if (seenDate) {
+        try {
+          const cleaned = seenDate.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z');
+          pubDate = new Date(cleaned).toISOString();
+        } catch {}
+      }
+
+      return {
+        id: `gdelt-${index}-${seenDate || Date.now()}`,
+        title: title.replace(/<[^>]*>/g, '').substring(0, 120).trim(),
+        description: `Fuente: ${domain}. Evento de seguridad/conflicto reportado en medios internacionales.`,
+        link: url,
+        pubDate,
+        category: 'security' as const,
+        alertLevel,
+        country,
+        coordinates: undefined, // artlist format doesn't include coordinates
+        source: 'GDELT' as const,
+      };
+    });
+  } catch (e) {
+    console.warn('[Alerts] Failed to parse GDELT articles:', e);
+    return [];
+  }
+}
+
 // ─── Main Hook ───
 
 interface UseGDACSAlertsOptions {
@@ -313,6 +368,7 @@ export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
       if (data.reliefweb) allAlerts.push(...parseReliefWebXml(data.reliefweb));
       if (data.usgs_volcano) allAlerts.push(...parseUSGSVolcanoXml(data.usgs_volcano));
       if (data.smithsonian_volc) allAlerts.push(...parseUSGSVolcanoXml(data.smithsonian_volc));
+      if (data.gdelt_conflicts) allAlerts.push(...parseGDELTArticles(data.gdelt_conflicts));
 
       // Deduplicate by title
       const seenTitles = new Set<string>();
@@ -415,6 +471,7 @@ export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
       case 'CONAGUA': return 'border-success text-success';
       case 'NASA': return 'border-blue-500 text-blue-500';
       case 'ReliefWeb': return 'border-orange-500 text-orange-500';
+      case 'GDELT': return 'border-red-600 text-red-600';
       default: return 'border-muted-foreground text-muted-foreground';
     }
   };

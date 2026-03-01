@@ -16,9 +16,17 @@ const FEEDS: Record<string, string> = {
   usgs_volcano: "https://volcanoes.usgs.gov/hans-public/api/notice/latest",
   // Smithsonian Global Volcanism Program
   smithsonian_volc: "https://volcano.si.edu/news/WeeklyVolcanoRSS.xml",
+  // GDELT GEO API - Global conflict events with coordinates (GeoJSON)
+  gdelt_conflicts: "https://api.gdeltproject.org/api/v2/doc/doc?query=bombing%20OR%20airstrike%20OR%20terrorism&mode=artlist&maxrecords=10&format=json&sourcelang=english&timespan=24h",
 };
 
-async function fetchFeed(url: string, timeoutMs = 10000): Promise<string | null> {
+// Per-feed timeout overrides (some APIs are slow)
+const FEED_TIMEOUTS: Record<string, number> = {
+  gdelt_conflicts: 18000, // GDELT is notoriously slow
+};
+
+async function fetchFeed(key: string, url: string): Promise<string | null> {
+  const timeoutMs = FEED_TIMEOUTS[key] || 10000;
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -46,7 +54,7 @@ serve(async (req) => {
     // Fetch all feeds in parallel with individual timeouts
     const entries = Object.entries(FEEDS);
     const fetches = entries.map(async ([key, url]) => {
-      const data = await fetchFeed(url);
+      const data = await fetchFeed(key, url);
       results[key] = data;
     });
 
