@@ -2064,6 +2064,10 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         open={showTripDialog} 
         onOpenChange={(open) => {
           setShowTripDialog(open);
+          if (open && !position) {
+            // Request GPS immediately when opening trip dialog
+            getCurrentPosition();
+          }
           if (!open) {
             resetTripForm();
           }

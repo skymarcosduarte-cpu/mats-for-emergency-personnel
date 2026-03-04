@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
-import { MapPin, Search, X, Loader2, Navigation, MapPinned } from 'lucide-react';
+import { MapPin, Search, X, Loader2, Navigation, MapPinned, Clock, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +37,43 @@ interface TripLocationPickerProps {
   markerColor?: 'green' | 'orange';
 }
 
+// --- Recent Locations Storage ---
+const RECENT_LOCATIONS_KEY = 'mats_recent_trip_locations';
+const MAX_RECENT_LOCATIONS = 8;
+
+function getRecentLocations(): SelectedLocation[] {
+  try {
+    const raw = localStorage.getItem(RECENT_LOCATIONS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentLocation(location: SelectedLocation) {
+  try {
+    const existing = getRecentLocations();
+    // Remove duplicates (same name or very close coords)
+    const filtered = existing.filter(loc =>
+      loc.name !== location.name &&
+      !(Math.abs(loc.lat - location.lat) < 0.001 && Math.abs(loc.lng - location.lng) < 0.001)
+    );
+    // Add to front
+    const updated = [location, ...filtered].slice(0, MAX_RECENT_LOCATIONS);
+    localStorage.setItem(RECENT_LOCATIONS_KEY, JSON.stringify(updated));
+  } catch {
+    // ignore
+  }
+}
+
+function clearRecentLocations() {
+  try {
+    localStorage.removeItem(RECENT_LOCATIONS_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
   label,
   placeholder = 'Buscar ubicación...',
@@ -53,26 +90,55 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
   const [mapReady, setMapReady] = useState(false);
   const [manualMode, setManualMode] = useState(false);
   const [manualName, setManualName] = useState('');
+  const [recentLocations, setRecentLocations] = useState<SelectedLocation[]>([]);
+  const [livePosition, setLivePosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [fetchingGps, setFetchingGps] = useState(false);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Effective position: use prop if available, otherwise use live GPS
+  const effectivePosition = currentPosition || livePosition;
+
+  // When picker opens, load recent locations and request GPS if needed
+  useEffect(() => {
+    if (!isOpen) return;
+    setRecentLocations(getRecentLocations());
+
+    // If no currentPosition prop, request GPS directly
+    if (!currentPosition && navigator.geolocation) {
+      setFetchingGps(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setLivePosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setFetchingGps(false);
+          // Center map on real position
+          if (mapInstanceRef.current && !value) {
+            mapInstanceRef.current.setView([pos.coords.latitude, pos.coords.longitude], 14, { animate: true });
+          }
+        },
+        () => setFetchingGps(false),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+      );
+    }
+  }, [isOpen, currentPosition]);
+
   // Initialize map when dialog opens
   useEffect(() => {
     if (!isOpen || !mapContainerRef.current || mapInstanceRef.current) return;
 
-    const defaultCenter: [number, number] = currentPosition 
-      ? [currentPosition.lat, currentPosition.lng] 
-      : [19.4326, -99.1332]; // Mexico City default
+    const defaultCenter: [number, number] = effectivePosition 
+      ? [effectivePosition.lat, effectivePosition.lng] 
+      : [19.4326, -99.1332]; // Mexico City fallback
 
     const timer = setTimeout(() => {
       if (!mapContainerRef.current || mapInstanceRef.current) return;
       
       const map = L.map(mapContainerRef.current, {
         center: defaultCenter,
-        zoom: 14,
+        zoom: effectivePosition ? 14 : 6, // Zoom out if no GPS (so user sees they need to search)
         zoomControl: true,
         touchZoom: true,
       });
@@ -81,7 +147,7 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
         attribution: '&copy; OpenStreetMap',
       }).addTo(map);
 
-      // Click on map to select location (works on both desktop and mobile)
+      // Click on map to select location
       map.on('click', async (e: L.LeafletMouseEvent) => {
         const { lat, lng } = e.latlng;
         await reverseGeocode(lat, lng, map);
@@ -96,7 +162,7 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
         markerRef.current = L.marker([value.lat, value.lng], { icon }).addTo(map);
         map.setView([value.lat, value.lng], 15);
       }
-    }, 100); // Small delay to ensure DOM is ready
+    }, 100);
 
     return () => {
       clearTimeout(timer);
@@ -108,6 +174,13 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
       }
     };
   }, [isOpen]);
+
+  // When livePosition arrives after map init, re-center if no value selected
+  useEffect(() => {
+    if (livePosition && mapInstanceRef.current && !value) {
+      mapInstanceRef.current.setView([livePosition.lat, livePosition.lng], 14, { animate: true });
+    }
+  }, [livePosition, value]);
 
   const createMarkerIcon = (color: 'green' | 'orange') => {
     const bgColor = color === 'green' ? '#22c55e' : '#f59e0b';
@@ -137,9 +210,9 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
     });
   };
 
-  // Search locations using Nominatim (OpenStreetMap)
+  // Search locations using Nominatim with viewbox bias
   const searchLocations = useCallback(async (query: string) => {
-    if (query.length < 3) {
+    if (query.length < 2) {
       setSearchResults([]);
       setSearchDone(false);
       return;
@@ -148,31 +221,38 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
     setSearching(true);
     setSearchDone(false);
     try {
-      // First try with Mexico bias, then without if no results
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=mx&limit=5&addressdetails=1`,
-        {
-          headers: {
-            'Accept-Language': 'es',
-            'User-Agent': 'MATS-App/1.0',
-          },
-        }
-      );
+      // Build URL with viewbox bias if we have position
+      let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=mx&limit=5&addressdetails=1`;
+      
+      if (effectivePosition) {
+        // Add viewbox centered on user (±2 degrees) for better local results
+        const vb = `${effectivePosition.lng - 2},${effectivePosition.lat + 2},${effectivePosition.lng + 2},${effectivePosition.lat - 2}`;
+        url += `&viewbox=${vb}&bounded=0`;
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'Accept-Language': 'es',
+          'User-Agent': 'MATS-App/1.0',
+        },
+      });
       
       if (response.ok) {
         let data: LocationResult[] = await response.json();
         
         // If no results with Mexico filter, try without country filter
         if (data.length === 0) {
-          const response2 = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
-            {
-              headers: {
-                'Accept-Language': 'es',
-                'User-Agent': 'MATS-App/1.0',
-              },
-            }
-          );
+          let url2 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
+          if (effectivePosition) {
+            const vb = `${effectivePosition.lng - 2},${effectivePosition.lat + 2},${effectivePosition.lng + 2},${effectivePosition.lat - 2}`;
+            url2 += `&viewbox=${vb}&bounded=0`;
+          }
+          const response2 = await fetch(url2, {
+            headers: {
+              'Accept-Language': 'es',
+              'User-Agent': 'MATS-App/1.0',
+            },
+          });
           if (response2.ok) {
             data = await response2.json();
           }
@@ -186,7 +266,7 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
       setSearching(false);
       setSearchDone(true);
     }
-  }, []);
+  }, [effectivePosition]);
 
   // Reverse geocode coordinates to address
   const reverseGeocode = async (lat: number, lng: number, mapInstance?: L.Map) => {
@@ -252,27 +332,38 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
     const lat = parseFloat(result.lat);
     const lng = parseFloat(result.lon);
     
-    updateMarkerAndNotify({
+    const loc: SelectedLocation = {
       name: simplifyAddress(result.display_name),
       lat,
       lng,
-    });
+    };
+    
+    updateMarkerAndNotify(loc);
+    saveRecentLocation(loc);
+    setRecentLocations(getRecentLocations());
     
     setSearchQuery('');
     setSearchResults([]);
     setSearchDone(false);
   };
 
+  // Select a recent location
+  const handleSelectRecent = (loc: SelectedLocation) => {
+    updateMarkerAndNotify(loc);
+    // Move to front of recents
+    saveRecentLocation(loc);
+    setRecentLocations(getRecentLocations());
+  };
+
   // Update marker and notify parent
   const updateMarkerAndNotify = (location: SelectedLocation, mapInstance?: L.Map) => {
     const map = mapInstance || mapInstanceRef.current;
     if (!map) {
-      // Even without map, still update the value
       onChange(location);
+      saveRecentLocation(location);
       return;
     }
 
-    // Update marker
     if (markerRef.current) {
       markerRef.current.setLatLng([location.lat, location.lng]);
     } else {
@@ -282,12 +373,14 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
     
     map.setView([location.lat, location.lng], 16, { animate: true });
     onChange(location);
+    saveRecentLocation(location);
+    setRecentLocations(getRecentLocations());
   };
 
   // Use current location
   const useCurrentLocation = () => {
-    if (currentPosition) {
-      reverseGeocode(currentPosition.lat, currentPosition.lng);
+    if (effectivePosition) {
+      reverseGeocode(effectivePosition.lat, effectivePosition.lng);
     }
   };
 
@@ -296,11 +389,12 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
     const map = mapInstanceRef.current;
     if (map && manualName.trim()) {
       const center = map.getCenter();
-      updateMarkerAndNotify({
+      const loc: SelectedLocation = {
         name: manualName.trim(),
         lat: center.lat,
         lng: center.lng,
-      });
+      };
+      updateMarkerAndNotify(loc);
       setManualMode(false);
       setManualName('');
     }
@@ -315,12 +409,18 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
     }
   };
 
-  // Place pin at map center (for mobile users who have trouble tapping)
+  // Place pin at map center
   const placeMarkerAtCenter = () => {
     const map = mapInstanceRef.current;
     if (!map) return;
     const center = map.getCenter();
     reverseGeocode(center.lat, center.lng, map);
+  };
+
+  // Handle clearing recent locations
+  const handleClearRecents = () => {
+    clearRecentLocations();
+    setRecentLocations([]);
   };
 
   return (
@@ -372,7 +472,7 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
               </Button>
             </div>
 
-            {/* Search */}
+            {/* Search + Recent Locations */}
             <div className="p-4 space-y-2 overflow-y-auto max-h-[40vh]">
               {!manualMode ? (
                 <>
@@ -392,16 +492,21 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
                   </div>
                   
                   {/* Current location button */}
-                  {currentPosition && (
+                  {(effectivePosition || fetchingGps) && (
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       className="w-full"
                       onClick={useCurrentLocation}
+                      disabled={fetchingGps || !effectivePosition}
                     >
-                      <Navigation className="w-4 h-4 mr-2" />
-                      Usar mi ubicación actual
+                      {fetchingGps ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Navigation className="w-4 h-4 mr-2" />
+                      )}
+                      {fetchingGps ? 'Obteniendo GPS...' : 'Usar mi ubicación actual'}
                     </Button>
                   )}
 
@@ -421,8 +526,41 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
                     </div>
                   )}
 
+                  {/* Recent locations - show when no search active */}
+                  {!searchQuery && recentLocations.length > 0 && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Ubicaciones recientes
+                        </span>
+                        <button
+                          type="button"
+                          className="text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
+                          onClick={handleClearRecents}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Borrar
+                        </button>
+                      </div>
+                      <div className="border border-border rounded-lg overflow-hidden">
+                        {recentLocations.map((loc, idx) => (
+                          <button
+                            key={`${loc.lat}-${loc.lng}-${idx}`}
+                            type="button"
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors border-b border-border last:border-b-0 flex items-center gap-2"
+                            onClick={() => handleSelectRecent(loc)}
+                          >
+                            <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate">{loc.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* No results message */}
-                  {searchDone && searchResults.length === 0 && searchQuery.length >= 3 && (
+                  {searchDone && searchResults.length === 0 && searchQuery.length >= 2 && (
                     <div className="text-center py-3 space-y-2">
                       <p className="text-sm text-muted-foreground">
                         No se encontraron resultados para "{searchQuery}"
