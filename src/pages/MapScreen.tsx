@@ -419,13 +419,14 @@ const createRescatistaIcon = (isCurrentUser: boolean = false, hasFirstAidKit: bo
   popupAnchor: [0, isCurrentUser ? -20 : (updatedAgo && !isCurrentUser ? -24 : -16)],
 });
 
-// Transit icon for users with active road trips (orange/amber color with car icon)
+// Transit icon for users with active trips (orange/amber color with car/plane icon)
 // Now includes speed display when user is moving and stale signal warning
 const createTransitIcon = (
   isCurrentUser: boolean = false, 
   updatedAgo?: string, 
   speedKmh?: number | null,
-  staleMinutes?: number
+  staleMinutes?: number,
+  transitType?: 'ROAD' | 'FLIGHT'
 ) => {
   const hasSpeed = speedKmh && speedKmh > 3; // Only show if moving faster than 3 km/h
   const speedText = hasSpeed ? `${Math.round(speedKmh!)} km/h` : null;
@@ -497,11 +498,17 @@ const createTransitIcon = (
           box-shadow: ${isSignalLost ? `0 0 12px ${bgColor}, 0 2px 8px rgba(0,0,0,0.3)` : (isCurrentUser ? '0 0 12px #fbbf24, 0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)')};
           animation: ${animation};
         ">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.3 1 12.1 1 13v3c0 .6.4 1 1 1h2"/>
-            <circle cx="7" cy="17" r="2"/>
-            <circle cx="17" cy="17" r="2"/>
-          </svg>
+          ${transitType === 'FLIGHT' ? `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+            </svg>
+          ` : `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.3 1 12.1 1 13v3c0 .6.4 1 1 1h2"/>
+              <circle cx="7" cy="17" r="2"/>
+              <circle cx="17" cy="17" r="2"/>
+            </svg>
+          `}
         </div>
         ${isSignalLost ? `
           <div style="
@@ -2026,8 +2033,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const speedKmh = isLocationStale ? null : rawSpeedKmh;
       
       if (isInTransit) {
-        icon = createTransitIcon(isMe, isMe ? undefined : updatedAgo, speedKmh, diffMin);
-        roleLabel = 'En tránsito';
+        // Look up transit type from active trips
+        const userTrip = activeTrips.find(t => t.user_id === loc.user_id);
+        const transitType = userTrip?.transit_type as 'ROAD' | 'FLIGHT' | undefined;
+        icon = createTransitIcon(isMe, isMe ? undefined : updatedAgo, speedKmh, diffMin, transitType);
+        roleLabel = transitType === 'FLIGHT' ? 'En vuelo' : 'En tránsito';
         bgColor = diffMin >= 30 ? '#ef4444' : (diffMin >= 10 ? '#f97316' : '#f59e0b');
         badgeColor = bgColor;
       } else if (primarySpecialty) {
@@ -2218,7 +2228,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         markersRef.current.set(key, marker);
       }
     });
-  }, [locations, filteredLocations, selectedSpecialtyFilters, mapReady, currentUserId]);
+  }, [locations, filteredLocations, selectedSpecialtyFilters, mapReady, currentUserId, activeTrips]);
 
   // Draw transit routes for users in transit
   const transitRoutesRef = useRef<Map<string, L.Polyline>>(new Map());
