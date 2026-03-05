@@ -296,6 +296,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   const satelliteTimestampRef = useRef<string | null>(null);
   const nowcastTimestampRef = useRef<string | null>(null);
   const radarStationMarkersRef = useRef<L.Marker[]>([]);
+  // Satellite mode layers (dark basemap + satellite IR overlay)
+  const darkBasemapRef = useRef<L.TileLayer | null>(null);
+  const satCloudLayerRef = useRef<L.TileLayer | null>(null);
+  const satCloudTimestampRef = useRef<string | null>(null);
   const radarCoverageCirclesRef = useRef<L.Circle[]>([]);
   const [radarActive, setRadarActive] = useState(true);
   const [owmActive, setOwmActive] = useState(true);
@@ -623,16 +627,64 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
   }, [map, owmActive]);
 
-  // Toggle OWM clouds layer independently
+  // Toggle satellite cloud mode (dark basemap + RainViewer satellite IR)
   useEffect(() => {
     if (!map) return;
     if (owmCloudsActive) {
-      if (owmCloudsLayerRef.current && !map.hasLayer(owmCloudsLayerRef.current)) {
-        owmCloudsLayerRef.current.addTo(map);
+      // Add dark basemap on top of OSM to create satellite view
+      if (!darkBasemapRef.current) {
+        const darkLayer = L.tileLayer(
+          'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
+          { zIndex: 1, attribution: '© CartoDB' }
+        );
+        darkLayer.addTo(map);
+        darkBasemapRef.current = darkLayer;
+      } else if (!map.hasLayer(darkBasemapRef.current)) {
+        darkBasemapRef.current.addTo(map);
       }
-    } else {
+
+      // Add/update RainViewer satellite IR layer for realistic clouds
+      const fetchSatelliteForClouds = async () => {
+        try {
+          const res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+          const data = await res.json();
+          const satFrames = data?.satellite?.infrared || [];
+          if (satFrames.length > 0) {
+            const latestSat = satFrames[satFrames.length - 1];
+            const satPath = latestSat.path;
+            if (satCloudTimestampRef.current !== satPath) {
+              satCloudTimestampRef.current = satPath;
+              if (satCloudLayerRef.current && map.hasLayer(satCloudLayerRef.current)) {
+                map.removeLayer(satCloudLayerRef.current);
+              }
+              // Color scheme 1 = universal blue (looks like real satellite)
+              // Smooth = 1 for anti-aliased edges
+              const satLayer = L.tileLayer(
+                `https://tilecache.rainviewer.com${satPath}/256/{z}/{x}/{y}/1/1_1.png`,
+                { opacity: 0.85, zIndex: 2, attribution: 'RainViewer Satellite' }
+              );
+              satLayer.addTo(map);
+              satCloudLayerRef.current = satLayer;
+              console.log('[LiveEvents] Satellite cloud mode enabled:', satPath);
+            }
+          }
+        } catch (e) {
+          console.warn('[LiveEvents] Error fetching satellite for cloud mode:', e);
+        }
+      };
+      fetchSatelliteForClouds();
+
+      // Also remove OWM clouds if it exists (replaced by satellite)
       if (owmCloudsLayerRef.current && map.hasLayer(owmCloudsLayerRef.current)) {
         map.removeLayer(owmCloudsLayerRef.current);
+      }
+    } else {
+      // Remove satellite mode layers
+      if (darkBasemapRef.current && map.hasLayer(darkBasemapRef.current)) {
+        map.removeLayer(darkBasemapRef.current);
+      }
+      if (satCloudLayerRef.current && map.hasLayer(satCloudLayerRef.current)) {
+        map.removeLayer(satCloudLayerRef.current);
       }
     }
   }, [map, owmCloudsActive]);
@@ -1013,6 +1065,14 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         map.removeLayer(owmCloudsLayerRef.current);
         owmCloudsLayerRef.current = null;
       }
+      if (darkBasemapRef.current && map.hasLayer(darkBasemapRef.current)) {
+        map.removeLayer(darkBasemapRef.current);
+        darkBasemapRef.current = null;
+      }
+      if (satCloudLayerRef.current && map.hasLayer(satCloudLayerRef.current)) {
+        map.removeLayer(satCloudLayerRef.current);
+        satCloudLayerRef.current = null;
+      }
       if (owmTempLayerRef.current && map.hasLayer(owmTempLayerRef.current)) {
         map.removeLayer(owmTempLayerRef.current);
         owmTempLayerRef.current = null;
@@ -1218,10 +1278,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
               className={cn(
                 "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
                 owmCloudsActive 
-                  ? "bg-sky-500/90 text-white border-sky-400" 
+                  ? "bg-indigo-600/90 text-white border-indigo-500" 
                   : "bg-background/90 text-muted-foreground border-border"
               )}
-              title={owmCloudsActive ? 'Desactivar capa de nubes' : 'Activar capa de nubes OWM'}
+              title={owmCloudsActive ? 'Desactivar vista satelital' : 'Activar vista satelital de nubes'}
             >
               <Cloud className="w-4 h-4" />
               <span className="text-xs font-medium">Nubes</span>
@@ -1365,7 +1425,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
               )}
               {radarActive && <div className="mt-1 text-[9px] opacity-70">🌧️ RainViewer</div>}
               {owmActive && <div className="text-[9px] opacity-70">🌤️ OpenWeather Precip</div>}
-              {owmCloudsActive && <div className="text-[9px] opacity-70">☁️ OpenWeather Nubes</div>}
+              {owmCloudsActive && <div className="text-[9px] opacity-70">🛰️ Satélite RainViewer</div>}
               {owmTempActive && <div className="text-[9px] opacity-70">🌡️ OpenWeather Temp</div>}
               {owmWindActive && <div className="text-[9px] opacity-70">💨 OpenWeather Viento</div>}
             </div>
