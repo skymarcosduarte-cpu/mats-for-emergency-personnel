@@ -6,6 +6,7 @@ import { calculateDistance } from './useLocation';
 
 // Arrival detection radius in kilometers
 const ARRIVAL_RADIUS_KM = 0.3; // 300 meters
+const CHECK_INTERVAL_MS = 30000; // Check every 30 seconds for better responsiveness
 
 interface ActiveTrip {
   id: string;
@@ -44,14 +45,12 @@ export function useAutoArrivalDetection() {
         return;
       }
 
-      // Filter trips that have destination coordinates and ETA has passed
-      const now = Date.now();
-      const overdueTrips = trips.filter(trip => {
-        const etaDate = new Date(trip.eta);
-        return etaDate.getTime() < now && trip.destination_lat && trip.destination_lng;
+      // Filter trips that have destination coordinates (check ALL active trips, not just overdue)
+      const tripsWithCoords = trips.filter(trip => {
+        return trip.destination_lat && trip.destination_lng;
       }) as ActiveTrip[];
 
-      if (overdueTrips.length === 0) {
+      if (tripsWithCoords.length === 0) {
         processingRef.current = false;
         return;
       }
@@ -67,7 +66,7 @@ export function useAutoArrivalDetection() {
           const userLat = position.coords.latitude;
           const userLng = position.coords.longitude;
 
-          for (const trip of overdueTrips) {
+          for (const trip of tripsWithCoords) {
             if (!trip.destination_lat || !trip.destination_lng) continue;
 
             const distance = calculateDistance(
@@ -144,7 +143,7 @@ export function useAutoArrivalDetection() {
 
     const interval = setInterval(() => {
       checkArrival();
-    }, 60000); // Check every 60 seconds
+    }, CHECK_INTERVAL_MS); // Check every 30 seconds
 
     return () => {
       clearTimeout(timer);
