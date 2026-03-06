@@ -660,8 +660,8 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
               // Color scheme 1 = universal blue (looks like real satellite)
               // Smooth = 1 for anti-aliased edges
               const satLayer = L.tileLayer(
-                `https://tilecache.rainviewer.com${satPath}/256/{z}/{x}/{y}/1/1_1.png`,
-                { opacity: 0.85, zIndex: 2, attribution: 'RainViewer Satellite' }
+                `https://tilecache.rainviewer.com${satPath}/256/{z}/{x}/{y}/0/0_1.png`,
+                { opacity: 0.9, zIndex: 2, attribution: 'RainViewer Satellite' }
               );
               satLayer.addTo(map);
               satCloudLayerRef.current = satLayer;
