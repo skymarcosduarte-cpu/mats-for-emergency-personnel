@@ -74,6 +74,10 @@ export default function ResourcesScreen({ onGoHome, initialSubView }: ResourcesS
     );
   }
 
+  if (subView === 'monitoring') {
+    return <MonitoringCenter onBack={() => setSubView('landing')} />;
+  }
+
   if (subView === 'directory') {
     return (
       <div className="flex flex-col h-full bg-background">
