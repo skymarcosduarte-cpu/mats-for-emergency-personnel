@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Phone, Radio } from 'lucide-react';
+import { BookOpen, Phone, Radio, Cctv } from 'lucide-react';
 import { SectionLanding, SectionLandingItem } from '@/components/SectionLanding';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import EmergencyGuidesScreen from '@/components/EmergencyGuidesScreen';
 import EmergencyDirectory from '@/components/EmergencyDirectory';
+import MonitoringCenter from '@/components/MonitoringCenter';
 
-type SubView = 'landing' | 'guides' | 'directory' | 'zello';
+type SubView = 'landing' | 'guides' | 'directory' | 'zello' | 'monitoring';
 
 interface ResourcesScreenProps {
   onGoHome?: () => void;
