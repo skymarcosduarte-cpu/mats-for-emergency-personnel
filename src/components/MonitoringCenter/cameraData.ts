@@ -160,13 +160,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     embedUrl: `https://www.youtube.com/embed/9f3npaKdyCA${YT_PARAMS}`,
     region: 'mexico',
   },
-    city: 'Acapulco',
-    country: 'México',
-    description: 'Marina de Acapulco, Guerrero en vivo',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/9f3npaKdyCA${YT_PARAMS}`,
-    region: 'mexico',
-  },
   {
     id: 'yt-popocatepetl-afartv',
     name: 'Popocatépetl 4K - AfarTV',
