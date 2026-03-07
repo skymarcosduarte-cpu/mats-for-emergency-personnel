@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Phone, Radio } from 'lucide-react';
+import { BookOpen, Phone, Radio, Cctv } from 'lucide-react';
 import { SectionLanding, SectionLandingItem } from '@/components/SectionLanding';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import EmergencyGuidesScreen from '@/components/EmergencyGuidesScreen';
 import EmergencyDirectory from '@/components/EmergencyDirectory';
+import MonitoringCenter from '@/components/MonitoringCenter';
 
-type SubView = 'landing' | 'guides' | 'directory' | 'zello';
+type SubView = 'landing' | 'guides' | 'directory' | 'zello' | 'monitoring';
 
 interface ResourcesScreenProps {
   onGoHome?: () => void;
@@ -42,6 +43,15 @@ export default function ResourcesScreen({ onGoHome, initialSubView }: ResourcesS
       onClick: () => setSubView('guides'),
     },
     {
+      id: 'monitoring',
+      label: 'Centro de Monitoreo',
+      description: 'Webcams en vivo de ciudades del mundo — sala de monitoreo de emergencias',
+      icon: <Cctv className="w-8 h-8 text-white" strokeWidth={2.5} />,
+      iconBg: 'bg-[hsl(150,100%,35%)]',
+      borderColor: 'border-[hsl(150,100%,35%)]/40',
+      onClick: () => setSubView('monitoring'),
+    },
+    {
       id: 'zello',
       label: 'Canal Zello',
       description: 'Únete al canal de radio PoC de la comunidad EMERGENCIAS ARABA en Zello',
@@ -62,6 +72,10 @@ export default function ResourcesScreen({ onGoHome, initialSubView }: ResourcesS
         <EmergencyGuidesScreen />
       </div>
     );
+  }
+
+  if (subView === 'monitoring') {
+    return <MonitoringCenter onBack={() => setSubView('landing')} />;
   }
 
   if (subView === 'directory') {
