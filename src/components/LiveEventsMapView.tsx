@@ -406,7 +406,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
 
           const nowLayer = L.tileLayer(
             `https://tilecache.rainviewer.com${nowPath}/256/{z}/{x}/{y}/2/1_1.png`,
-            { opacity: 0.9, zIndex: 6, attribution: 'RainViewer Nowcast' }
+            { opacity: 0.9, zIndex: 6, maxNativeZoom: 12, maxZoom: 18, attribution: 'RainViewer Nowcast' }
           );
 
           nowLayer.addTo(map);
