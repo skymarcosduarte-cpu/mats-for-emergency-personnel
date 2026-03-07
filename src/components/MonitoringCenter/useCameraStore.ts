@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { LayoutType, CellConfig, Camera, MonitoringState } from './types';
 import { getCellCount, DEFAULT_INITIAL_CAMERA_IDS } from './cameraData';
 
-const STORAGE_KEY = 'mats-monitoring-center-v3';
+const STORAGE_KEY = 'mats-monitoring-center-v4';
 
 function loadState(): MonitoringState | null {
   try {
