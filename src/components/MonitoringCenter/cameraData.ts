@@ -21,13 +21,13 @@ export const DEFAULT_CAMERAS: Camera[] = [
     region: 'mexico',
   },
   {
-    id: 'yt-cdmx-aicm',
-    name: 'AICM Pista 05R',
+    id: 'yt-cdmx-zocalo2',
+    name: 'Zócalo CDMX EN VIVO',
     city: 'CDMX',
     country: 'México',
-    description: 'Aeropuerto Internacional de la Ciudad de México - Pista 05R',
+    description: 'Zócalo de la Ciudad de México en vivo',
     sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/GfAyEuypRDI${YT_PARAMS}`,
+    embedUrl: `https://www.youtube.com/embed/iFk6nRCYOd0${YT_PARAMS}`,
     region: 'mexico',
   },
   {
@@ -371,7 +371,7 @@ export const DEFAULT_CAMERAS: Camera[] = [
 // IDs de las 4 cámaras por defecto al abrir por primera vez
 export const DEFAULT_INITIAL_CAMERA_IDS = [
   'yt-cdmx-ref',             // Celda 1: Ciudad de México (yyWbHA_EWCc)
-  'yt-cdmx-aicm',            // Celda 2: AICM Pista 05R (GfAyEuypRDI)
+  'yt-cdmx-zocalo2',         // Celda 2: Zócalo CDMX EN VIVO (iFk6nRCYOd0)
   'yt-tlamacas-popo',         // Celda 3: Tlamacas, Popocatépetl (NI4v1OlIlZM)
   'yt-marina-acapulco',       // Celda 4: Marina Acapulco, Guerrero (9f3npaKdyCA)
 ];
