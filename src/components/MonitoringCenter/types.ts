@@ -1,17 +1,25 @@
-// Tipos para el Centro de Monitoreo
+// Tipos para el Centro de Monitoreo — v2
+
+export type SourceType = 'youtube' | 'youtube_channel' | 'skylinewebcams' | 'earthtv' | 'webcamsdemexico' | 'external_url';
+
+export type Region = 'mexico' | 'latam' | 'northamerica' | 'europe' | 'asia_mideast';
 
 export interface Camera {
   id: string;
   name: string;
   city: string;
   country: string;
-  youtubeId: string; // vacío si no disponible
+  description: string;
+  sourceType: SourceType;
+  embedUrl: string;        // URL completa del iframe (o vacía si external_url)
+  externalUrl?: string;    // URL para abrir en navegador externo
+  region: Region;
   isCustom?: boolean;
 }
 
 export interface CellConfig {
   slotIndex: number;
-  cameraId: string | null; // null = celda vacía
+  cameraId: string | null;
   isMuted: boolean;
 }
 
@@ -21,7 +29,7 @@ export interface LayoutOption {
   type: LayoutType;
   label: string;
   cells: number;
-  icon: string; // emoji representativo
+  icon: string;
 }
 
 export interface MonitoringState {

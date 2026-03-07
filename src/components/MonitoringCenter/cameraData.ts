@@ -1,45 +1,356 @@
-// Catálogo de cámaras preconfiguradas
-// NOTA: Los IDs de livestreams de YouTube cambian frecuentemente.
-// Dejar youtubeId vacío si no se conoce el ID actual.
-// Última actualización de IDs: marzo 2026
+// Catálogo de cámaras verificadas — v2
+// Fuentes: YouTube, SkylineWebcams, EarthTV, WebcamsDeMexico, URLs externas
+// Última actualización: marzo 2026
 
 import { Camera, LayoutOption } from './types';
 
+const YT_PARAMS = '?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1';
+
 export const DEFAULT_CAMERAS: Camera[] = [
-  // México (prioridad máxima)
-  { id: 'mx-cdmx', name: 'CDMX - Zócalo', city: 'CDMX', country: 'México', youtubeId: 'yyWbHA_EWCc' },
-  { id: 'mx-cdmx2', name: 'CDMX - Zócalo Panorámica', city: 'CDMX', country: 'México', youtubeId: 'baurr90Q9b0' },
-  { id: 'mx-cdmx3', name: 'CDMX - Zócalo Gran Hotel', city: 'CDMX', country: 'México', youtubeId: 'ee7Joc-_RK0' },
-  { id: 'mx-popocatepetl', name: 'Volcán Popocatépetl', city: 'Puebla', country: 'México', youtubeId: 't83sHSz0UU8' },
-  { id: 'mx-popocatepetl2', name: 'Popocatépetl - San Nicolás', city: 'Puebla', country: 'México', youtubeId: 'NTvCbzl8oIg' },
-  { id: 'mx-popocatepetl3', name: 'Popocatépetl - Tlamacas', city: 'Edo. de México', country: 'México', youtubeId: 'szKkWkhVdsE' },
-  { id: 'mx-pvr', name: 'Puerto Vallarta', city: 'Puerto Vallarta', country: 'México', youtubeId: 'W0XiV7Ikn_k' },
-  { id: 'mx-gdl', name: 'Guadalajara', city: 'Guadalajara', country: 'México', youtubeId: '' },
-  { id: 'mx-mty', name: 'Monterrey', city: 'Monterrey', country: 'México', youtubeId: '' },
-  { id: 'mx-tij', name: 'Tijuana', city: 'Tijuana', country: 'México', youtubeId: '' },
-  { id: 'mx-leon', name: 'León', city: 'León', country: 'México', youtubeId: '' },
-  { id: 'mx-mer', name: 'Mérida', city: 'Mérida', country: 'México', youtubeId: '' },
+  // ═══════════════════════════════════════
+  // TIPO A: YouTube
+  // ═══════════════════════════════════════
+  {
+    id: 'yt-popocatepetl-afartv',
+    name: 'Popocatépetl 4K - AfarTV',
+    city: 'Popocatépetl',
+    country: 'México',
+    description: 'Volcán en vivo 4K — canal @afartv',
+    sourceType: 'youtube_channel',
+    embedUrl: `https://www.youtube.com/embed/live_stream?channel=UCaG0IHN1RMOZ4-U3wDXAkwA${YT_PARAMS.replace('?', '&')}`,
+    region: 'mexico',
+  },
+  {
+    id: 'yt-cdmx-ref',
+    name: 'CDMX - Referencia',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Cámara de referencia del usuario',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/yyWbHA_EWCc${YT_PARAMS}`,
+    region: 'mexico',
+  },
 
-  // América Latina
-  { id: 'ar-bue', name: 'Buenos Aires', city: 'Buenos Aires', country: 'Argentina', youtubeId: 'reShHDyLGbc' },
-  { id: 'cl-scl', name: 'Santiago - Costanera Center', city: 'Santiago', country: 'Chile', youtubeId: 'Fc8OHbjpsyw' },
-  { id: 'cl-scl2', name: 'Santiago - Plaza Baquedano', city: 'Santiago', country: 'Chile', youtubeId: 'jkv0VUSmI4o' },
-  { id: 'br-rio', name: 'Río de Janeiro - Copacabana', city: 'Río de Janeiro', country: 'Brasil', youtubeId: '2PJfQY9LUoU' },
-  { id: 'co-bog', name: 'Bogotá', city: 'Bogotá', country: 'Colombia', youtubeId: '' },
-  { id: 'pe-lim', name: 'Lima', city: 'Lima', country: 'Perú', youtubeId: '' },
-  { id: 'br-sao', name: 'São Paulo', city: 'São Paulo', country: 'Brasil', youtubeId: '' },
+  // ═══════════════════════════════════════
+  // TIPO B: SkylineWebcams
+  // ═══════════════════════════════════════
+  {
+    id: 'sky-cdmx-zocalo',
+    name: 'CDMX - Zócalo',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Zócalo vía SkylineWebcams',
+    sourceType: 'skylinewebcams',
+    embedUrl: 'https://www.skylinewebcams.com/en/webcam/mexico/federal-district/mexico-city/zocalo.html',
+    externalUrl: 'https://www.skylinewebcams.com/en/webcam/mexico/federal-district/mexico-city/zocalo.html',
+    region: 'mexico',
+  },
+  {
+    id: 'sky-cdmx-vista',
+    name: 'CDMX - Vista General',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Vista general CDMX vía SkylineWebcams',
+    sourceType: 'skylinewebcams',
+    embedUrl: 'https://www.skylinewebcams.com/en/webcam/mexico/federal-district/mexico-city/mexico-city.html',
+    externalUrl: 'https://www.skylinewebcams.com/en/webcam/mexico/federal-district/mexico-city/mexico-city.html',
+    region: 'mexico',
+  },
+  {
+    id: 'sky-gdl',
+    name: 'Guadalajara - Panorámica',
+    city: 'Guadalajara',
+    country: 'México',
+    description: 'Vista panorámica vía SkylineWebcams',
+    sourceType: 'skylinewebcams',
+    embedUrl: 'https://www.skylinewebcams.com/es/webcam/mexico/jalisco/guadalajara.html',
+    externalUrl: 'https://www.skylinewebcams.com/es/webcam/mexico/jalisco/guadalajara.html',
+    region: 'mexico',
+  },
+  {
+    id: 'sky-mty',
+    name: 'Monterrey - Panorama',
+    city: 'Monterrey',
+    country: 'México',
+    description: 'Panorama vía SkylineWebcams',
+    sourceType: 'skylinewebcams',
+    embedUrl: 'https://www.skylinewebcams.com/es/webcam/mexico/nuevo-leon/monterrey/panorama.html',
+    externalUrl: 'https://www.skylinewebcams.com/es/webcam/mexico/nuevo-leon/monterrey/panorama.html',
+    region: 'mexico',
+  },
+  {
+    id: 'sky-madrid',
+    name: 'Madrid',
+    city: 'Madrid',
+    country: 'España',
+    description: 'Vista ciudad vía SkylineWebcams',
+    sourceType: 'skylinewebcams',
+    embedUrl: 'https://www.skylinewebcams.com/es/webcam/espana/comunidad-de-madrid/madrid.html',
+    externalUrl: 'https://www.skylinewebcams.com/es/webcam/espana/comunidad-de-madrid/madrid.html',
+    region: 'europe',
+  },
+  {
+    id: 'sky-paris',
+    name: 'París - Torre Eiffel',
+    city: 'París',
+    country: 'Francia',
+    description: 'Torre Eiffel vía SkylineWebcams',
+    sourceType: 'skylinewebcams',
+    embedUrl: 'https://www.skylinewebcams.com/en/webcam/france/ile-de-france/paris/tour-eiffel.html',
+    externalUrl: 'https://www.skylinewebcams.com/en/webcam/france/ile-de-france/paris/tour-eiffel.html',
+    region: 'europe',
+  },
+  {
+    id: 'sky-tokyo',
+    name: 'Tokio - Shibuya Crossing',
+    city: 'Tokio',
+    country: 'Japón',
+    description: 'Shibuya Crossing vía SkylineWebcams',
+    sourceType: 'skylinewebcams',
+    embedUrl: 'https://www.skylinewebcams.com/en/webcam/japan/kanto/tokyo/tokyo-shibuya-scramble-crossing.html',
+    externalUrl: 'https://www.skylinewebcams.com/en/webcam/japan/kanto/tokyo/tokyo-shibuya-scramble-crossing.html',
+    region: 'asia_mideast',
+  },
+  {
+    id: 'sky-nyc',
+    name: 'Nueva York - Times Square',
+    city: 'Nueva York',
+    country: 'EE.UU.',
+    description: 'Times Square vía SkylineWebcams',
+    sourceType: 'skylinewebcams',
+    embedUrl: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/new-york-city.html',
+    externalUrl: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/new-york-city.html',
+    region: 'northamerica',
+  },
 
-  // Mundo
-  { id: 'us-ts', name: 'Times Square - EarthCam 4K', city: 'Nueva York', country: 'EE.UU.', youtubeId: 'kQYk-j2e1JE' },
-  { id: 'us-ts2', name: 'Times Square 24/7', city: 'Nueva York', country: 'EE.UU.', youtubeId: 'dzxIlgCST-4' },
-  { id: 'us-mia', name: 'Miami Port - 4K', city: 'Miami', country: 'EE.UU.', youtubeId: 'mqJLCYASw2E' },
-  { id: 'uk-lon', name: 'Londres - Piccadilly Circus', city: 'Londres', country: 'UK', youtubeId: 'gGq4GZsLMCc' },
-  { id: 'uk-lon2', name: 'Londres - Abbey Road', city: 'Londres', country: 'UK', youtubeId: 'j-d93A6v73Q' },
-  { id: 'jp-tok', name: 'Tokio - Shibuya Crossing', city: 'Tokio', country: 'Japón', youtubeId: 'cBoy-gKL5So' },
-  { id: 'jp-tok2', name: 'Tokio Bay - Rainbow Bridge 4K', city: 'Tokio', country: 'Japón', youtubeId: '_k-5U7IeK8g' },
-  { id: 'jp-tok3', name: 'Tokio - Odaiba', city: 'Tokio', country: 'Japón', youtubeId: 'JDZ4ApWdq7w' },
-  { id: 'au-syd', name: 'Sydney - Harbour Bridge', city: 'Sydney', country: 'Australia', youtubeId: 'SEg0VujJiFU' },
-  { id: 'es-mad', name: 'Madrid', city: 'Madrid', country: 'España', youtubeId: '' },
+  // ═══════════════════════════════════════
+  // TIPO C: EarthTV
+  // ═══════════════════════════════════════
+  {
+    id: 'earth-cdmx-alameda',
+    name: 'CDMX - Alameda Central',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Alameda Central / Torre Latinoamericana vía EarthTV',
+    sourceType: 'earthtv',
+    embedUrl: 'https://www.earthtv.com/en/webcam/mexico-city-alameda-central/live-stream',
+    externalUrl: 'https://www.earthtv.com/en/webcam/mexico-city-alameda-central',
+    region: 'mexico',
+  },
+  {
+    id: 'earth-gdl-minerva',
+    name: 'Guadalajara - Glorieta Minerva',
+    city: 'Guadalajara',
+    country: 'México',
+    description: 'Glorieta Minerva vía EarthTV',
+    sourceType: 'earthtv',
+    embedUrl: 'https://www.earthtv.com/en/webcam/guadalajara-minerva-roundabout/live-stream',
+    externalUrl: 'https://www.earthtv.com/en/webcam/guadalajara-minerva-roundabout',
+    region: 'mexico',
+  },
+  {
+    id: 'earth-paris',
+    name: 'París - Torre Eiffel (Peninsula)',
+    city: 'París',
+    country: 'Francia',
+    description: 'Torre Eiffel desde Peninsula Hotel vía EarthTV',
+    sourceType: 'earthtv',
+    embedUrl: 'https://www.earthtv.com/en/webcam/paris-eiffel-tower/live-stream',
+    externalUrl: 'https://www.earthtv.com/en/webcam/paris-eiffel-tower',
+    region: 'europe',
+  },
+
+  // ═══════════════════════════════════════
+  // TIPO D: Webcams de México
+  // ═══════════════════════════════════════
+  {
+    id: 'wcm-cdmx-zocalo',
+    name: 'CDMX - Zócalo Gran Hotel',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Zócalo Gran Hotel vía webcamsdemexico.com',
+    sourceType: 'webcamsdemexico',
+    embedUrl: 'https://webcamsdemexico.com/webcam/mexico-zocalo/',
+    externalUrl: 'https://webcamsdemexico.com/webcam/mexico-zocalo/',
+    region: 'mexico',
+  },
+  {
+    id: 'wcm-cdmx-zocalo-zoom',
+    name: 'CDMX - Zócalo Zoom',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Zócalo zoom vía webcamsdemexico.com',
+    sourceType: 'webcamsdemexico',
+    embedUrl: 'https://webcamsdemexico.com/webcam/zocalo-zoom/',
+    externalUrl: 'https://webcamsdemexico.com/webcam/zocalo-zoom/',
+    region: 'mexico',
+  },
+  {
+    id: 'wcm-popo-altzomoni',
+    name: 'Popocatépetl - Altzomoni',
+    city: 'Popocatépetl',
+    country: 'México',
+    description: 'Vista desde Altzomoni vía webcamsdemexico.com',
+    sourceType: 'webcamsdemexico',
+    embedUrl: 'https://webcamsdemexico.com/webcam/popocatepetl-altzomoni/',
+    externalUrl: 'https://webcamsdemexico.com/webcam/popocatepetl-altzomoni/',
+    region: 'mexico',
+  },
+
+  // ═══════════════════════════════════════
+  // TIPO E: Solo URL externo (placeholder + botón "Ver en vivo")
+  // ═══════════════════════════════════════
+  {
+    id: 'ext-culiacan',
+    name: 'Culiacán',
+    city: 'Culiacán',
+    country: 'México',
+    description: 'Webcam vía Pictimo',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://www.pictimo.com/country/mexico',
+    region: 'mexico',
+  },
+  {
+    id: 'ext-acapulco',
+    name: 'Acapulco',
+    city: 'Acapulco',
+    country: 'México',
+    description: 'Webcam vía WebcamTaxi',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://www.webcamtaxi.com/en/mexico/guerrero.html',
+    region: 'mexico',
+  },
+  {
+    id: 'ext-puebla',
+    name: 'Puebla',
+    city: 'Puebla',
+    country: 'México',
+    description: 'Vista Holiday Inn Puebla',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://balticlivecam.com/cameras/mexico/puebla/view-holiday-inn-puebla/',
+    region: 'mexico',
+  },
+  {
+    id: 'ext-la',
+    name: 'Los Ángeles',
+    city: 'Los Ángeles',
+    country: 'EE.UU.',
+    description: 'Webcam vía WorldCams',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://worldcams.tv/united-states/los-angeles/',
+    region: 'northamerica',
+  },
+  {
+    id: 'ext-miami',
+    name: 'Miami',
+    city: 'Miami',
+    country: 'EE.UU.',
+    description: 'Webcam vía WorldCams',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://worldcams.tv/united-states/miami/',
+    region: 'northamerica',
+  },
+  {
+    id: 'ext-dc',
+    name: 'Washington D.C.',
+    city: 'Washington D.C.',
+    country: 'EE.UU.',
+    description: 'Webcam vía WorldCams',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://worldcams.tv/united-states/washington/',
+    region: 'northamerica',
+  },
+  {
+    id: 'ext-bogota',
+    name: 'Bogotá',
+    city: 'Bogotá',
+    country: 'Colombia',
+    description: 'Webcam vía WorldCams',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://worldcams.tv/colombia/bogota/',
+    region: 'latam',
+  },
+  {
+    id: 'ext-medellin',
+    name: 'Medellín',
+    city: 'Medellín',
+    country: 'Colombia',
+    description: 'Webcam vía WorldCams',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://worldcams.tv/colombia/medellin/',
+    region: 'latam',
+  },
+  {
+    id: 'ext-lima',
+    name: 'Lima',
+    city: 'Lima',
+    country: 'Perú',
+    description: 'Webcam vía WorldCams',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://worldcams.tv/peru/lima/',
+    region: 'latam',
+  },
+  {
+    id: 'ext-buenosaires',
+    name: 'Buenos Aires',
+    city: 'Buenos Aires',
+    country: 'Argentina',
+    description: 'Webcam vía WorldCams',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://worldcams.tv/argentina/buenos-aires/',
+    region: 'latam',
+  },
+  {
+    id: 'ext-panama',
+    name: 'Ciudad de Panamá',
+    city: 'Ciudad de Panamá',
+    country: 'Panamá',
+    description: 'Webcam vía WorldCams',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://worldcams.tv/panama/panama-city/',
+    region: 'latam',
+  },
+  {
+    id: 'ext-abudhabi',
+    name: 'Abu Dhabi',
+    city: 'Abu Dhabi',
+    country: 'EAU',
+    description: 'Webcam vía SkylineWebcams',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://www.skylinewebcams.com/en/webcam/united-arab-emirates.html',
+    region: 'asia_mideast',
+  },
+  {
+    id: 'ext-dubai',
+    name: 'Dubái',
+    city: 'Dubái',
+    country: 'EAU',
+    description: 'Webcam vía WorldCams',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://worldcams.tv/united-arab-emirates/dubai/',
+    region: 'asia_mideast',
+  },
+];
+
+// IDs de las 4 cámaras por defecto al abrir por primera vez
+export const DEFAULT_INITIAL_CAMERA_IDS = [
+  'wcm-cdmx-zocalo',        // Celda 1: Zócalo Gran Hotel
+  'sky-cdmx-vista',          // Celda 2: Vista general CDMX
+  'earth-cdmx-alameda',     // Celda 3: Alameda Central / Torre Latino
+  'yt-popocatepetl-afartv',  // Celda 4: Popocatépetl 4K AfarTV
 ];
 
 export const LAYOUT_OPTIONS: LayoutOption[] = [
@@ -54,3 +365,12 @@ export const LAYOUT_OPTIONS: LayoutOption[] = [
 export function getCellCount(layout: string): number {
   return LAYOUT_OPTIONS.find(l => l.type === layout)?.cells ?? 4;
 }
+
+// Agrupar cámaras por región para la biblioteca
+export const REGION_LABELS: Record<string, string> = {
+  mexico: '🇲🇽 México',
+  latam: '🌎 América Latina',
+  northamerica: '🇺🇸 Norteamérica',
+  europe: '🇪🇺 Europa',
+  asia_mideast: '🌏 Asia y Medio Oriente',
+};

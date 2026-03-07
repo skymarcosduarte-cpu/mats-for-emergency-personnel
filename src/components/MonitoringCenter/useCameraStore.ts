@@ -1,10 +1,10 @@
-// Hook de estado para el Centro de Monitoreo con persistencia en localStorage
+// Hook de estado para el Centro de Monitoreo con persistencia en localStorage — v2
 
 import { useState, useCallback, useEffect } from 'react';
 import { LayoutType, CellConfig, Camera, MonitoringState } from './types';
-import { getCellCount } from './cameraData';
+import { getCellCount, DEFAULT_INITIAL_CAMERA_IDS } from './cameraData';
 
-const STORAGE_KEY = 'mats-monitoring-center';
+const STORAGE_KEY = 'mats-monitoring-center-v2';
 
 function loadState(): MonitoringState | null {
   try {
@@ -21,6 +21,14 @@ function saveState(state: MonitoringState) {
   } catch { /* silently fail */ }
 }
 
+function createDefaultCells(): CellConfig[] {
+  return DEFAULT_INITIAL_CAMERA_IDS.map((cameraId, i) => ({
+    slotIndex: i,
+    cameraId,
+    isMuted: true,
+  }));
+}
+
 function createEmptyCells(count: number): CellConfig[] {
   return Array.from({ length: count }, (_, i) => ({
     slotIndex: i,
@@ -31,7 +39,7 @@ function createEmptyCells(count: number): CellConfig[] {
 
 export function useCameraStore() {
   const [layout, setLayoutState] = useState<LayoutType>('2x2');
-  const [cells, setCellsState] = useState<CellConfig[]>(createEmptyCells(4));
+  const [cells, setCellsState] = useState<CellConfig[]>(createDefaultCells());
   const [customCameras, setCustomCameras] = useState<Camera[]>([]);
 
   // Cargar estado al montar
@@ -42,6 +50,7 @@ export function useCameraStore() {
       setCellsState(saved.cells);
       setCustomCameras(saved.customCameras || []);
     }
+    // Si no hay estado guardado, createDefaultCells() ya se usó como valor inicial
   }, []);
 
   // Persistir cambios
@@ -53,7 +62,6 @@ export function useCameraStore() {
     const newCount = getCellCount(newLayout);
     setCellsState(prev => {
       const updated = [...prev];
-      // Expandir o recortar celdas
       while (updated.length < newCount) {
         updated.push({ slotIndex: updated.length, cameraId: null, isMuted: true });
       }
@@ -86,7 +94,6 @@ export function useCameraStore() {
 
   const removeCustomCamera = useCallback((cameraId: string) => {
     setCustomCameras(prev => prev.filter(c => c.id !== cameraId));
-    // También quitar de celdas asignadas
     setCellsState(prev => prev.map(c =>
       c.cameraId === cameraId ? { ...c, cameraId: null } : c
     ));

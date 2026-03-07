@@ -1,4 +1,4 @@
-// Cuadrícula de celdas de video con layouts configurables
+// Cuadrícula de celdas de video con layouts configurables — v2
 
 import React from 'react';
 import { LayoutType, CellConfig, Camera } from './types';
@@ -28,10 +28,10 @@ function getGridClass(layout: LayoutType): string {
 
 function getCellStyle(layout: LayoutType, index: number): React.CSSProperties | undefined {
   if (layout === '1+2' && index === 0) {
-    return { gridRow: '1 / 3' }; // celda grande ocupa 2 filas
+    return { gridRow: '1 / 3' };
   }
   if (layout === '1+4' && index === 0) {
-    return { gridRow: '1 / 3', gridColumn: '1 / 3' }; // celda grande 2x2
+    return { gridRow: '1 / 3', gridColumn: '1 / 3' };
   }
   return undefined;
 }
