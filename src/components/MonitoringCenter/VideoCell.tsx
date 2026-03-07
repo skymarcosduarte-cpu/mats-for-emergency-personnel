@@ -184,12 +184,12 @@ const VideoCell: React.FC<VideoCellProps> = ({
         </span>
       </div>
 
-      {/* Controles hover */}
-      <div className="absolute top-1.5 left-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+      {/* Controles */}
+      <div className="absolute top-1.5 left-1.5 flex gap-1 z-10">
         {(camera.sourceType === 'youtube' || camera.sourceType === 'youtube_channel') && (
           <button
             onClick={onToggleMute}
-            className="bg-black/60 p-1 text-white/70 hover:text-[#00ff88]"
+            className="bg-black/70 p-1 text-white/80 hover:text-[#00ff88] transition-colors"
             title={isMuted ? 'Activar sonido' : 'Silenciar'}
           >
             {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
@@ -197,7 +197,7 @@ const VideoCell: React.FC<VideoCellProps> = ({
         )}
         <button
           onClick={onExpand}
-          className="bg-black/60 p-1 text-white/70 hover:text-[#00ff88]"
+          className="bg-black/70 p-1 text-white/80 hover:text-[#00ff88] transition-colors opacity-0 group-hover:opacity-100"
           title="Pantalla completa"
         >
           <Maximize2 className="w-3.5 h-3.5" />
