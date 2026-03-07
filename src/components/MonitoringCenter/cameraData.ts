@@ -41,6 +41,16 @@ export const DEFAULT_CAMERAS: Camera[] = [
     region: 'mexico',
   },
   {
+    id: 'yt-aicm-live',
+    name: 'AICM En Vivo',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Aeropuerto Internacional de la Ciudad de México en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/mCyFwnCcZJk${YT_PARAMS}`,
+    region: 'mexico',
+  },
+  {
     id: 'yt-marina-acapulco',
     name: 'Marina Acapulco, Guerrero',
     city: 'Acapulco',
@@ -373,7 +383,7 @@ export const DEFAULT_INITIAL_CAMERA_IDS = [
   'yt-cdmx-ref',             // Celda 1: Ciudad de México (yyWbHA_EWCc)
   'yt-cdmx-zocalo2',         // Celda 2: Zócalo CDMX EN VIVO (iFk6nRCYOd0)
   'yt-tlamacas-popo',         // Celda 3: Tlamacas, Popocatépetl (NI4v1OlIlZM)
-  'yt-marina-acapulco',       // Celda 4: Marina Acapulco, Guerrero (9f3npaKdyCA)
+  'yt-aicm-live',             // Celda 4: AICM En Vivo (mCyFwnCcZJk)
 ];
 
 export const LAYOUT_OPTIONS: LayoutOption[] = [
