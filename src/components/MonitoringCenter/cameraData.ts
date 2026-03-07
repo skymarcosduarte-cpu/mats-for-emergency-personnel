@@ -11,6 +11,46 @@ export const DEFAULT_CAMERAS: Camera[] = [
   // TIPO A: YouTube
   // ═══════════════════════════════════════
   {
+    id: 'yt-cdmx-ref',
+    name: 'CDMX - Cámara en vivo',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Ciudad de México en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/yyWbHA_EWCc${YT_PARAMS}`,
+    region: 'mexico',
+  },
+  {
+    id: 'yt-cdmx-reforma',
+    name: 'CDMX - Paseo de la Reforma',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Paseo de la Reforma en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/GfAyEuypRDI${YT_PARAMS}`,
+    region: 'mexico',
+  },
+  {
+    id: 'yt-cdmx-aeropuerto',
+    name: 'CDMX - Aeropuerto / Tráfico',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Vista aérea CDMX en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/NI4v1OlIlZM${YT_PARAMS}`,
+    region: 'mexico',
+  },
+  {
+    id: 'yt-popocatepetl-live',
+    name: 'Popocatépetl - En vivo',
+    city: 'Popocatépetl',
+    country: 'México',
+    description: 'Volcán Popocatépetl en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/9f3npaKdyCA${YT_PARAMS}`,
+    region: 'mexico',
+  },
+  {
     id: 'yt-popocatepetl-afartv',
     name: 'Popocatépetl 4K - AfarTV',
     city: 'Popocatépetl',
@@ -18,16 +58,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     description: 'Volcán en vivo 4K — canal @afartv',
     sourceType: 'youtube_channel',
     embedUrl: `https://www.youtube.com/embed/live_stream?channel=UCaG0IHN1RMOZ4-U3wDXAkwA${YT_PARAMS.replace('?', '&')}`,
-    region: 'mexico',
-  },
-  {
-    id: 'yt-cdmx-ref',
-    name: 'CDMX - Referencia',
-    city: 'CDMX',
-    country: 'México',
-    description: 'Cámara de referencia del usuario',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/yyWbHA_EWCc${YT_PARAMS}`,
     region: 'mexico',
   },
 
@@ -347,10 +377,10 @@ export const DEFAULT_CAMERAS: Camera[] = [
 
 // IDs de las 4 cámaras por defecto al abrir por primera vez
 export const DEFAULT_INITIAL_CAMERA_IDS = [
-  'wcm-cdmx-zocalo',        // Celda 1: Zócalo Gran Hotel
-  'sky-cdmx-vista',          // Celda 2: Vista general CDMX
-  'earth-cdmx-alameda',     // Celda 3: Alameda Central / Torre Latino
-  'yt-popocatepetl-afartv',  // Celda 4: Popocatépetl 4K AfarTV
+  'yt-cdmx-ref',             // Celda 1: CDMX en vivo (yyWbHA_EWCc)
+  'yt-cdmx-reforma',         // Celda 2: Paseo de la Reforma (GfAyEuypRDI)
+  'yt-cdmx-aeropuerto',      // Celda 3: Vista aérea CDMX (NI4v1OlIlZM)
+  'yt-popocatepetl-live',    // Celda 4: Popocatépetl (9f3npaKdyCA)
 ];
 
 export const LAYOUT_OPTIONS: LayoutOption[] = [
