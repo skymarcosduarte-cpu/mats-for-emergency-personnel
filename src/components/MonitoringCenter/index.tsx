@@ -1,4 +1,4 @@
-// Centro de Monitoreo — pantalla principal
+// Centro de Monitoreo — pantalla principal — v2
 
 import React, { useState, useEffect } from 'react';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
@@ -30,6 +30,7 @@ const MonitoringCenter: React.FC<MonitoringCenterProps> = ({ onBack }) => {
 
   const allCameras: Camera[] = [...DEFAULT_CAMERAS, ...store.customCameras];
   const assignedIds = store.cells.map(c => c.cameraId).filter(Boolean) as string[];
+  const activeCells = store.cells.filter(c => c.cameraId).length;
 
   // Abrir biblioteca para asignar a un slot
   const handleAddToSlot = (slot: number) => {
@@ -73,6 +74,11 @@ const MonitoringCenter: React.FC<MonitoringCenterProps> = ({ onBack }) => {
             Centro de Monitoreo
           </h1>
         </div>
+
+        {/* Indicador cámaras activas */}
+        <span className="font-mono text-[9px] text-[#666] hidden sm:block">
+          {activeCells}/{store.cells.length} activas
+        </span>
 
         {/* Selector de layout */}
         <div className="flex items-center gap-0.5 bg-[#111] border border-[#333] px-1 py-0.5">

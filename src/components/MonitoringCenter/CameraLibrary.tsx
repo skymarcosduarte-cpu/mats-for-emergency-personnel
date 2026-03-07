@@ -1,12 +1,12 @@
-// Modal/drawer con la lista de cámaras disponibles para asignar a una celda
+// Drawer con la biblioteca de cámaras organizada por región — v2
 
 import React, { useState } from 'react';
-import { Camera } from './types';
-import { DEFAULT_CAMERAS } from './cameraData';
+import { Camera, SourceType } from './types';
+import { DEFAULT_CAMERAS, REGION_LABELS } from './cameraData';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Video, Plus, Wifi, WifiOff } from 'lucide-react';
+import { Video, Plus, Wifi, WifiOff, ExternalLink } from 'lucide-react';
 
 interface CameraLibraryProps {
   open: boolean;
@@ -19,12 +19,19 @@ interface CameraLibraryProps {
 
 function extractYouTubeId(input: string): string {
   const trimmed = input.trim();
-  // Si es un ID simple (11 chars)
   if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
-  // Extraer de URL
   const match = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   return match?.[1] ?? '';
 }
+
+const SOURCE_BADGE: Record<SourceType, string> = {
+  youtube: 'YT',
+  youtube_channel: 'YT',
+  skylinewebcams: 'SKY',
+  earthtv: 'ETV',
+  webcamsdemexico: 'WCM',
+  external_url: 'EXT',
+};
 
 const CameraLibrary: React.FC<CameraLibraryProps> = ({
   open,
@@ -41,24 +48,38 @@ const CameraLibrary: React.FC<CameraLibraryProps> = ({
 
   const allCameras = [...DEFAULT_CAMERAS, ...customCameras];
   const filtered = allCameras.filter(c =>
-    `${c.name} ${c.city} ${c.country}`.toLowerCase().includes(search.toLowerCase())
+    `${c.name} ${c.city} ${c.country} ${c.description}`.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Agrupar por país
-  const grouped = filtered.reduce<Record<string, Camera[]>>((acc, cam) => {
-    (acc[cam.country] ??= []).push(cam);
+  // Agrupar por región
+  const regionOrder = ['mexico', 'latam', 'northamerica', 'europe', 'asia_mideast'];
+  const grouped = regionOrder.reduce<Record<string, Camera[]>>((acc, region) => {
+    const cams = filtered.filter(c => c.region === region);
+    if (cams.length > 0) acc[region] = cams;
     return acc;
   }, {});
+
+  // Agregar custom cams que no encajen
+  const customFiltered = filtered.filter(c => c.isCustom);
+  if (customFiltered.length > 0) {
+    grouped['custom'] = customFiltered;
+  }
 
   const handleAddCustom = () => {
     const ytId = extractYouTubeId(customUrl);
     if (!customName.trim()) return;
+
+    const YT_PARAMS = '?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1';
     const cam: Camera = {
       id: `custom-${Date.now()}`,
       name: customName.trim(),
       city: customName.trim(),
       country: 'Personalizada',
-      youtubeId: ytId,
+      description: 'Cámara personalizada',
+      sourceType: ytId ? 'youtube' : 'external_url',
+      embedUrl: ytId ? `https://www.youtube.com/embed/${ytId}${YT_PARAMS}` : '',
+      externalUrl: !ytId ? customUrl.trim() : undefined,
+      region: 'mexico',
       isCustom: true,
     };
     onAddCustom(cam);
@@ -76,28 +97,27 @@ const CameraLibrary: React.FC<CameraLibraryProps> = ({
             Biblioteca de Cámaras
           </DrawerTitle>
           <DrawerDescription className="font-mono text-[10px] text-[#666]">
-            Selecciona una cámara para asignarla
+            Selecciona una cámara para asignarla a la celda
           </DrawerDescription>
         </DrawerHeader>
 
         <div className="p-3 space-y-3 overflow-y-auto flex-1">
-          {/* Búsqueda */}
           <Input
-            placeholder="Buscar ciudad..."
+            placeholder="Buscar ciudad o cámara..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="bg-[#111] border-[#333] font-mono text-xs text-white placeholder:text-[#555]"
           />
 
-          {/* Lista agrupada */}
-          {Object.entries(grouped).map(([country, cameras]) => (
-            <div key={country}>
+          {Object.entries(grouped).map(([region, cameras]) => (
+            <div key={region}>
               <h3 className="font-mono text-[10px] text-[#00ff88] uppercase tracking-widest mb-1 px-1">
-                {country}
+                {region === 'custom' ? '⭐ Personalizadas' : (REGION_LABELS[region] || region)}
               </h3>
               <div className="space-y-0.5">
                 {cameras.map(cam => {
                   const assigned = assignedCameraIds.includes(cam.id);
+                  const hasEmbed = !!cam.embedUrl;
                   return (
                     <button
                       key={cam.id}
@@ -109,13 +129,16 @@ const CameraLibrary: React.FC<CameraLibraryProps> = ({
                           : 'hover:bg-[#1a1a1a]'
                       }`}
                     >
-                      {cam.youtubeId ? (
+                      {hasEmbed ? (
                         <Wifi className="w-3 h-3 text-[#00ff88] shrink-0" />
                       ) : (
-                        <WifiOff className="w-3 h-3 text-[#555] shrink-0" />
+                        <ExternalLink className="w-3 h-3 text-[#888] shrink-0" />
                       )}
-                      <span className="font-mono text-xs text-[#ccc] truncate">{cam.name}</span>
-                      <span className="font-mono text-[9px] text-[#555] ml-auto shrink-0">
+                      <span className="font-mono text-xs text-[#ccc] truncate flex-1">{cam.name}</span>
+                      <span className="font-mono text-[8px] text-[#555] bg-[#222] px-1 py-0.5 shrink-0">
+                        {SOURCE_BADGE[cam.sourceType]}
+                      </span>
+                      <span className="font-mono text-[9px] text-[#555] shrink-0">
                         {cam.city}
                       </span>
                     </button>
@@ -143,7 +166,7 @@ const CameraLibrary: React.FC<CameraLibraryProps> = ({
                 className="bg-[#0a0a0a] border-[#333] font-mono text-xs text-white placeholder:text-[#555]"
               />
               <Input
-                placeholder="YouTube URL o Video ID"
+                placeholder="YouTube URL/ID o URL de webcam"
                 value={customUrl}
                 onChange={e => setCustomUrl(e.target.value)}
                 className="bg-[#0a0a0a] border-[#333] font-mono text-xs text-white placeholder:text-[#555]"
