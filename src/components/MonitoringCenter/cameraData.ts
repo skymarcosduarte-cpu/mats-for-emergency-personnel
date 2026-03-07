@@ -377,10 +377,10 @@ export const DEFAULT_CAMERAS: Camera[] = [
 
 // IDs de las 4 cámaras por defecto al abrir por primera vez
 export const DEFAULT_INITIAL_CAMERA_IDS = [
-  'wcm-cdmx-zocalo',        // Celda 1: Zócalo Gran Hotel
-  'sky-cdmx-vista',          // Celda 2: Vista general CDMX
-  'earth-cdmx-alameda',     // Celda 3: Alameda Central / Torre Latino
-  'yt-popocatepetl-afartv',  // Celda 4: Popocatépetl 4K AfarTV
+  'yt-cdmx-ref',             // Celda 1: CDMX en vivo (yyWbHA_EWCc)
+  'yt-cdmx-reforma',         // Celda 2: Paseo de la Reforma (GfAyEuypRDI)
+  'yt-cdmx-aeropuerto',      // Celda 3: Vista aérea CDMX (NI4v1OlIlZM)
+  'yt-popocatepetl-live',    // Celda 4: Popocatépetl (9f3npaKdyCA)
 ];
 
 export const LAYOUT_OPTIONS: LayoutOption[] = [
