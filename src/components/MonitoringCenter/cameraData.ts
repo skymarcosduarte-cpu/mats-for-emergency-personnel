@@ -12,7 +12,7 @@ export const DEFAULT_CAMERAS: Camera[] = [
   // ═══════════════════════════════════════
   {
     id: 'yt-cdmx-ref',
-    name: 'CDMX - Cámara en vivo',
+    name: 'Ciudad de México',
     city: 'CDMX',
     country: 'México',
     description: 'Ciudad de México en vivo',
@@ -21,31 +21,31 @@ export const DEFAULT_CAMERAS: Camera[] = [
     region: 'mexico',
   },
   {
-    id: 'yt-cdmx-reforma',
-    name: 'CDMX - Paseo de la Reforma',
+    id: 'yt-cdmx-aicm',
+    name: 'AICM Pista 05R',
     city: 'CDMX',
     country: 'México',
-    description: 'Paseo de la Reforma en vivo',
+    description: 'Aeropuerto Internacional de la Ciudad de México - Pista 05R',
     sourceType: 'youtube',
     embedUrl: `https://www.youtube.com/embed/GfAyEuypRDI${YT_PARAMS}`,
     region: 'mexico',
   },
   {
-    id: 'yt-cdmx-aeropuerto',
-    name: 'CDMX - Aeropuerto / Tráfico',
-    city: 'CDMX',
+    id: 'yt-tlamacas-popo',
+    name: 'Tlamacas, Popocatépetl',
+    city: 'Popocatépetl',
     country: 'México',
-    description: 'Vista aérea CDMX en vivo',
+    description: 'Vista desde Tlamacas del volcán Popocatépetl',
     sourceType: 'youtube',
     embedUrl: `https://www.youtube.com/embed/NI4v1OlIlZM${YT_PARAMS}`,
     region: 'mexico',
   },
   {
-    id: 'yt-popocatepetl-live',
-    name: 'Popocatépetl - En vivo',
-    city: 'Popocatépetl',
+    id: 'yt-marina-acapulco',
+    name: 'Marina Acapulco, Guerrero',
+    city: 'Acapulco',
     country: 'México',
-    description: 'Volcán Popocatépetl en vivo',
+    description: 'Marina de Acapulco, Guerrero en vivo',
     sourceType: 'youtube',
     embedUrl: `https://www.youtube.com/embed/9f3npaKdyCA${YT_PARAMS}`,
     region: 'mexico',
@@ -377,10 +377,10 @@ export const DEFAULT_CAMERAS: Camera[] = [
 
 // IDs de las 4 cámaras por defecto al abrir por primera vez
 export const DEFAULT_INITIAL_CAMERA_IDS = [
-  'yt-cdmx-ref',             // Celda 1: CDMX en vivo (yyWbHA_EWCc)
-  'yt-cdmx-reforma',         // Celda 2: Paseo de la Reforma (GfAyEuypRDI)
-  'yt-cdmx-aeropuerto',      // Celda 3: Vista aérea CDMX (NI4v1OlIlZM)
-  'yt-popocatepetl-live',    // Celda 4: Popocatépetl (9f3npaKdyCA)
+  'yt-cdmx-ref',             // Celda 1: Ciudad de México (yyWbHA_EWCc)
+  'yt-cdmx-aicm',            // Celda 2: AICM Pista 05R (GfAyEuypRDI)
+  'yt-tlamacas-popo',         // Celda 3: Tlamacas, Popocatépetl (NI4v1OlIlZM)
+  'yt-marina-acapulco',       // Celda 4: Marina Acapulco, Guerrero (9f3npaKdyCA)
 ];
 
 export const LAYOUT_OPTIONS: LayoutOption[] = [
