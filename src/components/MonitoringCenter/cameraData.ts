@@ -371,7 +371,7 @@ export const DEFAULT_CAMERAS: Camera[] = [
 // IDs de las 4 cámaras por defecto al abrir por primera vez
 export const DEFAULT_INITIAL_CAMERA_IDS = [
   'yt-cdmx-ref',             // Celda 1: Ciudad de México (yyWbHA_EWCc)
-  'yt-cdmx-aicm',            // Celda 2: AICM Pista 05R (GfAyEuypRDI)
+  'yt-cdmx-zocalo2',         // Celda 2: Zócalo CDMX EN VIVO (iFk6nRCYOd0)
   'yt-tlamacas-popo',         // Celda 3: Tlamacas, Popocatépetl (NI4v1OlIlZM)
   'yt-marina-acapulco',       // Celda 4: Marina Acapulco, Guerrero (9f3npaKdyCA)
 ];
