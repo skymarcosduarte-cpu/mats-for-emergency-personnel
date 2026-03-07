@@ -21,13 +21,13 @@ export const DEFAULT_CAMERAS: Camera[] = [
     region: 'mexico',
   },
   {
-    id: 'yt-cdmx-aicm',
-    name: 'AICM Pista 05R',
+    id: 'yt-cdmx-zocalo2',
+    name: 'Zócalo CDMX EN VIVO',
     city: 'CDMX',
     country: 'México',
-    description: 'Aeropuerto Internacional de la Ciudad de México - Pista 05R',
+    description: 'Zócalo de la Ciudad de México en vivo',
     sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/GfAyEuypRDI${YT_PARAMS}`,
+    embedUrl: `https://www.youtube.com/embed/iFk6nRCYOd0${YT_PARAMS}`,
     region: 'mexico',
   },
   {
