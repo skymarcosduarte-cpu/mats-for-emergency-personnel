@@ -1,5 +1,5 @@
-// Catálogo de cámaras verificadas — v2
-// Fuentes: YouTube, SkylineWebcams, EarthTV, WebcamsDeMexico, URLs externas
+// Catálogo de cámaras verificadas — v3
+// Fuentes: YouTube
 // Última actualización: marzo 2026
 
 import { Camera, LayoutOption } from './types';
@@ -8,7 +8,7 @@ const YT_PARAMS = '?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&iv_load_
 
 export const DEFAULT_CAMERAS: Camera[] = [
   // ═══════════════════════════════════════
-  // YouTube — Cámaras verificadas
+  // México
   // ═══════════════════════════════════════
   {
     id: 'yt-cdmx-ref',
@@ -51,6 +51,56 @@ export const DEFAULT_CAMERAS: Camera[] = [
     region: 'mexico',
   },
   {
+    id: 'yt-basilica-guadalupe',
+    name: 'Basílica de Guadalupe, CDMX',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Basílica de Guadalupe en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/FgGBtXzjqkA${YT_PARAMS}`,
+    region: 'mexico',
+  },
+  {
+    id: 'yt-bellas-artes',
+    name: 'Bellas Artes, CDMX',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Palacio de Bellas Artes en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/fiUMCo3d9nU${YT_PARAMS}`,
+    region: 'mexico',
+  },
+  {
+    id: 'yt-cancun-park-royal',
+    name: 'Cancún, Hotel Park Royal Beach',
+    city: 'Cancún',
+    country: 'México',
+    description: 'Cancún Hotel Park Royal Beach en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/2Yq0hv2tZM8${YT_PARAMS}`,
+    region: 'mexico',
+  },
+  {
+    id: 'yt-cdmx-torre-latino-sur',
+    name: 'CDMX Vista Sur Torre Latino',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Vista sur desde la Torre Latinoamericana',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/OwW-Zr4OK3k${YT_PARAMS}`,
+    region: 'mexico',
+  },
+  {
+    id: 'yt-cdmx-torre-latino-poniente',
+    name: 'Poniente CDMX Torre Latino',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Vista poniente desde la Torre Latinoamericana',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/CsWJN_OgxwE${YT_PARAMS}`,
+    region: 'mexico',
+  },
+  {
     id: 'yt-marina-acapulco',
     name: 'Marina Acapulco, Guerrero',
     city: 'Acapulco',
@@ -70,6 +120,9 @@ export const DEFAULT_CAMERAS: Camera[] = [
     embedUrl: `https://www.youtube.com/embed/live_stream?channel=UCaG0IHN1RMOZ4-U3wDXAkwA${YT_PARAMS.replace('?', '&')}`,
     region: 'mexico',
   },
+  // ═══════════════════════════════════════
+  // Norteamérica
+  // ═══════════════════════════════════════
   {
     id: 'yt-times-square',
     name: 'Times Square, NY',
@@ -120,6 +173,9 @@ export const DEFAULT_CAMERAS: Camera[] = [
     embedUrl: `https://www.youtube.com/embed/EO_1LWqsCNE${YT_PARAMS}`,
     region: 'northamerica',
   },
+  // ═══════════════════════════════════════
+  // Europa
+  // ═══════════════════════════════════════
   {
     id: 'yt-madrid',
     name: 'Madrid, España',
@@ -150,6 +206,9 @@ export const DEFAULT_CAMERAS: Camera[] = [
     embedUrl: `https://www.youtube.com/embed/IRqboacDNFg${YT_PARAMS}`,
     region: 'europe',
   },
+  // ═══════════════════════════════════════
+  // Asia
+  // ═══════════════════════════════════════
   {
     id: 'yt-tokyo',
     name: 'Tokio, Japón',
@@ -170,6 +229,9 @@ export const DEFAULT_CAMERAS: Camera[] = [
     embedUrl: `https://www.youtube.com/embed/ytXE2pk07dA${YT_PARAMS}`,
     region: 'asia_mideast',
   },
+  // ═══════════════════════════════════════
+  // Global
+  // ═══════════════════════════════════════
   {
     id: 'yt-world-random',
     name: 'Cámaras del Mundo (aleatorio)',
@@ -184,10 +246,10 @@ export const DEFAULT_CAMERAS: Camera[] = [
 
 // IDs de las 4 cámaras por defecto al abrir por primera vez
 export const DEFAULT_INITIAL_CAMERA_IDS = [
-  'yt-cdmx-ref',             // Celda 1: Ciudad de México (yyWbHA_EWCc)
-  'yt-cdmx-zocalo2',         // Celda 2: Zócalo CDMX EN VIVO (iFk6nRCYOd0)
-  'yt-tlamacas-popo',         // Celda 3: Tlamacas, Popocatépetl (NI4v1OlIlZM)
-  'yt-aicm-live',             // Celda 4: AICM En Vivo (mCyFwnCcZJk)
+  'yt-cdmx-ref',
+  'yt-cdmx-zocalo2',
+  'yt-tlamacas-popo',
+  'yt-aicm-live',
 ];
 
 export const LAYOUT_OPTIONS: LayoutOption[] = [
@@ -203,7 +265,6 @@ export function getCellCount(layout: string): number {
   return LAYOUT_OPTIONS.find(l => l.type === layout)?.cells ?? 4;
 }
 
-// Agrupar cámaras por región para la biblioteca
 export const REGION_LABELS: Record<string, string> = {
   mexico: '🇲🇽 México',
   latam: '🌎 América Latina',
