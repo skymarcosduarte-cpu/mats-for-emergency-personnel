@@ -671,7 +671,6 @@ export const BreakingNewsSection: React.FC = () => {
         {[
           { href: 'https://www.youtube.com/live/p2AzyIEuFak?si=L9WTy72PmRc9YTai', label: 'N+ Streaming en vivo' },
           { href: 'https://www.youtube.com/MILENIO/live/1000', label: 'Milenio Noticias en vivo' },
-          { href: 'https://www.youtube.com/watch?v=9hTxn5kOrEA', label: 'CNN Live (English)' },
         ].map((stream) => (
           <a
             key={stream.label}
