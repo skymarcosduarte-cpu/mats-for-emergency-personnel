@@ -336,7 +336,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
     const layer = L.tileLayer(
       `https://tilecache.rainviewer.com${framePath}/256/{z}/{x}/{y}/2/1_1.png`,
-      { opacity: 1.0, zIndex: 5, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>' }
+      { opacity: 1.0, zIndex: 5, maxNativeZoom: 12, maxZoom: 18, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>' }
     );
     layer.addTo(map);
     radarLayerRef.current = layer;
@@ -383,7 +383,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           
           const satLayer = L.tileLayer(
             `https://tilecache.rainviewer.com${satPath}/256/{z}/{x}/{y}/0/0_1.png`,
-            { opacity: 0.95, zIndex: 4, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer Sat</a>' }
+            { opacity: 0.95, zIndex: 4, maxNativeZoom: 12, maxZoom: 18, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer Sat</a>' }
           );
           
           satLayer.addTo(map);
@@ -406,7 +406,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
 
           const nowLayer = L.tileLayer(
             `https://tilecache.rainviewer.com${nowPath}/256/{z}/{x}/{y}/2/1_1.png`,
-            { opacity: 0.9, zIndex: 6, attribution: 'RainViewer Nowcast' }
+            { opacity: 0.9, zIndex: 6, maxNativeZoom: 12, maxZoom: 18, attribution: 'RainViewer Nowcast' }
           );
 
           nowLayer.addTo(map);
@@ -661,7 +661,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
               // Smooth = 1 for anti-aliased edges
               const satLayer = L.tileLayer(
                 `https://tilecache.rainviewer.com${satPath}/256/{z}/{x}/{y}/0/0_1.png`,
-                { opacity: 0.9, zIndex: 2, attribution: 'RainViewer Satellite' }
+                { opacity: 0.9, zIndex: 2, maxNativeZoom: 12, maxZoom: 18, attribution: 'RainViewer Satellite' }
               );
               satLayer.addTo(map);
               satCloudLayerRef.current = satLayer;
