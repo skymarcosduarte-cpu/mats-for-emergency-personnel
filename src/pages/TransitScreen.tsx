@@ -2099,7 +2099,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md bg-card border-border flex flex-col p-0 max-h-[90dvh] sm:max-h-[90vh]">
+        <DialogContent className="sm:max-w-md bg-card border-border flex flex-col p-0 max-h-[90dvh] sm:max-h-[90vh] !overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-2 flex-shrink-0">
             <DialogTitle>Registrar Viaje</DialogTitle>
           </DialogHeader>
