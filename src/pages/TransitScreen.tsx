@@ -663,7 +663,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         const geocodeAirport = async (code: string): Promise<{ lat: number; lng: number } | null> => {
           if (!code || code.trim().length < 2) return null;
           try {
-            const query = `${code.trim()} aeropuerto México`;
+            const query = transitType === 'HELICOPTER' ? `${code.trim()} helipuerto México` : `${code.trim()} aeropuerto México`;
             const res = await fetch(
               `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
               { headers: { 'Accept-Language': 'es' } }
