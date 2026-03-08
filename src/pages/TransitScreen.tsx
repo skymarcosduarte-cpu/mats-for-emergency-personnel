@@ -1861,6 +1861,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
                           {trip.transit_type === 'ROAD' ? (
                             <Car className="w-3 h-3" />
+                          ) : trip.transit_type === 'HELICOPTER' ? (
+                            <HelicopterIcon className="w-3 h-3" />
                           ) : (
                             <Plane className="w-3 h-3" />
                           )}

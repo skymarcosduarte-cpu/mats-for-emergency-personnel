@@ -135,7 +135,7 @@ export function useCommunityTripsHistory() {
 
         return {
           ...trip,
-          transit_type: trip.transit_type as 'ROAD' | 'FLIGHT',
+          transit_type: trip.transit_type as 'ROAD' | 'FLIGHT' | 'HELICOPTER',
           nickname: nicknameMap.get(trip.user_id) || null,
           is_delayed: isDelayed,
         };
