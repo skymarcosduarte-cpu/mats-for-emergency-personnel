@@ -9,7 +9,7 @@ import { applyPositionEstimation, type EstimatedPosition, type PositionHistoryPo
 export interface ActiveTrip {
   id: string;
   user_id: string;
-  transit_type: 'ROAD' | 'FLIGHT';
+  transit_type: 'ROAD' | 'FLIGHT' | 'HELICOPTER';
   origin: string;
   destination: string;
   eta: string;
