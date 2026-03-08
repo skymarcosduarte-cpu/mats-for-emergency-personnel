@@ -426,7 +426,7 @@ const createTransitIcon = (
   updatedAgo?: string, 
   speedKmh?: number | null,
   staleMinutes?: number,
-  transitType?: 'ROAD' | 'FLIGHT'
+  transitType?: 'ROAD' | 'FLIGHT' | 'HELICOPTER'
 ) => {
   const hasSpeed = speedKmh && speedKmh > 3; // Only show if moving faster than 3 km/h
   const speedText = hasSpeed ? `${Math.round(speedKmh!)} km/h` : null;
