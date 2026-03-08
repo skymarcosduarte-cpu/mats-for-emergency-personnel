@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 interface ArrivalTripDetails {
   id: string;
-  transitType: 'ROAD' | 'FLIGHT';
+  transitType: 'ROAD' | 'FLIGHT' | 'HELICOPTER';
   origin: string;
   destination: string;
   eta: string;
