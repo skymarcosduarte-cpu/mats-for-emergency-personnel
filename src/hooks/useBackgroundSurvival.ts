@@ -58,9 +58,22 @@ async function registerPeriodicSync(): Promise<void> {
  * Asks the SW to send itself a push-like message on a timer
  * so the SW stays alive and can wake the client.
  */
-function askSWKeepAlive(): void {
+async function askSWKeepAlive(userId?: string): Promise<void> {
+  // Pass Supabase credentials so the SW can heartbeat directly via REST
+  let accessToken: string | undefined;
+  try {
+    const { data } = await supabase.auth.getSession();
+    accessToken = data.session?.access_token;
+  } catch { /* ignore */ }
+
   navigator.serviceWorker?.controller?.postMessage({
     type: 'START_KEEP_ALIVE',
+    auth: {
+      supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+      supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      accessToken,
+      userId,
+    },
   });
 }
 
