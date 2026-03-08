@@ -12,17 +12,20 @@ const PRECACHE_URLS = [
 
 // ─── Keep-alive for Android PWA background survival ─────────────────────────
 let keepAliveInterval = null;
+let cachedAuth = null; // { supabaseUrl, supabaseKey, accessToken, userId }
 
 function startKeepAlive() {
   if (keepAliveInterval) return;
   keepAliveInterval = setInterval(() => {
-    // Ping all open clients to prevent the browser from freezing them
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      clients.forEach((client) => {
-        client.postMessage({ type: 'SW_KEEP_ALIVE_PING', ts: Date.now() });
-      });
+    // 1. Ping clients (may be frozen, but worth trying)
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cls) => {
+      cls.forEach((c) => c.postMessage({ type: 'SW_KEEP_ALIVE_PING', ts: Date.now() }));
     });
+    // 2. Direct DB heartbeat from SW (works even if client is frozen)
+    swHeartbeat();
   }, 20000); // every 20 seconds
+  // Immediate first heartbeat
+  swHeartbeat();
   console.log('[SW] Keep-alive started');
 }
 
@@ -31,6 +34,37 @@ function stopKeepAlive() {
     clearInterval(keepAliveInterval);
     keepAliveInterval = null;
     console.log('[SW] Keep-alive stopped');
+  }
+}
+
+// Direct REST heartbeat from the Service Worker – no client JS needed
+async function swHeartbeat() {
+  if (!cachedAuth || !cachedAuth.accessToken) return;
+  const { supabaseUrl, supabaseKey, accessToken, userId } = cachedAuth;
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/user_locations?user_id=eq.${userId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseKey,
+          Authorization: `Bearer ${accessToken}`,
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({
+          is_online: true,
+          updated_at: new Date().toISOString(),
+        }),
+      }
+    );
+    if (!res.ok) {
+      console.warn('[SW] Heartbeat response:', res.status);
+    } else {
+      console.log('[SW] Background heartbeat sent');
+    }
+  } catch (e) {
+    console.warn('[SW] Heartbeat fetch failed:', e);
   }
 }
 
