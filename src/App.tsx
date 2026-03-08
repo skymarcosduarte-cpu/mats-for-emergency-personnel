@@ -77,6 +77,7 @@ import { useBackgroundConnection } from '@/hooks/useBackgroundConnection';
 import { useAutoWakeLock } from '@/hooks/useWakeLock';
 import { useBackgroundLocation } from '@/hooks/useBackgroundLocation';
 import { useAppLifecycle } from '@/hooks/useAppLifecycle';
+import { useBackgroundSurvival } from '@/hooks/useBackgroundSurvival';
 import { usePrefetch } from '@/hooks/usePrefetch';
 import { useIOSKeyboardFix } from '@/hooks/useIOSKeyboardFix';
 import { supabase } from '@/integrations/supabase/client';
@@ -347,6 +348,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   
   // Background sync - keeps data fresh every 2 minutes
   useBackgroundSync();
+  
+  // Android PWA background survival - Web Locks + SW keep-alive + aggressive heartbeat
+  useBackgroundSurvival();
   
   // Background connection manager - keeps realtime connections alive
   const { isConnected: isBackgroundConnected } = useBackgroundConnection();

@@ -1,4 +1,4 @@
-// MATS Service Worker for Push Notifications & Background Tasks
+// MATS Service Worker for Push Notifications, Background Tasks & Keep-Alive
 
 const CACHE_NAME = 'mats-v1';
 const CRITICAL_ALERT_TYPES = ['SEISMIC', 'AMBULANCE', 'PANIC', 'SOS', 'SKYALERT'];
@@ -9,6 +9,32 @@ const PRECACHE_URLS = [
   '/resources_pack.json',
   '/fuentes_otras.json',
 ];
+
+// ─── Keep-alive for Android PWA background survival ─────────────────────────
+let keepAliveInterval = null;
+
+function startKeepAlive() {
+  if (keepAliveInterval) return;
+  keepAliveInterval = setInterval(() => {
+    // Ping all open clients to prevent the browser from freezing them
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({ type: 'SW_KEEP_ALIVE_PING', ts: Date.now() });
+      });
+    });
+  }, 20000); // every 20 seconds
+  console.log('[SW] Keep-alive started');
+}
+
+function stopKeepAlive() {
+  if (keepAliveInterval) {
+    clearInterval(keepAliveInterval);
+    keepAliveInterval = null;
+    console.log('[SW] Keep-alive stopped');
+  }
+}
+
+// ─── Lifecycle ──────────────────────────────────────────────────────────────
 
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker...');
@@ -26,13 +52,13 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(clients.claim());
 });
 
-// Cache-first for JSON data files, network-first for everything else
+// ─── Fetch (cache-first for JSON data files) ────────────────────────────────
+
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (PRECACHE_URLS.some(p => url.pathname === p)) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
-        // Try network first, fall back to cache
         try {
           const networkResponse = await fetch(event.request);
           cache.put(event.request, networkResponse.clone());
@@ -47,9 +73,10 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// Periodic background sync for keeping connections alive
+// ─── Periodic background sync ───────────────────────────────────────────────
+
 self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'mats-heartbeat') {
+  if (event.tag === 'mats-heartbeat' || event.tag === 'mats-keep-alive') {
     event.waitUntil(sendHeartbeat());
   }
   if (event.tag === 'skyalert-check') {
@@ -67,13 +94,12 @@ self.addEventListener('sync', (event) => {
 async function sendHeartbeat() {
   try {
     console.log('[SW] Sending background heartbeat');
-    // Just a lightweight ping to keep connections warm
-    const response = await fetch('/api/heartbeat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ timestamp: Date.now() }),
-    }).catch(() => null);
-    return response;
+    // Ping clients to wake them up
+    const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    allClients.forEach((client) => {
+      client.postMessage({ type: 'SW_HEARTBEAT', ts: Date.now() });
+    });
+    return true;
   } catch (e) {
     console.warn('[SW] Heartbeat failed:', e);
   }
@@ -81,19 +107,18 @@ async function sendHeartbeat() {
 
 async function syncOfflineActions() {
   console.log('[SW] Syncing offline actions');
-  // Will be handled by the offline queue in the app
 }
 
 async function checkSkyAlert() {
   try {
     console.log('[SW] Background SkyAlert check');
-    // This will be handled by the edge function
   } catch (e) {
     console.warn('[SW] SkyAlert check failed:', e);
   }
 }
 
-// Handle push notifications - Enhanced for critical alerts
+// ─── Push notifications ─────────────────────────────────────────────────────
+
 self.addEventListener('push', (event) => {
   console.log('[SW] Push received:', event);
   
@@ -104,7 +129,6 @@ self.addEventListener('push', (event) => {
     badge: '/icon-192-v2.png',
     alertType: 'GENERAL',
   };
-
 
   try {
     if (event.data) {
@@ -130,12 +154,12 @@ self.addEventListener('push', (event) => {
     icon: data.icon,
     badge: data.badge,
     tag: data.tag || 'mats-notification',
-    requireInteraction: isCritical, // Critical alerts require user interaction
-    renotify: isCritical, // Re-notify for critical alerts even if same tag
+    requireInteraction: isCritical,
+    renotify: isCritical,
     silent: false,
     vibrate: isCritical 
-      ? [500, 200, 500, 200, 500] // Urgent pattern
-      : [200, 100, 200], // Normal pattern
+      ? [500, 200, 500, 200, 500]
+      : [200, 100, 200],
     data: { ...data.data, alertType: data.alertType },
     actions: isCritical ? [
       { action: 'view', title: 'Ver ahora' },
@@ -143,7 +167,6 @@ self.addEventListener('push', (event) => {
     ] : [],
   };
 
-  // For seismic alerts, add urgency
   if (data.alertType === 'SEISMIC') {
     options.urgency = 'critical';
   }
@@ -153,7 +176,8 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Handle notification click
+// ─── Notification click ─────────────────────────────────────────────────────
+
 self.addEventListener('notificationclick', (event) => {
   console.log('[SW] Notification clicked:', event);
   event.notification.close();
@@ -161,7 +185,6 @@ self.addEventListener('notificationclick', (event) => {
   const data = event.notification.data || {};
   let targetUrl = '/';
 
-  // Route based on alert type
   if (data.alertType === 'SEISMIC') {
     targetUrl = '/alerts?tab=seismic';
   } else if (data.alertType === 'SKYALERT') {
@@ -181,7 +204,6 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // If app is already open, focus it and navigate
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
             client.focus();
@@ -193,7 +215,6 @@ self.addEventListener('notificationclick', (event) => {
             return client;
           }
         }
-        // Otherwise open the app at the right page
         if (clients.openWindow) {
           return clients.openWindow(targetUrl);
         }
@@ -201,23 +222,32 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Handle background fetch for large operations
+// ─── Background fetch ───────────────────────────────────────────────────────
+
 self.addEventListener('backgroundfetchsuccess', (event) => {
   console.log('[SW] Background fetch succeeded:', event.registration.id);
 });
 
-// Listen for messages from the app
+// ─── Messages from app ─────────────────────────────────────────────────────
+
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
   
-  // Register for periodic background sync if supported
   if (event.data && event.data.type === 'REGISTER_PERIODIC_SYNC') {
     if ('periodicSync' in self.registration) {
       self.registration.periodicSync.register('mats-heartbeat', {
-        minInterval: 60 * 1000, // 1 minute minimum
+        minInterval: 60 * 1000,
       }).catch(err => console.warn('[SW] Periodic sync registration failed:', err));
     }
+  }
+
+  // Keep-alive control from useBackgroundSurvival hook
+  if (event.data && event.data.type === 'START_KEEP_ALIVE') {
+    startKeepAlive();
+  }
+  if (event.data && event.data.type === 'STOP_KEEP_ALIVE') {
+    stopKeepAlive();
   }
 });
