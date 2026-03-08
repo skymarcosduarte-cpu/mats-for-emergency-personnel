@@ -84,7 +84,38 @@ export function useBackgroundSurvival() {
   const backgroundSinceRef = useRef<number | null>(null);
   const isBackgroundRef = useRef(false);
 
-  // Lightweight heartbeat – just touches updated_at + is_online
+  // Ensure user has a row in user_locations (even without GPS).
+  // ignoreDuplicates: true → only inserts if no row exists, never overwrites coords.
+  const ensurePresenceRow = useCallback(async () => {
+    if (!user) return;
+    try {
+      // Insert a placeholder row if none exists (ignoreDuplicates skips if row exists)
+      await supabase
+        .from('user_locations')
+        .upsert(
+          {
+            user_id: user.id,
+            lat: 0,
+            lng: 0,
+            is_online: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id', ignoreDuplicates: true }
+        );
+
+      // Always mark as online (works whether row was just created or already existed)
+      await supabase
+        .from('user_locations')
+        .update({ is_online: true, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id);
+
+      console.log('[BackgroundSurvival] Presence row ensured');
+    } catch {
+      // non-critical
+    }
+  }, [user]);
+
+  // Lightweight heartbeat – only touches is_online + updated_at, never overwrites GPS coords
   const heartbeat = useCallback(async () => {
     if (!user) return;
     try {
@@ -146,11 +177,12 @@ export function useBackgroundSurvival() {
   useEffect(() => {
     acquireWebLock();
     registerPeriodicSync();
+    ensurePresenceRow(); // Guarantee user appears online even without GPS
     scheduleNext();
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       askSWStopKeepAlive();
     };
-  }, [scheduleNext]);
+  }, [scheduleNext, ensurePresenceRow]);
 }
