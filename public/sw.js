@@ -280,9 +280,19 @@ self.addEventListener('message', (event) => {
 
   // Keep-alive control from useBackgroundSurvival hook
   if (event.data && event.data.type === 'START_KEEP_ALIVE') {
+    // Cache auth credentials so SW can heartbeat independently
+    if (event.data.auth) {
+      cachedAuth = event.data.auth;
+    }
     startKeepAlive();
   }
   if (event.data && event.data.type === 'STOP_KEEP_ALIVE') {
     stopKeepAlive();
+  }
+  // Allow refreshing the token while keep-alive is running
+  if (event.data && event.data.type === 'UPDATE_AUTH') {
+    if (event.data.auth) {
+      cachedAuth = event.data.auth;
+    }
   }
 });

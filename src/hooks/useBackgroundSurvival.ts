@@ -168,7 +168,7 @@ export function useBackgroundSurvival() {
         backgroundSinceRef.current = Date.now();
         // Immediately start aggressive keep-alive
         scheduleNext();
-        askSWKeepAlive();
+        askSWKeepAlive(user?.id);
         console.log('[BackgroundSurvival] Entered background – aggressive keep-alive started');
       } else {
         isBackgroundRef.current = false;
