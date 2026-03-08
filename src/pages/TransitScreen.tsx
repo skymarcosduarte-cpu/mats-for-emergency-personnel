@@ -3,6 +3,12 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Car, Plane, AlertTriangle, Plus, MapPin, Clock, Loader2, ThumbsUp, Download, FileText, Navigation, Pencil, Trash2, MoreVertical, History, Filter, Calendar, CheckCircle, XCircle, Route, Map, Users, ChevronDown, Gauge, Mic, MicOff, MessageCircle, Share2, X, ExternalLink } from 'lucide-react';
+// Helicopter SVG icon (not in lucide)
+const HelicopterIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M3 3h18M12 3v7M5 10h14l-2 4H7l-2-4zM7 14v3a2 2 0 002 2h6a2 2 0 002-2v-3M9 19v2M15 19v2" />
+  </svg>
+);
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { ShareTripToWhatsApp } from '@/components/ShareTripToWhatsApp';
 import { ShareArrivalToWhatsApp } from '@/components/ShareArrivalToWhatsApp';
@@ -653,11 +659,11 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       let flightDestLat: number | null = null;
       let flightDestLng: number | null = null;
 
-      if (transitType === 'FLIGHT') {
+      if (transitType === 'FLIGHT' || transitType === 'HELICOPTER') {
         const geocodeAirport = async (code: string): Promise<{ lat: number; lng: number } | null> => {
           if (!code || code.trim().length < 2) return null;
           try {
-            const query = `${code.trim()} aeropuerto México`;
+            const query = transitType === 'HELICOPTER' ? `${code.trim()} helipuerto México` : `${code.trim()} aeropuerto México`;
             const res = await fetch(
               `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
               { headers: { 'Accept-Language': 'es' } }
@@ -704,14 +710,14 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         plates: transitType === 'ROAD' ? tripForm.plates : null,
         companions: tripForm.companions || null,
         vehicle_type: transitType === 'ROAD' ? tripForm.vehicleType : null,
-        airline: transitType === 'FLIGHT' ? tripForm.airline : null,
-        flight_number: transitType === 'FLIGHT' ? tripForm.flightNumber : null,
-        departure_airport: transitType === 'FLIGHT' ? tripForm.departureAirport : null,
-        arrival_airport: transitType === 'FLIGHT' ? tripForm.arrivalAirport : null,
-        origin_lat: transitType === 'FLIGHT' ? (flightOriginLat ?? pos.lat) : (tripForm.originLat ?? pos.lat),
-        origin_lng: transitType === 'FLIGHT' ? (flightOriginLng ?? pos.lng) : (tripForm.originLng ?? pos.lng),
-        destination_lat: transitType === 'FLIGHT' ? flightDestLat : tripForm.destinationLat,
-        destination_lng: transitType === 'FLIGHT' ? flightDestLng : tripForm.destinationLng,
+        airline: (transitType === 'FLIGHT' || transitType === 'HELICOPTER') ? tripForm.airline : null,
+        flight_number: (transitType === 'FLIGHT' || transitType === 'HELICOPTER') ? tripForm.flightNumber : null,
+        departure_airport: (transitType === 'FLIGHT' || transitType === 'HELICOPTER') ? tripForm.departureAirport : null,
+        arrival_airport: (transitType === 'FLIGHT' || transitType === 'HELICOPTER') ? tripForm.arrivalAirport : null,
+        origin_lat: (transitType === 'FLIGHT' || transitType === 'HELICOPTER') ? (flightOriginLat ?? pos.lat) : (tripForm.originLat ?? pos.lat),
+        origin_lng: (transitType === 'FLIGHT' || transitType === 'HELICOPTER') ? (flightOriginLng ?? pos.lng) : (tripForm.originLng ?? pos.lng),
+        destination_lat: (transitType === 'FLIGHT' || transitType === 'HELICOPTER') ? flightDestLat : tripForm.destinationLat,
+        destination_lng: (transitType === 'FLIGHT' || transitType === 'HELICOPTER') ? flightDestLng : tripForm.destinationLng,
         vehicle_photo_url: vehiclePhotoUrl,
         boarding_pass_url: boardingPassUrl,
       };
@@ -1130,6 +1136,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                       )}>
                         {trip.transit_type === 'ROAD' ? (
                           <Car className="w-5 h-5" />
+                        ) : trip.transit_type === 'HELICOPTER' ? (
+                          <HelicopterIcon className="w-5 h-5" />
                         ) : (
                           <Plane className="w-5 h-5" />
                         )}
@@ -1183,7 +1191,12 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             </>
                           )}
                         </div>
-                        {trip.flight_number && (
+                        {trip.flight_number && trip.transit_type === 'HELICOPTER' && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            <span>🚁 {trip.airline} · Matrícula: {trip.flight_number}</span>
+                          </div>
+                        )}
+                        {trip.flight_number && trip.transit_type === 'FLIGHT' && (
                           <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
                             <span>✈️ {trip.airline} {trip.flight_number}</span>
                             <a
@@ -1575,6 +1588,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                               )}>
                                 {trip.transit_type === 'ROAD' ? (
                                   <Car className="w-4 h-4" />
+                                ) : trip.transit_type === 'HELICOPTER' ? (
+                                  <HelicopterIcon className="w-4 h-4" />
                                 ) : (
                                   <Plane className="w-4 h-4" />
                                 )}
@@ -1851,6 +1866,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
                           {trip.transit_type === 'ROAD' ? (
                             <Car className="w-3 h-3" />
+                          ) : trip.transit_type === 'HELICOPTER' ? (
+                            <HelicopterIcon className="w-3 h-3" />
                           ) : (
                             <Plane className="w-3 h-3" />
                           )}
@@ -2082,7 +2099,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           <div className="flex-1 overflow-y-auto px-6 pb-2 [-webkit-overflow-scrolling:touch]">
             <div className="space-y-4 py-2">
               {/* Transit Type Selector */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <Button
                   variant={transitType === 'ROAD' ? 'default' : 'outline'}
                   onClick={() => setTransitType('ROAD')}
@@ -2098,6 +2115,14 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                 >
                   <Plane className="w-6 h-6 mr-2" />
                   Vuelo
+                </Button>
+                <Button
+                  variant={transitType === 'HELICOPTER' ? 'default' : 'outline'}
+                  onClick={() => setTransitType('HELICOPTER')}
+                  className="h-16"
+                >
+                  <HelicopterIcon className="w-6 h-6 mr-2" />
+                  Helicóptero
                 </Button>
               </div>
 
@@ -2255,6 +2280,45 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                     <p className="text-[10px] text-muted-foreground">
                       Ayuda a identificar tu vehículo en caso de emergencia.
                     </p>
+                  </div>
+                </>
+              ) : transitType === 'HELICOPTER' ? (
+                <>
+                  <div>
+                    <Label>Tipo de aeronave</Label>
+                    <Input
+                      value={tripForm.airline}
+                      onChange={(e) => setTripForm({ ...tripForm, airline: e.target.value })}
+                      placeholder="Bell 407, AS350..."
+                    />
+                  </div>
+                  <div>
+                    <Label>Matrícula</Label>
+                    <Input
+                      value={tripForm.flightNumber}
+                      onChange={(e) => setTripForm({ ...tripForm, flightNumber: e.target.value.toUpperCase() })}
+                      placeholder="XA-ABC"
+                      autoCapitalize="characters"
+                      style={{ textTransform: 'uppercase' }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label>Helipuerto salida</Label>
+                      <Input
+                        value={tripForm.departureAirport}
+                        onChange={(e) => setTripForm({ ...tripForm, departureAirport: e.target.value })}
+                        placeholder="CDMX Centro"
+                      />
+                    </div>
+                    <div>
+                      <Label>Helipuerto llegada</Label>
+                      <Input
+                        value={tripForm.arrivalAirport}
+                        onChange={(e) => setTripForm({ ...tripForm, arrivalAirport: e.target.value })}
+                        placeholder="Toluca"
+                      />
+                    </div>
                   </div>
                 </>
               ) : (

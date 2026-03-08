@@ -9,7 +9,7 @@ import { applyPositionEstimation, type EstimatedPosition, type PositionHistoryPo
 export interface ActiveTrip {
   id: string;
   user_id: string;
-  transit_type: 'ROAD' | 'FLIGHT';
+  transit_type: 'ROAD' | 'FLIGHT' | 'HELICOPTER';
   origin: string;
   destination: string;
   eta: string;
@@ -275,7 +275,7 @@ export function useActiveTrips() {
 
         return {
           ...trip,
-          transit_type: trip.transit_type as 'ROAD' | 'FLIGHT',
+          transit_type: trip.transit_type as 'ROAD' | 'FLIGHT' | 'HELICOPTER',
           nickname: nicknameMap.get(trip.user_id) || null,
           current_lat: location?.lat || null,
           current_lng: location?.lng || null,

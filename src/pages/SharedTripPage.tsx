@@ -210,7 +210,7 @@ export default function SharedTripPage() {
         {/* Trip Title */}
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-2xl">
-            {trip.transit_type === 'FLIGHT' ? '✈️' : '🚗'}
+            {trip.transit_type === 'FLIGHT' ? '✈️' : trip.transit_type === 'HELICOPTER' ? '🚁' : '🚗'}
           </div>
           <div>
             <h2 className="text-lg font-semibold">Viaje en curso</h2>
@@ -320,6 +320,15 @@ export default function SharedTripPage() {
                 <Plane className="w-4 h-4 text-blue-500" />
                 <span className="text-muted-foreground">Vuelo:</span>
                 <span className="font-medium">{trip.airline} {trip.flight_number}</span>
+              </div>
+            )}
+
+            {/* Helicopter info */}
+            {trip.transit_type === 'HELICOPTER' && (
+              <div className="flex items-center gap-2 text-sm pt-2 border-t">
+                <span className="text-lg">🚁</span>
+                <span className="text-muted-foreground">Aeronave:</span>
+                <span className="font-medium">{trip.airline} {trip.flight_number ? `· ${trip.flight_number}` : ''}</span>
               </div>
             )}
 

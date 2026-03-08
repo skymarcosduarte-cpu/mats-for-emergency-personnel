@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 interface ArrivalTripDetails {
   id: string;
-  transitType: 'ROAD' | 'FLIGHT';
+  transitType: 'ROAD' | 'FLIGHT' | 'HELICOPTER';
   origin: string;
   destination: string;
   eta: string;
@@ -119,6 +119,33 @@ export const ShareArrivalToWhatsApp: React.FC<ShareArrivalToWhatsAppProps> = ({
         message += `👥 *Acompañantes:* ${trip.companions}\n`;
       }
       
+    } else if (trip.transitType === 'HELICOPTER') {
+      // Helicopter arrival message
+      message = `✅ *¡ATERRICÉ!* 🚁\n`;
+      message += `━━━━━━━━━━━━━━━━━━\n\n`;
+      
+      if (trip.nickname) {
+        message += `👤 *Viajero:* ${trip.nickname}\n`;
+      }
+      
+      if (trip.airline) {
+        message += `🛩️ *Tipo de aeronave:* ${trip.airline}\n`;
+      }
+      
+      if (trip.flightNumber) {
+        message += `🔢 *Matrícula:* ${trip.flightNumber.toUpperCase()}\n`;
+      }
+      
+      message += `🛫 *Salió de:* ${trip.departureAirport || trip.origin}\n`;
+      message += `🛬 *Llegó a:* ${trip.arrivalAirport || trip.destination}\n\n`;
+      
+      message += `⏰ *ETA original:* ${etaFormatted}\n`;
+      message += `🏁 *Llegada real:* ${arrivedFormatted}\n`;
+      message += `${statusEmoji} *Estado:* ${statusText}\n`;
+      
+      if (trip.companions) {
+        message += `\n👥 *Acompañantes:* ${trip.companions}\n`;
+      }
     } else {
       // Flight arrival message
       message = `✅ *¡ATERRICÉ!* ✈️\n`;

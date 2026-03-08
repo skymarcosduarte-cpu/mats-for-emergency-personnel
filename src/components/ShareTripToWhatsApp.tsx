@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 interface TripDetails {
   id: string;
-  transitType: 'ROAD' | 'FLIGHT';
+  transitType: 'ROAD' | 'FLIGHT' | 'HELICOPTER';
   origin: string;
   destination: string;
   eta: string;
@@ -101,6 +101,30 @@ export const ShareTripToWhatsApp: React.FC<ShareTripToWhatsAppProps> = ({
         message += `👥 *Acompañantes:* ${trip.companions}\n`;
       }
       
+    } else if (trip.transitType === 'HELICOPTER') {
+      // Helicopter trip message
+      message = `🚁 *VIAJE EN HELICÓPTERO* 🚁\n`;
+      message += `━━━━━━━━━━━━━━━━━━\n\n`;
+      
+      if (trip.nickname) {
+        message += `👤 *Viajero:* ${trip.nickname}\n`;
+      }
+      
+      if (trip.airline) {
+        message += `🛩️ *Tipo de aeronave:* ${trip.airline}\n`;
+      }
+      
+      if (trip.flightNumber) {
+        message += `🔢 *Matrícula:* ${trip.flightNumber.toUpperCase()}\n`;
+      }
+      
+      message += `🛫 *Helipuerto salida:* ${trip.departureAirport || trip.origin}\n`;
+      message += `🛬 *Helipuerto llegada:* ${trip.arrivalAirport || trip.destination}\n`;
+      message += `⏰ *Hora estimada de llegada:* ${etaFormatted}\n`;
+      
+      if (trip.companions) {
+        message += `👥 *Acompañantes:* ${trip.companions}\n`;
+      }
     } else {
       // Flight trip message
       message = `✈️ *VIAJE EN AVIÓN* ✈️\n`;

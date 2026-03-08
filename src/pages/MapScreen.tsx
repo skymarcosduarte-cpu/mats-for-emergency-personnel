@@ -426,7 +426,7 @@ const createTransitIcon = (
   updatedAgo?: string, 
   speedKmh?: number | null,
   staleMinutes?: number,
-  transitType?: 'ROAD' | 'FLIGHT'
+  transitType?: 'ROAD' | 'FLIGHT' | 'HELICOPTER'
 ) => {
   const hasSpeed = speedKmh && speedKmh > 3; // Only show if moving faster than 3 km/h
   const speedText = hasSpeed ? `${Math.round(speedKmh!)} km/h` : null;
@@ -501,6 +501,10 @@ const createTransitIcon = (
           ${transitType === 'FLIGHT' ? `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+            </svg>
+          ` : transitType === 'HELICOPTER' ? `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3h18M12 3v7M5 10h14l-2 4H7l-2-4zM7 14v3a2 2 0 002 2h6a2 2 0 002-2v-3M9 19v2M15 19v2"/>
             </svg>
           ` : `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -2035,9 +2039,9 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       if (isInTransit) {
         // Look up transit type from active trips
         const userTrip = activeTrips.find(t => t.user_id === loc.user_id);
-        const transitType = userTrip?.transit_type as 'ROAD' | 'FLIGHT' | undefined;
+        const transitType = userTrip?.transit_type as 'ROAD' | 'FLIGHT' | 'HELICOPTER' | undefined;
         icon = createTransitIcon(isMe, isMe ? undefined : updatedAgo, speedKmh, diffMin, transitType);
-        roleLabel = transitType === 'FLIGHT' ? 'En vuelo' : 'En tránsito';
+        roleLabel = transitType === 'FLIGHT' ? 'En vuelo' : transitType === 'HELICOPTER' ? 'En helicóptero' : 'En tránsito';
         bgColor = diffMin >= 30 ? '#ef4444' : (diffMin >= 10 ? '#f97316' : '#f59e0b');
         badgeColor = bgColor;
       } else if (primarySpecialty) {
