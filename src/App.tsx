@@ -349,6 +349,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   // Background sync - keeps data fresh every 2 minutes
   useBackgroundSync();
   
+  // Android PWA background survival - Web Locks + SW keep-alive + aggressive heartbeat
+  useBackgroundSurvival();
+  
   // Background connection manager - keeps realtime connections alive
   const { isConnected: isBackgroundConnected } = useBackgroundConnection();
   
