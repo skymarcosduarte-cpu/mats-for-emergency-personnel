@@ -77,6 +77,7 @@ import { useBackgroundConnection } from '@/hooks/useBackgroundConnection';
 import { useAutoWakeLock } from '@/hooks/useWakeLock';
 import { useBackgroundLocation } from '@/hooks/useBackgroundLocation';
 import { useAppLifecycle } from '@/hooks/useAppLifecycle';
+import { useBackgroundSurvival } from '@/hooks/useBackgroundSurvival';
 import { usePrefetch } from '@/hooks/usePrefetch';
 import { useIOSKeyboardFix } from '@/hooks/useIOSKeyboardFix';
 import { supabase } from '@/integrations/supabase/client';
