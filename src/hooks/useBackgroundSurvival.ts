@@ -186,6 +186,24 @@ export function useBackgroundSurvival() {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [scheduleNext, heartbeat]);
 
+  // Keep SW auth token fresh when session changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token && user) {
+        navigator.serviceWorker?.controller?.postMessage({
+          type: 'UPDATE_AUTH',
+          auth: {
+            supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+            supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            accessToken: session.access_token,
+            userId: user.id,
+          },
+        });
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [user]);
+
   // Initial setup – run once
   useEffect(() => {
     acquireWebLock();
