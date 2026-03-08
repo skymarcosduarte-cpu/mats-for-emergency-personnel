@@ -1192,8 +1192,17 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                           )}
                         </div>
                         {trip.flight_number && trip.transit_type === 'HELICOPTER' && (
-                          <div className="text-xs text-muted-foreground mt-1">
+                          <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
                             <span>🚁 {trip.airline} · Matrícula: {trip.flight_number}</span>
+                            <a
+                              href={getFlightTrackerUrl(trip.flight_number!)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              Rastrear
+                            </a>
                           </div>
                         )}
                         {trip.flight_number && trip.transit_type === 'FLIGHT' && (
