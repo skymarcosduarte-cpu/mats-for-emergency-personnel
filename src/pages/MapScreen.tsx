@@ -2035,9 +2035,9 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       if (isInTransit) {
         // Look up transit type from active trips
         const userTrip = activeTrips.find(t => t.user_id === loc.user_id);
-        const transitType = userTrip?.transit_type as 'ROAD' | 'FLIGHT' | undefined;
+        const transitType = userTrip?.transit_type as 'ROAD' | 'FLIGHT' | 'HELICOPTER' | undefined;
         icon = createTransitIcon(isMe, isMe ? undefined : updatedAgo, speedKmh, diffMin, transitType);
-        roleLabel = transitType === 'FLIGHT' ? 'En vuelo' : 'En tránsito';
+        roleLabel = transitType === 'FLIGHT' ? 'En vuelo' : transitType === 'HELICOPTER' ? 'En helicóptero' : 'En tránsito';
         bgColor = diffMin >= 30 ? '#ef4444' : (diffMin >= 10 ? '#f97316' : '#f59e0b');
         badgeColor = bgColor;
       } else if (primarySpecialty) {
