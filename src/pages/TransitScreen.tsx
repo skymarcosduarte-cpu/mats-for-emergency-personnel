@@ -1583,6 +1583,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                               )}>
                                 {trip.transit_type === 'ROAD' ? (
                                   <Car className="w-4 h-4" />
+                                ) : trip.transit_type === 'HELICOPTER' ? (
+                                  <HelicopterIcon className="w-4 h-4" />
                                 ) : (
                                   <Plane className="w-4 h-4" />
                                 )}
