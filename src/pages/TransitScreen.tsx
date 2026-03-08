@@ -659,7 +659,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       let flightDestLat: number | null = null;
       let flightDestLng: number | null = null;
 
-      if (transitType === 'FLIGHT') {
+      if (transitType === 'FLIGHT' || transitType === 'HELICOPTER') {
         const geocodeAirport = async (code: string): Promise<{ lat: number; lng: number } | null> => {
           if (!code || code.trim().length < 2) return null;
           try {
