@@ -323,6 +323,15 @@ export default function SharedTripPage() {
               </div>
             )}
 
+            {/* Helicopter info */}
+            {trip.transit_type === 'HELICOPTER' && (
+              <div className="flex items-center gap-2 text-sm pt-2 border-t">
+                <span className="text-lg">🚁</span>
+                <span className="text-muted-foreground">Aeronave:</span>
+                <span className="font-medium">{trip.airline} {trip.flight_number ? `· ${trip.flight_number}` : ''}</span>
+              </div>
+            )}
+
             {/* Vehicle info */}
             {trip.transit_type === 'ROAD' && trip.plates && (
               <div className="flex items-center gap-2 text-sm pt-2 border-t">
