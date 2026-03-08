@@ -296,10 +296,10 @@ export const DEFAULT_CAMERAS: Camera[] = [
 
 // IDs de las 4 cámaras por defecto al abrir por primera vez
 export const DEFAULT_INITIAL_CAMERA_IDS = [
-  'yt-cdmx-ref',
+  'yt-cdmx-torre-latino-sur',
+  'yt-cdmx-torre-latino-poniente',
+  'yt-bellas-artes',
   'yt-cdmx-zocalo2',
-  'yt-tlamacas-popo',
-  'yt-aicm-live',
 ];
 
 export const LAYOUT_OPTIONS: LayoutOption[] = [
