@@ -1192,8 +1192,17 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                           )}
                         </div>
                         {trip.flight_number && trip.transit_type === 'HELICOPTER' && (
-                          <div className="text-xs text-muted-foreground mt-1">
+                          <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
                             <span>🚁 {trip.airline} · Matrícula: {trip.flight_number}</span>
+                            <a
+                              href={getFlightTrackerUrl(trip.flight_number!)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              Rastrear
+                            </a>
                           </div>
                         )}
                         {trip.flight_number && trip.transit_type === 'FLIGHT' && (
@@ -1625,9 +1634,9 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                     <span>👥 {trip.companions}</span>
                                   )}
                                 </div>
-                                {trip.transit_type === 'FLIGHT' && trip.airline && (
+                                {(trip.transit_type === 'FLIGHT' || trip.transit_type === 'HELICOPTER') && trip.airline && (
                                   <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                                    <span>✈️ {trip.airline} {trip.flight_number || ''}</span>
+                                    <span>{trip.transit_type === 'HELICOPTER' ? '🚁' : '✈️'} {trip.airline} {trip.flight_number || ''}</span>
                                     {trip.flight_number && (
                                       <a
                                         href={getFlightTrackerUrl(trip.flight_number!)}
@@ -1645,7 +1654,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             </div>
 
                             <div className="mt-3 flex gap-2 flex-wrap">
-                              {trip.transit_type === 'FLIGHT' && trip.flight_number ? (
+                              {(trip.transit_type === 'FLIGHT' || trip.transit_type === 'HELICOPTER') && trip.flight_number ? (
                                 <Button
                                   size="sm"
                                   variant="outline"
