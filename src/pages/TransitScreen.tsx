@@ -1634,9 +1634,9 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                     <span>👥 {trip.companions}</span>
                                   )}
                                 </div>
-                                {trip.transit_type === 'FLIGHT' && trip.airline && (
+                                {(trip.transit_type === 'FLIGHT' || trip.transit_type === 'HELICOPTER') && trip.airline && (
                                   <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                                    <span>✈️ {trip.airline} {trip.flight_number || ''}</span>
+                                    <span>{trip.transit_type === 'HELICOPTER' ? '🚁' : '✈️'} {trip.airline} {trip.flight_number || ''}</span>
                                     {trip.flight_number && (
                                       <a
                                         href={getFlightTrackerUrl(trip.flight_number!)}
