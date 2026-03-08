@@ -2088,7 +2088,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           <div className="flex-1 overflow-y-auto px-6 pb-2 [-webkit-overflow-scrolling:touch]">
             <div className="space-y-4 py-2">
               {/* Transit Type Selector */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <Button
                   variant={transitType === 'ROAD' ? 'default' : 'outline'}
                   onClick={() => setTransitType('ROAD')}
@@ -2104,6 +2104,14 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                 >
                   <Plane className="w-6 h-6 mr-2" />
                   Vuelo
+                </Button>
+                <Button
+                  variant={transitType === 'HELICOPTER' ? 'default' : 'outline'}
+                  onClick={() => setTransitType('HELICOPTER')}
+                  className="h-16"
+                >
+                  <HelicopterIcon className="w-6 h-6 mr-2" />
+                  Helicóptero
                 </Button>
               </div>
 
