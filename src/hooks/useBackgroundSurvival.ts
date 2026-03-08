@@ -84,12 +84,12 @@ export function useBackgroundSurvival() {
   const backgroundSinceRef = useRef<number | null>(null);
   const isBackgroundRef = useRef(false);
 
-  // Ensure user has a row in user_locations (even without GPS)
+  // Ensure user has a row in user_locations (even without GPS).
+  // ignoreDuplicates: true → only inserts if no row exists, never overwrites coords.
   const ensurePresenceRow = useCallback(async () => {
     if (!user) return;
     try {
-      // Use upsert so the row is created if it doesn't exist yet.
-      // lat/lng default to 0 — will be overwritten once GPS kicks in.
+      // Insert a placeholder row if none exists (ignoreDuplicates skips if row exists)
       await supabase
         .from('user_locations')
         .upsert(
@@ -100,30 +100,29 @@ export function useBackgroundSurvival() {
             is_online: true,
             updated_at: new Date().toISOString(),
           },
-          { onConflict: 'user_id', ignoreDuplicates: false }
+          { onConflict: 'user_id', ignoreDuplicates: true }
         );
+
+      // Always mark as online (works whether row was just created or already existed)
+      await supabase
+        .from('user_locations')
+        .update({ is_online: true, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id);
+
       console.log('[BackgroundSurvival] Presence row ensured');
     } catch {
       // non-critical
     }
   }, [user]);
 
-  // Lightweight heartbeat – upsert so it works even if GPS never fired
+  // Lightweight heartbeat – only touches is_online + updated_at, never overwrites GPS coords
   const heartbeat = useCallback(async () => {
     if (!user) return;
     try {
       await supabase
         .from('user_locations')
-        .upsert(
-          {
-            user_id: user.id,
-            lat: 0,
-            lng: 0,
-            is_online: true,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id', ignoreDuplicates: false }
-        );
+        .update({ updated_at: new Date().toISOString(), is_online: true })
+        .eq('user_id', user.id);
     } catch {
       // non-critical
     }
