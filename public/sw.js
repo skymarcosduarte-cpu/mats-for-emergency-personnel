@@ -155,7 +155,8 @@ self.addEventListener('push', (event) => {
     badge: data.badge,
     tag: data.tag || 'mats-notification',
     requireInteraction: isCritical,
-    renotify: isCritical,
+    // Always renotify so Android shows each message immediately
+    renotify: true,
     silent: false,
     vibrate: isCritical 
       ? [500, 200, 500, 200, 500]

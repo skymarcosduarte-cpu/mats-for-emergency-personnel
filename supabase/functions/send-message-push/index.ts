@@ -136,7 +136,8 @@ serve(async (req) => {
 
     const pushOptions = {
       TTL: 86400, // 24 hours
-      urgency: isClave100 || alertType === 'PANIC' ? 'high' as const : 'normal' as const,
+      // Always use 'high' urgency so Android delivers immediately instead of batching
+      urgency: 'high' as const,
     };
 
     // Send push notifications using web-push library
