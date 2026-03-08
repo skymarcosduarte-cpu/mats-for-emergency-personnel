@@ -58,9 +58,22 @@ async function registerPeriodicSync(): Promise<void> {
  * Asks the SW to send itself a push-like message on a timer
  * so the SW stays alive and can wake the client.
  */
-function askSWKeepAlive(): void {
+async function askSWKeepAlive(userId?: string): Promise<void> {
+  // Pass Supabase credentials so the SW can heartbeat directly via REST
+  let accessToken: string | undefined;
+  try {
+    const { data } = await supabase.auth.getSession();
+    accessToken = data.session?.access_token;
+  } catch { /* ignore */ }
+
   navigator.serviceWorker?.controller?.postMessage({
     type: 'START_KEEP_ALIVE',
+    auth: {
+      supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+      supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      accessToken,
+      userId,
+    },
   });
 }
 
@@ -155,7 +168,7 @@ export function useBackgroundSurvival() {
         backgroundSinceRef.current = Date.now();
         // Immediately start aggressive keep-alive
         scheduleNext();
-        askSWKeepAlive();
+        askSWKeepAlive(user?.id);
         console.log('[BackgroundSurvival] Entered background – aggressive keep-alive started');
       } else {
         isBackgroundRef.current = false;
@@ -172,6 +185,24 @@ export function useBackgroundSurvival() {
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [scheduleNext, heartbeat]);
+
+  // Keep SW auth token fresh when session changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token && user) {
+        navigator.serviceWorker?.controller?.postMessage({
+          type: 'UPDATE_AUTH',
+          auth: {
+            supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+            supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            accessToken: session.access_token,
+            userId: user.id,
+          },
+        });
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [user]);
 
   // Initial setup – run once
   useEffect(() => {
