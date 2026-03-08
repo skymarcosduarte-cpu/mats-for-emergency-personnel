@@ -38,20 +38,18 @@ function createEmptyCells(count: number): CellConfig[] {
 }
 
 export function useCameraStore() {
-  const [layout, setLayoutState] = useState<LayoutType>('2x2');
-  const [cells, setCellsState] = useState<CellConfig[]>(createDefaultCells());
-  const [customCameras, setCustomCameras] = useState<Camera[]>([]);
-
-  // Cargar estado al montar
-  useEffect(() => {
+  const [layout, setLayoutState] = useState<LayoutType>(() => {
     const saved = loadState();
-    if (saved) {
-      setLayoutState(saved.layout);
-      setCellsState(saved.cells);
-      setCustomCameras(saved.customCameras || []);
-    }
-    // Si no hay estado guardado, createDefaultCells() ya se usó como valor inicial
-  }, []);
+    return saved?.layout ?? '2x2';
+  });
+  const [cells, setCellsState] = useState<CellConfig[]>(() => {
+    const saved = loadState();
+    return saved?.cells ?? createDefaultCells();
+  });
+  const [customCameras, setCustomCameras] = useState<Camera[]>(() => {
+    const saved = loadState();
+    return saved?.customCameras ?? [];
+  });
 
   // Persistir cambios
   useEffect(() => {
