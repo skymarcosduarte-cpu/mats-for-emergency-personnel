@@ -13,7 +13,7 @@ export type PanicType =
 
 export type StatusType = 'OK' | 'NEED_HELP' | 'UNKNOWN';
 
-export type TransitType = 'ROAD' | 'FLIGHT';
+export type TransitType = 'ROAD' | 'FLIGHT' | 'HELICOPTER';
 
 export type TransitStatus = 'ACTIVE' | 'ARRIVED' | 'CANCELLED' | 'OVERDUE';
 
