@@ -246,6 +246,16 @@ export const DEFAULT_CAMERAS: Camera[] = [
     embedUrl: `https://www.youtube.com/embed/OzYp4NRZlwQ${YT_PARAMS}`,
     region: 'europe',
   },
+  {
+    id: 'yt-berlin',
+    name: 'Berlín, Alemania',
+    city: 'Berlín',
+    country: 'Alemania',
+    description: 'Berlín en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/IRqboacDNFg${YT_PARAMS}`,
+    region: 'europe',
+  },
   // ═══════════════════════════════════════
   // Asia
   // ═══════════════════════════════════════
@@ -272,6 +282,16 @@ export const DEFAULT_CAMERAS: Camera[] = [
   // ═══════════════════════════════════════
   // Global
   // ═══════════════════════════════════════
+  {
+    id: 'yt-world-random',
+    name: 'Cámaras del Mundo (aleatorio)',
+    city: 'Varias',
+    country: 'Mundial',
+    description: 'Diferentes cámaras del mundo aleatoriamente',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/EFum1rGUdkk${YT_PARAMS}`,
+    region: 'europe',
+  },
 ];
 
 // IDs de las 4 cámaras por defecto al abrir por primera vez
