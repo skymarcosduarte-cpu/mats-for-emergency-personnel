@@ -2271,6 +2271,45 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                     </p>
                   </div>
                 </>
+              ) : transitType === 'HELICOPTER' ? (
+                <>
+                  <div>
+                    <Label>Tipo de aeronave</Label>
+                    <Input
+                      value={tripForm.airline}
+                      onChange={(e) => setTripForm({ ...tripForm, airline: e.target.value })}
+                      placeholder="Bell 407, AS350..."
+                    />
+                  </div>
+                  <div>
+                    <Label>Matrícula</Label>
+                    <Input
+                      value={tripForm.flightNumber}
+                      onChange={(e) => setTripForm({ ...tripForm, flightNumber: e.target.value.toUpperCase() })}
+                      placeholder="XA-ABC"
+                      autoCapitalize="characters"
+                      style={{ textTransform: 'uppercase' }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label>Helipuerto salida</Label>
+                      <Input
+                        value={tripForm.departureAirport}
+                        onChange={(e) => setTripForm({ ...tripForm, departureAirport: e.target.value })}
+                        placeholder="CDMX Centro"
+                      />
+                    </div>
+                    <div>
+                      <Label>Helipuerto llegada</Label>
+                      <Input
+                        value={tripForm.arrivalAirport}
+                        onChange={(e) => setTripForm({ ...tripForm, arrivalAirport: e.target.value })}
+                        placeholder="Toluca"
+                      />
+                    </div>
+                  </div>
+                </>
               ) : (
                 <>
                   <div>
