@@ -210,7 +210,7 @@ export default function SharedTripPage() {
         {/* Trip Title */}
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-2xl">
-            {trip.transit_type === 'FLIGHT' ? '✈️' : '🚗'}
+            {trip.transit_type === 'FLIGHT' ? '✈️' : trip.transit_type === 'HELICOPTER' ? '🚁' : '🚗'}
           </div>
           <div>
             <h2 className="text-lg font-semibold">Viaje en curso</h2>
