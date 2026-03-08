@@ -84,14 +84,46 @@ export function useBackgroundSurvival() {
   const backgroundSinceRef = useRef<number | null>(null);
   const isBackgroundRef = useRef(false);
 
-  // Lightweight heartbeat – just touches updated_at + is_online
+  // Ensure user has a row in user_locations (even without GPS)
+  const ensurePresenceRow = useCallback(async () => {
+    if (!user) return;
+    try {
+      // Use upsert so the row is created if it doesn't exist yet.
+      // lat/lng default to 0 — will be overwritten once GPS kicks in.
+      await supabase
+        .from('user_locations')
+        .upsert(
+          {
+            user_id: user.id,
+            lat: 0,
+            lng: 0,
+            is_online: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id', ignoreDuplicates: false }
+        );
+      console.log('[BackgroundSurvival] Presence row ensured');
+    } catch {
+      // non-critical
+    }
+  }, [user]);
+
+  // Lightweight heartbeat – upsert so it works even if GPS never fired
   const heartbeat = useCallback(async () => {
     if (!user) return;
     try {
       await supabase
         .from('user_locations')
-        .update({ updated_at: new Date().toISOString(), is_online: true })
-        .eq('user_id', user.id);
+        .upsert(
+          {
+            user_id: user.id,
+            lat: 0,
+            lng: 0,
+            is_online: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id', ignoreDuplicates: false }
+        );
     } catch {
       // non-critical
     }
