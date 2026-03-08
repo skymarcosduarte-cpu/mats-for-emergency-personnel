@@ -178,11 +178,12 @@ export function useBackgroundSurvival() {
   useEffect(() => {
     acquireWebLock();
     registerPeriodicSync();
+    ensurePresenceRow(); // Guarantee user appears online even without GPS
     scheduleNext();
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       askSWStopKeepAlive();
     };
-  }, [scheduleNext]);
+  }, [scheduleNext, ensurePresenceRow]);
 }
