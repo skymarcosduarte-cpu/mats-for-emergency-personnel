@@ -1654,7 +1654,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             </div>
 
                             <div className="mt-3 flex gap-2 flex-wrap">
-                              {trip.transit_type === 'FLIGHT' && trip.flight_number ? (
+                              {(trip.transit_type === 'FLIGHT' || trip.transit_type === 'HELICOPTER') && trip.flight_number ? (
                                 <Button
                                   size="sm"
                                   variant="outline"
