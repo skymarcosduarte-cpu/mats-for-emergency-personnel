@@ -460,8 +460,31 @@ export const DEFAULT_CAMERAS: Camera[] = [
     region: 'asia_mideast',
   },
   // ═══════════════════════════════════════
+  // Norteamérica (adicionales)
+  // ═══════════════════════════════════════
+  {
+    id: 'yt-san-diego-ca',
+    name: 'San Diego, CA',
+    city: 'San Diego',
+    country: 'EE.UU.',
+    description: 'San Diego, California en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/edz0ux7JClE${YT_PARAMS}`,
+    region: 'northamerica',
+  },
+  // ═══════════════════════════════════════
   // Global
   // ═══════════════════════════════════════
+  {
+    id: 'yt-earthquake-monitor',
+    name: 'LIVE Earthquake Monitor',
+    city: 'Global',
+    country: 'Global',
+    description: 'Monitor de sismos en tiempo real',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/rvtygG4n6ew${YT_PARAMS}`,
+    region: 'northamerica',
+  },
 ];
 
 // IDs de las 4 cámaras por defecto al abrir por primera vez
