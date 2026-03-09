@@ -532,6 +532,26 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       return;
     }
 
+    // Validate helicopter-specific fields
+    if (transitType === 'HELICOPTER') {
+      if (!tripForm.departureAirport?.trim() || !tripForm.arrivalAirport?.trim()) {
+        toast.error('Helipuertos requeridos', {
+          description: 'Indica el helipuerto de salida y llegada.',
+        });
+        return;
+      }
+    }
+
+    // Validate flight-specific fields
+    if (transitType === 'FLIGHT') {
+      if (!tripForm.departureAirport?.trim() || !tripForm.arrivalAirport?.trim()) {
+        toast.error('Aeropuertos requeridos', {
+          description: 'Indica el aeropuerto de salida y llegada.',
+        });
+        return;
+      }
+    }
+
     // Disable button immediately (important for iOS perceived responsiveness)
     setSubmitting(true);
 
