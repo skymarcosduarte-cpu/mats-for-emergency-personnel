@@ -457,9 +457,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
             }
           }
           if (apiKey) {
-            const owmLayer = L.tileLayer(
+            const owmLayer = createOwmTileLayer(
               `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 1.0, zIndex: 3, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18, errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }
+              { opacity: 1.0, zIndex: 3, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
             );
             owmLayer.addTo(map);
             owmLayerRef.current = owmLayer;
