@@ -108,7 +108,6 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showRouteMap, setShowRouteMap] = useState<{ requestId: string; lat: number; lng: number } | null>(null);
-  const [showEarthquakeMonitor, setShowEarthquakeMonitor] = useState(false);
   
   // Source filter for "Otros" tab
   const [otrosSourceFilter, setOtrosSourceFilter] = useState<string | null>(null);
@@ -573,14 +572,17 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
           </button>
 
           {/* Monitor de Sismos Globales 24/7 */}
-          <button
-            onClick={() => setShowEarthquakeMonitor(true)}
+          <a
+            href="https://www.youtube.com/live/rvtygG4n6ew?si=6IWLvNa5CZNF6liG"
+            target="_blank"
+            rel="noopener noreferrer"
             className={cn(
               "w-full flex items-center gap-4 p-5 rounded-2xl",
               "bg-card border-2 border-red-500/40 shadow-sm",
               "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
               "transition-all duration-200 animate-fade-in",
-              "bg-gradient-to-r from-red-500/5 to-orange-500/5"
+              "bg-gradient-to-r from-red-500/5 to-orange-500/5",
+              "no-underline"
             )}
             style={{ animationDelay: '150ms' }}
           >
@@ -597,8 +599,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 Monitoreo sísmico mundial en tiempo real
               </p>
             </div>
-            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
-          </button>
+            <ExternalLink className="w-6 h-6 text-red-500/70 shrink-0" />
+          </a>
         </div>
       </div>
     );
@@ -1561,37 +1563,6 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         />
       )}
 
-      {/* Fullscreen Earthquake Monitor */}
-      {showEarthquakeMonitor && (
-        <div className="fixed inset-0 z-[9999] bg-black flex flex-col">
-          <div className="flex items-center justify-between p-3 bg-black/90">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-white font-bold text-sm">Monitor de Sismos Globales — EN VIVO</span>
-            </div>
-            <button
-              onClick={() => setShowEarthquakeMonitor(false)}
-              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
-          </div>
-          <div className="flex-1 relative">
-            {/* Loading indicator while iframe loads */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white z-0">
-              <Loader2 className="w-10 h-10 animate-spin text-red-500" />
-              <span className="text-sm text-white/70">Conectando al monitor en vivo…</span>
-            </div>
-            <iframe
-              src="https://www.youtube.com/embed/rvtygG4n6ew?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&playsinline=1"
-              className="w-full h-full relative z-10"
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
-              title="Monitor de Sismos Globales"
-            />
-          </div>
-        </div>
-      )}
 
     </div>
   );
