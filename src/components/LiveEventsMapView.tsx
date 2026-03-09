@@ -697,7 +697,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (!owmWindLayerRef.current && apiKey) {
         const windLayer = L.tileLayer(
           `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-          { opacity: 1.0, zIndex: 6, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
+          { opacity: 1.0, zIndex: 6, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18, errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }
         );
         windLayer.addTo(map);
         owmWindLayerRef.current = windLayer;
