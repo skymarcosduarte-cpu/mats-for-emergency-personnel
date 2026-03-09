@@ -532,6 +532,26 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       return;
     }
 
+    // Validate helicopter-specific fields
+    if (transitType === 'HELICOPTER') {
+      if (!tripForm.departureAirport?.trim() || !tripForm.arrivalAirport?.trim()) {
+        toast.error('Helipuertos requeridos', {
+          description: 'Indica el helipuerto de salida y llegada.',
+        });
+        return;
+      }
+    }
+
+    // Validate flight-specific fields
+    if (transitType === 'FLIGHT') {
+      if (!tripForm.departureAirport?.trim() || !tripForm.arrivalAirport?.trim()) {
+        toast.error('Aeropuertos requeridos', {
+          description: 'Indica el aeropuerto de salida y llegada.',
+        });
+        return;
+      }
+    }
+
     // Disable button immediately (important for iOS perceived responsiveness)
     setSubmitting(true);
 
@@ -1437,9 +1457,11 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                           {isActive && (
                             <Button
                               size="sm"
-                              variant="outline"
-                              className="text-xs"
-                              onClick={async () => {
+                              variant={isOverdue ? "default" : "outline"}
+                              className={cn("text-xs", isOverdue && "bg-safe hover:bg-safe/90 text-safe-foreground font-bold animate-pulse")}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
                                 try {
                                   const arrivedAt = new Date().toISOString();
                                   // Update trip status - use 'ARRIVED' to match DB constraint
@@ -1462,9 +1484,10 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                       body: {
                                         tripId: trip.id,
                                         tripUserId: trip.user_id,
-                                        eventType: 'arrived',
+                                        eventType: isOverdue ? 'arrived_delayed' : 'arrived',
                                         origin: trip.origin,
                                         destination: trip.destination,
+                                        overdueMinutes: isOverdue ? Math.floor((Date.now() - etaDate.getTime()) / 60000) : undefined,
                                       }
                                     });
                                   } catch (notifyError) {
@@ -1482,7 +1505,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                 }
                               }}
                             >
-                              ✓ Llegué
+                              ✓ {isOverdue ? '¡Ya llegué!' : 'Llegué'}
                             </Button>
                           )}
                           {isActive && (

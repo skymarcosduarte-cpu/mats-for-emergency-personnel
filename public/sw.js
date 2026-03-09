@@ -16,6 +16,7 @@ let cachedAuth = null; // { supabaseUrl, supabaseKey, accessToken, userId }
 
 function startKeepAlive() {
   if (keepAliveInterval) return;
+  // Use a shorter interval (15s) to stay ahead of browser throttling
   keepAliveInterval = setInterval(() => {
     // 1. Ping clients (may be frozen, but worth trying)
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cls) => {
@@ -23,9 +24,12 @@ function startKeepAlive() {
     });
     // 2. Direct DB heartbeat from SW (works even if client is frozen)
     swHeartbeat();
-  }, 20000); // every 20 seconds
+    // 3. Self-ping to keep SW alive (prevents browser from killing the worker)
+    selfPing();
+  }, 15000); // every 15 seconds
   // Immediate first heartbeat
   swHeartbeat();
+  selfPing();
   console.log('[SW] Keep-alive started');
 }
 
@@ -37,7 +41,12 @@ function stopKeepAlive() {
   }
 }
 
-// Direct REST heartbeat from the Service Worker – no client JS needed
+// Self-ping: fetch the SW itself to keep it alive in Chrome Android
+function selfPing() {
+  fetch(self.location.href, { method: 'HEAD', cache: 'no-store' }).catch(() => {});
+}
+
+
 async function swHeartbeat() {
   if (!cachedAuth || !cachedAuth.accessToken) return;
   const { supabaseUrl, supabaseKey, accessToken, userId } = cachedAuth;
