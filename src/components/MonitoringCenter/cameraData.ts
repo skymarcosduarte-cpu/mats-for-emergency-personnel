@@ -160,16 +160,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     embedUrl: `https://www.youtube.com/embed/9f3npaKdyCA${YT_PARAMS}`,
     region: 'mexico',
   },
-  {
-    id: 'yt-popocatepetl-afartv',
-    name: 'Popocatépetl 4K - AfarTV',
-    city: 'Popocatépetl',
-    country: 'México',
-    description: 'Volcán en vivo 4K — canal @afartv',
-    sourceType: 'youtube_channel',
-    embedUrl: `https://www.youtube.com/embed/live_stream?channel=UCaG0IHN1RMOZ4-U3wDXAkwA${YT_PARAMS.replace('?', '&')}`,
-    region: 'mexico',
-  },
   // ═══════════════════════════════════════
   // Norteamérica
   // ═══════════════════════════════════════
@@ -227,16 +217,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
   // Europa
   // ═══════════════════════════════════════
   {
-    id: 'yt-madrid',
-    name: 'Madrid, España',
-    city: 'Madrid',
-    country: 'España',
-    description: 'Madrid en vivo',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/dVAtjVi7bUQ${YT_PARAMS}`,
-    region: 'europe',
-  },
-  {
     id: 'yt-paris',
     name: 'París, Francia',
     city: 'París',
@@ -244,16 +224,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     description: 'París en vivo',
     sourceType: 'youtube',
     embedUrl: `https://www.youtube.com/embed/OzYp4NRZlwQ${YT_PARAMS}`,
-    region: 'europe',
-  },
-  {
-    id: 'yt-berlin',
-    name: 'Berlín, Alemania',
-    city: 'Berlín',
-    country: 'Alemania',
-    description: 'Berlín en vivo',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/IRqboacDNFg${YT_PARAMS}`,
     region: 'europe',
   },
   // ═══════════════════════════════════════
@@ -282,16 +252,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
   // ═══════════════════════════════════════
   // Global
   // ═══════════════════════════════════════
-  {
-    id: 'yt-world-random',
-    name: 'Cámaras del Mundo (aleatorio)',
-    city: 'Varias',
-    country: 'Mundial',
-    description: 'Diferentes cámaras del mundo aleatoriamente',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/EFum1rGUdkk${YT_PARAMS}`,
-    region: 'europe',
-  },
 ];
 
 // IDs de las 4 cámaras por defecto al abrir por primera vez
