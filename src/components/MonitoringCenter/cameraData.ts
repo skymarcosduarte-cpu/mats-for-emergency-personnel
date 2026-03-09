@@ -252,16 +252,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
   // ═══════════════════════════════════════
   // Global
   // ═══════════════════════════════════════
-  {
-    id: 'yt-world-random',
-    name: 'Cámaras del Mundo (aleatorio)',
-    city: 'Varias',
-    country: 'Mundial',
-    description: 'Diferentes cámaras del mundo aleatoriamente',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/EFum1rGUdkk${YT_PARAMS}`,
-    region: 'europe',
-  },
 ];
 
 // IDs de las 4 cámaras por defecto al abrir por primera vez
