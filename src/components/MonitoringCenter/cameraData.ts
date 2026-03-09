@@ -212,10 +212,10 @@ export const DEFAULT_CAMERAS: Camera[] = [
   },
   {
     id: 'yt-guadalajara-jalisco',
-    name: 'Guadalajara, Jalisco',
+    name: 'Guadalajara, Vista Poniente',
     city: 'Guadalajara',
     country: 'México',
-    description: 'Guadalajara, Jalisco en vivo',
+    description: 'Guadalajara vista poniente en vivo',
     sourceType: 'youtube',
     embedUrl: `https://www.youtube.com/embed/SP0PzhBX1SE${YT_PARAMS}`,
     region: 'mexico',
