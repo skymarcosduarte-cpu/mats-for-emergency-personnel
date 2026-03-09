@@ -16,7 +16,7 @@ let cachedAuth = null; // { supabaseUrl, supabaseKey, accessToken, userId }
 
 function startKeepAlive() {
   if (keepAliveInterval) return;
-  // Use a shorter interval (15s) to stay ahead of browser throttling
+  // Use a 10s interval to stay well ahead of browser throttling
   keepAliveInterval = setInterval(() => {
     // 1. Ping clients (may be frozen, but worth trying)
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cls) => {
@@ -26,7 +26,7 @@ function startKeepAlive() {
     swHeartbeat();
     // 3. Self-ping to keep SW alive (prevents browser from killing the worker)
     selfPing();
-  }, 15000); // every 15 seconds
+  }, 10000); // every 10 seconds
   // Immediate first heartbeat
   swHeartbeat();
   selfPing();
