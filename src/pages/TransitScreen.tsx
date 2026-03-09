@@ -1457,9 +1457,11 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                           {isActive && (
                             <Button
                               size="sm"
-                              variant="outline"
-                              className="text-xs"
-                              onClick={async () => {
+                              variant={isOverdue ? "default" : "outline"}
+                              className={cn("text-xs", isOverdue && "bg-safe hover:bg-safe/90 text-safe-foreground font-bold animate-pulse")}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
                                 try {
                                   const arrivedAt = new Date().toISOString();
                                   // Update trip status - use 'ARRIVED' to match DB constraint
@@ -1482,9 +1484,10 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                       body: {
                                         tripId: trip.id,
                                         tripUserId: trip.user_id,
-                                        eventType: 'arrived',
+                                        eventType: isOverdue ? 'arrived_delayed' : 'arrived',
                                         origin: trip.origin,
                                         destination: trip.destination,
+                                        overdueMinutes: isOverdue ? Math.floor((Date.now() - etaDate.getTime()) / 60000) : undefined,
                                       }
                                     });
                                   } catch (notifyError) {
@@ -1502,7 +1505,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                 }
                               }}
                             >
-                              ✓ Llegué
+                              ✓ {isOverdue ? '¡Ya llegué!' : 'Llegué'}
                             </Button>
                           )}
                           {isActive && (
