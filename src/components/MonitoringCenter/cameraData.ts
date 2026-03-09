@@ -227,16 +227,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
   // Europa
   // ═══════════════════════════════════════
   {
-    id: 'yt-madrid',
-    name: 'Madrid, España',
-    city: 'Madrid',
-    country: 'España',
-    description: 'Madrid en vivo',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/dVAtjVi7bUQ${YT_PARAMS}`,
-    region: 'europe',
-  },
-  {
     id: 'yt-paris',
     name: 'París, Francia',
     city: 'París',
