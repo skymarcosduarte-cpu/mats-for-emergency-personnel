@@ -661,7 +661,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
               // Smooth = 1 for anti-aliased edges
               const satLayer = L.tileLayer(
                 `https://tilecache.rainviewer.com${satPath}/256/{z}/{x}/{y}/0/0_1.png`,
-                { opacity: 0.9, zIndex: 2, maxNativeZoom: 12, maxZoom: 18, attribution: 'RainViewer Satellite' }
+                { opacity: 0.9, zIndex: 2, maxNativeZoom: 12, maxZoom: 18, errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', attribution: 'RainViewer Satellite' }
               );
               satLayer.addTo(map);
               satCloudLayerRef.current = satLayer;
