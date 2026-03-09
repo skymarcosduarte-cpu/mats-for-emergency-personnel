@@ -1563,37 +1563,6 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         />
       )}
 
-      {/* Fullscreen Earthquake Monitor */}
-      {showEarthquakeMonitor && (
-        <div className="fixed inset-0 z-[9999] bg-black flex flex-col">
-          <div className="flex items-center justify-between p-3 bg-black/90">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-white font-bold text-sm">Monitor de Sismos Globales — EN VIVO</span>
-            </div>
-            <button
-              onClick={() => setShowEarthquakeMonitor(false)}
-              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
-          </div>
-          <div className="flex-1 relative">
-            {/* Loading indicator while iframe loads */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white z-0">
-              <Loader2 className="w-10 h-10 animate-spin text-red-500" />
-              <span className="text-sm text-white/70">Conectando al monitor en vivo…</span>
-            </div>
-            <iframe
-              src="https://www.youtube.com/embed/rvtygG4n6ew?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&playsinline=1"
-              className="w-full h-full relative z-10"
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
-              title="Monitor de Sismos Globales"
-            />
-          </div>
-        </div>
-      )}
 
     </div>
   );
