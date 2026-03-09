@@ -573,10 +573,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
           </button>
 
           {/* Monitor de Sismos Globales 24/7 */}
-          <a
-            href="https://www.youtube.com/live/rvtygG4n6ew?si=6IWLvNa5CZNF6liG"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => setShowEarthquakeMonitor(true)}
             className={cn(
               "w-full flex items-center gap-4 p-5 rounded-2xl",
               "bg-card border-2 border-red-500/40 shadow-sm",
@@ -599,8 +597,8 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 Monitoreo sísmico mundial en tiempo real
               </p>
             </div>
-            <ExternalLink className="w-6 h-6 text-red-500/70 shrink-0" />
-          </a>
+            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
+          </button>
         </div>
       </div>
     );
