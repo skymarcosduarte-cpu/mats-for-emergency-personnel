@@ -160,16 +160,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     embedUrl: `https://www.youtube.com/embed/9f3npaKdyCA${YT_PARAMS}`,
     region: 'mexico',
   },
-  {
-    id: 'yt-popocatepetl-afartv',
-    name: 'Popocatépetl 4K - AfarTV',
-    city: 'Popocatépetl',
-    country: 'México',
-    description: 'Volcán en vivo 4K — canal @afartv',
-    sourceType: 'youtube_channel',
-    embedUrl: `https://www.youtube.com/embed/live_stream?channel=UCaG0IHN1RMOZ4-U3wDXAkwA${YT_PARAMS.replace('?', '&')}`,
-    region: 'mexico',
-  },
   // ═══════════════════════════════════════
   // Norteamérica
   // ═══════════════════════════════════════
