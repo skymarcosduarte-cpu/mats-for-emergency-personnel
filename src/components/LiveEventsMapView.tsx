@@ -76,6 +76,36 @@ interface EventsState {
   lastUpdate: Date | null;
 }
 
+// Helper: create OWM tile layer that hides "Zoom Level Not Supported" error tiles
+// OWM returns these as valid 200 images, so errorTileUrl doesn't help
+const createOwmTileLayer = (url: string, options: L.TileLayerOptions): L.TileLayer => {
+  const layer = L.tileLayer(url, {
+    ...options,
+    crossOrigin: 'anonymous',
+  });
+  layer.on('tileload', (e: any) => {
+    const img = e.tile as HTMLImageElement;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Sample center pixel - OWM error tiles have a uniform gray (#8C8C8C) background
+        ctx.drawImage(img, img.naturalWidth / 2, img.naturalHeight / 2, 1, 1, 0, 0, 1, 1);
+        const pixel = ctx.getImageData(0, 0, 1, 1).data;
+        // Gray error tile: RGB ~140,140,140 with full alpha
+        if (pixel[3] === 255 && Math.abs(pixel[0] - pixel[1]) < 5 && Math.abs(pixel[1] - pixel[2]) < 5 && pixel[0] > 120 && pixel[0] < 170) {
+          img.style.display = 'none';
+        }
+      }
+    } catch (_) {
+      // CORS or canvas error - ignore silently
+    }
+  });
+  return layer;
+};
+
 // Create earthquake marker icon
 const createEarthquakeIcon = (magnitude: number) => {
   const size = Math.max(20, Math.min(50, magnitude * 8));
@@ -427,9 +457,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
             }
           }
           if (apiKey) {
-            const owmLayer = L.tileLayer(
+            const owmLayer = createOwmTileLayer(
               `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 1.0, zIndex: 3, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18, errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }
+              { opacity: 1.0, zIndex: 3, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
             );
             owmLayer.addTo(map);
             owmLayerRef.current = owmLayer;
@@ -438,9 +468,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
 
           // Also add clouds layer
           if (!owmCloudsLayerRef.current && apiKey) {
-            const cloudsLayer = L.tileLayer(
+            const cloudsLayer = createOwmTileLayer(
               `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 1, zIndex: 4, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18, errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }
+              { opacity: 1, zIndex: 4, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
             );
             cloudsLayer.addTo(map);
             owmCloudsLayerRef.current = cloudsLayer;
@@ -449,9 +479,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
 
           // Temperature layer (off by default, added only if enabled)
           if (owmTempActive && !owmTempLayerRef.current && apiKey) {
-            const tempLayer = L.tileLayer(
+            const tempLayer = createOwmTileLayer(
               `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18, errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }
+              { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
             );
             tempLayer.addTo(map);
             owmTempLayerRef.current = tempLayer;
@@ -695,9 +725,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     const apiKey = owmKeyRef.current;
     if (owmWindActive) {
       if (!owmWindLayerRef.current && apiKey) {
-        const windLayer = L.tileLayer(
+        const windLayer = createOwmTileLayer(
           `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-          { opacity: 1.0, zIndex: 6, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18, errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }
+          { opacity: 1.0, zIndex: 6, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
         );
         windLayer.addTo(map);
         owmWindLayerRef.current = windLayer;
@@ -1015,9 +1045,9 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     const apiKey = owmKeyRef.current;
     if (owmTempActive) {
       if (!owmTempLayerRef.current && apiKey) {
-        const tempLayer = L.tileLayer(
+        const tempLayer = createOwmTileLayer(
           `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-          { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18, errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }
+          { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
         );
         tempLayer.addTo(map);
         owmTempLayerRef.current = tempLayer;
