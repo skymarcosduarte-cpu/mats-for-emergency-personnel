@@ -41,7 +41,12 @@ function stopKeepAlive() {
   }
 }
 
-// Direct REST heartbeat from the Service Worker – no client JS needed
+// Self-ping: fetch the SW itself to keep it alive in Chrome Android
+function selfPing() {
+  fetch(self.location.href, { method: 'HEAD', cache: 'no-store' }).catch(() => {});
+}
+
+
 async function swHeartbeat() {
   if (!cachedAuth || !cachedAuth.accessToken) return;
   const { supabaseUrl, supabaseKey, accessToken, userId } = cachedAuth;
