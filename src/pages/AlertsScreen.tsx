@@ -1576,10 +1576,15 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               <X className="w-5 h-5 text-white" />
             </button>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 relative">
+            {/* Loading indicator while iframe loads */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white z-0">
+              <Loader2 className="w-10 h-10 animate-spin text-red-500" />
+              <span className="text-sm text-white/70">Conectando al monitor en vivo…</span>
+            </div>
             <iframe
               src="https://www.youtube.com/embed/rvtygG4n6ew?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&playsinline=1"
-              className="w-full h-full"
+              className="w-full h-full relative z-10"
               allow="autoplay; encrypted-media; picture-in-picture"
               allowFullScreen
               title="Monitor de Sismos Globales"
