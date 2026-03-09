@@ -92,10 +92,10 @@ export const DEFAULT_CAMERAS: Camera[] = [
   },
   {
     id: 'yt-cdmx-torre-latino-poniente',
-    name: 'Poniente CDMX Torre Latino',
+    name: 'CDMX Torre Latino Oeste',
     city: 'CDMX',
     country: 'México',
-    description: 'Vista poniente desde la Torre Latinoamericana',
+    description: 'Vista oeste desde la Torre Latinoamericana',
     sourceType: 'youtube',
     embedUrl: `https://www.youtube.com/embed/CsWJN_OgxwE${YT_PARAMS}`,
     region: 'mexico',
