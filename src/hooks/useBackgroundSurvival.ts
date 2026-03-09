@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 const KEEP_ALIVE_INTERVAL = 25_000;
 // Shorter interval for the first few seconds after going to background
 const AGGRESSIVE_INTERVAL = 5_000;
-const AGGRESSIVE_DURATION = 60_000; // 1 minute of aggressive pings after backgrounding
+const AGGRESSIVE_DURATION = 5 * 60_000; // 5 minutes of aggressive pings after backgrounding
 
 /**
  * Acquires a Web Lock that is never released while the page lives.

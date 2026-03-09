@@ -298,18 +298,18 @@ export function useLocation(options: UseLocationOptions = {}) {
       }
     }, 5000);
 
-    // Mark offline when page unloads
+    // Mark offline ONLY when truly closing the page (not backgrounding)
+    // pagehide fires on Android when going to background — DO NOT mark offline there
     const handleUnload = () => {
+      // beforeunload only fires on actual page close/navigation, not on background
       markOffline();
     };
     window.addEventListener('beforeunload', handleUnload);
-    window.addEventListener('pagehide', handleUnload);
 
     return () => {
       stopWatching();
       clearInterval(forceRefreshInterval);
       window.removeEventListener('beforeunload', handleUnload);
-      window.removeEventListener('pagehide', handleUnload);
     };
   }, [opts.autoWatch, startWatching, stopWatching, markOffline, handlePosition]);
 
