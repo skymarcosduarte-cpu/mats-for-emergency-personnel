@@ -669,7 +669,6 @@ export const BreakingNewsSection: React.FC = () => {
       <CardContent className="space-y-2">
         {/* Live streaming links */}
         {[
-          { href: 'https://www.youtube.com/live/rvtygG4n6ew?si=6IWLvNa5CZNF6liG', label: 'LIVE Earthquake Monitor' },
           { href: 'https://www.youtube.com/live/p2AzyIEuFak?si=L9WTy72PmRc9YTai', label: 'N+ Streaming en vivo' },
           { href: 'https://www.youtube.com/MILENIO/live/1000', label: 'Milenio Noticias en vivo' },
         ].map((stream) => (
