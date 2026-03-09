@@ -383,7 +383,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           
           const satLayer = L.tileLayer(
             `https://tilecache.rainviewer.com${satPath}/256/{z}/{x}/{y}/0/0_1.png`,
-            { opacity: 0.95, zIndex: 4, maxNativeZoom: 12, maxZoom: 18, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer Sat</a>' }
+            { opacity: 0.95, zIndex: 4, maxNativeZoom: 12, maxZoom: 18, errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer Sat</a>' }
           );
           
           satLayer.addTo(map);
