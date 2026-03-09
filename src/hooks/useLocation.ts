@@ -310,7 +310,6 @@ export function useLocation(options: UseLocationOptions = {}) {
       stopWatching();
       clearInterval(forceRefreshInterval);
       window.removeEventListener('beforeunload', handleUnload);
-      window.removeEventListener('pagehide', handleUnload);
     };
   }, [opts.autoWatch, startWatching, stopWatching, markOffline, handlePosition]);
 
