@@ -336,7 +336,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
     const layer = L.tileLayer(
       `https://tilecache.rainviewer.com${framePath}/256/{z}/{x}/{y}/2/1_1.png`,
-      { opacity: 1.0, zIndex: 5, maxNativeZoom: 12, maxZoom: 18, attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>' }
+      { opacity: 1.0, zIndex: 5, maxNativeZoom: 12, maxZoom: 18, errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', attribution: '<a href="https://www.rainviewer.com/" target="_blank">RainViewer</a>' }
     );
     layer.addTo(map);
     radarLayerRef.current = layer;
