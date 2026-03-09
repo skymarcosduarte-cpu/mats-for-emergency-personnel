@@ -2,7 +2,7 @@
 // USGS + SSN Mexico earthquakes + "Todo bien" quick report + "14" help + notifications + my alerts history
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, WifiOff, Navigation, CloudRain, Route, X, CheckCircle2, Map, MessageCircle, Car, Plane, BookOpen, Radio, Activity, ArrowLeft } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MapPin, Clock, ChevronRight, AlertCircle, Loader2, Bell, Check, Trash2, WifiOff, Navigation, CloudRain, Route, X, CheckCircle2, Map, MessageCircle, Car, Plane, BookOpen, Radio, Activity, ArrowLeft, ExternalLink } from 'lucide-react';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { useEarthquakeHistory, EarthquakeWithDistance } from '@/hooks/useEarthquakeHistory';
 import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
