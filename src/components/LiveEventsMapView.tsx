@@ -76,6 +76,36 @@ interface EventsState {
   lastUpdate: Date | null;
 }
 
+// Helper: create OWM tile layer that hides "Zoom Level Not Supported" error tiles
+// OWM returns these as valid 200 images, so errorTileUrl doesn't help
+const createOwmTileLayer = (url: string, options: L.TileLayerOptions): L.TileLayer => {
+  const layer = L.tileLayer(url, {
+    ...options,
+    crossOrigin: 'anonymous',
+  });
+  layer.on('tileload', (e: any) => {
+    const img = e.tile as HTMLImageElement;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Sample center pixel - OWM error tiles have a uniform gray (#8C8C8C) background
+        ctx.drawImage(img, img.naturalWidth / 2, img.naturalHeight / 2, 1, 1, 0, 0, 1, 1);
+        const pixel = ctx.getImageData(0, 0, 1, 1).data;
+        // Gray error tile: RGB ~140,140,140 with full alpha
+        if (pixel[3] === 255 && Math.abs(pixel[0] - pixel[1]) < 5 && Math.abs(pixel[1] - pixel[2]) < 5 && pixel[0] > 120 && pixel[0] < 170) {
+          img.style.display = 'none';
+        }
+      }
+    } catch (_) {
+      // CORS or canvas error - ignore silently
+    }
+  });
+  return layer;
+};
+
 // Create earthquake marker icon
 const createEarthquakeIcon = (magnitude: number) => {
   const size = Math.max(20, Math.min(50, magnitude * 8));
