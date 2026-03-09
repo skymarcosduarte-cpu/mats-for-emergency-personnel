@@ -108,6 +108,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showRouteMap, setShowRouteMap] = useState<{ requestId: string; lat: number; lng: number } | null>(null);
+  const [showEarthquakeMonitor, setShowEarthquakeMonitor] = useState(false);
   
   // Source filter for "Otros" tab
   const [otrosSourceFilter, setOtrosSourceFilter] = useState<string | null>(null);
