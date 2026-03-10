@@ -1,5 +1,5 @@
-// Catálogo de cámaras verificadas — v3
-// Fuentes: YouTube
+// Catálogo de cámaras verificadas — v4
+// Solo fuentes embebibles (YouTube). Sin cámaras que requieran abrir enlace externo.
 // Última actualización: marzo 2026
 
 import { Camera, LayoutOption } from './types';
@@ -370,30 +370,8 @@ export const DEFAULT_CAMERAS: Camera[] = [
     embedUrl: `https://www.youtube.com/embed/z_I152IMqI8${YT_PARAMS}`,
     region: 'mexico',
   },
-  {
-    id: 'sky-cabo-san-lucas',
-    name: 'Cabo San Lucas, BCS',
-    city: 'Cabo San Lucas',
-    country: 'México',
-    description: 'Cabo San Lucas en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/mexico/baja-california-sur/cabo-san-lucas/cabo-san-lucas.html',
-    region: 'mexico',
-  },
-  {
-    id: 'sky-xcaret-qroo',
-    name: 'Xcaret, Quintana Roo',
-    city: 'Playa del Carmen',
-    country: 'México',
-    description: 'Parque Xcaret en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/mexico/quintana-roo/solidaridad/el-parque-de-xcaret.html',
-    region: 'mexico',
-  },
   // ═══════════════════════════════════════
-  // Norteamérica
+  // Norteamérica (EE.UU.)
   // ═══════════════════════════════════════
   {
     id: 'yt-times-square',
@@ -499,28 +477,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
   // Canadá
   // ═══════════════════════════════════════
   {
-    id: 'sky-toronto',
-    name: 'Toronto, Canadá',
-    city: 'Toronto',
-    country: 'Canadá',
-    description: 'Toronto CN Tower en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/canada/ontario/toronto/ytz-cn-tower.html',
-    region: 'northamerica',
-  },
-  {
-    id: 'sky-niagara-falls',
-    name: 'Niagara Falls, Canadá',
-    city: 'Niagara Falls',
-    country: 'Canadá',
-    description: 'Cataratas del Niágara en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/canada/ontario/niagara-falls/niagara-falls.html',
-    region: 'northamerica',
-  },
-  {
     id: 'yt-ottawa-canada',
     name: 'Ottawa, Canadá',
     city: 'Ottawa',
@@ -528,17 +484,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     description: 'Ottawa en vivo',
     sourceType: 'youtube',
     embedUrl: `https://www.youtube.com/embed/lLYosWv_AwQ${YT_PARAMS}`,
-    region: 'northamerica',
-  },
-  {
-    id: 'sky-vancouver',
-    name: 'Vancouver, Canadá',
-    city: 'Vancouver',
-    country: 'Canadá',
-    description: 'Panorámica de Vancouver en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/canada/british-columbia/vancouver/panorama.html',
     region: 'northamerica',
   },
   // ═══════════════════════════════════════
@@ -552,83 +497,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     description: 'París en vivo',
     sourceType: 'youtube',
     embedUrl: `https://www.youtube.com/embed/OzYp4NRZlwQ${YT_PARAMS}`,
-    region: 'europe',
-  },
-  {
-    id: 'sky-puerta-sol-madrid',
-    name: 'Puerta del Sol, Madrid',
-    city: 'Madrid',
-    country: 'España',
-    description: 'Puerta del Sol en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/espana/comunidad-de-madrid/madrid/puerta-del-sol-tio-pepe.html',
-    region: 'europe',
-  },
-  {
-    id: 'sky-plaza-callao-madrid',
-    name: 'Plaza del Callao, Madrid',
-    city: 'Madrid',
-    country: 'España',
-    description: 'Plaza del Callao en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/espana/comunidad-de-madrid/madrid/madrid-plaza-del-callao.html',
-    region: 'europe',
-  },
-  {
-    id: 'sky-calle-alcala-madrid',
-    name: 'Calle Alcalá, Madrid',
-    city: 'Madrid',
-    country: 'España',
-    description: 'Calle Alcalá en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/espana/comunidad-de-madrid/madrid/calle-alcala.html',
-    region: 'europe',
-  },
-  {
-    id: 'sky-alhambra-granada',
-    name: 'Alhambra, Granada',
-    city: 'Granada',
-    country: 'España',
-    description: 'Alhambra de Granada en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/espana/andalucia/granada/alhambra-de-granada.html',
-    region: 'europe',
-  },
-  {
-    id: 'sky-barcelona-playa',
-    name: 'Playa San Sebastián, Barcelona',
-    city: 'Barcelona',
-    country: 'España',
-    description: 'Playa Sant Sebastià en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/espana/cataluna/barcelona/playa-sant-sebastia.html',
-    region: 'europe',
-  },
-  {
-    id: 'sky-coliseo-roma',
-    name: 'Coliseo, Roma',
-    city: 'Roma',
-    country: 'Italia',
-    description: 'Coliseo de Roma en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/italia/lazio/roma/roma-colosseo.html',
-    region: 'europe',
-  },
-  {
-    id: 'sky-florencia-duomo',
-    name: 'Florencia, Piazza del Duomo',
-    city: 'Florencia',
-    country: 'Italia',
-    description: 'Piazza del Duomo, Florencia en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/italia/toscana/firenze/piazza-duomo-firenze.html',
     region: 'europe',
   },
   {
@@ -674,42 +542,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     embedUrl: `https://www.youtube.com/embed/eaHSUjbK75o${YT_PARAMS}`,
     region: 'asia_mideast',
   },
-  {
-    id: 'sky-piramide-giza',
-    name: 'Pirámide de Guiza, Egipto',
-    city: 'El Cairo',
-    country: 'Egipto',
-    description: 'Gran Pirámide de Guiza en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/egypt/cairo/cairo/great-pyramid-of-giza.html',
-    region: 'asia_mideast',
-  },
-  // ═══════════════════════════════════════
-  // América Latina
-  // ═══════════════════════════════════════
-  {
-    id: 'sky-miraflores-lima',
-    name: 'Miraflores, Lima',
-    city: 'Lima',
-    country: 'Perú',
-    description: 'Panorámica de Miraflores en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/peru/lima/lima/panoramica-de-miraflores.html',
-    region: 'latam',
-  },
-  {
-    id: 'sky-obelisco-buenosaires',
-    name: 'Obelisco, Buenos Aires',
-    city: 'Buenos Aires',
-    country: 'Argentina',
-    description: 'Obelisco de Buenos Aires en vivo',
-    sourceType: 'skylinewebcams',
-    embedUrl: '',
-    externalUrl: 'https://www.skylinewebcams.com/en/webcam/argentina/buenos-aires/buenos-aires/obelisco.html',
-    region: 'latam',
-  },
   // ═══════════════════════════════════════
   // Global
   // ═══════════════════════════════════════
@@ -748,7 +580,6 @@ export function getCellCount(layout: string): number {
 
 export const REGION_LABELS: Record<string, string> = {
   mexico: '🇲🇽 México',
-  latam: '🌎 América Latina',
   northamerica: '🇺🇸 Norteamérica',
   europe: '🇪🇺 Europa',
   asia_mideast: '🌏 Asia y Medio Oriente',
