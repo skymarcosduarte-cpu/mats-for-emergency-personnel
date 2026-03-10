@@ -602,6 +602,29 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               />
             </div>
           </div>
+
+          {/* Raspberry Shake */}
+          <a
+            href="https://stationview.raspberryshake.org/#/?lat=15.02955&lon=148.91310&zoom=2.348"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "w-full flex items-center gap-4 p-5 rounded-2xl",
+              "bg-card border-2 border-emerald-500/40 shadow-sm",
+              "hover:border-emerald-400/60 active:scale-[0.98] transition-all",
+              "animate-fade-in"
+            )}
+            style={{ animationDelay: '200ms' }}
+          >
+            <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+              <Activity className="w-6 h-6 text-emerald-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-bold text-foreground">Raspberry Shake</h3>
+              <p className="text-sm text-muted-foreground mt-0.5">Mira la tierra como se mueve 🌍</p>
+            </div>
+            <ExternalLink className="w-6 h-6 text-emerald-500/70 shrink-0" />
+          </a>
         </div>
       </div>
     );
