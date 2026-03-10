@@ -370,6 +370,28 @@ export const DEFAULT_CAMERAS: Camera[] = [
     embedUrl: `https://www.youtube.com/embed/z_I152IMqI8${YT_PARAMS}`,
     region: 'mexico',
   },
+  {
+    id: 'sky-cabo-san-lucas',
+    name: 'Cabo San Lucas, BCS',
+    city: 'Cabo San Lucas',
+    country: 'México',
+    description: 'Cabo San Lucas en vivo',
+    sourceType: 'skylinewebcams',
+    embedUrl: '',
+    externalUrl: 'https://www.skylinewebcams.com/en/webcam/mexico/baja-california-sur/cabo-san-lucas/cabo-san-lucas.html',
+    region: 'mexico',
+  },
+  {
+    id: 'sky-xcaret-qroo',
+    name: 'Xcaret, Quintana Roo',
+    city: 'Playa del Carmen',
+    country: 'México',
+    description: 'Parque Xcaret en vivo',
+    sourceType: 'skylinewebcams',
+    embedUrl: '',
+    externalUrl: 'https://www.skylinewebcams.com/en/webcam/mexico/quintana-roo/solidaridad/el-parque-de-xcaret.html',
+    region: 'mexico',
+  },
   // ═══════════════════════════════════════
   // Norteamérica
   // ═══════════════════════════════════════
