@@ -571,36 +571,37 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
           </button>
 
-          {/* Monitor de Sismos Globales 24/7 */}
-          <a
-            href="https://www.youtube.com/live/rvtygG4n6ew?si=6IWLvNa5CZNF6liG"
-            target="_blank"
-            rel="noopener noreferrer"
+          {/* Monitor de Sismos Globales 24/7 - Embedded player */}
+          <div
             className={cn(
-              "w-full flex items-center gap-4 p-5 rounded-2xl",
-              "bg-card border-2 border-red-500/40 shadow-sm",
-              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
-              "transition-all duration-200 animate-fade-in",
-              "bg-gradient-to-r from-red-500/5 to-orange-500/5",
-              "no-underline"
+              "w-full rounded-2xl overflow-hidden",
+              "bg-black border-2 border-red-500/40 shadow-sm",
+              "animate-fade-in"
             )}
             style={{ animationDelay: '150ms' }}
           >
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm bg-red-500/15 animate-pulse">
-              <Radio className="w-10 h-10 text-red-500" strokeWidth={2.5} />
-            </div>
-            <div className="flex-1 text-left min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-bold text-red-500 uppercase tracking-wide">EN VIVO 24/7</span>
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-2 bg-black/90">
+              <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-xs font-bold text-red-500 uppercase tracking-wide font-mono">EN VIVO 24/7</span>
               </div>
-              <h3 className="font-bold text-foreground text-xl">Monitor de Sismos Globales</h3>
-              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
-                Monitoreo sísmico mundial en tiempo real
-              </p>
+              <span className="text-xs text-white/60 font-mono">Monitor de Sismos Globales</span>
             </div>
-            <ExternalLink className="w-6 h-6 text-red-500/70 shrink-0" />
-          </a>
+            {/* Video */}
+            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+              <div className="absolute inset-0 flex items-center justify-center bg-black z-0">
+                <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+              </div>
+              <iframe
+                src="https://www.youtube.com/embed/rvtygG4n6ew?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0&playsinline=1"
+                className="absolute inset-0 w-full h-full z-10"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                title="Monitor de Sismos Globales"
+              />
+            </div>
+          </div>
         </div>
       </div>
     );
