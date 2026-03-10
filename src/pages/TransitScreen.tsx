@@ -1429,7 +1429,65 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             )}
                           </div>
                         )}
-                        <div className="flex gap-2 mt-3 flex-wrap">
+                        {/* Prominent arrival button - full width above other actions */}
+                        {isActive && (
+                          <Button
+                            size="lg"
+                            className={cn(
+                              "w-full mt-3 text-base font-bold gap-2",
+                              isOverdue 
+                                ? "bg-safe hover:bg-safe/90 text-safe-foreground animate-pulse" 
+                                : "bg-safe hover:bg-safe/90 text-safe-foreground"
+                            )}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                const arrivedAt = new Date().toISOString();
+                                console.log('[TransitScreen] Marking trip as arrived:', trip.id);
+                                const { error: updateError } = await supabase
+                                  .from('transit_trips')
+                                  .update({ 
+                                    status: 'ARRIVED', 
+                                    arrived_at: arrivedAt 
+                                  })
+                                  .eq('id', trip.id);
+                                
+                                if (updateError) {
+                                  console.error('[TransitScreen] Error updating trip status:', updateError);
+                                  throw updateError;
+                                }
+                                
+                                try {
+                                  await supabase.functions.invoke('notify-trip-update', {
+                                    body: {
+                                      tripId: trip.id,
+                                      tripUserId: trip.user_id,
+                                      eventType: isOverdue ? 'arrived_delayed' : 'arrived',
+                                      origin: trip.origin,
+                                      destination: trip.destination,
+                                      overdueMinutes: isOverdue ? Math.floor((Date.now() - etaDate.getTime()) / 60000) : undefined,
+                                    }
+                                  });
+                                } catch (notifyError) {
+                                  console.error('[TransitScreen] Error notifying users:', notifyError);
+                                }
+                                
+                                toast.success('¡Viaje completado! Todos los usuarios activos fueron notificados.');
+                                fetchMyTrips();
+                                
+                                setArrivalDialogTrip({ ...trip, arrived_at: arrivedAt, status: 'ARRIVED' });
+                              } catch (e) {
+                                console.error('[TransitScreen] Error completing trip:', e);
+                                toast.error('Error al completar viaje. Intenta de nuevo.');
+                              }
+                            }}
+                          >
+                            <CheckCircle className="w-5 h-5" />
+                            {isOverdue ? '¡Ya llegué a mi destino!' : '✓ Llegué a mi destino'}
+                          </Button>
+                        )}
+
+                        <div className="flex gap-2 mt-2 flex-wrap">
                           {/* Share trip to WhatsApp button */}
                           <ShareTripToWhatsApp
                             trip={{
@@ -1454,60 +1512,6 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                             isOwnTrip={true}
                             size="sm"
                           />
-                          {isActive && (
-                            <Button
-                              size="sm"
-                              variant={isOverdue ? "default" : "outline"}
-                              className={cn("text-xs", isOverdue && "bg-safe hover:bg-safe/90 text-safe-foreground font-bold animate-pulse")}
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                try {
-                                  const arrivedAt = new Date().toISOString();
-                                  // Update trip status - use 'ARRIVED' to match DB constraint
-                                  const { error: updateError } = await supabase
-                                    .from('transit_trips')
-                                    .update({ 
-                                      status: 'ARRIVED', 
-                                      arrived_at: arrivedAt 
-                                    })
-                                    .eq('id', trip.id);
-                                  
-                                  if (updateError) {
-                                    console.error('Error updating trip status:', updateError);
-                                    throw updateError;
-                                  }
-                                  
-                                  // Notify all active users about arrival
-                                  try {
-                                    await supabase.functions.invoke('notify-trip-update', {
-                                      body: {
-                                        tripId: trip.id,
-                                        tripUserId: trip.user_id,
-                                        eventType: isOverdue ? 'arrived_delayed' : 'arrived',
-                                        origin: trip.origin,
-                                        destination: trip.destination,
-                                        overdueMinutes: isOverdue ? Math.floor((Date.now() - etaDate.getTime()) / 60000) : undefined,
-                                      }
-                                    });
-                                  } catch (notifyError) {
-                                    console.error('Error notifying users:', notifyError);
-                                  }
-                                  
-                                  toast.success('¡Viaje completado! Todos los usuarios activos fueron notificados.');
-                                  fetchMyTrips();
-                                  
-                                  // Open arrival share dialog
-                                  setArrivalDialogTrip({ ...trip, arrived_at: arrivedAt, status: 'ARRIVED' });
-                                } catch (e) {
-                                  console.error('Error completing trip:', e);
-                                  toast.error('Error al completar viaje');
-                                }
-                              }}
-                            >
-                              ✓ {isOverdue ? '¡Ya llegué!' : 'Llegué'}
-                            </Button>
-                          )}
                           {isActive && (
                             <Button
                               size="sm"
