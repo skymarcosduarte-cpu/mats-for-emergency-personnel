@@ -72,7 +72,7 @@ const VideoCell: React.FC<VideoCellProps> = ({
   }
 
   // Tipo external_url — solo placeholder con botón
-  if (camera.sourceType === 'external_url') {
+  if (camera.sourceType === 'external_url' || camera.sourceType === 'skylinewebcams' || camera.sourceType === 'earthtv' || camera.sourceType === 'webcamsdemexico') {
     return (
       <div className="relative w-full h-full bg-[#0a0a0a] flex flex-col items-center justify-center border border-[#222] gap-3">
         <CameraOff className="w-8 h-8 text-[#444]" />
