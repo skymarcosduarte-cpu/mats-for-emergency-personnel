@@ -36,4 +36,5 @@ export interface MonitoringState {
   layout: LayoutType;
   cells: CellConfig[];
   customCameras: Camera[];
+  allCells?: CellConfig[];
 }
