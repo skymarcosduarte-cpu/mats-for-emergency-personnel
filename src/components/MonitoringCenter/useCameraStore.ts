@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { LayoutType, CellConfig, Camera, MonitoringState } from './types';
 import { getCellCount, DEFAULT_INITIAL_CAMERA_IDS } from './cameraData';
 
-const STORAGE_KEY = 'mats-monitoring-center-v6';
+const STORAGE_KEY = 'mats-monitoring-center-v7';
 
 function loadState(): MonitoringState | null {
   try {
@@ -51,39 +51,59 @@ export function useCameraStore() {
     return saved?.customCameras ?? [];
   });
 
-  // Persistir cambios
+  // Persistence is handled below after allCells declaration
+
+  // Keep a full registry of all cell assignments so expanding restores them
+  const [allCells, setAllCells] = useState<CellConfig[]>(() => {
+    const saved = loadState();
+    return saved?.allCells ?? saved?.cells ?? createDefaultCells();
+  });
+
+  // Persist allCells too
   useEffect(() => {
-    saveState({ layout, cells, customCameras });
-  }, [layout, cells, customCameras]);
+    saveState({ layout, cells, customCameras, allCells });
+  }, [layout, cells, customCameras, allCells]);
 
   const setLayout = useCallback((newLayout: LayoutType) => {
     const newCount = getCellCount(newLayout);
-    setCellsState(prev => {
-      const updated = [...prev];
-      while (updated.length < newCount) {
-        updated.push({ slotIndex: updated.length, cameraId: null, isMuted: true });
+    setAllCells(prevAll => {
+      // Merge current visible cells into the full registry
+      const merged = [...prevAll];
+      // Expand registry if needed
+      while (merged.length < newCount) {
+        merged.push({ slotIndex: merged.length, cameraId: null, isMuted: true });
       }
-      return updated.slice(0, newCount).map((c, i) => ({ ...c, slotIndex: i }));
+      // Slice visible cells from the full registry
+      const visible = merged.slice(0, newCount).map((c, i) => ({ ...c, slotIndex: i }));
+      setCellsState(visible);
+      return merged.map((c, i) => ({ ...c, slotIndex: i }));
     });
     setLayoutState(newLayout);
   }, []);
 
-  const assignCamera = useCallback((slotIndex: number, cameraId: string) => {
-    setCellsState(prev => prev.map(c =>
-      c.slotIndex === slotIndex ? { ...c, cameraId } : c
-    ));
+  // Sync allCells when cells change (assign/remove/mute)
+  const updateCell = useCallback((slotIndex: number, update: Partial<CellConfig>) => {
+    const updater = (prev: CellConfig[]) => prev.map(c =>
+      c.slotIndex === slotIndex ? { ...c, ...update } : c
+    );
+    setCellsState(updater);
+    setAllCells(updater);
   }, []);
+
+  const assignCamera = useCallback((slotIndex: number, cameraId: string) => {
+    updateCell(slotIndex, { cameraId });
+  }, [updateCell]);
 
   const removeCamera = useCallback((slotIndex: number) => {
-    setCellsState(prev => prev.map(c =>
-      c.slotIndex === slotIndex ? { ...c, cameraId: null } : c
-    ));
-  }, []);
+    updateCell(slotIndex, { cameraId: null });
+  }, [updateCell]);
 
   const toggleMute = useCallback((slotIndex: number) => {
-    setCellsState(prev => prev.map(c =>
+    const toggle = (prev: CellConfig[]) => prev.map(c =>
       c.slotIndex === slotIndex ? { ...c, isMuted: !c.isMuted } : c
-    ));
+    );
+    setCellsState(toggle);
+    setAllCells(toggle);
   }, []);
 
   const addCustomCamera = useCallback((camera: Camera) => {
@@ -92,9 +112,11 @@ export function useCameraStore() {
 
   const removeCustomCamera = useCallback((cameraId: string) => {
     setCustomCameras(prev => prev.filter(c => c.id !== cameraId));
-    setCellsState(prev => prev.map(c =>
+    const updater = (prev: CellConfig[]) => prev.map(c =>
       c.cameraId === cameraId ? { ...c, cameraId: null } : c
-    ));
+    );
+    setCellsState(updater);
+    setAllCells(updater);
   }, []);
 
   return {
