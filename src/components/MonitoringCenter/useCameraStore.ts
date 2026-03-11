@@ -81,17 +81,22 @@ export function useCameraStore() {
     setLayoutState(newLayout);
   }, []);
 
-  const assignCamera = useCallback((slotIndex: number, cameraId: string) => {
-    setCellsState(prev => prev.map(c =>
-      c.slotIndex === slotIndex ? { ...c, cameraId } : c
-    ));
+  // Sync allCells when cells change (assign/remove/mute)
+  const updateCell = useCallback((slotIndex: number, update: Partial<CellConfig>) => {
+    const updater = (prev: CellConfig[]) => prev.map(c =>
+      c.slotIndex === slotIndex ? { ...c, ...update } : c
+    );
+    setCellsState(updater);
+    setAllCells(updater);
   }, []);
 
+  const assignCamera = useCallback((slotIndex: number, cameraId: string) => {
+    updateCell(slotIndex, { cameraId });
+  }, [updateCell]);
+
   const removeCamera = useCallback((slotIndex: number) => {
-    setCellsState(prev => prev.map(c =>
-      c.slotIndex === slotIndex ? { ...c, cameraId: null } : c
-    ));
-  }, []);
+    updateCell(slotIndex, { cameraId: null });
+  }, [updateCell]);
 
   const toggleMute = useCallback((slotIndex: number) => {
     setCellsState(prev => prev.map(c =>
