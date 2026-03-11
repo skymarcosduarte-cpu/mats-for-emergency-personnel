@@ -99,10 +99,12 @@ export function useCameraStore() {
   }, [updateCell]);
 
   const toggleMute = useCallback((slotIndex: number) => {
-    setCellsState(prev => prev.map(c =>
-      c.slotIndex === slotIndex ? { ...c, isMuted: !c.isMuted } : c
-    ));
-  }, []);
+    setCellsState(prev => {
+      const cell = prev.find(c => c.slotIndex === slotIndex);
+      if (cell) updateCell(slotIndex, { isMuted: !cell.isMuted });
+      return prev;
+    });
+  }, [updateCell]);
 
   const addCustomCamera = useCallback((camera: Camera) => {
     setCustomCameras(prev => [...prev, camera]);
