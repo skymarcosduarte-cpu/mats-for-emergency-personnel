@@ -51,10 +51,7 @@ export function useCameraStore() {
     return saved?.customCameras ?? [];
   });
 
-  // Persistir cambios
-  useEffect(() => {
-    saveState({ layout, cells, customCameras });
-  }, [layout, cells, customCameras]);
+  // Persistence is handled below after allCells declaration
 
   // Keep a full registry of all cell assignments so expanding restores them
   const [allCells, setAllCells] = useState<CellConfig[]>(() => {
