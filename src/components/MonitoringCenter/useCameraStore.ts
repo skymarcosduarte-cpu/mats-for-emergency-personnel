@@ -56,14 +56,30 @@ export function useCameraStore() {
     saveState({ layout, cells, customCameras });
   }, [layout, cells, customCameras]);
 
+  // Keep a full registry of all cell assignments so expanding restores them
+  const [allCells, setAllCells] = useState<CellConfig[]>(() => {
+    const saved = loadState();
+    return saved?.allCells ?? saved?.cells ?? createDefaultCells();
+  });
+
+  // Persist allCells too
+  useEffect(() => {
+    saveState({ layout, cells, customCameras, allCells });
+  }, [layout, cells, customCameras, allCells]);
+
   const setLayout = useCallback((newLayout: LayoutType) => {
     const newCount = getCellCount(newLayout);
-    setCellsState(prev => {
-      const updated = [...prev];
-      while (updated.length < newCount) {
-        updated.push({ slotIndex: updated.length, cameraId: null, isMuted: true });
+    setAllCells(prevAll => {
+      // Merge current visible cells into the full registry
+      const merged = [...prevAll];
+      // Expand registry if needed
+      while (merged.length < newCount) {
+        merged.push({ slotIndex: merged.length, cameraId: null, isMuted: true });
       }
-      return updated.slice(0, newCount).map((c, i) => ({ ...c, slotIndex: i }));
+      // Slice visible cells from the full registry
+      const visible = merged.slice(0, newCount).map((c, i) => ({ ...c, slotIndex: i }));
+      setCellsState(visible);
+      return merged.map((c, i) => ({ ...c, slotIndex: i }));
     });
     setLayoutState(newLayout);
   }, []);
