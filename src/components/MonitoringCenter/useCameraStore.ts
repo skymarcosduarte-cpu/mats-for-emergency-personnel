@@ -112,9 +112,11 @@ export function useCameraStore() {
 
   const removeCustomCamera = useCallback((cameraId: string) => {
     setCustomCameras(prev => prev.filter(c => c.id !== cameraId));
-    setCellsState(prev => prev.map(c =>
+    const updater = (prev: CellConfig[]) => prev.map(c =>
       c.cameraId === cameraId ? { ...c, cameraId: null } : c
-    ));
+    );
+    setCellsState(updater);
+    setAllCells(updater);
   }, []);
 
   return {
