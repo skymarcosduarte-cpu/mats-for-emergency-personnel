@@ -21,16 +21,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     region: 'mexico',
   },
   {
-    id: 'yt-cdmx-zocalo2',
-    name: 'Zócalo CDMX EN VIVO',
-    city: 'CDMX',
-    country: 'México',
-    description: 'Zócalo de la Ciudad de México en vivo',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/iFk6nRCYOd0${YT_PARAMS}`,
-    region: 'mexico',
-  },
-  {
     id: 'yt-tlamacas-popo',
     name: 'Tlamacas, Popocatépetl',
     city: 'Popocatépetl',
