@@ -2,7 +2,7 @@
 
 export type SourceType = 'youtube' | 'youtube_channel' | 'skylinewebcams' | 'earthtv' | 'webcamsdemexico' | 'external_url';
 
-export type Region = 'mexico' | 'latam' | 'northamerica' | 'europe' | 'asia_mideast';
+export type Region = 'noticias' | 'mexico' | 'latam' | 'northamerica' | 'europe' | 'asia_mideast';
 
 export interface Camera {
   id: string;
