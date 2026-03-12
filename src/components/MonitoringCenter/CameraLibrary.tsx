@@ -52,7 +52,7 @@ const CameraLibrary: React.FC<CameraLibraryProps> = ({
   );
 
   // Agrupar por región
-  const regionOrder = ['mexico', 'latam', 'northamerica', 'europe', 'asia_mideast'];
+  const regionOrder = ['noticias', 'mexico', 'latam', 'northamerica', 'europe', 'asia_mideast'];
   const grouped = regionOrder.reduce<Record<string, Camera[]>>((acc, region) => {
     const cams = filtered.filter(c => c.region === region);
     if (cams.length > 0) acc[region] = cams;

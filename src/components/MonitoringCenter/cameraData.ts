@@ -556,6 +556,19 @@ export const DEFAULT_CAMERAS: Camera[] = [
     region: 'noticias',
   },
   // ═══════════════════════════════════════
+  // Norteamérica (aeropuertos)
+  // ═══════════════════════════════════════
+  {
+    id: 'yt-lax-airport',
+    name: 'LAX Airport LIVE',
+    city: 'Los Ángeles',
+    country: 'EE.UU.',
+    description: 'Aeropuerto de Los Ángeles en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/12KqO5IBLeY${YT_PARAMS}`,
+    region: 'northamerica',
+  },
+  // ═══════════════════════════════════════
   // Global
   // ═══════════════════════════════════════
   {
