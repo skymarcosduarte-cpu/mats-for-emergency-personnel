@@ -533,6 +533,29 @@ export const DEFAULT_CAMERAS: Camera[] = [
     region: 'asia_mideast',
   },
   // ═══════════════════════════════════════
+  // Noticias en Vivo
+  // ═══════════════════════════════════════
+  {
+    id: 'yt-nplus-live',
+    name: 'N+ Streaming en vivo',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Noticias N+ en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/p2AzyIEuFak${YT_PARAMS}`,
+    region: 'noticias',
+  },
+  {
+    id: 'yt-milenio-live',
+    name: 'Milenio Noticias en vivo',
+    city: 'CDMX',
+    country: 'México',
+    description: 'Milenio Noticias en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/ZJHRMrp9gGM${YT_PARAMS}`,
+    region: 'noticias',
+  },
+  // ═══════════════════════════════════════
   // Global
   // ═══════════════════════════════════════
   {
@@ -569,6 +592,7 @@ export function getCellCount(layout: string): number {
 }
 
 export const REGION_LABELS: Record<string, string> = {
+  noticias: '📺 Noticias en Vivo',
   mexico: '🇲🇽 México',
   northamerica: '🇺🇸 Norteamérica',
   europe: '🇪🇺 Europa',
