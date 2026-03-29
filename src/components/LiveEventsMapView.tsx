@@ -1054,9 +1054,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (!owmTempLayerRef.current && apiKey) {
         const tempLayer = createOwmTileLayer(
           `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-          { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
+          { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap' },
+          map
         );
-        tempLayer.addTo(map);
+        if (!(tempLayer as any)._owmHidden) tempLayer.addTo(map);
         owmTempLayerRef.current = tempLayer;
       } else if (owmTempLayerRef.current && !map.hasLayer(owmTempLayerRef.current)) {
         owmTempLayerRef.current.addTo(map);
