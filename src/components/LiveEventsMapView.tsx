@@ -733,9 +733,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (!owmWindLayerRef.current && apiKey) {
         const windLayer = createOwmTileLayer(
           `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-          { opacity: 1.0, zIndex: 6, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
+          { opacity: 1.0, zIndex: 6, attribution: '© OpenWeatherMap' },
+          map
         );
-        windLayer.addTo(map);
+        if (!(windLayer as any)._owmHidden) windLayer.addTo(map);
         owmWindLayerRef.current = windLayer;
       } else if (owmWindLayerRef.current && !map.hasLayer(owmWindLayerRef.current)) {
         owmWindLayerRef.current.addTo(map);
