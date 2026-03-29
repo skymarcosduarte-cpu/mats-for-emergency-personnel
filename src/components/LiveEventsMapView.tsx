@@ -474,9 +474,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           if (!owmCloudsLayerRef.current && apiKey) {
             const cloudsLayer = createOwmTileLayer(
               `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 1, zIndex: 4, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
+              { opacity: 1, zIndex: 4, attribution: '© OpenWeatherMap' },
+              map
             );
-            cloudsLayer.addTo(map);
+            if (!(cloudsLayer as any)._owmHidden) cloudsLayer.addTo(map);
             owmCloudsLayerRef.current = cloudsLayer;
             console.log('[LiveEvents] OWM clouds layer added');
           }
