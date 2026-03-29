@@ -31,16 +31,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     region: 'mexico',
   },
   {
-    id: 'yt-aicm-live',
-    name: 'AICM En Vivo',
-    city: 'CDMX',
-    country: 'México',
-    description: 'Aeropuerto Internacional de la Ciudad de México en vivo',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/mCyFwnCcZJk${YT_PARAMS}`,
-    region: 'mexico',
-  },
-  {
     id: 'yt-basilica-guadalupe',
     name: 'Basílica de Guadalupe, CDMX',
     city: 'CDMX',
