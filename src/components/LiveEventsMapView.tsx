@@ -462,9 +462,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           if (apiKey) {
             const owmLayer = createOwmTileLayer(
               `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 1.0, zIndex: 3, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
+              { opacity: 1.0, zIndex: 3, attribution: '© OpenWeatherMap' },
+              map
             );
-            owmLayer.addTo(map);
+            if (!(owmLayer as any)._owmHidden) owmLayer.addTo(map);
             owmLayerRef.current = owmLayer;
             console.log('[LiveEvents] OWM precipitation layer added');
           }
