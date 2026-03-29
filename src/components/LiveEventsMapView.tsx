@@ -77,16 +77,35 @@ interface EventsState {
 }
 
 // Helper: create OWM tile layer that hides at zoom levels OWM doesn't support.
-// OWM free tier only supports zoom 0-9. Instead of upscaling (which causes
-// "Zoom Level Not Supported" error images), we hide the layer above maxNativeZoom
-// and show it again when zooming back down.
-const createOwmTileLayer = (url: string, options: L.TileLayerOptions): L.TileLayer => {
-  const maxNative = (options.maxNativeZoom as number) || 9;
+// OWM free tier only supports zoom 0-6. OWM returns HTTP 200 with a watermark
+// image ("Zoom Level Not Supported") instead of an error, so errorTileUrl won't help.
+// We physically add/remove the layer based on the current map zoom level.
+const OWM_MAX_ZOOM = 6;
+const createOwmTileLayer = (url: string, options: L.TileLayerOptions, map: L.Map): L.TileLayer => {
   const layer = L.tileLayer(url, {
     ...options,
-    maxNativeZoom: maxNative,
-    maxZoom: maxNative, // prevent Leaflet from requesting or upscaling beyond native
+    maxNativeZoom: OWM_MAX_ZOOM,
+    maxZoom: OWM_MAX_ZOOM,
   });
+
+  // Toggle visibility based on zoom
+  const toggleVisibility = () => {
+    const currentZoom = map.getZoom();
+    if (currentZoom > OWM_MAX_ZOOM) {
+      if (map.hasLayer(layer)) map.removeLayer(layer);
+    } else {
+      if (!map.hasLayer(layer)) layer.addTo(map);
+    }
+  };
+
+  map.on('zoomend', toggleVisibility);
+  // Initial check
+  if (map.getZoom() > OWM_MAX_ZOOM) {
+    // Don't add yet, caller expects to call addTo manually,
+    // but we mark it so the caller knows
+    (layer as any)._owmHidden = true;
+  }
+
   return layer;
 };
 
@@ -443,9 +462,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           if (apiKey) {
             const owmLayer = createOwmTileLayer(
               `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 1.0, zIndex: 3, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
+              { opacity: 1.0, zIndex: 3, attribution: '© OpenWeatherMap' },
+              map
             );
-            owmLayer.addTo(map);
+            if (!(owmLayer as any)._owmHidden) owmLayer.addTo(map);
             owmLayerRef.current = owmLayer;
             console.log('[LiveEvents] OWM precipitation layer added');
           }
@@ -454,9 +474,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           if (!owmCloudsLayerRef.current && apiKey) {
             const cloudsLayer = createOwmTileLayer(
               `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 1, zIndex: 4, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
+              { opacity: 1, zIndex: 4, attribution: '© OpenWeatherMap' },
+              map
             );
-            cloudsLayer.addTo(map);
+            if (!(cloudsLayer as any)._owmHidden) cloudsLayer.addTo(map);
             owmCloudsLayerRef.current = cloudsLayer;
             console.log('[LiveEvents] OWM clouds layer added');
           }
@@ -465,9 +486,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           if (owmTempActive && !owmTempLayerRef.current && apiKey) {
             const tempLayer = createOwmTileLayer(
               `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
+              { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap' },
+              map
             );
-            tempLayer.addTo(map);
+            if (!(tempLayer as any)._owmHidden) tempLayer.addTo(map);
             owmTempLayerRef.current = tempLayer;
             console.log('[LiveEvents] OWM temperature layer added');
           }
@@ -711,9 +733,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (!owmWindLayerRef.current && apiKey) {
         const windLayer = createOwmTileLayer(
           `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-          { opacity: 1.0, zIndex: 6, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
+          { opacity: 1.0, zIndex: 6, attribution: '© OpenWeatherMap' },
+          map
         );
-        windLayer.addTo(map);
+        if (!(windLayer as any)._owmHidden) windLayer.addTo(map);
         owmWindLayerRef.current = windLayer;
       } else if (owmWindLayerRef.current && !map.hasLayer(owmWindLayerRef.current)) {
         owmWindLayerRef.current.addTo(map);
@@ -1031,9 +1054,10 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (!owmTempLayerRef.current && apiKey) {
         const tempLayer = createOwmTileLayer(
           `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-          { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap', maxNativeZoom: 9, maxZoom: 18 }
+          { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap' },
+          map
         );
-        tempLayer.addTo(map);
+        if (!(tempLayer as any)._owmHidden) tempLayer.addTo(map);
         owmTempLayerRef.current = tempLayer;
       } else if (owmTempLayerRef.current && !map.hasLayer(owmTempLayerRef.current)) {
         owmTempLayerRef.current.addTo(map);
