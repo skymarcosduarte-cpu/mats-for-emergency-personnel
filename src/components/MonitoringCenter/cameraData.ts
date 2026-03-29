@@ -542,7 +542,7 @@ export const DEFAULT_CAMERAS: Camera[] = [
     country: 'México',
     description: 'Milenio Noticias en vivo',
     sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/ZJHRMrp9gGM${YT_PARAMS}`,
+    embedUrl: `https://www.youtube.com/embed/tQ941SU5UR0${YT_PARAMS}`,
     region: 'noticias',
   },
   {
