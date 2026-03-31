@@ -971,14 +971,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (nowcastLayerRef.current && map.hasLayer(nowcastLayerRef.current)) {
         map.removeLayer(nowcastLayerRef.current);
       }
-      if (owmLayerRef.current && map.hasLayer(owmLayerRef.current)) {
-        map.removeLayer(owmLayerRef.current);
-        owmLayerRef.current = null;
-      }
-      if (owmCloudsLayerRef.current && map.hasLayer(owmCloudsLayerRef.current)) {
-        map.removeLayer(owmCloudsLayerRef.current);
-        owmCloudsLayerRef.current = null;
-      }
       if (darkBasemapRef.current && map.hasLayer(darkBasemapRef.current)) {
         map.removeLayer(darkBasemapRef.current);
         darkBasemapRef.current = null;
@@ -986,14 +978,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (satCloudLayerRef.current && map.hasLayer(satCloudLayerRef.current)) {
         map.removeLayer(satCloudLayerRef.current);
         satCloudLayerRef.current = null;
-      }
-      if (owmTempLayerRef.current && map.hasLayer(owmTempLayerRef.current)) {
-        map.removeLayer(owmTempLayerRef.current);
-        owmTempLayerRef.current = null;
-      }
-      if (owmWindLayerRef.current && map.hasLayer(owmWindLayerRef.current)) {
-        map.removeLayer(owmWindLayerRef.current);
-        owmWindLayerRef.current = null;
       }
       // Remove radar station markers + coverage circles
       radarStationMarkersRef.current.forEach(m => {
