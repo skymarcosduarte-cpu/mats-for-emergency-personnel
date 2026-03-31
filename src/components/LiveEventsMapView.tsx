@@ -623,28 +623,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
   }, [map, owmCloudsActive]);
 
-  // Toggle OWM wind layer on/off
-  useEffect(() => {
-    if (!map || !isActive) return;
-    const apiKey = owmKeyRef.current;
-    if (owmWindActive) {
-      if (!owmWindLayerRef.current && apiKey) {
-        const windLayer = createOwmTileLayer(
-          `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-          { opacity: 1.0, zIndex: 6, attribution: '© OpenWeatherMap' },
-          map
-        );
-        if (!(windLayer as any)._owmHidden) windLayer.addTo(map);
-        owmWindLayerRef.current = windLayer;
-      } else if (owmWindLayerRef.current && !map.hasLayer(owmWindLayerRef.current)) {
-        owmWindLayerRef.current.addTo(map);
-      }
-    } else {
-      if (owmWindLayerRef.current && map.hasLayer(owmWindLayerRef.current)) {
-        map.removeLayer(owmWindLayerRef.current);
-      }
-    }
-  }, [map, isActive, owmWindActive]);
 
   // Fetch earthquakes from USGS
   const fetchEarthquakes = useCallback(async (): Promise<USGSEarthquake[]> => {
