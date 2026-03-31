@@ -608,10 +608,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       };
       fetchSatelliteForClouds();
 
-      // Also remove OWM clouds if it exists (replaced by satellite)
-      if (owmCloudsLayerRef.current && map.hasLayer(owmCloudsLayerRef.current)) {
-        map.removeLayer(owmCloudsLayerRef.current);
-      }
     } else {
       // Remove satellite mode layers
       if (darkBasemapRef.current && map.hasLayer(darkBasemapRef.current)) {
