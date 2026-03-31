@@ -918,28 +918,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     });
   }, [map, isActive, events.ssnEarthquakes]);
 
-  // Toggle temperature layer on/off
-  useEffect(() => {
-    if (!map || !isActive) return;
-    const apiKey = owmKeyRef.current;
-    if (owmTempActive) {
-      if (!owmTempLayerRef.current && apiKey) {
-        const tempLayer = createOwmTileLayer(
-          `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-          { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap' },
-          map
-        );
-        if (!(tempLayer as any)._owmHidden) tempLayer.addTo(map);
-        owmTempLayerRef.current = tempLayer;
-      } else if (owmTempLayerRef.current && !map.hasLayer(owmTempLayerRef.current)) {
-        owmTempLayerRef.current.addTo(map);
-      }
-    } else {
-      if (owmTempLayerRef.current && map.hasLayer(owmTempLayerRef.current)) {
-        map.removeLayer(owmTempLayerRef.current);
-      }
-    }
-  }, [map, isActive, owmTempActive]);
 
   // Clear markers and radar when view becomes inactive
   useEffect(() => {
