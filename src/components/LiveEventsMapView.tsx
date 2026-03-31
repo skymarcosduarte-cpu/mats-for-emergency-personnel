@@ -1159,19 +1159,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
               <span className="text-xs font-medium">Radar</span>
             </button>
             <button
-              onClick={() => setOwmActive(!owmActive)}
-              className={cn(
-                "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
-                owmActive 
-                  ? "bg-orange-500/90 text-white border-orange-400" 
-                  : "bg-background/90 text-muted-foreground border-border"
-              )}
-              title={owmActive ? 'Desactivar capa OpenWeather' : 'Activar capa OpenWeather (mejor cobertura MX)'}
-            >
-              <ThermometerSun className="w-4 h-4" />
-              <span className="text-xs font-medium">OWM</span>
-            </button>
-            <button
               onClick={() => setOwmCloudsActive(!owmCloudsActive)}
               className={cn(
                 "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
@@ -1183,32 +1170,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
             >
               <Cloud className="w-4 h-4" />
               <span className="text-xs font-medium">Nubes</span>
-            </button>
-            <button
-              onClick={() => setOwmTempActive(!owmTempActive)}
-              className={cn(
-                "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
-                owmTempActive 
-                  ? "bg-red-500/90 text-white border-red-400" 
-                  : "bg-background/90 text-muted-foreground border-border"
-              )}
-              title={owmTempActive ? 'Desactivar capa de temperatura' : 'Activar capa de temperatura OWM'}
-            >
-              <Thermometer className="w-4 h-4" />
-              <span className="text-xs font-medium">Temp</span>
-            </button>
-            <button
-              onClick={() => setOwmWindActive(!owmWindActive)}
-              className={cn(
-                "rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5",
-                owmWindActive
-                  ? "bg-teal-500/90 text-white border-teal-400"
-                  : "bg-background/90 text-muted-foreground border-border"
-              )}
-              title={owmWindActive ? 'Desactivar capa de viento' : 'Activar capa de viento OWM'}
-            >
-              <Wind className="w-4 h-4" />
-              <span className="text-xs font-medium">Viento</span>
             </button>
           </div>
 
