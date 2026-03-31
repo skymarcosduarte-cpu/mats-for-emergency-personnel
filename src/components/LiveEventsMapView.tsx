@@ -76,38 +76,6 @@ interface EventsState {
   lastUpdate: Date | null;
 }
 
-// Helper: create OWM tile layer that hides at zoom levels OWM doesn't support.
-// OWM free tier only supports zoom 0-6. OWM returns HTTP 200 with a watermark
-// image ("Zoom Level Not Supported") instead of an error, so errorTileUrl won't help.
-// We physically add/remove the layer based on the current map zoom level.
-const OWM_MAX_ZOOM = 6;
-const createOwmTileLayer = (url: string, options: L.TileLayerOptions, map: L.Map): L.TileLayer => {
-  const layer = L.tileLayer(url, {
-    ...options,
-    maxNativeZoom: OWM_MAX_ZOOM,
-    maxZoom: OWM_MAX_ZOOM,
-  });
-
-  // Toggle visibility based on zoom
-  const toggleVisibility = () => {
-    const currentZoom = map.getZoom();
-    if (currentZoom > OWM_MAX_ZOOM) {
-      if (map.hasLayer(layer)) map.removeLayer(layer);
-    } else {
-      if (!map.hasLayer(layer)) layer.addTo(map);
-    }
-  };
-
-  map.on('zoomend', toggleVisibility);
-  // Initial check
-  if (map.getZoom() > OWM_MAX_ZOOM) {
-    // Don't add yet, caller expects to call addTo manually,
-    // but we mark it so the caller knows
-    (layer as any)._owmHidden = true;
-  }
-
-  return layer;
-};
 
 // Create earthquake marker icon
 const createEarthquakeIcon = (magnitude: number) => {
