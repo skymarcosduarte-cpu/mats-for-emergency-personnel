@@ -408,55 +408,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         }
       }
 
-      // --- OpenWeatherMap precipitation layer (better Mexico coverage) ---
-      if (!owmLayerRef.current) {
-        try {
-          let apiKey = owmKeyRef.current;
-          if (!apiKey) {
-            const { data } = await supabase.functions.invoke('get-owm-key');
-            if (data?.key) {
-              apiKey = data.key;
-              owmKeyRef.current = apiKey;
-            }
-          }
-          if (apiKey) {
-            const owmLayer = createOwmTileLayer(
-              `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 1.0, zIndex: 3, attribution: '© OpenWeatherMap' },
-              map
-            );
-            if (!(owmLayer as any)._owmHidden) owmLayer.addTo(map);
-            owmLayerRef.current = owmLayer;
-            console.log('[LiveEvents] OWM precipitation layer added');
-          }
-
-          // Also add clouds layer
-          if (!owmCloudsLayerRef.current && apiKey) {
-            const cloudsLayer = createOwmTileLayer(
-              `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 1, zIndex: 4, attribution: '© OpenWeatherMap' },
-              map
-            );
-            if (!(cloudsLayer as any)._owmHidden) cloudsLayer.addTo(map);
-            owmCloudsLayerRef.current = cloudsLayer;
-            console.log('[LiveEvents] OWM clouds layer added');
-          }
-
-          // Temperature layer (off by default, added only if enabled)
-          if (owmTempActive && !owmTempLayerRef.current && apiKey) {
-            const tempLayer = createOwmTileLayer(
-              `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-              { opacity: 1, zIndex: 5, attribution: '© OpenWeatherMap' },
-              map
-            );
-            if (!(tempLayer as any)._owmHidden) tempLayer.addTo(map);
-            owmTempLayerRef.current = tempLayer;
-            console.log('[LiveEvents] OWM temperature layer added');
-          }
-        } catch (err) {
-          console.warn('[LiveEvents] OWM layer error:', err);
-        }
-      }
 
       // --- SMN Radar station markers with coverage circles ---
       if (showRadarStations && radarStationMarkersRef.current.length === 0) {
