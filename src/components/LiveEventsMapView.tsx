@@ -560,19 +560,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     }
   }, [map, radarActive]);
 
-  // Toggle OWM layer independently
-  useEffect(() => {
-    if (!map) return;
-    if (owmActive) {
-      if (owmLayerRef.current && !map.hasLayer(owmLayerRef.current)) {
-        owmLayerRef.current.addTo(map);
-      }
-    } else {
-      if (owmLayerRef.current && map.hasLayer(owmLayerRef.current)) {
-        map.removeLayer(owmLayerRef.current);
-      }
-    }
-  }, [map, owmActive]);
 
   // Toggle satellite cloud mode (dark basemap + RainViewer satellite IR)
   useEffect(() => {
