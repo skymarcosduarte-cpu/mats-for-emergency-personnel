@@ -1220,73 +1220,28 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           </div>
 
           {/* Legend */}
-          {(radarActive || owmActive || owmCloudsActive || owmTempActive || owmWindActive) && (
+          {(radarActive || owmCloudsActive) && (
             <div className="bg-background/90 backdrop-blur-sm rounded-lg shadow border border-border px-2 py-1.5 text-[10px] text-muted-foreground max-w-[140px] leading-tight">
-              {!owmTempActive && !owmWindActive && (
-                <>
-                  <div className="flex items-center gap-1 mb-1">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span>Lluvia ligera</span>
-                  </div>
-                  <div className="flex items-center gap-1 mb-1">
-                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                    <span>Moderada</span>
-                  </div>
-                  <div className="flex items-center gap-1 mb-1">
-                    <div className="w-2 h-2 rounded-full bg-red-500" />
-                    <span>Fuerte / tormenta</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-purple-600" />
-                    <span>Torrencial</span>
-                  </div>
-                </>
-              )}
-              {owmTempActive && (
-                <>
-                  <div className="flex items-center gap-1 mb-1">
-                    <div className="w-2 h-2 rounded-full bg-blue-500" />
-                    <span>Frío (&lt;0°C)</span>
-                  </div>
-                  <div className="flex items-center gap-1 mb-1">
-                    <div className="w-2 h-2 rounded-full bg-cyan-400" />
-                    <span>Fresco (0–15°C)</span>
-                  </div>
-                  <div className="flex items-center gap-1 mb-1">
-                    <div className="w-2 h-2 rounded-full bg-yellow-400" />
-                    <span>Templado (15–25°C)</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-red-500" />
-                    <span>Calor (&gt;25°C)</span>
-                  </div>
-                </>
-              )}
-              {owmWindActive && (
-                <>
-                  <div className="flex items-center gap-1 mb-1">
-                    <div className="w-2 h-2 rounded-full bg-teal-300" />
-                    <span>Brisa (&lt;20 km/h)</span>
-                  </div>
-                  <div className="flex items-center gap-1 mb-1">
-                    <div className="w-2 h-2 rounded-full bg-teal-500" />
-                    <span>Moderado (20–50)</span>
-                  </div>
-                  <div className="flex items-center gap-1 mb-1">
-                    <div className="w-2 h-2 rounded-full bg-teal-700" />
-                    <span>Fuerte (50–100)</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-teal-900" />
-                    <span>Tormenta (&gt;100)</span>
-                  </div>
-                </>
-              )}
+              <>
+                <div className="flex items-center gap-1 mb-1">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <span>Lluvia ligera</span>
+                </div>
+                <div className="flex items-center gap-1 mb-1">
+                  <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                  <span>Moderada</span>
+                </div>
+                <div className="flex items-center gap-1 mb-1">
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <span>Fuerte / tormenta</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-purple-600" />
+                  <span>Torrencial</span>
+                </div>
+              </>
               {radarActive && <div className="mt-1 text-[9px] opacity-70">🌧️ RainViewer</div>}
-              {owmActive && <div className="text-[9px] opacity-70">🌤️ OpenWeather Precip</div>}
               {owmCloudsActive && <div className="text-[9px] opacity-70">🛰️ Satélite RainViewer</div>}
-              {owmTempActive && <div className="text-[9px] opacity-70">🌡️ OpenWeather Temp</div>}
-              {owmWindActive && <div className="text-[9px] opacity-70">💨 OpenWeather Viento</div>}
             </div>
           )}
         </div>
