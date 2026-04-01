@@ -193,19 +193,19 @@ export const GUIDE_PAGES: GuidePageData[] = [
           '🔴 Sismos: Datos del USGS (mundial) y SSN (México). Muestra magnitud, profundidad y ubicación.',
           '🟠 Incendios: Puntos de calor detectados por satélite NASA/FIRMS.',
           '🌀 Ciclones: Trayectorias de ciclones tropicales activos.',
-          '🌧️ Radar de Lluvia: Capa de precipitación en tiempo real + pronóstico de 30-60 minutos.',
+          '🌧️ Radar de Lluvia: Capa de precipitación en tiempo real con datos de RainViewer.',
           '📡 Radares Doppler: 8 estaciones de radar SMN en México con cobertura de 250 km cada una.',
-          '🛰️ Satélite IR: Imagen de nubes por satélite infrarrojo.',
+          '🛰️ Satélite: Imagen de nubes por satélite infrarrojo de RainViewer.',
         ],
         tip: 'Los colores del radar indican la intensidad de la lluvia: verde es ligera, amarillo moderada, rojo fuerte y morado muy fuerte.',
       },
     ],
   },
 
-  // ── 7. ALERTAS ──
+  // ── 7. ALERTAS Y SISMOS ──
   {
     icon: <Bell className="w-14 h-14" />,
-    title: 'Sección de Alertas',
+    title: 'Alertas y Sismos',
     accentColor: 'text-warning',
     sections: [
       {
@@ -222,6 +222,14 @@ export const GUIDE_PAGES: GuidePageData[] = [
           'Después del sismo, la app te pregunta "¿Estás bien?" y puedes reportar la intensidad que sentiste.',
           'Puedes configurar el radio de detección (de 20 a 400 km) en Ajustes → Alertas.',
         ],
+      },
+      {
+        heading: 'Monitor de Sismos Globales 24/7',
+        paragraphs: [
+          'Dentro de la sección de Sismos encontrarás un monitor en vivo de sismos globales, con streaming las 24 horas del día.',
+          'También está disponible el monitor "Raspberry Shake", que muestra la actividad sísmica mundial en tiempo real desde una red de sensores distribuidos globalmente.',
+        ],
+        tip: 'Estos monitores te permiten ver la actividad sísmica mundial sin salir de la app.',
       },
       {
         heading: 'Alertas SMN y CONAGUA',
@@ -331,7 +339,41 @@ export const GUIDE_PAGES: GuidePageData[] = [
     ],
   },
 
-  // ── 11. BOLSA DE TRABAJO ──
+  // ── 11. CENTRO DE MONITOREO ──
+  {
+    icon: <Eye className="w-14 h-14" />,
+    title: 'Centro de Monitoreo',
+    accentColor: 'text-primary',
+    sections: [
+      {
+        paragraphs: [
+          'El Centro de Monitoreo te permite ver cámaras en vivo de distintas ciudades del mundo y señales de noticias en tiempo real, todo desde la app.',
+          'Puedes elegir ver 4 o 9 cámaras simultáneamente en una cuadrícula.',
+        ],
+      },
+      {
+        heading: '¿Qué cámaras incluye?',
+        paragraphs: [
+          '📹 Cámaras de Ciudad de México: Bosque de Chapultepec, Torre Latinoamericana, Paseo de la Reforma y más.',
+          '🌎 Cámaras internacionales: Nueva York, Toronto, Niágara, Roma, Florencia, Buenos Aires, Estambul, Hong Kong, LAX Airport y más.',
+          '📺 Señales de noticias en vivo: Milenio, FOX 26, SKY News, FOX Live, Al Jazeera, Euro News, CNN en Español.',
+        ],
+      },
+      {
+        heading: '¿Cómo personalizo mi vista?',
+        paragraphs: [
+          '1. Abre el Centro de Monitoreo desde la sección de Comunidad.',
+          '2. Toca el ícono de biblioteca (📚) para ver todas las cámaras disponibles.',
+          '3. Selecciona las cámaras que quieras ver en cada celda.',
+          '4. Tu selección se guarda automáticamente para la próxima vez que abras la app.',
+          '5. Usa el botón de cuadrícula para cambiar entre vista de 4 y 9 cámaras.',
+        ],
+        tip: 'Tu configuración de cámaras se guarda por separado para el modo de 4 y de 9 cámaras, así puedes tener configuraciones diferentes.',
+      },
+    ],
+  },
+
+  // ── 12. BOLSA DE TRABAJO ──
   {
     icon: <BookOpen className="w-14 h-14" />,
     title: 'Bolsa de Trabajo',
