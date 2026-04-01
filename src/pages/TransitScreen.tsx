@@ -521,12 +521,23 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const handleTripSubmit = async () => {
     if (submitting) return;
 
-    console.log('[TransitScreen] Start trip button pressed');
+    console.log('[TransitScreen] Start trip button pressed', { eta: tripForm.eta, transitType });
 
-    // Validate ETA first (before GPS wait)
+    // Validate required fields first
+    if (transitType === 'ROAD' && !tripForm.origin?.trim()) {
+      toast.error('Se requiere origen', { description: 'Indica de dónde sales.' });
+      return;
+    }
+    if (transitType === 'ROAD' && !tripForm.destination?.trim()) {
+      toast.error('Se requiere destino', { description: 'Indica a dónde vas.' });
+      return;
+    }
+
+    // Validate ETA (before GPS wait)
     if (!tripForm.eta) {
       toast.error('Se requiere hora de llegada estimada', {
         description: 'Selecciona una fecha y hora en el campo "ETA".',
+        duration: 5000,
       });
       console.warn('[TransitScreen] Cannot submit trip: missing ETA');
       return;
@@ -2422,7 +2433,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
           </div>
 
           {/* Fixed footer buttons */}
-          <div className="flex-shrink-0 px-6 py-4 border-t border-border bg-card" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
+          <div className="flex-shrink-0 px-6 py-4 border-t border-border bg-card relative z-10" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -2432,22 +2443,19 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               >
                 Cancelar
               </Button>
-              <button
+              <Button
                 type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
+                disabled={submitting}
+                className="flex-1"
+                onClick={() => {
                   if (!submitting) {
                     handleTripSubmit();
                   }
                 }}
-                disabled={submitting}
-                className="flex-1 inline-flex touch-manipulation items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                style={{ WebkitTapHighlightColor: 'transparent', WebkitUserSelect: 'none', userSelect: 'none' }}
               >
                 {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 Iniciar Viaje
-              </button>
+              </Button>
             </div>
           </div>
         </DialogContent>
