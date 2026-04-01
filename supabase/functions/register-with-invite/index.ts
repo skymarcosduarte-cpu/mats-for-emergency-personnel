@@ -321,7 +321,32 @@ serve(async (req) => {
       client_info: clientInfo,
     });
 
-    // Step 2: Use the invite code atomically BEFORE creating user
+    // Step 2: Check if email already exists BEFORE consuming invite
+    console.log(`[${requestId}] Checking if email already exists...`);
+    const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers();
+    
+    if (!listError && existingUsers?.users) {
+      const emailExists = existingUsers.users.some(
+        (u: { email?: string }) => u.email?.toLowerCase() === emailTrimmed
+      );
+      if (emailExists) {
+        console.log(`[${requestId}] EMAIL_EXISTS: ${emailTrimmed} already registered`);
+        await logAttempt({
+          email_hash: emailHash,
+          invite_code: normalizedCode,
+          status: 'failed',
+          error_code: 'EMAIL_EXISTS',
+          error_message: 'Email ya registrado (pre-check)',
+          client_info: clientInfo,
+        });
+        return new Response(
+          JSON.stringify({ error: 'Este email ya está registrado. Intenta iniciar sesión o recuperar tu contraseña.', code: 'EMAIL_EXISTS' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Step 3: Use the invite code atomically BEFORE creating user
     console.log(`[${requestId}] Consuming invite code...`);
     const { data: useResult, error: useError } = await supabase.rpc('use_invite_code', { 
       invite_code: normalizedCode 
@@ -345,7 +370,7 @@ serve(async (req) => {
 
     console.log(`[${requestId}] ✓ Invite code consumed, creating user account...`);
 
-    // Step 3: Create the user using Admin API (auto-confirms email)
+    // Step 4: Create the user using Admin API (auto-confirms email)
     console.log(`[${requestId}] Calling supabase.auth.admin.createUser...`);
     const { data: authData, error: createError } = await supabase.auth.admin.createUser({
       email: emailTrimmed,
@@ -362,6 +387,25 @@ serve(async (req) => {
         code: createError.code,
         status: createError.status,
       });
+      
+      // Rollback: decrement invite used_count since user wasn't created
+      console.log(`[${requestId}] Rolling back invite code usage...`);
+      await supabase
+        .from('invites')
+        .update({ used_count: invite.used_count + 1 - 1 })
+        .eq('code', normalizedCode);
+      // Alternative: decrement via raw update
+      await supabase.rpc('use_invite_code', { invite_code: '__noop__' }).catch(() => {});
+      // Direct decrement
+      const { error: rollbackErr } = await supabase
+        .from('invites')
+        .update({ used_count: invite.used_count })
+        .eq('code', normalizedCode);
+      if (rollbackErr) {
+        console.error(`[${requestId}] Rollback failed:`, rollbackErr.message);
+      } else {
+        console.log(`[${requestId}] ✓ Invite code usage rolled back`);
+      }
       
       let errorCode = 'USER_CREATE_FAILED';
       let errorMessage = 'Error al crear cuenta. Intenta de nuevo en unos momentos.';
