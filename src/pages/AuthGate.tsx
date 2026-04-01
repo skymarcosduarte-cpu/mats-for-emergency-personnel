@@ -468,17 +468,30 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           let serverMessage = '';
           
           // Try to extract the actual error message from the response
-          // Supabase functions.invoke puts the parsed JSON in error.context for 4xx responses
-          if (response.error.context?.error) {
-            serverMessage = response.error.context.error;
-          } else if (typeof response.error.context === 'string') {
-            try {
-              const parsed = JSON.parse(response.error.context);
-              serverMessage = parsed.error || '';
-            } catch {
-              serverMessage = response.error.context;
+          // supabase.functions.invoke for non-2xx puts parsed JSON in error.context
+          try {
+            if (response.error.context) {
+              // context might be a Response object - try to read it
+              if (response.error.context instanceof Response) {
+                const body = await response.error.context.json().catch(() => null);
+                serverMessage = body?.error || '';
+              } else if (response.error.context?.error) {
+                serverMessage = response.error.context.error;
+              } else if (typeof response.error.context === 'string') {
+                const parsed = JSON.parse(response.error.context);
+                serverMessage = parsed.error || '';
+              }
             }
-          } else if (response.error.message) {
+          } catch {
+            // fallback
+          }
+          
+          // If still no message, try data (some versions put it there)
+          if (!serverMessage && response.data?.error) {
+            serverMessage = response.data.error;
+          }
+          
+          if (!serverMessage && response.error.message) {
             serverMessage = response.error.message;
           }
           
