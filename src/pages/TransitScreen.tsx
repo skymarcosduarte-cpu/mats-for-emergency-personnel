@@ -521,12 +521,23 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
   const handleTripSubmit = async () => {
     if (submitting) return;
 
-    console.log('[TransitScreen] Start trip button pressed');
+    console.log('[TransitScreen] Start trip button pressed', { eta: tripForm.eta, transitType });
 
-    // Validate ETA first (before GPS wait)
+    // Validate required fields first
+    if (transitType === 'ROAD' && !tripForm.origin?.trim()) {
+      toast.error('Se requiere origen', { description: 'Indica de dónde sales.' });
+      return;
+    }
+    if (transitType === 'ROAD' && !tripForm.destination?.trim()) {
+      toast.error('Se requiere destino', { description: 'Indica a dónde vas.' });
+      return;
+    }
+
+    // Validate ETA (before GPS wait)
     if (!tripForm.eta) {
       toast.error('Se requiere hora de llegada estimada', {
         description: 'Selecciona una fecha y hora en el campo "ETA".',
+        duration: 5000,
       });
       console.warn('[TransitScreen] Cannot submit trip: missing ETA');
       return;
