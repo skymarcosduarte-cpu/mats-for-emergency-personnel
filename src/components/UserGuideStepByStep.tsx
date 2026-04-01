@@ -339,7 +339,41 @@ export const GUIDE_PAGES: GuidePageData[] = [
     ],
   },
 
-  // ── 11. BOLSA DE TRABAJO ──
+  // ── 11. CENTRO DE MONITOREO ──
+  {
+    icon: <Eye className="w-14 h-14" />,
+    title: 'Centro de Monitoreo',
+    accentColor: 'text-primary',
+    sections: [
+      {
+        paragraphs: [
+          'El Centro de Monitoreo te permite ver cámaras en vivo de distintas ciudades del mundo y señales de noticias en tiempo real, todo desde la app.',
+          'Puedes elegir ver 4 o 9 cámaras simultáneamente en una cuadrícula.',
+        ],
+      },
+      {
+        heading: '¿Qué cámaras incluye?',
+        paragraphs: [
+          '📹 Cámaras de Ciudad de México: Bosque de Chapultepec, Torre Latinoamericana, Paseo de la Reforma y más.',
+          '🌎 Cámaras internacionales: Nueva York, Toronto, Niágara, Roma, Florencia, Buenos Aires, Estambul, Hong Kong, LAX Airport y más.',
+          '📺 Señales de noticias en vivo: Milenio, FOX 26, SKY News, FOX Live, Al Jazeera, Euro News, CNN en Español.',
+        ],
+      },
+      {
+        heading: '¿Cómo personalizo mi vista?',
+        paragraphs: [
+          '1. Abre el Centro de Monitoreo desde la sección de Comunidad.',
+          '2. Toca el ícono de biblioteca (📚) para ver todas las cámaras disponibles.',
+          '3. Selecciona las cámaras que quieras ver en cada celda.',
+          '4. Tu selección se guarda automáticamente para la próxima vez que abras la app.',
+          '5. Usa el botón de cuadrícula para cambiar entre vista de 4 y 9 cámaras.',
+        ],
+        tip: 'Tu configuración de cámaras se guarda por separado para el modo de 4 y de 9 cámaras, así puedes tener configuraciones diferentes.',
+      },
+    ],
+  },
+
+  // ── 12. BOLSA DE TRABAJO ──
   {
     icon: <BookOpen className="w-14 h-14" />,
     title: 'Bolsa de Trabajo',
