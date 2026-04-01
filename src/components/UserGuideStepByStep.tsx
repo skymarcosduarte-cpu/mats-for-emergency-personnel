@@ -202,10 +202,10 @@ export const GUIDE_PAGES: GuidePageData[] = [
     ],
   },
 
-  // ── 7. ALERTAS ──
+  // ── 7. ALERTAS Y SISMOS ──
   {
     icon: <Bell className="w-14 h-14" />,
-    title: 'Sección de Alertas',
+    title: 'Alertas y Sismos',
     accentColor: 'text-warning',
     sections: [
       {
@@ -222,6 +222,14 @@ export const GUIDE_PAGES: GuidePageData[] = [
           'Después del sismo, la app te pregunta "¿Estás bien?" y puedes reportar la intensidad que sentiste.',
           'Puedes configurar el radio de detección (de 20 a 400 km) en Ajustes → Alertas.',
         ],
+      },
+      {
+        heading: 'Monitor de Sismos Globales 24/7',
+        paragraphs: [
+          'Dentro de la sección de Sismos encontrarás un monitor en vivo de sismos globales, con streaming las 24 horas del día.',
+          'También está disponible el monitor "Raspberry Shake", que muestra la actividad sísmica mundial en tiempo real desde una red de sensores distribuidos globalmente.',
+        ],
+        tip: 'Estos monitores te permiten ver la actividad sísmica mundial sin salir de la app.',
       },
       {
         heading: 'Alertas SMN y CONAGUA',
