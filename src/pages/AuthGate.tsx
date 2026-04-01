@@ -606,15 +606,26 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         );
         
         if (signInError) {
-          // User was created but sign-in failed - they can try logging in manually
-          console.log('[AuthGate] Sign-in after registration failed:', signInError);
-          toast({
-            title: '¡Cuenta creada!',
-            description: 'Tu cuenta fue creada. Ahora inicia sesión con tus credenciales.',
-          });
-          setAuthTab('login');
-          // Clear password for security when switching to login tab
-          setPassword('');
+          // User was created but sign-in failed - retry once after a short delay
+          console.log('[AuthGate] Sign-in after registration failed, retrying...', signInError);
+          await new Promise(r => setTimeout(r, 1500));
+          
+          const { error: retryError } = await signIn(
+            email.trim().toLowerCase(),
+            sanitizedPassword,
+            rememberMe
+          );
+          
+          if (retryError) {
+            console.log('[AuthGate] Sign-in retry also failed:', retryError);
+            toast({
+              title: '¡Cuenta creada!',
+              description: 'Tu cuenta fue creada. Inicia sesión con tus credenciales.',
+            });
+            setAuthTab('login');
+            setLoginMethod('password');
+            // IMPORTANT: Do NOT clear the password - keep it so user can just click "Iniciar Sesión"
+          }
         } else {
           // Sign-in succeeded, show success toast
           console.log('[AuthGate] Sign-in successful!');
