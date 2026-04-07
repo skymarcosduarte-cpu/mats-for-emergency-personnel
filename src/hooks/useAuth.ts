@@ -178,16 +178,13 @@ export function useAuth() {
               fetchProfile(session.user.id),
               fetchRole(session.user.id),
             ]);
-            // IMPORTANT: Only update if we got a valid profile
-            // Prevents showing AuthGate on transient network errors
             if (profile) {
               setState(prev => ({ ...prev, profile, role }));
               cacheAuthSession(session.user.id, profile, role);
             } else {
-              // Profile fetch failed - check if we have cached data
-              console.warn('[useAuth] Profile fetch returned null, keeping existing state');
-              // Only clear profile if we're sure user doesn't have one (new user)
-              // Keep cached/current state on network failures
+              // Profile fetch failed - keep existing cached/current state on network failures
+              // Only show AuthGate if we truly have NO cached profile at all
+              console.warn('[useAuth] Profile fetch returned null on auth change, keeping existing state');
             }
           }, 0);
         } else {
@@ -199,37 +196,54 @@ export function useAuth() {
 
     // THEN check for existing session - ALWAYS fetch profile from DB to validate
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setState(prev => ({
-        ...prev,
-        session,
-        user: session?.user ?? null,
-      }));
-
       if (session?.user) {
+        setState(prev => ({
+          ...prev,
+          session,
+          user: session.user,
+        }));
+
+        // If token is close to expiry, refresh it first
+        const expiresAt = session.expires_at || 0;
+        const now = Math.floor(Date.now() / 1000);
+        if (expiresAt - now < 300) {
+          console.log('[useAuth] Token expiring soon, refreshing...');
+          const { data: refreshData } = await supabase.auth.refreshSession();
+          if (refreshData.session) {
+            setState(prev => ({ ...prev, session: refreshData.session, user: refreshData.session!.user }));
+          }
+        }
+
         console.log('[useAuth] Validating profile from database for user:', session.user.id);
         const [profile, role] = await Promise.all([
           fetchProfile(session.user.id),
           fetchRole(session.user.id),
         ]);
         
-        // Always update state with fresh data from DB
-        setState(prev => ({ 
-          ...prev, 
-          profile, 
-          role,
-          loading: false 
-        }));
-        
         if (profile) {
           console.log('[useAuth] Profile validated from DB:', profile.nickname);
+          setState(prev => ({ ...prev, profile, role, loading: false }));
           cacheAuthSession(session.user.id, profile, role);
         } else {
-          // Profile genuinely doesn't exist - clear cache to avoid confusion
-          console.log('[useAuth] No profile found in DB - user needs to complete registration');
-          clearAuthSessionCache();
+          // Profile fetch returned null - could be network error or genuinely missing
+          // Check if we have cached data to avoid kicking user to AuthGate on transient errors
+          const cached = await getCachedAuthSession();
+          if (cached?.profile) {
+            console.warn('[useAuth] Profile fetch failed but cache exists - keeping cached state');
+            setState(prev => ({
+              ...prev,
+              profile: cached.profile as Profile,
+              role: cached.role as 'SOS_ACTIVO' | 'EX_SOS' | 'FAMILIAR' | null,
+              loading: false,
+            }));
+          } else {
+            console.log('[useAuth] No profile found in DB and no cache - user needs to complete registration');
+            setState(prev => ({ ...prev, profile: null, role: null, loading: false }));
+            clearAuthSessionCache();
+          }
         }
       } else {
-        setState(prev => ({ ...prev, loading: false }));
+        setState(prev => ({ ...prev, session: null, user: null, loading: false }));
       }
     });
 
