@@ -178,16 +178,13 @@ export function useAuth() {
               fetchProfile(session.user.id),
               fetchRole(session.user.id),
             ]);
-            // IMPORTANT: Only update if we got a valid profile
-            // Prevents showing AuthGate on transient network errors
             if (profile) {
               setState(prev => ({ ...prev, profile, role }));
               cacheAuthSession(session.user.id, profile, role);
             } else {
-              // Profile fetch failed - check if we have cached data
-              console.warn('[useAuth] Profile fetch returned null, keeping existing state');
-              // Only clear profile if we're sure user doesn't have one (new user)
-              // Keep cached/current state on network failures
+              // Profile fetch failed - keep existing cached/current state on network failures
+              // Only show AuthGate if we truly have NO cached profile at all
+              console.warn('[useAuth] Profile fetch returned null on auth change, keeping existing state');
             }
           }, 0);
         } else {
