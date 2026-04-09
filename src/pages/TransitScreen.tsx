@@ -2446,11 +2446,13 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               <Button
                 type="button"
                 disabled={submitting}
-                className="flex-1"
+                className="flex-1 min-h-[48px]"
                 onClick={() => {
-                  if (!submitting) {
-                    handleTripSubmit();
-                  }
+                  if (!submitting) handleTripSubmit();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  if (!submitting) handleTripSubmit();
                 }}
               >
                 {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
