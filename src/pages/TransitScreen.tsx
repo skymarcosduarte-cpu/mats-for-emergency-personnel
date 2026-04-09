@@ -1445,11 +1445,40 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                           <Button
                             size="lg"
                             className={cn(
-                              "w-full mt-3 text-base font-bold gap-2",
+                              "w-full mt-3 text-base font-bold gap-2 min-h-[52px]",
                               isOverdue 
                                 ? "bg-safe hover:bg-safe/90 text-safe-foreground animate-pulse" 
                                 : "bg-safe hover:bg-safe/90 text-safe-foreground"
                             )}
+                            onTouchEnd={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              try {
+                                const arrivedAt = new Date().toISOString();
+                                console.log('[TransitScreen] Marking trip as arrived (touch):', trip.id);
+                                const { error: updateError } = await supabase
+                                  .from('transit_trips')
+                                  .update({ status: 'ARRIVED', arrived_at: arrivedAt })
+                                  .eq('id', trip.id);
+                                if (updateError) throw updateError;
+                                try {
+                                  await supabase.functions.invoke('notify-trip-update', {
+                                    body: {
+                                      tripId: trip.id, tripUserId: trip.user_id,
+                                      eventType: isOverdue ? 'arrived_delayed' : 'arrived',
+                                      origin: trip.origin, destination: trip.destination,
+                                      overdueMinutes: isOverdue ? Math.floor((Date.now() - etaDate.getTime()) / 60000) : undefined,
+                                    }
+                                  });
+                                } catch (notifyError) { console.error('[TransitScreen] notify error:', notifyError); }
+                                toast.success('¡Viaje completado! Todos los usuarios activos fueron notificados.');
+                                fetchMyTrips();
+                                setArrivalDialogTrip({ ...trip, arrived_at: arrivedAt, status: 'ARRIVED' });
+                              } catch (e2) {
+                                console.error('[TransitScreen] Error completing trip:', e2);
+                                toast.error('Error al completar viaje. Intenta de nuevo.');
+                              }
+                            }}
                             onClick={async (e) => {
                               e.stopPropagation();
                               try {
