@@ -454,11 +454,13 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
 
       {/* Location picker dialog */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-lg shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-background flex flex-col">
             {/* Header */}
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <h3 className="font-semibold">Seleccionar {label}</h3>
+            <div className="p-4 border-b border-border flex items-center justify-between flex-shrink-0" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}>
+              <h3 className="font-semibold flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-primary" />
+                Seleccionar {label}
+              </h3>
               <Button variant="ghost" size="icon" onClick={() => { setIsOpen(false); setManualMode(false); }}>
                 <X className="w-4 h-4" />
               </Button>
