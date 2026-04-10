@@ -614,8 +614,8 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
               )}
             </div>
 
-            {/* Map */}
-            <div className="flex-1 min-h-[250px] relative">
+            {/* Map - takes remaining space */}
+            <div className="flex-1 relative min-h-0">
               <div ref={mapContainerRef} className="absolute inset-0" />
               {!mapReady && (
                 <div className="absolute inset-0 flex items-center justify-center bg-muted">
@@ -637,17 +637,17 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
                   type="button"
                   size="sm"
                   variant="secondary"
-                  className="absolute bottom-2 left-1/2 -translate-x-1/2 z-[500] shadow-md text-xs"
+                  className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[500] shadow-lg text-sm font-medium"
                   onClick={placeMarkerAtCenter}
                 >
-                  <MapPinned className="w-3 h-3 mr-1" />
+                  <MapPinned className="w-4 h-4 mr-1" />
                   Seleccionar este punto
                 </Button>
               )}
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-border flex gap-2">
+            <div className="p-3 border-t border-border flex gap-2 flex-shrink-0" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
               <Button
                 type="button"
                 variant="outline"
