@@ -469,19 +469,43 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
             <div className="p-3 space-y-2 overflow-y-auto flex-shrink-0" style={{ maxHeight: '40%' }}>
               {!manualMode ? (
                 <>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      type="text"
-                      placeholder="Buscar dirección, colonia, ciudad..."
-                      value={searchQuery}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-10"
-                      autoFocus
-                    />
-                    {searching && (
-                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
-                    )}
+                  <div className="relative flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="search"
+                        inputMode="search"
+                        enterKeyHint="search"
+                        placeholder="Buscar dirección, ciudad..."
+                        value={searchQuery}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+                            searchLocations(searchQuery);
+                          }
+                        }}
+                        className="pl-10"
+                        autoFocus
+                      />
+                      {searching && (
+                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="icon"
+                      className="flex-shrink-0 min-h-[40px] min-w-[40px]"
+                      disabled={searching || searchQuery.length < 2}
+                      onClick={() => {
+                        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+                        searchLocations(searchQuery);
+                      }}
+                    >
+                      {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    </Button>
                   </div>
                   
                   {/* Current location button */}
