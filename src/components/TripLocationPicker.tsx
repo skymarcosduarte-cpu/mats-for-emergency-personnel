@@ -552,18 +552,18 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
                     </div>
                   )}
 
-                  {/* No results message */}
+                  {/* No results message - improved guidance */}
                   {searchDone && searchResults.length === 0 && searchQuery.length >= 2 && (
                     <div className="text-center py-3 space-y-2">
                       <p className="text-sm text-muted-foreground">
-                        No se encontraron resultados para "{searchQuery}"
+                        No se encontró "{searchQuery}"
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Puedes tocar el mapa para seleccionar la ubicación, o escribir el nombre manualmente:
+                        💡 Intenta con el nombre de la ciudad o colonia. También puedes tocar directamente en el mapa o escribir el nombre manualmente:
                       </p>
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="default"
                         size="sm"
                         onClick={() => {
                           setManualName(searchQuery);
@@ -571,7 +571,7 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
                         }}
                       >
                         <MapPinned className="w-4 h-4 mr-2" />
-                        Escribir nombre manualmente
+                        Escribir destino manualmente
                       </Button>
                     </div>
                   )}
