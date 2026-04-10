@@ -466,8 +466,7 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
               </Button>
             </div>
 
-            {/* Search + Recent Locations */}
-            <div className="p-4 space-y-2 overflow-y-auto max-h-[40vh]">
+            <div className="p-3 space-y-2 overflow-y-auto flex-shrink-0" style={{ maxHeight: '40%' }}>
               {!manualMode ? (
                 <>
                   <div className="relative">
