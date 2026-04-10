@@ -210,7 +210,7 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
     });
   };
 
-  // Search locations using Nominatim with viewbox bias
+  // Search locations using Nominatim - try broad search first for better results
   const searchLocations = useCallback(async (query: string) => {
     if (query.length < 2) {
       setSearchResults([]);
@@ -221,47 +221,39 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
     setSearching(true);
     setSearchDone(false);
     try {
-      // Build URL with viewbox bias if we have position
-      let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=mx&limit=5&addressdetails=1`;
+      const headers = {
+        'Accept-Language': 'es',
+        'User-Agent': 'MATS-App/2.6',
+      };
+
+      // First try: broad search without country restriction but with viewbox bias
+      let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1`;
       
       if (effectivePosition) {
-        // Add viewbox centered on user (±2 degrees) for better local results
-        const vb = `${effectivePosition.lng - 2},${effectivePosition.lat + 2},${effectivePosition.lng + 2},${effectivePosition.lat - 2}`;
+        const vb = `${effectivePosition.lng - 3},${effectivePosition.lat + 3},${effectivePosition.lng + 3},${effectivePosition.lat - 3}`;
         url += `&viewbox=${vb}&bounded=0`;
       }
 
-      const response = await fetch(url, {
-        headers: {
-          'Accept-Language': 'es',
-          'User-Agent': 'MATS-App/1.0',
-        },
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
+      const response = await fetch(url, { headers, signal: controller.signal });
+      clearTimeout(timeout);
       
       if (response.ok) {
-        let data: LocationResult[] = await response.json();
-        
-        // If no results with Mexico filter, try without country filter
-        if (data.length === 0) {
-          let url2 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
-          if (effectivePosition) {
-            const vb = `${effectivePosition.lng - 2},${effectivePosition.lat + 2},${effectivePosition.lng + 2},${effectivePosition.lat - 2}`;
-            url2 += `&viewbox=${vb}&bounded=0`;
-          }
-          const response2 = await fetch(url2, {
-            headers: {
-              'Accept-Language': 'es',
-              'User-Agent': 'MATS-App/1.0',
-            },
-          });
-          if (response2.ok) {
-            data = await response2.json();
-          }
-        }
-        
+        const data: LocationResult[] = await response.json();
         setSearchResults(data);
+      } else {
+        console.warn('[TripLocationPicker] Search HTTP error:', response.status);
+        setSearchResults([]);
       }
-    } catch (error) {
-      console.error('Error searching locations:', error);
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.warn('[TripLocationPicker] Search timed out for:', query);
+      } else {
+        console.error('[TripLocationPicker] Search error:', error);
+      }
+      setSearchResults([]);
     } finally {
       setSearching(false);
       setSearchDone(true);
