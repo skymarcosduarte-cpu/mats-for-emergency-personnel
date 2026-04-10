@@ -666,7 +666,6 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
                 Confirmar
               </Button>
             </div>
-          </div>
         </div>
       )}
     </div>
