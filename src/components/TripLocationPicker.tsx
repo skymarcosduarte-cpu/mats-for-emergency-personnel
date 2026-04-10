@@ -210,7 +210,7 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
     });
   };
 
-  // Search locations using Nominatim with viewbox bias
+  // Search locations using Nominatim - try broad search first for better results
   const searchLocations = useCallback(async (query: string) => {
     if (query.length < 2) {
       setSearchResults([]);
@@ -221,47 +221,39 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
     setSearching(true);
     setSearchDone(false);
     try {
-      // Build URL with viewbox bias if we have position
-      let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=mx&limit=5&addressdetails=1`;
+      const headers = {
+        'Accept-Language': 'es',
+        'User-Agent': 'MATS-App/2.6',
+      };
+
+      // First try: broad search without country restriction but with viewbox bias
+      let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1`;
       
       if (effectivePosition) {
-        // Add viewbox centered on user (±2 degrees) for better local results
-        const vb = `${effectivePosition.lng - 2},${effectivePosition.lat + 2},${effectivePosition.lng + 2},${effectivePosition.lat - 2}`;
+        const vb = `${effectivePosition.lng - 3},${effectivePosition.lat + 3},${effectivePosition.lng + 3},${effectivePosition.lat - 3}`;
         url += `&viewbox=${vb}&bounded=0`;
       }
 
-      const response = await fetch(url, {
-        headers: {
-          'Accept-Language': 'es',
-          'User-Agent': 'MATS-App/1.0',
-        },
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
+      const response = await fetch(url, { headers, signal: controller.signal });
+      clearTimeout(timeout);
       
       if (response.ok) {
-        let data: LocationResult[] = await response.json();
-        
-        // If no results with Mexico filter, try without country filter
-        if (data.length === 0) {
-          let url2 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
-          if (effectivePosition) {
-            const vb = `${effectivePosition.lng - 2},${effectivePosition.lat + 2},${effectivePosition.lng + 2},${effectivePosition.lat - 2}`;
-            url2 += `&viewbox=${vb}&bounded=0`;
-          }
-          const response2 = await fetch(url2, {
-            headers: {
-              'Accept-Language': 'es',
-              'User-Agent': 'MATS-App/1.0',
-            },
-          });
-          if (response2.ok) {
-            data = await response2.json();
-          }
-        }
-        
+        const data: LocationResult[] = await response.json();
         setSearchResults(data);
+      } else {
+        console.warn('[TripLocationPicker] Search HTTP error:', response.status);
+        setSearchResults([]);
       }
-    } catch (error) {
-      console.error('Error searching locations:', error);
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.warn('[TripLocationPicker] Search timed out for:', query);
+      } else {
+        console.error('[TripLocationPicker] Search error:', error);
+      }
+      setSearchResults([]);
     } finally {
       setSearching(false);
       setSearchDone(true);
@@ -462,18 +454,19 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
 
       {/* Location picker dialog */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-lg shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-background flex flex-col">
             {/* Header */}
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <h3 className="font-semibold">Seleccionar {label}</h3>
+            <div className="p-4 border-b border-border flex items-center justify-between flex-shrink-0" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}>
+              <h3 className="font-semibold flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-primary" />
+                Seleccionar {label}
+              </h3>
               <Button variant="ghost" size="icon" onClick={() => { setIsOpen(false); setManualMode(false); }}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
 
-            {/* Search + Recent Locations */}
-            <div className="p-4 space-y-2 overflow-y-auto max-h-[40vh]">
+            <div className="p-3 space-y-2 overflow-y-auto flex-shrink-0" style={{ maxHeight: '40%' }}>
               {!manualMode ? (
                 <>
                   <div className="relative">
@@ -559,18 +552,18 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
                     </div>
                   )}
 
-                  {/* No results message */}
+                  {/* No results message - improved guidance */}
                   {searchDone && searchResults.length === 0 && searchQuery.length >= 2 && (
                     <div className="text-center py-3 space-y-2">
                       <p className="text-sm text-muted-foreground">
-                        No se encontraron resultados para "{searchQuery}"
+                        No se encontró "{searchQuery}"
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Puedes tocar el mapa para seleccionar la ubicación, o escribir el nombre manualmente:
+                        💡 Intenta con el nombre de la ciudad o colonia. También puedes tocar directamente en el mapa o escribir el nombre manualmente:
                       </p>
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="default"
                         size="sm"
                         onClick={() => {
                           setManualName(searchQuery);
@@ -578,7 +571,7 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
                         }}
                       >
                         <MapPinned className="w-4 h-4 mr-2" />
-                        Escribir nombre manualmente
+                        Escribir destino manualmente
                       </Button>
                     </div>
                   )}
@@ -621,8 +614,8 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
               )}
             </div>
 
-            {/* Map */}
-            <div className="flex-1 min-h-[250px] relative">
+            {/* Map - takes remaining space */}
+            <div className="flex-1 relative min-h-0">
               <div ref={mapContainerRef} className="absolute inset-0" />
               {!mapReady && (
                 <div className="absolute inset-0 flex items-center justify-center bg-muted">
@@ -644,17 +637,17 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
                   type="button"
                   size="sm"
                   variant="secondary"
-                  className="absolute bottom-2 left-1/2 -translate-x-1/2 z-[500] shadow-md text-xs"
+                  className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[500] shadow-lg text-sm font-medium"
                   onClick={placeMarkerAtCenter}
                 >
-                  <MapPinned className="w-3 h-3 mr-1" />
+                  <MapPinned className="w-4 h-4 mr-1" />
                   Seleccionar este punto
                 </Button>
               )}
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-border flex gap-2">
+            <div className="p-3 border-t border-border flex gap-2 flex-shrink-0" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
               <Button
                 type="button"
                 variant="outline"
@@ -672,7 +665,6 @@ export const TripLocationPicker: React.FC<TripLocationPickerProps> = ({
                 Confirmar
               </Button>
             </div>
-          </div>
         </div>
       )}
     </div>
