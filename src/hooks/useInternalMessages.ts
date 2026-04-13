@@ -20,6 +20,7 @@ export interface InternalMessage {
 export interface Conversation {
   user_id: string;
   display_name: string | null;
+  full_name: string | null;
   last_message: string;
   last_message_at: string;
   unread_count: number;
@@ -65,8 +66,8 @@ export const useInternalMessagesStore = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [lastUnreadSender, setLastUnreadSender] = useState<{ id: string; name: string } | null>(null);
-  const senderNamesCache = useRef<Map<string, string>>(new Map());
+  const [lastUnreadSender, setLastUnreadSender] = useState<{ id: string; name: string; full_name: string | null } | null>(null);
+  const senderNamesCache = useRef<Map<string, { nickname: string; full_name: string | null }>>(new Map());
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const fetchInProgressRef = useRef(false);
   const lastFetchRef = useRef(0);
@@ -314,11 +315,12 @@ export const useInternalMessagesStore = () => {
         if (missingIds.length > 0) {
           const { data: profilesData } = await supabase
             .from('profiles')
-            .select('id, nickname')
+            .select('id, nickname, full_name')
             .in('id', missingIds);
 
           (profilesData || []).forEach((p) => {
             userNamesMapRef.current.set(p.id, p.nickname || null);
+            senderNamesCache.current.set(p.id, { nickname: p.nickname || 'Usuario', full_name: p.full_name || null });
           });
         }
       }
