@@ -18,6 +18,7 @@ export interface UserLocationSummary {
   transit_destination: string | null;
   updated_at: string | null;
   display_name?: string | null;
+  full_name?: string | null;
   show_name_on_map?: boolean | null;
   can_provide_medical_assistance?: boolean | null;
   has_first_aid_kit?: boolean | null;
@@ -324,6 +325,12 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                         {user.show_name_on_map && user.display_name && (
                           <div className="text-xs font-medium text-foreground truncate max-w-[100px]">
                             {user.display_name}
+                          </div>
+                        )}
+                        {/* Show full name below nickname */}
+                        {user.show_name_on_map && user.full_name && user.display_name !== user.full_name && (
+                          <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">
+                            {user.full_name}
                           </div>
                         )}
                         <div className="flex items-center gap-1">
