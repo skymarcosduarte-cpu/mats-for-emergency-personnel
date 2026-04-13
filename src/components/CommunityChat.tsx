@@ -65,7 +65,7 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const [userNames, setUserNames] = useState<Record<string, { nickname: string; full_name: string }>>({});
   const [onlineCount, setOnlineCount] = useState(0);
   const [chatClosed, setChatClosed] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
@@ -124,17 +124,20 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
       if (error) throw error;
       setMessages((data as CommunityMessage[]) || []);
       
-      // Fetch user names for senders
+      // Fetch user profiles for senders (nickname + full_name)
       const senderIds = [...new Set(((data as CommunityMessage[]) || []).map(m => m.sender_id))];
       if (senderIds.length > 0) {
         const { data: profiles } = await supabase
-          .from('profiles_public')
-          .select('user_id, nickname')
-          .in('user_id', senderIds);
+          .from('profiles')
+          .select('id, nickname, full_name')
+          .in('id', senderIds);
         
-        const names: Record<string, string> = {};
+        const names: Record<string, { nickname: string; full_name: string }> = {};
         profiles?.forEach(p => {
-          names[p.user_id] = p.nickname || 'Usuario';
+          names[p.id] = {
+            nickname: p.nickname || 'Usuario',
+            full_name: p.full_name || ''
+          };
         });
         setUserNames(prev => ({ ...prev, ...names }));
       }
@@ -288,16 +291,22 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
               if (newMsg.context_type !== contextType) return;
             }
             
-            // Fetch sender name if needed
+            // Fetch sender profile if needed (nickname + full_name)
             if (!userNames[newMsg.sender_id]) {
               const { data } = await supabase
-                .from('profiles_public')
-                .select('nickname')
-                .eq('user_id', newMsg.sender_id)
+                .from('profiles')
+                .select('nickname, full_name')
+                .eq('id', newMsg.sender_id)
                 .single();
               
               if (data) {
-                setUserNames(prev => ({ ...prev, [newMsg.sender_id]: data.nickname || 'Usuario' }));
+                setUserNames(prev => ({ 
+                  ...prev, 
+                  [newMsg.sender_id]: {
+                    nickname: data.nickname || 'Usuario',
+                    full_name: data.full_name || ''
+                  }
+                }));
               }
             }
             
@@ -739,7 +748,9 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
             <div className="space-y-3">
               {messages.map((msg) => {
                 const isMine = msg.sender_id === user?.id;
-                const senderName = userNames[msg.sender_id] || 'Usuario';
+                const senderProfile = userNames[msg.sender_id];
+                const senderNickname = senderProfile?.nickname || 'Usuario';
+                const senderFullName = senderProfile?.full_name || '';
                 
                 return (
                   <div
@@ -754,7 +765,7 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
                         "text-xs",
                         isMine ? "bg-primary text-primary-foreground" : "bg-muted"
                       )}>
-                        {senderName.slice(0, 2).toUpperCase()}
+                        {senderNickname.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     
@@ -765,9 +776,16 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
                         : "bg-muted"
                     )}>
                       {!isMine && (
-                        <p className="text-xs font-medium mb-1 opacity-70">
-                          {senderName}
-                        </p>
+                        <div className="mb-1">
+                          <p className="text-xs font-medium opacity-90">
+                            {senderNickname}
+                          </p>
+                          {senderFullName && (
+                            <p className="text-[10px] opacity-60 truncate max-w-[150px]">
+                              {senderFullName}
+                            </p>
+                          )}
+                        </div>
                       )}
                       
                       {/* Image */}
