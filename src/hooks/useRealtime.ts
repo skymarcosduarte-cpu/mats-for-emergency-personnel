@@ -120,32 +120,33 @@ export function useUserLocations() {
       .select('*');
 
     if (!error && data) {
-      // Also fetch Zello fields from profiles for active transmitters
+      // Also fetch Zello fields and full_name from profiles
       const userIds = data.map((d: any) => d.user_id).filter(Boolean);
-      let zelloMap: Record<string, { zello_username: string | null; zello_transmitting_until: string | null }> = {};
+      let profilesMap: Record<string, { zello_username: string | null; zello_transmitting_until: string | null; full_name: string | null }> = {};
       
       if (userIds.length > 0) {
-        const { data: zelloData } = await supabase
+        const { data: profilesData } = await supabase
           .from('profiles')
-          .select('id, zello_username, zello_transmitting_until')
-          .in('id', userIds)
-          .not('zello_username', 'is', null);
+          .select('id, zello_username, zello_transmitting_until, full_name')
+          .in('id', userIds);
         
-        if (zelloData) {
-          zelloData.forEach((p: any) => {
-            zelloMap[p.id] = { 
+        if (profilesData) {
+          profilesData.forEach((p: any) => {
+            profilesMap[p.id] = { 
               zello_username: p.zello_username, 
-              zello_transmitting_until: p.zello_transmitting_until 
+              zello_transmitting_until: p.zello_transmitting_until,
+              full_name: p.full_name || null,
             };
           });
         }
       }
 
-      // Merge Zello fields into location data
+      // Merge profile fields into location data
       const enriched = data.map((loc: any) => ({
         ...loc,
-        zello_username: zelloMap[loc.user_id]?.zello_username || null,
-        zello_transmitting_until: zelloMap[loc.user_id]?.zello_transmitting_until || null,
+        zello_username: profilesMap[loc.user_id]?.zello_username || null,
+        zello_transmitting_until: profilesMap[loc.user_id]?.zello_transmitting_until || null,
+        full_name: profilesMap[loc.user_id]?.full_name || null,
       }));
 
       console.log('[useUserLocations] Fetched locations with roles:', enriched.length);
