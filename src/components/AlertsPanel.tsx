@@ -580,13 +580,17 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                                  <span className="flex items-center gap-1">
+                                <div className="flex flex-col text-xs mt-0.5">
+                                  <span className="flex items-center gap-1 text-foreground font-medium">
                                     <User className="w-3 h-3" />
-                                    {isMyAlert ? 'Tú' : getName(request.user_id)}
+                                    {isMyAlert ? 'Tú' : getProfile(request.user_id).nickname}
                                   </span>
-                                  <span className="text-muted-foreground/50">•</span>
-                                  <span className="flex items-center gap-1">
+                                  {!isMyAlert && getProfile(request.user_id).full_name && (
+                                    <span className="text-muted-foreground text-[10px] pl-4 truncate max-w-[200px]">
+                                      {getProfile(request.user_id).full_name}
+                                    </span>
+                                  )}
+                                  <span className="flex items-center gap-1 text-muted-foreground">
                                     <Clock className="w-3 h-3" />
                                     {formatTime(request.created_at)}
                                   </span>
