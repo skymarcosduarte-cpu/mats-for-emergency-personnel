@@ -1,23 +1,26 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-interface UserNameCache {
-  [userId: string]: string;
+interface UserProfileCache {
+  [userId: string]: {
+    nickname: string;
+    full_name: string;
+  };
 }
 
 export function useUserNames(userIds: string[]) {
-  const [names, setNames] = useState<UserNameCache>({});
+  const [profiles, setProfiles] = useState<UserProfileCache>({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const uniqueIds = [...new Set(userIds.filter(Boolean))];
     if (uniqueIds.length === 0) return;
 
-    // Filter out already cached names
-    const missingIds = uniqueIds.filter(id => !(id in names));
+    // Filter out already cached profiles
+    const missingIds = uniqueIds.filter(id => !(id in profiles));
     if (missingIds.length === 0) return;
 
-    const fetchNames = async () => {
+    const fetchProfiles = async () => {
       setLoading(true);
       try {
         const { data, error } = await supabase
@@ -26,16 +29,19 @@ export function useUserNames(userIds: string[]) {
           .in('id', missingIds);
 
         if (error) {
-          console.error('[useUserNames] Error fetching names:', error);
+          console.error('[useUserNames] Error fetching profiles:', error);
           return;
         }
 
         if (data) {
-          const newNames: UserNameCache = {};
+          const newProfiles: UserProfileCache = {};
           data.forEach(profile => {
-            newNames[profile.id] = profile.nickname || profile.full_name || 'Usuario';
+            newProfiles[profile.id] = {
+              nickname: profile.nickname || 'Usuario',
+              full_name: profile.full_name || '',
+            };
           });
-          setNames(prev => ({ ...prev, ...newNames }));
+          setProfiles(prev => ({ ...prev, ...newProfiles }));
         }
       } catch (err) {
         console.error('[useUserNames] Exception:', err);
@@ -44,12 +50,20 @@ export function useUserNames(userIds: string[]) {
       }
     };
 
-    fetchNames();
+    fetchProfiles();
   }, [userIds.join(',')]);
 
   const getName = (userId: string): string => {
-    return names[userId] || 'Cargando...';
+    return profiles[userId]?.nickname || 'Cargando...';
   };
 
-  return { names, getName, loading };
+  const getFullName = (userId: string): string => {
+    return profiles[userId]?.full_name || '';
+  };
+
+  const getProfile = (userId: string) => {
+    return profiles[userId] || { nickname: 'Cargando...', full_name: '' };
+  };
+
+  return { profiles, getName, getFullName, getProfile, loading };
 }
