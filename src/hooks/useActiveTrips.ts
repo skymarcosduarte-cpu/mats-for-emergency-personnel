@@ -26,6 +26,7 @@ export interface ActiveTrip {
   share_token: string | null;
   // Joined from profiles_public
   nickname?: string | null;
+  full_name?: string | null;
   // Current user location (if sharing)
   current_lat?: number | null;
   current_lng?: number | null;
