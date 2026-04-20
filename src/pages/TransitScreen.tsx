@@ -1681,6 +1681,11 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                                     </span>
                                   )}
                                 </div>
+                                {trip.full_name && trip.full_name !== displayName && (
+                                  <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                                    {trip.full_name}
+                                  </p>
+                                )}
                                 <p className="text-sm font-medium text-foreground mt-1 truncate">
                                   {trip.origin} → {trip.destination}
                                 </p>
