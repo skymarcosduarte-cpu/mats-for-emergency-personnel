@@ -279,6 +279,7 @@ export function useActiveTrips() {
           ...trip,
           transit_type: trip.transit_type as 'ROAD' | 'FLIGHT' | 'HELICOPTER',
           nickname: nicknameMap.get(trip.user_id) || null,
+          full_name: fullNameMap.get(trip.user_id) || null,
           current_lat: location?.lat || null,
           current_lng: location?.lng || null,
           current_speed: location?.speed || null,
