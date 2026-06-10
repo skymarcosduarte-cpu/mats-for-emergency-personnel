@@ -1,6 +1,8 @@
-// Catálogo de cámaras verificadas — v4
-// Solo fuentes embebibles (YouTube). Sin cámaras que requieran abrir enlace externo.
-// Última actualización: marzo 2026
+// Catálogo de cámaras verificadas — v5
+// Solo fuentes embebibles (YouTube) verificadas EN VIVO al momento de la actualización.
+// IMPORTANTE: los IDs de YouTube live caducan cuando el canal reinicia su transmisión;
+// re-verificar este catálogo periódicamente y reemplazar IDs caídos.
+// Última actualización: junio 2026 — limpieza de 41 streams caídos.
 
 import { Camera, LayoutOption } from './types';
 
