@@ -1633,7 +1633,7 @@ export type Database = {
       verify_report: { Args: { report_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "RESCATISTA" | "FAMILIAR" | "SOS_ACTIVO" | "EX_SOS"
+      app_role: "RESCATISTA" | "FAMILIAR" | "SOS_ACTIVO" | "EX_SOS" | "ADMIN"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1761,7 +1761,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["RESCATISTA", "FAMILIAR", "SOS_ACTIVO", "EX_SOS"],
+      app_role: ["RESCATISTA", "FAMILIAR", "SOS_ACTIVO", "EX_SOS", "ADMIN"],
     },
   },
 } as const
