@@ -104,7 +104,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     lastUpdate: null,
   });
 
-  const { alerts: weatherAlerts } = useWeatherAlerts();
+  const { alerts: weatherAlerts } = useWeatherAlerts(null);
 
   // Cyclones: only NHC entries with coordinates
   const cyclones = React.useMemo(
