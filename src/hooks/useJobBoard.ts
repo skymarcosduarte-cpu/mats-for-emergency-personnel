@@ -105,11 +105,8 @@ export function useJobBoard() {
 
     if (uploadError) throw uploadError;
 
-    const { data: urlData } = supabase.storage
-      .from('job_cvs')
-      .getPublicUrl(fileName);
-
-    return { url: urlData.publicUrl, filename: file.name };
+    // Bucket is private; store the storage path. Signed URLs are generated on demand.
+    return { url: fileName, filename: file.name };
   };
 
   const createPost = async (data: CreateJobPostData, cvFile?: File) => {
