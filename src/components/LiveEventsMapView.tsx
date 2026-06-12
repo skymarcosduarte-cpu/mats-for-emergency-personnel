@@ -1,5 +1,5 @@
 // Live Events Map View — weather + hazards overlay for the Community Map.
-// Layers (all togglable, all free / no zoom paywall):
+// Layers (always-on, free / no zoom paywall):
 //   1. NASA FIRMS fire hotspots (server-cached)
 //   2. RainViewer animated precipitation radar (global, last 2h + nowcast)
 //   3. OpenWeatherMap point query — tap map to see local weather + official alerts
@@ -7,9 +7,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
-import { Loader2, Flame, CloudRain, MousePointerClick, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
 import type { FireHotspot } from '@/hooks/useMexicoAlerts';
 import { useWeatherAlerts } from '@/hooks/useWeatherAlerts';
 
@@ -93,11 +91,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
   const radarIndexRef = useRef(0);
   const owmClickHandlerRef = useRef<((e: L.LeafletMouseEvent) => void) | null>(null);
 
-  const [showFires, setShowFires] = useState(true);
-  const [showRadar, setShowRadar] = useState(true);
-  const [showOwm, setShowOwm] = useState(false);
-  const [showCyclones, setShowCyclones] = useState(true);
-
   const [events, setEvents] = useState<EventsState>({
     fires: [],
     loading: false,
@@ -168,36 +161,33 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     fireMarkersRef.current.forEach((marker) => map.removeLayer(marker));
     fireMarkersRef.current.clear();
 
-    if (showFires) {
-      events.fires.slice(0, 100).forEach((fire) => {
-        const key = `fire-${fire.id}`;
-        const marker = L.marker([fire.lat, fire.lng], {
-          icon: createFireIcon(fire.confidence),
-          zIndexOffset: 50,
-        })
-          .addTo(map)
-          .bindPopup(`
-            <div style="text-align: center;">
-              <div style="font-size: 14px; font-weight: bold;">🔥 Incendio</div>
-              <div style="font-size: 11px; color: #666;">
-                Confianza: ${fire.confidence === 'high' ? 'Alta' : fire.confidence === 'nominal' ? 'Media' : 'Baja'}
-              </div>
-              <div style="font-size: 11px; color: #999;">
-                ${fire.acqDate} ${fire.acqTime}
-              </div>
+    events.fires.slice(0, 100).forEach((fire) => {
+      const key = `fire-${fire.id}`;
+      const marker = L.marker([fire.lat, fire.lng], {
+        icon: createFireIcon(fire.confidence),
+        zIndexOffset: 50,
+      })
+        .addTo(map)
+        .bindPopup(`
+          <div style="text-align: center;">
+            <div style="font-size: 14px; font-weight: bold;">🔥 Incendio</div>
+            <div style="font-size: 11px; color: #666;">
+              Confianza: ${fire.confidence === 'high' ? 'Alta' : fire.confidence === 'nominal' ? 'Media' : 'Baja'}
             </div>
-          `);
-        fireMarkersRef.current.set(key, marker);
-      });
-    }
-  }, [map, isActive, events, showFires]);
+            <div style="font-size: 11px; color: #999;">
+              ${fire.acqDate} ${fire.acqTime}
+            </div>
+          </div>
+        `);
+      fireMarkersRef.current.set(key, marker);
+    });
+  }, [map, isActive, events]);
 
   // Cyclone markers
   useEffect(() => {
     if (!map || !isActive) return;
     cycloneMarkersRef.current.forEach((m) => map.removeLayer(m));
     cycloneMarkersRef.current.clear();
-    if (!showCyclones) return;
     cyclones.forEach((c) => {
       if (!c.coordinates) return;
       const label = (c.event.split(' ').find(w => /[A-Z]/.test(w[0])) || c.event).slice(0, 14);
@@ -215,7 +205,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         `);
       cycloneMarkersRef.current.set(c.id, marker);
     });
-  }, [map, isActive, showCyclones, cyclones]);
+  }, [map, isActive, cyclones]);
 
   // RainViewer animated radar layer
   useEffect(() => {
@@ -226,8 +216,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       if (radarTimerRef.current) { clearInterval(radarTimerRef.current); radarTimerRef.current = null; }
       if (radarLayerRef.current) { map.removeLayer(radarLayerRef.current); radarLayerRef.current = null; }
     };
-
-    if (!showRadar) { cleanup(); return; }
 
     const start = async () => {
       try {
@@ -249,7 +237,13 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
           const f = frames[idx];
           if (!f) return;
           const url = `${host}${f.path}/256/{z}/{x}/{y}/2/1_1.png`;
-          const newLayer = L.tileLayer(url, { opacity: 0.6, zIndex: 350, maxZoom: 18, tileSize: 256 });
+          const newLayer = L.tileLayer(url, {
+            opacity: 0.6,
+            zIndex: 350,
+            tileSize: 256,
+            maxZoom: 18,
+            maxNativeZoom: 10,
+          });
           newLayer.addTo(map);
           const prev = radarLayerRef.current;
           radarLayerRef.current = newLayer;
@@ -271,7 +265,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
 
     start();
     return () => { cancelled = true; cleanup(); };
-  }, [map, isActive, showRadar]);
+  }, [map, isActive]);
 
   // OpenWeatherMap point query — tap map
   useEffect(() => {
@@ -284,8 +278,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       }
       map.getContainer().style.cursor = '';
     };
-
-    if (!showOwm) { detach(); return; }
 
     map.getContainer().style.cursor = 'crosshair';
 
@@ -336,7 +328,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     owmClickHandlerRef.current = handler;
     map.on('click', handler);
     return detach;
-  }, [map, isActive, showOwm]);
+  }, [map, isActive]);
 
   if (!isActive) return null;
 
@@ -349,88 +341,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         </div>
       )}
 
-      {/* Layer toggles */}
-      <div className="absolute bottom-4 right-2 z-[1000] flex flex-col items-end gap-1.5">
-        <button
-          onClick={() => setShowRadar(!showRadar)}
-          className={cn(
-            'rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5',
-            showRadar ? 'bg-blue-600/90 text-white border-blue-500' : 'bg-background/90 text-muted-foreground border-border'
-          )}
-          title="Radar de lluvia (RainViewer)"
-        >
-          <CloudRain className="w-4 h-4" />
-          <span className="text-xs font-medium">Lluvia</span>
-        </button>
-        <button
-          onClick={() => setShowOwm(!showOwm)}
-          className={cn(
-            'rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5',
-            showOwm ? 'bg-emerald-600/90 text-white border-emerald-500' : 'bg-background/90 text-muted-foreground border-border'
-          )}
-          title="Toca el mapa para consultar el clima en un punto"
-        >
-          <MousePointerClick className="w-4 h-4" />
-          <span className="text-xs font-medium">Clima</span>
-        </button>
-        <button
-          onClick={() => setShowCyclones(!showCyclones)}
-          className={cn(
-            'rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5',
-            showCyclones ? 'bg-purple-600/90 text-white border-purple-500' : 'bg-background/90 text-muted-foreground border-border'
-          )}
-          title="Ciclones tropicales activos (NHC)"
-        >
-          <span className="text-base leading-none">🌀</span>
-          <span className="text-xs font-medium">Ciclones</span>
-        </button>
-        <button
-          onClick={() => setShowFires(!showFires)}
-          className={cn(
-            'rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5',
-            showFires ? 'bg-orange-600/90 text-white border-orange-500' : 'bg-background/90 text-muted-foreground border-border'
-          )}
-          title="Incendios NASA FIRMS"
-        >
-          <Flame className="w-4 h-4" />
-          <span className="text-xs font-medium">Fuego</span>
-        </button>
-      </div>
-
-      {/* Stats bar */}
-      {!events.loading && events.lastUpdate && (
-        <div className="absolute bottom-20 left-2 right-2 z-[1000] flex items-center justify-between bg-background/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-          <div className="flex items-center gap-3 text-xs flex-wrap">
-            {showFires && (
-              <span className="flex items-center gap-1">
-                <span className="text-orange-500">🔥</span>{events.fires.length}
-              </span>
-            )}
-            {showCyclones && cyclones.length > 0 && (
-              <span className="flex items-center gap-1">🌀 {cyclones.length}</span>
-            )}
-            {showRadar && (
-              <span className="flex items-center gap-1 text-blue-500">
-                <CloudRain className="w-3 h-3" /> Radar
-              </span>
-            )}
-            {showOwm && (
-              <span className="flex items-center gap-1 text-emerald-500">
-                <MousePointerClick className="w-3 h-3" /> Toca el mapa
-              </span>
-            )}
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2"
-            onClick={fetchAllEvents}
-            disabled={events.loading}
-          >
-            <RefreshCw className={cn('w-3.5 h-3.5', events.loading && 'animate-spin')} />
-          </Button>
-        </div>
-      )}
     </>
   );
 };
