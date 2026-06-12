@@ -279,8 +279,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       map.getContainer().style.cursor = '';
     };
 
-    if (!showOwm) { detach(); return; }
-
     map.getContainer().style.cursor = 'crosshair';
 
     const handler = async (e: L.LeafletMouseEvent) => {
@@ -330,7 +328,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
     owmClickHandlerRef.current = handler;
     map.on('click', handler);
     return detach;
-  }, [map, isActive, showOwm]);
+  }, [map, isActive]);
 
   if (!isActive) return null;
 
@@ -343,88 +341,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
         </div>
       )}
 
-      {/* Layer toggles */}
-      <div className="absolute bottom-4 right-2 z-[1000] flex flex-col items-end gap-1.5">
-        <button
-          onClick={() => setShowRadar(!showRadar)}
-          className={cn(
-            'rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5',
-            showRadar ? 'bg-blue-600/90 text-white border-blue-500' : 'bg-background/90 text-muted-foreground border-border'
-          )}
-          title="Radar de lluvia (RainViewer)"
-        >
-          <CloudRain className="w-4 h-4" />
-          <span className="text-xs font-medium">Lluvia</span>
-        </button>
-        <button
-          onClick={() => setShowOwm(!showOwm)}
-          className={cn(
-            'rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5',
-            showOwm ? 'bg-emerald-600/90 text-white border-emerald-500' : 'bg-background/90 text-muted-foreground border-border'
-          )}
-          title="Toca el mapa para consultar el clima en un punto"
-        >
-          <MousePointerClick className="w-4 h-4" />
-          <span className="text-xs font-medium">Clima</span>
-        </button>
-        <button
-          onClick={() => setShowCyclones(!showCyclones)}
-          className={cn(
-            'rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5',
-            showCyclones ? 'bg-purple-600/90 text-white border-purple-500' : 'bg-background/90 text-muted-foreground border-border'
-          )}
-          title="Ciclones tropicales activos (NHC)"
-        >
-          <span className="text-base leading-none">🌀</span>
-          <span className="text-xs font-medium">Ciclones</span>
-        </button>
-        <button
-          onClick={() => setShowFires(!showFires)}
-          className={cn(
-            'rounded-lg px-2.5 py-2 shadow-lg border transition-colors flex items-center gap-1.5',
-            showFires ? 'bg-orange-600/90 text-white border-orange-500' : 'bg-background/90 text-muted-foreground border-border'
-          )}
-          title="Incendios NASA FIRMS"
-        >
-          <Flame className="w-4 h-4" />
-          <span className="text-xs font-medium">Fuego</span>
-        </button>
-      </div>
-
-      {/* Stats bar */}
-      {!events.loading && events.lastUpdate && (
-        <div className="absolute bottom-20 left-2 right-2 z-[1000] flex items-center justify-between bg-background/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-          <div className="flex items-center gap-3 text-xs flex-wrap">
-            {showFires && (
-              <span className="flex items-center gap-1">
-                <span className="text-orange-500">🔥</span>{events.fires.length}
-              </span>
-            )}
-            {showCyclones && cyclones.length > 0 && (
-              <span className="flex items-center gap-1">🌀 {cyclones.length}</span>
-            )}
-            {showRadar && (
-              <span className="flex items-center gap-1 text-blue-500">
-                <CloudRain className="w-3 h-3" /> Radar
-              </span>
-            )}
-            {showOwm && (
-              <span className="flex items-center gap-1 text-emerald-500">
-                <MousePointerClick className="w-3 h-3" /> Toca el mapa
-              </span>
-            )}
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2"
-            onClick={fetchAllEvents}
-            disabled={events.loading}
-          >
-            <RefreshCw className={cn('w-3.5 h-3.5', events.loading && 'animate-spin')} />
-          </Button>
-        </div>
-      )}
     </>
   );
 };
