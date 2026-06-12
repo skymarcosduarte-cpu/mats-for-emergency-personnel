@@ -350,7 +350,7 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       )}
 
       {/* Layer toggles */}
-      <div className="absolute top-16 right-2 z-[1000] flex flex-col items-end gap-1.5">
+      <div className="absolute bottom-4 right-2 z-[1000] flex flex-col items-end gap-1.5">
         <button
           onClick={() => setShowRadar(!showRadar)}
           className={cn(
