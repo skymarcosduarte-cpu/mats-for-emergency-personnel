@@ -1560,8 +1560,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   // Specialty filter state
   const [selectedSpecialtyFilters, setSelectedSpecialtyFilters] = useState<string[]>([]);
 
-  // Map view mode: 'comunidad' (default) or 'eventos' (live events)
-  const [mapViewMode, setMapViewMode] = useState<'comunidad' | 'eventos'>('comunidad');
+  // Unified map: community features + live events (NASA FIRMS) always active
+  const mapViewMode = 'comunidad' as const;
 
   const { position, error: locationError, getCurrentPosition, loading: locationLoading, watching: locationWatching } = useLocation();
   const { role, user } = useAuth();
@@ -3603,40 +3603,10 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       {/* Map container */}
       <div ref={mapRef} className="w-full h-full map-container" />
 
-      {/* Map View Toggle - Comunidad / En Vivo */}
-      <div className="fixed top-[calc(var(--app-header-height)+8px)] left-1/2 -translate-x-1/2 z-[1002] pointer-events-auto">
-        <div className="bg-background/95 backdrop-blur-sm rounded-full shadow-lg border border-border p-0.5 flex">
-          <button
-            onClick={() => setMapViewMode('comunidad')}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5",
-              mapViewMode === 'comunidad' 
-                ? "bg-primary text-primary-foreground shadow-sm" 
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Comunidad</span>
-          </button>
-          <button
-            onClick={() => setMapViewMode('eventos')}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5",
-              mapViewMode === 'eventos' 
-                ? "bg-warning text-warning-foreground shadow-sm" 
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Radio className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">En Vivo</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Live Events View - only renders when active */}
+      {/* Live Events View - NASA FIRMS fires always active over community map */}
       <LiveEventsMapView 
         map={mapInstanceRef.current}
-        isActive={mapViewMode === 'eventos'}
+        isActive={true}
         userPosition={position}
       />
 
