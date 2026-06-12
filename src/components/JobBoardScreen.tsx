@@ -32,6 +32,28 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+
+// Extract the storage path from either a raw path or a legacy public URL
+function getCvStoragePath(cvUrl: string): string {
+  const marker = '/job_cvs/';
+  const idx = cvUrl.indexOf(marker);
+  return idx >= 0 ? cvUrl.slice(idx + marker.length) : cvUrl;
+}
+
+async function openCvSignedUrl(cvUrl: string) {
+  try {
+    const path = getCvStoragePath(cvUrl);
+    const { data, error } = await supabase.storage
+      .from('job_cvs')
+      .createSignedUrl(path, 3600);
+    if (error || !data?.signedUrl) throw error || new Error('No se pudo generar enlace');
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  } catch (err) {
+    console.error('[JobBoard] CV signed URL error:', err);
+    toast.error('No se pudo abrir el CV. Intenta de nuevo.');
+  }
+}
 
 interface JobBoardScreenProps {
   onBack: () => void;
@@ -332,13 +354,11 @@ export const JobBoardScreen: React.FC<JobBoardScreenProps> = ({ onBack }) => {
                           <Button
                             variant="outline"
                             size="sm"
-                            asChild
                             className="h-8"
+                            onClick={() => openCvSignedUrl(post.cv_url!)}
                           >
-                            <a href={post.cv_url} target="_blank" rel="noopener noreferrer">
-                              <Download className="w-3.5 h-3.5 mr-1" />
-                              {post.cv_filename || 'Ver CV'}
-                            </a>
+                            <Download className="w-3.5 h-3.5 mr-1" />
+                            {post.cv_filename || 'Ver CV'}
                           </Button>
                         )}
 
