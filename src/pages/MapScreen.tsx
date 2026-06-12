@@ -1560,8 +1560,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   // Specialty filter state
   const [selectedSpecialtyFilters, setSelectedSpecialtyFilters] = useState<string[]>([]);
 
-  // Map view mode: 'comunidad' (default) or 'eventos' (live events)
-  const [mapViewMode, setMapViewMode] = useState<'comunidad' | 'eventos'>('comunidad');
+  // Unified map: community features + live events (NASA FIRMS) always active
+  const mapViewMode = 'comunidad' as const;
 
   const { position, error: locationError, getCurrentPosition, loading: locationLoading, watching: locationWatching } = useLocation();
   const { role, user } = useAuth();
