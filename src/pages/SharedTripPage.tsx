@@ -62,21 +62,19 @@ export default function SharedTripPage() {
     }
 
     try {
-      // Fetch trip by share_token
-      const { data: tripData, error: tripError } = await supabase
-        .from('transit_trips')
-        .select('*')
-        .eq('share_token', shareToken)
-        .eq('status', 'ACTIVE')
-        .single();
+      // Fetch trip by share_token via SECURITY DEFINER RPC that excludes
+      // sensitive columns (boarding_pass_url, vehicle_photo_url, share_token).
+      const { data: rpcData, error: tripError } = await supabase
+        .rpc('get_shared_trip', { _share_token: shareToken });
 
+      const tripData = Array.isArray(rpcData) ? rpcData[0] : rpcData;
       if (tripError || !tripData) {
         setError('Viaje no encontrado o ya finalizó');
         setLoading(false);
         return;
       }
 
-      setTrip(tripData);
+      setTrip(tripData as SharedTrip);
 
       // Fetch user location
       const { data: locationData } = await supabase
