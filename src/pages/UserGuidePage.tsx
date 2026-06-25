@@ -168,35 +168,35 @@ export default function UserGuidePage() {
           <nav className="space-y-2 text-gray-800">
             <div className="flex justify-between border-b border-gray-200 pb-1">
               <span>1. Introducción</span>
-              <span className="text-gray-500">1</span>
+              <span className="text-muted-foreground">1</span>
             </div>
             <div className="flex justify-between border-b border-gray-200 pb-1">
               <span>2. Mapa en Tiempo Real</span>
-              <span className="text-gray-500">2</span>
+              <span className="text-muted-foreground">2</span>
             </div>
             <div className="flex justify-between border-b border-gray-200 pb-1">
               <span>3. Alertas Sísmicas y Naturales</span>
-              <span className="text-gray-500">3</span>
+              <span className="text-muted-foreground">3</span>
             </div>
             <div className="flex justify-between border-b border-gray-200 pb-1">
               <span>4. Tránsito y Viajes</span>
-              <span className="text-gray-500">4</span>
+              <span className="text-muted-foreground">4</span>
             </div>
             <div className="flex justify-between border-b border-gray-200 pb-1">
               <span>5. Comunidad</span>
-              <span className="text-gray-500">5</span>
+              <span className="text-muted-foreground">5</span>
             </div>
             <div className="flex justify-between border-b border-gray-200 pb-1">
               <span>6. RecurSOS - Recursos</span>
-              <span className="text-gray-500">6</span>
+              <span className="text-muted-foreground">6</span>
             </div>
             <div className="flex justify-between border-b border-gray-200 pb-1">
               <span>7. Configuración y Perfil</span>
-              <span className="text-gray-500">7</span>
+              <span className="text-muted-foreground">7</span>
             </div>
             <div className="flex justify-between border-b border-gray-200 pb-1">
               <span>8. Funciones de Emergencia</span>
-              <span className="text-gray-500">8</span>
+              <span className="text-muted-foreground">8</span>
             </div>
           </nav>
         </section>
@@ -996,7 +996,7 @@ export default function UserGuidePage() {
           <p className="text-sm text-gray-700 mt-1">
             Comunidad EX SOS • Versión {APP_VERSION}
           </p>
-          <p className="text-sm text-gray-500 mt-4">
+          <p className="text-sm text-muted-foreground mt-4">
             Este documento fue generado desde la aplicación M.A.T.S.
           </p>
         </footer>
