@@ -235,20 +235,33 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-    // Parse request body
-    const { user_id, email, nickname, full_name } = await req.json();
-
-    if (!email) {
-      console.error('[send-welcome-email] Missing email');
-      return new Response(
-        JSON.stringify({ error: 'Email is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Require authenticated JWT; the user may only request their own welcome email
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userErr } = await authClient.auth.getUser();
+    if (userErr || !userData?.user?.email) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    console.log(`[send-welcome-email] Sending welcome email to ${email} (${nickname})`);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Ignore body-supplied email/user_id — always use authenticated identity
+    const { nickname, full_name } = await req.json().catch(() => ({}));
+    const user_id = userData.user.id;
+    const email = userData.user.email;
+
+    console.log(`[send-welcome-email] Sending welcome email to ${email}`);
 
     const emailHtml = generateWelcomeEmailHtml(nickname || 'Usuario', full_name || nickname || 'Usuario');
     
