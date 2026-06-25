@@ -1,0 +1,15 @@
+# COMUNIDAD SOS — M.A.T.S.
+
+> Plataforma comunitaria de respuesta a emergencias (Monitoreo Activo de Tránsito y Seguridad): alertas sísmicas en tiempo real, seguimiento de viajes, mapa en vivo y coordinación de ayuda mutua.
+
+M.A.T.S. integra fuentes oficiales (SSN, USGS, SkyAlert, SMN, NOAA, NASA FIRMS) y herramientas de comunidad (panic button, reportes de carretera, chat interno, BLE mesh en modo desastre) en una PWA instalable.
+
+## Pages
+
+- [Instalar la app](/install): Guía paso a paso para instalar la PWA en Android, iOS, Windows, Mac y Huawei.
+- [Guía del Usuario](/guia): Manual completo: mapa, alertas, viajes, comunidad y funciones de emergencia.
+- [Guía Paso a Paso](/guia-paso-a-paso): Tutorial interactivo con 20 páginas imprimibles / descargables en PDF.
+
+## Optional
+
+- [Inicio](/): Pantalla principal de la app (requiere sesión).

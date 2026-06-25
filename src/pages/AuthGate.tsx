@@ -858,6 +858,16 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
         <MatsLogo size={80} showText className="mb-8" />
 
         <div className="w-full max-w-sm space-y-6">
+          {step === 'auth' && (
+            <header className="text-center space-y-1">
+              <h1 className="text-2xl font-bold text-foreground">
+                COMUNIDAD SOS — Acceso al Sistema
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Inicia sesión o regístrate con tu código de invitación para coordinar respuesta a emergencias.
+              </p>
+            </header>
+          )}
           {error && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive space-y-2">
               <p>{error}</p>
