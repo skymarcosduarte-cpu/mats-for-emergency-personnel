@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Car, Plane, Clock, MapPin, Navigation, Loader2, AlertCircle, Route, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -200,11 +201,19 @@ export default function SharedTripPage() {
         <div className="flex items-center gap-3">
           <MatsLogo className="w-10 h-10" />
           <div>
-            <h1 className="font-bold">M.A.T.S.</h1>
-            <p className="text-xs opacity-80">Seguimiento de Viaje</p>
+            <h1 className="font-bold">M.A.T.S. — Seguimiento de Viaje</h1>
+            <p className="text-xs opacity-80">{trip.origin} → {trip.destination}</p>
           </div>
         </div>
       </header>
+      <Helmet>
+        <title>Seguimiento de Viaje — COMUNIDAD SOS</title>
+        <meta name="description" content={`Sigue en tiempo real el viaje ${trip.origin} → ${trip.destination} con M.A.T.S. — ETA, ruta y ubicación actualizada.`} />
+        <link rel="canonical" href={`https://mats-app.com/trip/${shareToken}`} />
+        <meta property="og:title" content="Seguimiento de Viaje — COMUNIDAD SOS" />
+        <meta property="og:url" content={`https://mats-app.com/trip/${shareToken}`} />
+        <meta property="og:description" content={`Viaje en curso ${trip.origin} → ${trip.destination} compartido vía M.A.T.S.`} />
+      </Helmet>
 
       <main className="p-4 space-y-4 pb-8">
         {/* Trip Title */}

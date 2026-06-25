@@ -134,7 +134,7 @@ export default function InstallPage() {
           <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto animate-in zoom-in duration-500">
             <Check className="h-12 w-12 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold">¡Ya está instalada!</h1>
+          <h2 className="text-3xl font-bold">¡Ya está instalada!</h2>
           <p className="text-muted-foreground text-lg">
             La aplicación COMUNIDAD SOS ya está instalada en tu dispositivo. Puedes cerrar esta ventana.
           </p>

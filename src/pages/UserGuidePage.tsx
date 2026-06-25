@@ -33,6 +33,7 @@ import { MatsLogo } from '@/components/MatsLogo';
 import { APP_VERSION } from '@/lib/versionCheck';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Helmet } from 'react-helmet-async';
 
 export default function UserGuidePage() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -97,6 +98,21 @@ export default function UserGuidePage() {
 
   return (
     <div ref={containerRef} className="min-h-screen h-screen bg-white overflow-y-auto">
+      <Helmet>
+        <title>Guía del Usuario — COMUNIDAD SOS / M.A.T.S.</title>
+        <meta name="description" content="Guía completa del usuario M.A.T.S.: mapa en tiempo real, alertas sísmicas, seguimiento de viajes, comunidad y funciones de emergencia." />
+        <link rel="canonical" href="https://mats-app.com/guia" />
+        <meta property="og:title" content="Guía del Usuario — COMUNIDAD SOS / M.A.T.S." />
+        <meta property="og:url" content="https://mats-app.com/guia" />
+        <meta property="og:description" content="Manual completo de M.A.T.S. — Monitoreo Activo de Tránsito y Seguridad." />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Article",
+          "headline": "M.A.T.S. — Guía del Usuario",
+          "description": "Manual completo del Sistema de Respuesta a Emergencias M.A.T.S.",
+          "url": "https://mats-app.com/guia"
+        })}</script>
+      </Helmet>
       {/* Action Buttons - Hidden when printing */}
       <div className="fixed top-4 right-4 z-50 print:hidden flex gap-2 flex-wrap justify-end">
         <Button 
@@ -129,7 +145,7 @@ export default function UserGuidePage() {
             <MatsLogo size={96} />
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            M.A.T.S.
+            M.A.T.S. — Guía del Usuario
           </h1>
           <h2 className="text-2xl text-orange-600 mb-2 font-medium">
             Monitoreo Activo de Tránsito y Seguridad
