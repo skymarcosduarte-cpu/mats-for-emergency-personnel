@@ -7,7 +7,7 @@ const corsHeaders = {
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
-// Authorized users who can trigger mass emails
+// Authorized users who can trigger mass emails (matched against authenticated JWT, not request body)
 const AUTHORIZED_USER_IDS = [
   '7c823685-369d-4f62-8459-80486832ba1a', // Zombie
   '0e0d5ee7-628d-4a98-af26-b60ede2536ce', // El Lagarto
@@ -124,21 +124,37 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    const { version, message, requesterId } = await req.json();
-
-    console.log(`[force-update-email] Starting mass email for version ${version}`);
-    console.log(`[force-update-email] Requester: ${requesterId}`);
-
-    // Verify requester is authorized
-    if (!requesterId || !AUTHORIZED_USER_IDS.includes(requesterId)) {
-      console.error('[force-update-email] Unauthorized requester:', requesterId);
+    // Validate JWT — never trust requester ID from request body
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userErr } = await authClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (!AUTHORIZED_USER_IDS.includes(userData.user.id)) {
+      console.error('[force-update-email] Forbidden user:', userData.user.id);
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { version, message } = await req.json();
+    console.log(`[force-update-email] Mass email v${version} initiated by ${userData.user.id}`);
 
     // Get all users from auth
     const { data: authData, error: authError } = await supabase.auth.admin.listUsers();

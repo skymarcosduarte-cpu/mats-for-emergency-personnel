@@ -9,6 +9,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Escape user-supplied content before injecting into HTML email templates
+const esc = (s: unknown): string =>
+  String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
 const PANIC_TYPE_LABELS: Record<string, { label: string; emoji: string }> = {
   'AMBULANCIA_PROPIA': { label: 'Ambulancia solicitada', emoji: '🚑' },
   'AMBULANCIA_TERCERO': { label: 'Ambulancia para tercero', emoji: '🚑' },
@@ -143,7 +152,7 @@ serve(async (req) => {
       alertColor = '#F59E0B'; // Amber
     }
 
-    const subject = `${alertEmoji} ALERTA MATS: ${alertLabel} - ${payload.creatorName}`;
+    const subject = `${alertEmoji} ALERTA MATS: ${alertLabel} - ${String(payload.creatorName ?? '').replace(/[\r\n]/g, ' ').slice(0, 120)}`;
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -170,7 +179,7 @@ serve(async (req) => {
             <strong style="color: #6b7280;">Solicitante:</strong>
           </td>
           <td style="padding: 12px 0; border-bottom: 1px solid #e5e5e5; text-align: right;">
-            <strong style="color: #111827;">${payload.creatorName}</strong>
+            <strong style="color: #111827;">${esc(payload.creatorName)}</strong>
           </td>
         </tr>
         <tr>
@@ -185,7 +194,7 @@ serve(async (req) => {
         <tr>
           <td colspan="2" style="padding: 12px 0; border-bottom: 1px solid #e5e5e5;">
             <strong style="color: #6b7280;">Mensaje:</strong>
-            <p style="margin: 8px 0 0; color: #374151;">${payload.message}</p>
+            <p style="margin: 8px 0 0; color: #374151;">${esc(payload.message)}</p>
           </td>
         </tr>
         ` : ''}

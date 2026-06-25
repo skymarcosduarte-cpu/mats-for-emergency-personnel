@@ -47,6 +47,18 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const cronSecret = Deno.env.get('CRON_SECRET');
+
+    // Restrict to internal cron invocations only via shared secret
+    const providedSecret = req.headers.get('x-cron-secret') ?? new URL(req.url).searchParams.get('cron_secret');
+    if (!cronSecret || providedSecret !== cronSecret) {
+      console.error('[trigger-drill-alert] Unauthorized invocation');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     console.log('[trigger-drill-alert] Checking for scheduled drills...');

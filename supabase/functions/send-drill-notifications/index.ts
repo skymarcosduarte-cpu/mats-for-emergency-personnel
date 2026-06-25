@@ -147,20 +147,38 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-    const { drill_id, scheduled_at, creator_id } = await req.json();
-
-    console.log(`[send-drill-notifications] Processing drill ${drill_id}`);
-
-    // Verify creator is authorized
-    if (!AUTHORIZED_USER_IDS.includes(creator_id)) {
-      console.error('[send-drill-notifications] Unauthorized creator:', creator_id);
+    // Require authenticated JWT and verify against allowlist (not body)
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userErr } = await authClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (!AUTHORIZED_USER_IDS.includes(userData.user.id)) {
+      console.error('[send-drill-notifications] Forbidden user:', userData.user.id);
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { drill_id, scheduled_at } = await req.json();
+    const creator_id = userData.user.id;
+    console.log(`[send-drill-notifications] Processing drill ${drill_id} by ${creator_id}`);
 
     // Get creator profile
     const { data: creatorProfile } = await supabase
