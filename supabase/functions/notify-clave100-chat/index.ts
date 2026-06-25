@@ -21,7 +21,31 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+    // Require authenticated admin (SOS_ACTIVO) to fan out clave100 chat notifications
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userErr } = await authClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const { data: isAdmin } = await supabase.rpc('is_admin', { _user_id: userData.user.id });
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Get the request body
     const { title, body, drillId } = await req.json();
