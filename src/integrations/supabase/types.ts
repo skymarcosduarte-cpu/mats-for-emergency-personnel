@@ -1019,6 +1019,8 @@ export type Database = {
           specialties: string[] | null
           updated_at: string
           user_id: string
+          zello_transmitting_until: string | null
+          zello_username: string | null
         }
         Insert: {
           can_provide_medical_assistance?: boolean | null
@@ -1032,6 +1034,8 @@ export type Database = {
           specialties?: string[] | null
           updated_at?: string
           user_id: string
+          zello_transmitting_until?: string | null
+          zello_username?: string | null
         }
         Update: {
           can_provide_medical_assistance?: boolean | null
@@ -1045,6 +1049,8 @@ export type Database = {
           specialties?: string[] | null
           updated_at?: string
           user_id?: string
+          zello_transmitting_until?: string | null
+          zello_username?: string | null
         }
         Relationships: []
       }

@@ -120,22 +120,21 @@ export function useUserLocations() {
       .select('*');
 
     if (!error && data) {
-      // Also fetch Zello fields and full_name from profiles
+      // Also fetch Zello fields from profiles_public (privacy-safe view)
       const userIds = data.map((d: any) => d.user_id).filter(Boolean);
-      let profilesMap: Record<string, { zello_username: string | null; zello_transmitting_until: string | null; full_name: string | null }> = {};
+      let profilesMap: Record<string, { zello_username: string | null; zello_transmitting_until: string | null }> = {};
       
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, zello_username, zello_transmitting_until, full_name')
-          .in('id', userIds);
+          .from('profiles_public')
+          .select('user_id, zello_username, zello_transmitting_until')
+          .in('user_id', userIds);
         
         if (profilesData) {
           profilesData.forEach((p: any) => {
-            profilesMap[p.id] = { 
+            profilesMap[p.user_id] = { 
               zello_username: p.zello_username, 
               zello_transmitting_until: p.zello_transmitting_until,
-              full_name: p.full_name || null,
             };
           });
         }
@@ -146,7 +145,6 @@ export function useUserLocations() {
         ...loc,
         zello_username: profilesMap[loc.user_id]?.zello_username || null,
         zello_transmitting_until: profilesMap[loc.user_id]?.zello_transmitting_until || null,
-        full_name: profilesMap[loc.user_id]?.full_name || null,
       }));
 
       console.log('[useUserLocations] Fetched locations with roles:', enriched.length);
