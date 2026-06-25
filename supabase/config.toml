@@ -74,6 +74,3 @@ verify_jwt = false
 
 [functions.fetch-owm-weather]
 verify_jwt = false
-
-[functions.get-owm-key]
-verify_jwt = false
