@@ -187,6 +187,16 @@ export const DEFAULT_CAMERAS: Camera[] = [
     embedUrl: `https://www.youtube.com/embed/Qr61waJ6AZg${YT_PARAMS}`,
     region: 'noticias',
   },
+  {
+    id: 'yt-telemundo-live',
+    name: 'Telemundo Noticias en vivo',
+    city: 'Miami',
+    country: 'EE.UU.',
+    description: 'Telemundo Noticias en vivo',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/9CHbF8k-W7I${YT_PARAMS}`,
+    region: 'noticias',
+  },
   // ═══════════════════════════════════════
   // Norteamérica (aeropuertos)
   // ═══════════════════════════════════════
@@ -220,7 +230,7 @@ export const DEFAULT_INITIAL_CAMERA_IDS = [
   'yt-nplus-live',
   'yt-milenio-live',
   'yt-cnn-es-live',
-  'yt-euronews-es',
+  'yt-telemundo-live',
 ];
 
 export const LAYOUT_OPTIONS: LayoutOption[] = [
