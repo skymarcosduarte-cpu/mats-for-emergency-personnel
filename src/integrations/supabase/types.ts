@@ -1586,6 +1586,32 @@ export type Database = {
           created_at: string
         }[]
       }
+      get_shared_trip: {
+        Args: { _share_token: string }
+        Returns: {
+          airline: string
+          arrival_airport: string
+          arrival_time: string
+          arrived_at: string
+          created_at: string
+          departure_airport: string
+          departure_time: string
+          destination: string
+          destination_lat: number
+          destination_lng: number
+          eta: string
+          flight_number: string
+          id: string
+          origin: string
+          origin_lat: number
+          origin_lng: number
+          plates: string
+          status: string
+          transit_type: string
+          user_id: string
+          vehicle_type: string
+        }[]
+      }
       get_todays_birthdays: {
         Args: never
         Returns: {
