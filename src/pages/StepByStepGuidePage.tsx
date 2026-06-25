@@ -96,7 +96,7 @@ export default function StepByStepGuidePage() {
           </div>
           <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Guía Paso a Paso</h1>
           <p className="text-xl text-orange-600 font-semibold">M.A.T.S. — Comunidad EX SOS</p>
-          <p className="text-base text-gray-500 mt-2">Versión {APP_VERSION}</p>
+          <p className="text-base text-muted-foreground mt-2">Versión {APP_VERSION}</p>
         </header>
 
         {/* All pages rendered sequentially */}
@@ -142,7 +142,7 @@ export default function StepByStepGuidePage() {
         {/* Footer */}
         <footer className="text-center py-8 border-t border-gray-200 mt-8">
           <MatsLogo size={40} />
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             © {new Date().getFullYear()} M.A.T.S. — Comunidad EX SOS · v{APP_VERSION}
           </p>
         </footer>
