@@ -186,7 +186,7 @@ export function SkyAlertTab() {
               <ExternalLink className="w-4 h-4" />
             </a>
             <a 
-              href="https://x.com/SASSLA_"
+              href="https://x.com/SasslaMx"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-primary hover:underline font-medium text-base"
