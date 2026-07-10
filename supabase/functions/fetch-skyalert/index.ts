@@ -187,17 +187,21 @@ async function fetchSASMEX(): Promise<SkyAlert[]> {
   return alerts;
 }
 
-// Scrape SASSLA X/Twitter account via public Nitter RSS mirrors
-async function fetchSASSLA(): Promise<SkyAlert[]> {
-  const alerts: SkyAlert[] = [];
-  const nitterMirrors = [
-    'https://nitter.privacydev.net/SASSLA_/rss',
-    'https://nitter.poast.org/SASSLA_/rss',
-    'https://nitter.net/SASSLA_/rss',
-  ];
+const SASSLA_MIRRORS = [
+  'https://nitter.privacydev.net/SASSLA_/rss',
+  'https://nitter.poast.org/SASSLA_/rss',
+  'https://nitter.net/SASSLA_/rss',
+];
 
-  let xml: string | null = null;
-  for (const url of nitterMirrors) {
+interface SasslaFetchResult {
+  xml: string | null;
+  mirror: string | null;
+  attempts: Array<{ url: string; ok: boolean; status?: number; error?: string }>;
+}
+
+async function fetchSasslaXml(): Promise<SasslaFetchResult> {
+  const attempts: SasslaFetchResult['attempts'] = [];
+  for (const url of SASSLA_MIRRORS) {
     try {
       const res = await fetch(url, {
         headers: {
@@ -207,14 +211,58 @@ async function fetchSASSLA(): Promise<SkyAlert[]> {
         signal: AbortSignal.timeout(6000),
       });
       if (res.ok) {
-        xml = await res.text();
-        break;
+        const xml = await res.text();
+        attempts.push({ url, ok: true, status: res.status });
+        return { xml, mirror: url, attempts };
       }
+      attempts.push({ url, ok: false, status: res.status });
     } catch (e) {
+      attempts.push({ url, ok: false, error: (e as Error).message });
       console.log('[SASSLA] Mirror failed:', url, (e as Error).message);
     }
   }
+  return { xml: null, mirror: null, attempts };
+}
 
+interface SasslaRawItem {
+  text: string;
+  pubDate: string | null;
+  timestamp: number | null;
+}
+
+function parseSasslaItems(xml: string): SasslaRawItem[] {
+  const items: SasslaRawItem[] = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+  for (const itemMatch of xml.matchAll(itemRegex)) {
+    const item = itemMatch[1];
+    const titleMatch = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) ||
+                       item.match(/<title>([\s\S]*?)<\/title>/);
+    const descMatch = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) ||
+                      item.match(/<description>([\s\S]*?)<\/description>/);
+    const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+
+    const text = (descMatch?.[1] || titleMatch?.[1] || '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!text) continue;
+
+    const pubDate = dateMatch ? dateMatch[1].trim() : null;
+    const ts = pubDate ? new Date(pubDate).getTime() : NaN;
+    items.push({ text, pubDate, timestamp: isNaN(ts) ? null : ts });
+  }
+  return items;
+}
+
+// Scrape SASSLA X/Twitter account via public Nitter RSS mirrors
+async function fetchSASSLA(): Promise<SkyAlert[]> {
+  const alerts: SkyAlert[] = [];
+  const { xml } = await fetchSasslaXml();
   if (!xml) {
     console.log('[SASSLA] All Nitter mirrors failed');
     return alerts;
@@ -223,31 +271,9 @@ async function fetchSASSLA(): Promise<SkyAlert[]> {
   try {
     // Only look at tweets from the last 15 minutes
     const cutoff = Date.now() - 15 * 60 * 1000;
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    const items = xml.matchAll(itemRegex);
-
-    for (const itemMatch of items) {
-      const item = itemMatch[1];
-      const titleMatch = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) ||
-                         item.match(/<title>([\s\S]*?)<\/title>/);
-      const descMatch = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) ||
-                        item.match(/<description>([\s\S]*?)<\/description>/);
-      const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
-
-      const rawText = (descMatch?.[1] || titleMatch?.[1] || '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      if (!rawText) continue;
-
-      const pubDate = dateMatch ? new Date(dateMatch[1]).getTime() : Date.now();
-      if (isNaN(pubDate) || pubDate < cutoff) continue;
+    for (const { text: rawText, timestamp } of parseSasslaItems(xml)) {
+      const pubDate = timestamp ?? Date.now();
+      if (pubDate < cutoff) continue;
 
       const lower = rawText.toLowerCase();
       // Only real seismic alert posts
@@ -360,6 +386,39 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const url = new URL(req.url);
+    const debug = url.searchParams.get('debug');
+
+    // Diagnostic / verification mode for SASSLA scraping.
+    // Returns mirror attempt status and the latest raw items (unfiltered).
+    if (debug === 'sassla') {
+      const { xml, mirror, attempts } = await fetchSasslaXml();
+      const items = xml ? parseSasslaItems(xml).slice(0, 10) : [];
+      const parsedAlerts = xml ? await fetchSASSLA() : [];
+      return new Response(
+        JSON.stringify({
+          ok: !!xml,
+          mirror,
+          attempts,
+          itemCount: items.length,
+          items: items.map((it) => ({
+            text: it.text,
+            pubDate: it.pubDate,
+            ageMinutes: it.timestamp ? Math.round((Date.now() - it.timestamp) / 60000) : null,
+          })),
+          matchedAlerts: parsedAlerts,
+          checkedAt: new Date().toISOString(),
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+          },
+        },
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
