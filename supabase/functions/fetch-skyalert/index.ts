@@ -11,7 +11,7 @@ const corsHeaders = {
 
 interface SkyAlert {
   id: string;
-  level: 'preventiva' | 'moderada' | 'severa';
+  level: 'preventiva' | 'moderada' | 'severa' | 'violenta';
   magnitude?: number;
   region: string;
   message: string;
@@ -27,18 +27,25 @@ interface SkyAlertResponse {
   isActive: boolean;
 }
 
+function stableHash(value: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
 // Parse Twitter/X posts for seismic alerts
 function parseTwitterAlert(text: string, timestamp: string): SkyAlert | null {
-  // Example patterns from @SkyAlertMx:
-  // "🚨 ALERTA SÍSMICA SEVERA 🚨 Epicentro: Guerrero, Magnitud: 6.5"
-  // "⚠️ Alerta Sísmica Moderada - Se detectó sismo de M5.2 en Oaxaca"
-  
   const text_lower = text.toLowerCase();
   
-  let level: 'preventiva' | 'moderada' | 'severa' = 'preventiva';
-  if (text_lower.includes('severa') || text_lower.includes('🚨')) {
+  let level: 'preventiva' | 'moderada' | 'severa' | 'violenta' = 'preventiva';
+  if (text_lower.includes('violenta') || text_lower.includes('violento')) {
+    level = 'violenta';
+  } else if (text_lower.includes('severa') || text_lower.includes('severo') || text_lower.includes('🚨')) {
     level = 'severa';
-  } else if (text_lower.includes('moderada') || text_lower.includes('⚠️')) {
+  } else if (text_lower.includes('moderada') || text_lower.includes('moderad') || text_lower.includes('⚠️')) {
     level = 'moderada';
   }
   
@@ -67,7 +74,7 @@ function parseTwitterAlert(text: string, timestamp: string): SkyAlert | null {
   }
   
   return {
-    id: `skyalert-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+    id: `skyalert-${stableHash(text)}`,
     level,
     magnitude,
     region,
@@ -82,7 +89,6 @@ async function fetchSkyAlertWebsite(): Promise<SkyAlert[]> {
   const alerts: SkyAlert[] = [];
   
   try {
-    // Try to fetch SkyAlert's main page
     const response = await fetch('https://www.skyalert.mx/', {
       headers: {
         'User-Agent': 'MATS/1.0 (Emergency Alert System)',
@@ -97,8 +103,6 @@ async function fetchSkyAlertWebsite(): Promise<SkyAlert[]> {
     
     const html = await response.text();
     
-    // Look for active alert banners in the HTML
-    // SkyAlert typically shows active alerts prominently
     const alertPatterns = [
       /<div[^>]*class="[^"]*alert[^"]*"[^>]*>([^<]+)/gi,
       /<span[^>]*class="[^"]*alerta[^"]*"[^>]*>([^<]+)/gi,
@@ -127,12 +131,11 @@ async function fetchSkyAlertWebsite(): Promise<SkyAlert[]> {
   return alerts;
 }
 
-// Fetch from SASMEX/SSN for real-time seismic data (backup source)
+// Fetch from SASMEX/SSN for real-time seismic data
 async function fetchSASMEX(): Promise<SkyAlert[]> {
   const alerts: SkyAlert[] = [];
   
   try {
-    // SSN Mexico provides seismic data
     const response = await fetch('http://www.ssn.unam.mx/sismicidad/ultimos/', {
       headers: {
         'User-Agent': 'MATS/1.0',
@@ -146,12 +149,9 @@ async function fetchSASMEX(): Promise<SkyAlert[]> {
     
     const html = await response.text();
     
-    // Parse recent earthquakes from SSN
-    // Look for events in the last 5 minutes with M >= 4.5
     const now = Date.now();
     const fiveMinutesAgo = now - 5 * 60 * 1000;
     
-    // SSN lists recent events - check for significant ones
     const eventPattern = /(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(\d+\.?\d*)\s+([^<\n]+)/g;
     const matches = html.matchAll(eventPattern);
     
@@ -160,12 +160,13 @@ async function fetchSASMEX(): Promise<SkyAlert[]> {
       const magnitude = parseFloat(magStr);
       const eventTime = new Date(dateStr.replace(' ', 'T') + '-06:00').getTime();
       
-      // Only recent significant events
       if (eventTime >= fiveMinutesAgo && magnitude >= 4.5) {
-        let level: 'preventiva' | 'moderada' | 'severa' = 'preventiva';
-        if (magnitude >= 6.0) {
+        let level: 'preventiva' | 'moderada' | 'severa' | 'violenta' = 'preventiva';
+        if (magnitude >= 6.5) {
+          level = 'violenta';
+        } else if (magnitude >= 5.5) {
           level = 'severa';
-        } else if (magnitude >= 5.0) {
+        } else if (magnitude >= 4.5) {
           level = 'moderada';
         }
         
@@ -187,98 +188,92 @@ async function fetchSASMEX(): Promise<SkyAlert[]> {
   return alerts;
 }
 
-const SASSLA_MIRRORS = [
-  'https://nitter.privacydev.net/SasslaMx/rss',
-  'https://nitter.poast.org/SasslaMx/rss',
-  'https://nitter.net/SasslaMx/rss',
-  'https://nitter.tiekoetter.com/SasslaMx/rss',
-  'https://nitter.space/SasslaMx/rss',
-];
-
-interface SasslaFetchResult {
-  xml: string | null;
-  mirror: string | null;
-  attempts: Array<{ url: string; ok: boolean; status?: number; error?: string }>;
-}
-
-async function fetchSasslaXml(): Promise<SasslaFetchResult> {
-  const attempts: SasslaFetchResult['attempts'] = [];
-  for (const url of SASSLA_MIRRORS) {
-    try {
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'MATS/1.0 (Emergency Alert System)',
-          'Accept': 'application/rss+xml, application/xml, text/xml',
-        },
-        signal: AbortSignal.timeout(6000),
-      });
-      if (res.ok) {
-        const xml = await res.text();
-        attempts.push({ url, ok: true, status: res.status });
-        return { xml, mirror: url, attempts };
-      }
-      attempts.push({ url, ok: false, status: res.status });
-    } catch (e) {
-      attempts.push({ url, ok: false, error: (e as Error).message });
-      console.log('[SASSLA] Mirror failed:', url, (e as Error).message);
-    }
-  }
-  return { xml: null, mirror: null, attempts };
-}
-
 interface SasslaRawItem {
+  id: string;
   text: string;
   pubDate: string | null;
   timestamp: number | null;
 }
 
-function parseSasslaItems(xml: string): SasslaRawItem[] {
-  const items: SasslaRawItem[] = [];
-  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-  for (const itemMatch of xml.matchAll(itemRegex)) {
-    const item = itemMatch[1];
-    const titleMatch = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) ||
-                       item.match(/<title>([\s\S]*?)<\/title>/);
-    const descMatch = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) ||
-                      item.match(/<description>([\s\S]*?)<\/description>/);
-    const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
-
-    const text = (descMatch?.[1] || titleMatch?.[1] || '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (!text) continue;
-
-    const pubDate = dateMatch ? dateMatch[1].trim() : null;
-    const ts = pubDate ? new Date(pubDate).getTime() : NaN;
-    items.push({ text, pubDate, timestamp: isNaN(ts) ? null : ts });
-  }
-  return items;
+interface SasslaFetchResult {
+  items: SasslaRawItem[];
+  mirror: string | null;
+  attempts: Array<{ url: string; ok: boolean; status?: number; error?: string }>;
 }
 
-// Scrape SASSLA X/Twitter account via public Nitter RSS mirrors
-async function fetchSASSLA(): Promise<SkyAlert[]> {
+function decodeEntities(value: string): string {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseSasslaSyndication(html: string): SasslaRawItem[] {
+  const dataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+  if (!dataMatch) return [];
+
+  const data = JSON.parse(dataMatch[1]);
+  const entries = data?.props?.pageProps?.timeline?.entries;
+  if (!Array.isArray(entries)) return [];
+
+  return entries.flatMap((entry: any) => {
+    const tweet = entry?.content?.tweet;
+    const text = decodeEntities(tweet?.full_text || '');
+    if (!tweet || !text) return [];
+    const id = String(tweet.id_str || tweet.conversation_id_str || entry.entry_id || stableHash(text));
+    const pubDate = typeof tweet.created_at === 'string' ? tweet.created_at : null;
+    const timestamp = pubDate ? new Date(pubDate).getTime() : NaN;
+    return [{ id, text, pubDate, timestamp: Number.isNaN(timestamp) ? null : timestamp }];
+  });
+}
+
+async function fetchSasslaFeed(): Promise<SasslaFetchResult> {
+  const attempts: SasslaFetchResult['attempts'] = [];
+  const officialFeed = 'https://syndication.twitter.com/srv/timeline-profile/screen-name/SasslaMx';
+
+  try {
+    const response = await fetch(officialFeed, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; MATS Emergency Alert System)',
+        'Accept': 'text/html,application/xhtml+xml',
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) {
+      attempts.push({ url: officialFeed, ok: false, status: response.status });
+      return { items: [], mirror: null, attempts };
+    }
+
+    const items = parseSasslaSyndication(await response.text());
+    attempts.push({ url: officialFeed, ok: items.length > 0, status: response.status });
+    return { items, mirror: items.length > 0 ? officialFeed : null, attempts };
+  } catch (error) {
+    attempts.push({ url: officialFeed, ok: false, error: (error as Error).message });
+    console.error('[SASSLA] Official X feed failed:', error);
+    return { items: [], mirror: null, attempts };
+  }
+}
+
+// Read SASSLA posts from X's public profile syndication feed.
+async function fetchSASSLA(feedItems?: SasslaRawItem[]): Promise<SkyAlert[]> {
   const alerts: SkyAlert[] = [];
-  const { xml } = await fetchSasslaXml();
-  if (!xml) {
-    console.log('[SASSLA] All Nitter mirrors failed');
+  const items = feedItems ?? (await fetchSasslaFeed()).items;
+  if (items.length === 0) {
+    console.log('[SASSLA] Public X feed returned no posts');
     return alerts;
   }
 
   try {
-    // Only look at tweets from the last 15 minutes
     const cutoff = Date.now() - 15 * 60 * 1000;
-    for (const { text: rawText, timestamp } of parseSasslaItems(xml)) {
+    for (const { id, text: rawText, timestamp } of items) {
       const pubDate = timestamp ?? Date.now();
       if (pubDate < cutoff) continue;
 
       const lower = rawText.toLowerCase();
-      // Only real seismic alert posts
       const isSeismic = lower.includes('sism') || lower.includes('temblor') || lower.includes('terremoto') || lower.includes('alerta');
       if (!isSeismic) continue;
 
@@ -296,7 +291,7 @@ async function fetchSASSLA(): Promise<SkyAlert[]> {
       if (regionMatch) region = regionMatch[1].trim().slice(0, 80);
 
       alerts.push({
-        id: `sassla-${pubDate}`,
+        id: `sassla-${id}`,
         level,
         magnitude,
         region,
@@ -316,14 +311,13 @@ async function fetchSASSLA(): Promise<SkyAlert[]> {
 async function sendPushNotification(
   alert: SkyAlert
 ): Promise<void> {
-  if (alert.level !== 'severa') return;
+  if (alert.level !== 'severa' && alert.level !== 'violenta') return;
   
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get all push subscriptions
     const { data: subscriptions } = await supabase
       .from('push_subscriptions')
       .select('endpoint, p256dh, auth');
@@ -338,7 +332,6 @@ async function sendPushNotification(
       return;
     }
     
-    // Send to each subscription via send-web-push function
     const payload = {
       title: `🚨 ALERTA SÍSMICA ${alert.level.toUpperCase()}`,
       body: `${alert.magnitude ? `M${alert.magnitude.toFixed(1)} - ` : ''}${alert.region}`,
@@ -375,14 +368,13 @@ async function sendPushNotification(
       }
     }
     
-    console.log(`[SkyAlert] Sent push for severe alert to ${subscriptions.length} users`);
+    console.log(`[SkyAlert] Sent push for ${alert.level} alert to ${subscriptions.length} users`);
   } catch (error) {
     console.error('[SkyAlert] Error sending push notifications:', error);
   }
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -391,15 +383,13 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const debug = url.searchParams.get('debug');
 
-    // Diagnostic / verification mode for SASSLA scraping.
-    // Returns mirror attempt status and the latest raw items (unfiltered).
     if (debug === 'sassla') {
-      const { xml, mirror, attempts } = await fetchSasslaXml();
-      const items = xml ? parseSasslaItems(xml).slice(0, 10) : [];
-      const parsedAlerts = xml ? await fetchSASSLA() : [];
+      const { items: fetchedItems, mirror, attempts } = await fetchSasslaFeed();
+      const items = fetchedItems.slice(0, 10);
+      const parsedAlerts = await fetchSASSLA(fetchedItems);
       return new Response(
         JSON.stringify({
-          ok: !!xml,
+          ok: items.length > 0,
           mirror,
           attempts,
           itemCount: items.length,
@@ -425,25 +415,19 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch alerts from multiple sources in parallel
     const [websiteAlerts, sasmexAlerts, sasslaAlerts] = await Promise.all([
       fetchSkyAlertWebsite(),
       fetchSASMEX(),
       fetchSASSLA(),
     ]);
 
-    // Combine all alerts
     let allAlerts = [...websiteAlerts, ...sasmexAlerts, ...sasslaAlerts];
-
-    // Filter to only last 5 minutes
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     allAlerts = allAlerts.filter(alert => alert.timestamp >= fiveMinutesAgo);
 
-    // Deduplicate by checking cache
     const newAlerts: SkyAlert[] = [];
     
     for (const alert of allAlerts) {
-      // Check if already in cache
       const { data: existing } = await supabase
         .from('skyalert_cache')
         .select('id')
@@ -451,7 +435,6 @@ Deno.serve(async (req) => {
         .single();
       
       if (!existing) {
-        // Add to cache
         await supabase
           .from('skyalert_cache')
           .insert({
@@ -462,21 +445,17 @@ Deno.serve(async (req) => {
         
         newAlerts.push(alert);
         
-        // Send push for new severe alerts
-        if (alert.level === 'severa') {
+        if (alert.level === 'severa' || alert.level === 'violenta') {
           await sendPushNotification(alert);
         }
       }
     }
 
-    // Build response
     const response: SkyAlertResponse = {
       alerts: allAlerts,
       lastChecked: new Date().toISOString(),
-      isActive: allAlerts.some(a => a.level === 'severa' || a.level === 'moderada'),
+      isActive: allAlerts.some(a => a.level === 'severa' || a.level === 'violenta' || a.level === 'moderada'),
     };
-
-    console.log(`[SkyAlert] Returning ${allAlerts.length} alerts (${newAlerts.length} new)`);
 
     return new Response(
       JSON.stringify(response),
@@ -498,8 +477,11 @@ Deno.serve(async (req) => {
         isActive: false,
       }),
       { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        }, 
+        status: 200 
       }
     );
   }

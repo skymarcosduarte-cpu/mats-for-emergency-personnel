@@ -36,6 +36,7 @@ export function SkyAlertTab() {
     lastChecked, 
     refresh,
     isMonitoring,
+    lastSoundAlert,
   } = useSkyAlertAlerts();
   
   const [selectedAlert, setSelectedAlert] = useState<SkyAlert | null>(null);
@@ -73,59 +74,37 @@ export function SkyAlertTab() {
   }, [runSasslaVerification, verifyData]);
 
   const getLevelColor = (level: SkyAlert['level']) => {
-    switch (level) {
-      case 'violenta':
-      case 'violento':
-        return 'bg-purple-600 text-white';
-      case 'severa':
-      case 'severo':
-        return 'bg-destructive text-destructive-foreground';
-      case 'moderada':
-        return 'bg-warning text-warning-foreground';
-      case 'preventiva':
-        return 'bg-primary text-primary-foreground';
-    }
+    const l = level.toLowerCase();
+    if (l.includes('violen')) return 'bg-purple-600 text-white';
+    if (l.includes('sever')) return 'bg-destructive text-destructive-foreground';
+    if (l.includes('moderad')) return 'bg-warning text-warning-foreground';
+    return 'bg-primary text-primary-foreground';
   };
 
   const getLevelBorder = (level: SkyAlert['level']) => {
-    switch (level) {
-      case 'violenta':
-      case 'violento':
-        return 'border-purple-600';
-      case 'severa':
-      case 'severo':
-        return 'border-destructive';
-      case 'moderada':
-        return 'border-warning';
-      case 'preventiva':
-        return 'border-primary';
-    }
+    const l = level.toLowerCase();
+    if (l.includes('violen')) return 'border-purple-600';
+    if (l.includes('sever')) return 'border-destructive';
+    if (l.includes('moderad')) return 'border-warning';
+    return 'border-primary';
   };
 
   const getLevelIcon = (level: SkyAlert['level']) => {
-    switch (level) {
-      case 'violenta':
-      case 'violento':
-        return '💥';
-      case 'severa':
-      case 'severo':
-        return '🚨';
-      case 'moderada':
-        return '⚠️';
-      case 'preventiva':
-        return '📢';
-    }
+    const l = level.toLowerCase();
+    if (l.includes('violen')) return '💥';
+    if (l.includes('sever')) return '🚨';
+    if (l.includes('moderad')) return '⚠️';
+    return '📢';
   };
 
-  // Only show severe and violent alerts (both masculine and feminine forms)
-  const visibleAlerts = alerts.filter(a => 
-    a.level === 'severa' || a.level === 'severo' || 
-    a.level === 'violenta' || a.level === 'violento'
-  );
+  // Show severe, violent AND moderate alerts
+  const visibleAlerts = alerts.filter(a => {
+    const l = a.level.toLowerCase();
+    return l.includes('sever') || l.includes('violen') || l.includes('moderad');
+  });
 
   return (
     <div className="space-y-4">
-      {/* Header with status */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="relative">
@@ -144,8 +123,7 @@ export function SkyAlertTab() {
         </div>
         
         <div className="flex items-center gap-2">
-          {/* Only show active badge for severe/violent alerts */}
-          {visibleAlerts.length > 0 ? (
+          {isActive ? (
             <Badge variant="destructive" className="animate-pulse">
               Alerta activa
             </Badge>
@@ -168,43 +146,39 @@ export function SkyAlertTab() {
         </div>
       </div>
 
-      {/* Info banner */}
+      {lastSoundAlert && (
+        <div className="p-4 border-2 border-destructive bg-destructive/10" role="alert" aria-live="assertive">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-6 h-6 text-destructive shrink-0 mt-0.5" />
+            <div className="min-w-0 space-y-1">
+              <p className="font-bold text-destructive">La última notificación sonora corresponde a:</p>
+              <p className="font-semibold">
+                {getLevelIcon(lastSoundAlert.level)} Alerta {lastSoundAlert.level} · {lastSoundAlert.region}
+              </p>
+              <p className="text-sm leading-relaxed break-words">{lastSoundAlert.message}</p>
+              <p className="text-xs text-muted-foreground">
+                Fuente: {lastSoundAlert.source} · {new Date(lastSoundAlert.timestamp).toLocaleString('es-MX')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 border-2 border-border">
         <Radio className="w-6 h-6 text-primary mt-0.5 flex-shrink-0" />
         <div className="flex-1 text-base">
           <p className="text-muted-foreground leading-relaxed">
-            Esta sección monitorea las cuentas oficiales de <strong>SkyAlert</strong> y <strong>SASSLA</strong> en X para mostrarte sus alertas sísmicas. Para notificaciones en tiempo real, descarga las apps oficiales en tu dispositivo.
+            Esta sección monitorea las cuentas oficiales de <strong>SkyAlert</strong> y <strong>SASSLA</strong> en X. Para notificaciones en tiempo real, descarga las apps oficiales.
           </p>
-          <div className="flex flex-wrap gap-3 mt-2">
-            <a 
-              href="https://www.skyalert.mx/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-primary hover:underline font-medium text-base"
-            >
-              App SkyAlert
-              <ExternalLink className="w-4 h-4" />
-            </a>
-            <a 
-              href="https://x.com/SasslaMx"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-primary hover:underline font-medium text-base"
-            >
-              Cuenta SASSLA
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          </div>
         </div>
       </div>
 
-      {/* Verification mode */}
       <div className="flex items-center justify-between p-3 rounded-xl border-2 border-dashed border-border bg-background">
         <div className="flex items-center gap-2 min-w-0">
           <Bug className="w-5 h-5 text-primary shrink-0" />
           <div className="min-w-0">
             <p className="font-semibold text-base leading-tight">Modo verificación SASSLA</p>
-            <p className="text-xs text-muted-foreground">Consulta el scraping en vivo y muestra los últimos tuits.</p>
+            <p className="text-xs text-muted-foreground">Consulta el scraping en vivo.</p>
           </div>
         </div>
         <Button size="sm" variant="outline" onClick={openVerify} className="shrink-0">
@@ -212,33 +186,20 @@ export function SkyAlertTab() {
         </Button>
       </div>
 
-      {/* Loading state */}
       {loading && visibleAlerts.length === 0 && (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       )}
 
-      {/* Empty state */}
       {!loading && visibleAlerts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="relative mb-4">
-            <Activity className="w-16 h-16 text-muted-foreground/30" />
-            <span className="absolute bottom-0 right-0 w-6 h-6 bg-success rounded-full flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4 text-success-foreground" />
-            </span>
-          </div>
+          <Activity className="w-16 h-16 text-muted-foreground/30 mb-4" />
           <h3 className="text-lg font-medium mb-1">Sin alertas activas</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            El sistema está monitoreando continuamente
-          </p>
-          <Badge variant="outline" className="text-xs text-muted-foreground">
-            Se actualizará automáticamente cada 10 segundos
-          </Badge>
+          <p className="text-sm text-muted-foreground">Monitoreando continuamente...</p>
         </div>
       )}
 
-      {/* Alerts list - only severe and violent */}
       {visibleAlerts.length > 0 && (
         <div className="space-y-3">
           {visibleAlerts.map((alert) => (
@@ -247,7 +208,7 @@ export function SkyAlertTab() {
               className={cn(
                 "cursor-pointer transition-all hover:shadow-md border-l-4",
                 getLevelBorder(alert.level),
-                alert.level === 'severa' && "animate-pulse"
+                (alert.level.toLowerCase().includes('sever') || alert.level.toLowerCase().includes('violen')) && "animate-pulse"
               )}
               onClick={() => setSelectedAlert(alert)}
             >
@@ -265,20 +226,13 @@ export function SkyAlertTab() {
                         </Badge>
                       )}
                     </div>
-                    
                     <h4 className="font-medium truncate">{alert.region}</h4>
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {alert.message}
                     </p>
                   </div>
-                  
                   <div className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                    <div>
-                      {formatDistanceToNow(new Date(alert.timestamp), { 
-                        addSuffix: true,
-                        locale: es 
-                      })}
-                    </div>
+                    <div>{formatDistanceToNow(new Date(alert.timestamp), { addSuffix: true, locale: es })}</div>
                     <div className="text-[10px] opacity-70">{alert.source}</div>
                   </div>
                 </div>
@@ -288,7 +242,6 @@ export function SkyAlertTab() {
         </div>
       )}
 
-      {/* Alert detail dialog */}
       <Dialog open={!!selectedAlert} onOpenChange={(open) => !open && setSelectedAlert(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -296,11 +249,7 @@ export function SkyAlertTab() {
               <span>{selectedAlert && getLevelIcon(selectedAlert.level)}</span>
               <span>Detalle de Alerta</span>
             </DialogTitle>
-            <DialogDescription>
-              {selectedAlert?.source}
-            </DialogDescription>
           </DialogHeader>
-          
           {selectedAlert && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -313,164 +262,62 @@ export function SkyAlertTab() {
                   </Badge>
                 )}
               </div>
-              
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-1">Región</h4>
                 <p className="font-medium">{selectedAlert.region}</p>
               </div>
-              
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-1">Mensaje</h4>
                 <p>{selectedAlert.message}</p>
               </div>
-              
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-1">Hora</h4>
-                <p>
-                  {new Date(selectedAlert.timestamp).toLocaleString('es-MX', {
-                    dateStyle: 'medium',
-                    timeStyle: 'medium',
-                  })}
-                </p>
+                <p>{new Date(selectedAlert.timestamp).toLocaleString('es-MX')}</p>
               </div>
-              
-              <Button 
-                className="w-full" 
-                variant="outline"
-                onClick={() => window.open('https://www.skyalert.mx/', '_blank')}
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Abrir SkyAlert
+              <Button className="w-full" variant="outline" onClick={() => window.open('https://x.com/SasslaMx', '_blank')}>
+                Ver en X (SASSLA)
               </Button>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* SASSLA verification dialog */}
       <Dialog open={verifyOpen} onOpenChange={setVerifyOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Bug className="w-5 h-5" />
-              Verificación SASSLA
-            </DialogTitle>
-            <DialogDescription>
-              Estado del scraping desde la cuenta @SasslaMx en X.
-            </DialogDescription>
+            <DialogTitle className="flex items-center gap-2"><Bug className="w-5 h-5" />Verificación SASSLA</DialogTitle>
           </DialogHeader>
-
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={runSasslaVerification}
-                disabled={verifyLoading}
-                size="sm"
-                className="gap-2"
-              >
-                {verifyLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RotateCw className="w-4 h-4" />
-                )}
-                {verifyLoading ? 'Consultando...' : 'Reintentar consulta'}
-              </Button>
-              {verifyData && (
-                <Badge variant={verifyData.ok ? 'outline' : 'destructive'}>
-                  {verifyData.ok ? 'OK' : 'Sin respuesta'}
-                </Badge>
-              )}
-            </div>
-
-            {verifyError && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/40 text-sm">
-                <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-medium text-destructive">Falló la consulta</p>
-                  <p className="text-muted-foreground break-words">{verifyError}</p>
-                </div>
-              </div>
-            )}
-
+            <Button onClick={runSasslaVerification} disabled={verifyLoading} size="sm" className="gap-2">
+              {verifyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCw className="w-4 h-4" />}
+              {verifyLoading ? 'Consultando...' : 'Reintentar consulta'}
+            </Button>
             {verifyData && (
-              <>
+              <div className="space-y-4">
                 <div>
-                  <h4 className="text-sm font-semibold text-muted-foreground mb-2">Mirrors intentados</h4>
+                  <h4 className="text-sm font-semibold mb-2">Fuentes consultadas</h4>
                   <ul className="space-y-1 text-xs">
-                    {verifyData.attempts.map((a) => (
-                      <li
-                        key={a.url}
-                        className="flex items-center gap-2 p-2 rounded bg-muted/50"
-                      >
-                        {a.ok ? (
-                          <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
-                        ) : (
-                          <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
-                        )}
-                        <span className="font-mono truncate flex-1">{a.url}</span>
-                        <span className="text-muted-foreground shrink-0">
-                          {a.status ?? a.error ?? '—'}
-                        </span>
+                    {verifyData.attempts.map((a, i) => (
+                      <li key={i} className="flex items-center gap-2 p-2 rounded bg-muted/50">
+                        {a.ok ? <CheckCircle2 className="w-3 h-3 text-success" /> : <AlertTriangle className="w-3 h-3 text-destructive" />}
+                        <span className="truncate flex-1">{a.url.includes('syndication.twitter.com') ? 'Feed público oficial de X' : a.url}</span>
+                        <span>{a.status || 'ERR'}</span>
                       </li>
                     ))}
                   </ul>
-                  {verifyData.mirror && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Mirror activo: <span className="font-mono">{verifyData.mirror}</span>
-                    </p>
-                  )}
                 </div>
-
                 <div>
-                  <h4 className="text-sm font-semibold text-muted-foreground mb-2">
-                    Últimos {verifyData.items.length} tuits
-                  </h4>
-                  {verifyData.items.length === 0 ? (
-                    <p className="text-sm text-muted-foreground italic">
-                      Sin publicaciones disponibles.
-                    </p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {verifyData.items.map((it, i) => (
-                        <li
-                          key={i}
-                          className="p-2 rounded-lg bg-muted/40 border border-border"
-                        >
-                          <p className="text-sm leading-snug">{it.text}</p>
-                          <p className="text-[11px] text-muted-foreground mt-1">
-                            {it.pubDate ?? 'Sin fecha'}
-                            {it.ageMinutes !== null && ` · hace ${it.ageMinutes} min`}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                  <h4 className="text-sm font-semibold mb-2">Últimos tuits</h4>
+                  <ul className="space-y-2">
+                    {verifyData.items.map((it, i) => (
+                      <li key={i} className="p-2 rounded-lg bg-muted/40 border border-border text-sm">
+                        {it.text}
+                        <div className="text-[11px] text-muted-foreground mt-1">{it.pubDate}</div>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-
-                {verifyData.matchedAlerts.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">
-                      Alertas sísmicas reconocidas ({verifyData.matchedAlerts.length})
-                    </h4>
-                    <ul className="space-y-2">
-                      {verifyData.matchedAlerts.map((a) => (
-                        <li key={a.id} className="p-2 rounded-lg border-l-4 border-primary bg-primary/5">
-                          <div className="flex items-center gap-2 text-xs">
-                            <Badge>{a.level.toUpperCase()}</Badge>
-                            {a.magnitude && <span className="font-mono">M{a.magnitude.toFixed(1)}</span>}
-                            <span className="text-muted-foreground truncate">{a.region}</span>
-                          </div>
-                          <p className="text-sm mt-1">{a.message}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <p className="text-[11px] text-muted-foreground text-right">
-                  Consultado: {new Date(verifyData.checkedAt).toLocaleString()}
-                </p>
-              </>
+              </div>
             )}
           </div>
         </DialogContent>
