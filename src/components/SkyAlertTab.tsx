@@ -131,17 +131,28 @@ export function SkyAlertTab() {
         <Radio className="w-6 h-6 text-primary mt-0.5 flex-shrink-0" />
         <div className="flex-1 text-base">
           <p className="text-muted-foreground leading-relaxed">
-            Recibirás notificaciones en tiempo real cuando descargues la app SkyAlert en tu dispositivo, esta función solo toma Alertas de la cuenta de X de SkyAlert.
+            Esta sección monitorea las cuentas oficiales de <strong>SkyAlert</strong> y <strong>SASSLA</strong> en X para mostrarte sus alertas sísmicas. Para notificaciones en tiempo real, descarga las apps oficiales en tu dispositivo.
           </p>
-          <a 
-            href="https://www.skyalert.mx/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-primary hover:underline mt-2 font-medium text-base"
-          >
-            Descargar App SkyAlert
-            <ExternalLink className="w-4 h-4" />
-          </a>
+          <div className="flex flex-wrap gap-3 mt-2">
+            <a 
+              href="https://www.skyalert.mx/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-primary hover:underline font-medium text-base"
+            >
+              App SkyAlert
+              <ExternalLink className="w-4 h-4" />
+            </a>
+            <a 
+              href="https://x.com/SASSLA_"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-primary hover:underline font-medium text-base"
+            >
+              Cuenta SASSLA
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
         </div>
       </div>
 
