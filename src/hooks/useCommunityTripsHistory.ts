@@ -126,8 +126,8 @@ export function useCommunityTripsHistory() {
 
       setTrips(filteredTrips);
       console.log('[useCommunityTripsHistory] Loaded', filteredTrips.length, 'trips from last 24 hours', {
-        activeCount: activeRes.data?.length ?? 0,
-        completedCount: completedRes.data?.length ?? 0,
+        activeCount: filteredTrips.filter(t => t.status === 'ACTIVE').length,
+        completedCount: filteredTrips.filter(t => t.status !== 'ACTIVE').length,
         cutoffIso,
         arrivedStatuses: filteredTrips.filter(t => t.status === 'ARRIVED').map(t => ({ id: t.id.slice(0,8), arrived: t.arrived_at }))
       });
