@@ -1411,6 +1411,13 @@ export type Database = {
             foreignKeyName: "trip_position_history_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
+            referencedRelation: "community_trips_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_position_history_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
             referencedRelation: "transit_trips"
             referencedColumns: ["id"]
           },
@@ -1511,6 +1518,81 @@ export type Database = {
           registered_at: string | null
           role: Database["public"]["Enums"]["app_role"] | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      community_trips_view: {
+        Row: {
+          airline: string | null
+          arrival_airport: string | null
+          arrival_time: string | null
+          arrived_at: string | null
+          companions: string | null
+          created_at: string | null
+          departure_airport: string | null
+          departure_time: string | null
+          destination: string | null
+          destination_lat: number | null
+          destination_lng: number | null
+          eta: string | null
+          flight_number: string | null
+          id: string | null
+          origin: string | null
+          origin_lat: number | null
+          origin_lng: number | null
+          plates: string | null
+          status: string | null
+          transit_type: string | null
+          user_id: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          airline?: string | null
+          arrival_airport?: string | null
+          arrival_time?: string | null
+          arrived_at?: string | null
+          companions?: string | null
+          created_at?: string | null
+          departure_airport?: string | null
+          departure_time?: string | null
+          destination?: string | null
+          destination_lat?: number | null
+          destination_lng?: number | null
+          eta?: string | null
+          flight_number?: string | null
+          id?: string | null
+          origin?: string | null
+          origin_lat?: number | null
+          origin_lng?: number | null
+          plates?: string | null
+          status?: string | null
+          transit_type?: string | null
+          user_id?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          airline?: string | null
+          arrival_airport?: string | null
+          arrival_time?: string | null
+          arrived_at?: string | null
+          companions?: string | null
+          created_at?: string | null
+          departure_airport?: string | null
+          departure_time?: string | null
+          destination?: string | null
+          destination_lat?: number | null
+          destination_lng?: number | null
+          eta?: string | null
+          flight_number?: string | null
+          id?: string | null
+          origin?: string | null
+          origin_lat?: number | null
+          origin_lng?: number | null
+          plates?: string | null
+          status?: string | null
+          transit_type?: string | null
+          user_id?: string | null
+          vehicle_type?: string | null
         }
         Relationships: []
       }
