@@ -5,7 +5,7 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import type { VersionInfo, AppRelease } from '@/types';
 
 // Current app version (set at build time)
-export const APP_VERSION = '2.6.0';
+export const APP_VERSION = '2.7.0';
 export const BUILD_TIME = new Date().toISOString();
 
 /**
