@@ -1568,6 +1568,33 @@ export type Database = {
           road_reports_total: number
         }[]
       }
+      get_community_trips: {
+        Args: never
+        Returns: {
+          airline: string
+          arrival_airport: string
+          arrival_time: string
+          arrived_at: string
+          companions: string
+          created_at: string
+          departure_airport: string
+          departure_time: string
+          destination: string
+          destination_lat: number
+          destination_lng: number
+          eta: string
+          flight_number: string
+          id: string
+          origin: string
+          origin_lat: number
+          origin_lng: number
+          plates: string
+          status: string
+          transit_type: string
+          user_id: string
+          vehicle_type: string
+        }[]
+      }
       get_nearby_birthdays: {
         Args: never
         Returns: {

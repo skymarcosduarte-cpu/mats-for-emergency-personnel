@@ -41,12 +41,8 @@ export function usePrefetch(userId: string | undefined, refreshTrigger?: Date | 
           supabase
             .from('user_locations_with_roles')
             .select('*'),
-          // Active community trips
-          supabase
-            .from('transit_trips')
-            .select('id, user_id, transit_type, origin, destination, eta, created_at, origin_lat, origin_lng, destination_lat, destination_lng, vehicle_type, plates, companions, airline, flight_number, share_token')
-            .eq('status', 'ACTIVE')
-            .order('created_at', { ascending: false }),
+          // Active community trips (via safe RPC that excludes sensitive columns)
+          supabase.rpc('get_community_trips'),
         ]);
 
         // Cache locations
