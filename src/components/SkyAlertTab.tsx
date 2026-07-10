@@ -1,8 +1,8 @@
 // SkyAlert Tab Component
 // Displays SkyAlert seismic monitoring status and active alerts
 
-import React, { useState } from 'react';
-import { Activity, ExternalLink, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Radio } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Activity, ExternalLink, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Radio, Bug, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,17 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useSkyAlertAlerts, SkyAlert } from '@/hooks/useSkyAlertAlerts';
+import { supabase } from '@/integrations/supabase/client';
+
+interface SasslaDebugResult {
+  ok: boolean;
+  mirror: string | null;
+  attempts: Array<{ url: string; ok: boolean; status?: number; error?: string }>;
+  itemCount: number;
+  items: Array<{ text: string; pubDate: string | null; ageMinutes: number | null }>;
+  matchedAlerts: SkyAlert[];
+  checkedAt: string;
+}
 
 export function SkyAlertTab() {
   const { 
@@ -29,6 +40,54 @@ export function SkyAlertTab() {
   } = useSkyAlertAlerts();
   
   const [selectedAlert, setSelectedAlert] = useState<SkyAlert | null>(null);
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [verifyData, setVerifyData] = useState<SasslaDebugResult | null>(null);
+
+  const runSasslaVerification = useCallback(async () => {
+    setVerifyLoading(true);
+    setVerifyError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-skyalert', {
+        method: 'GET',
+        // Pass ?debug=sassla via query string on the endpoint
+        // supabase-js appends this as a query string when method=GET
+        // and body is undefined.
+        // @ts-expect-error - supabase-js supports the second arg options
+        headers: { 'X-Debug': 'sassla' },
+      });
+      // supabase.functions.invoke doesn't expose query params directly, so
+      // fall back to a manual fetch if the debug payload didn't come back.
+      if (error || !data || !('attempts' in (data as object))) {
+        const url = `${(supabase as any).functionsUrl ?? ''}/fetch-skyalert?debug=sassla`.replace(/^\//, '');
+        const projectUrl = (import.meta as any).env?.VITE_SUPABASE_URL;
+        const target = projectUrl
+          ? `${projectUrl}/functions/v1/fetch-skyalert?debug=sassla`
+          : url;
+        const anon = (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY
+          ?? (import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
+        const res = await fetch(target, {
+          headers: anon ? { apikey: anon, Authorization: `Bearer ${anon}` } : undefined,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = (await res.json()) as SasslaDebugResult;
+        setVerifyData(json);
+      } else {
+        setVerifyData(data as SasslaDebugResult);
+      }
+    } catch (e) {
+      console.error('[SASSLA verify] error:', e);
+      setVerifyError(e instanceof Error ? e.message : 'Error desconocido');
+    } finally {
+      setVerifyLoading(false);
+    }
+  }, []);
+
+  const openVerify = useCallback(() => {
+    setVerifyOpen(true);
+    if (!verifyData) runSasslaVerification();
+  }, [runSasslaVerification, verifyData]);
 
   const getLevelColor = (level: SkyAlert['level']) => {
     switch (level) {
@@ -154,6 +213,20 @@ export function SkyAlertTab() {
             </a>
           </div>
         </div>
+      </div>
+
+      {/* Verification mode */}
+      <div className="flex items-center justify-between p-3 rounded-xl border-2 border-dashed border-border bg-background">
+        <div className="flex items-center gap-2 min-w-0">
+          <Bug className="w-5 h-5 text-primary shrink-0" />
+          <div className="min-w-0">
+            <p className="font-semibold text-base leading-tight">Modo verificación SASSLA</p>
+            <p className="text-xs text-muted-foreground">Consulta el scraping en vivo y muestra los últimos tuits.</p>
+          </div>
+        </div>
+        <Button size="sm" variant="outline" onClick={openVerify} className="shrink-0">
+          Abrir
+        </Button>
       </div>
 
       {/* Loading state */}
@@ -288,6 +361,135 @@ export function SkyAlertTab() {
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* SASSLA verification dialog */}
+      <Dialog open={verifyOpen} onOpenChange={setVerifyOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bug className="w-5 h-5" />
+              Verificación SASSLA
+            </DialogTitle>
+            <DialogDescription>
+              Estado del scraping desde la cuenta @SASSLA_ en X.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={runSasslaVerification}
+                disabled={verifyLoading}
+                size="sm"
+                className="gap-2"
+              >
+                {verifyLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RotateCw className="w-4 h-4" />
+                )}
+                {verifyLoading ? 'Consultando...' : 'Reintentar consulta'}
+              </Button>
+              {verifyData && (
+                <Badge variant={verifyData.ok ? 'outline' : 'destructive'}>
+                  {verifyData.ok ? 'OK' : 'Sin respuesta'}
+                </Badge>
+              )}
+            </div>
+
+            {verifyError && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/40 text-sm">
+                <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-medium text-destructive">Falló la consulta</p>
+                  <p className="text-muted-foreground break-words">{verifyError}</p>
+                </div>
+              </div>
+            )}
+
+            {verifyData && (
+              <>
+                <div>
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-2">Mirrors intentados</h4>
+                  <ul className="space-y-1 text-xs">
+                    {verifyData.attempts.map((a) => (
+                      <li
+                        key={a.url}
+                        className="flex items-center gap-2 p-2 rounded bg-muted/50"
+                      >
+                        {a.ok ? (
+                          <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
+                        ) : (
+                          <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                        )}
+                        <span className="font-mono truncate flex-1">{a.url}</span>
+                        <span className="text-muted-foreground shrink-0">
+                          {a.status ?? a.error ?? '—'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  {verifyData.mirror && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Mirror activo: <span className="font-mono">{verifyData.mirror}</span>
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+                    Últimos {verifyData.items.length} tuits
+                  </h4>
+                  {verifyData.items.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">
+                      Sin publicaciones disponibles.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {verifyData.items.map((it, i) => (
+                        <li
+                          key={i}
+                          className="p-2 rounded-lg bg-muted/40 border border-border"
+                        >
+                          <p className="text-sm leading-snug">{it.text}</p>
+                          <p className="text-[11px] text-muted-foreground mt-1">
+                            {it.pubDate ?? 'Sin fecha'}
+                            {it.ageMinutes !== null && ` · hace ${it.ageMinutes} min`}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {verifyData.matchedAlerts.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+                      Alertas sísmicas reconocidas ({verifyData.matchedAlerts.length})
+                    </h4>
+                    <ul className="space-y-2">
+                      {verifyData.matchedAlerts.map((a) => (
+                        <li key={a.id} className="p-2 rounded-lg border-l-4 border-primary bg-primary/5">
+                          <div className="flex items-center gap-2 text-xs">
+                            <Badge>{a.level.toUpperCase()}</Badge>
+                            {a.magnitude && <span className="font-mono">M{a.magnitude.toFixed(1)}</span>}
+                            <span className="text-muted-foreground truncate">{a.region}</span>
+                          </div>
+                          <p className="text-sm mt-1">{a.message}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <p className="text-[11px] text-muted-foreground text-right">
+                  Consultado: {new Date(verifyData.checkedAt).toLocaleString()}
+                </p>
+              </>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
