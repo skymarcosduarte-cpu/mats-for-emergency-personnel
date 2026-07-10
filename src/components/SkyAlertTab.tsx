@@ -17,7 +17,6 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useSkyAlertAlerts, SkyAlert } from '@/hooks/useSkyAlertAlerts';
-import { supabase } from '@/integrations/supabase/client';
 
 interface SasslaDebugResult {
   ok: boolean;
