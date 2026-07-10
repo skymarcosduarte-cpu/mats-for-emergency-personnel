@@ -36,6 +36,7 @@ export function SkyAlertTab() {
     lastChecked, 
     refresh,
     isMonitoring,
+    lastSoundAlert,
   } = useSkyAlertAlerts();
   
   const [selectedAlert, setSelectedAlert] = useState<SkyAlert | null>(null);
@@ -144,6 +145,24 @@ export function SkyAlertTab() {
           </Button>
         </div>
       </div>
+
+      {lastSoundAlert && (
+        <div className="p-4 border-2 border-destructive bg-destructive/10" role="alert" aria-live="assertive">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-6 h-6 text-destructive shrink-0 mt-0.5" />
+            <div className="min-w-0 space-y-1">
+              <p className="font-bold text-destructive">La última notificación sonora corresponde a:</p>
+              <p className="font-semibold">
+                {getLevelIcon(lastSoundAlert.level)} Alerta {lastSoundAlert.level} · {lastSoundAlert.region}
+              </p>
+              <p className="text-sm leading-relaxed break-words">{lastSoundAlert.message}</p>
+              <p className="text-xs text-muted-foreground">
+                Fuente: {lastSoundAlert.source} · {new Date(lastSoundAlert.timestamp).toLocaleString('es-MX')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 border-2 border-border">
         <Radio className="w-6 h-6 text-primary mt-0.5 flex-shrink-0" />
@@ -276,12 +295,12 @@ export function SkyAlertTab() {
             {verifyData && (
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-sm font-semibold mb-2">Mirrors intentados</h4>
+                  <h4 className="text-sm font-semibold mb-2">Fuentes consultadas</h4>
                   <ul className="space-y-1 text-xs">
                     {verifyData.attempts.map((a, i) => (
                       <li key={i} className="flex items-center gap-2 p-2 rounded bg-muted/50">
                         {a.ok ? <CheckCircle2 className="w-3 h-3 text-success" /> : <AlertTriangle className="w-3 h-3 text-destructive" />}
-                        <span className="truncate flex-1">{a.url}</span>
+                        <span className="truncate flex-1">{a.url.includes('syndication.twitter.com') ? 'Feed público oficial de X' : a.url}</span>
                         <span>{a.status || 'ERR'}</span>
                       </li>
                     ))}

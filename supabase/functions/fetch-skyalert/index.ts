@@ -27,6 +27,15 @@ interface SkyAlertResponse {
   isActive: boolean;
 }
 
+function stableHash(value: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
 // Parse Twitter/X posts for seismic alerts
 function parseTwitterAlert(text: string, timestamp: string): SkyAlert | null {
   const text_lower = text.toLowerCase();
@@ -65,7 +74,7 @@ function parseTwitterAlert(text: string, timestamp: string): SkyAlert | null {
   }
   
   return {
-    id: `skyalert-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+    id: `skyalert-${stableHash(text)}`,
     level,
     magnitude,
     region,
@@ -179,95 +188,88 @@ async function fetchSASMEX(): Promise<SkyAlert[]> {
   return alerts;
 }
 
-const SASSLA_MIRRORS = [
-  'https://nitter.cz/SasslaMx/rss',
-  'https://nitter.it/SasslaMx/rss',
-  'https://nitter.privacydev.net/SasslaMx/rss',
-  'https://nitter.poast.org/SasslaMx/rss',
-  'https://nitter.projectsegfau.lt/SasslaMx/rss',
-  'https://nitter.rawbit.ninja/SasslaMx/rss',
-  'https://nitter.moomoo.me/SasslaMx/rss',
-  'https://nitter.tiekoetter.com/SasslaMx/rss'
-];
-
-interface SasslaFetchResult {
-  xml: string | null;
-  mirror: string | null;
-  attempts: Array<{ url: string; ok: boolean; status?: number; error?: string }>;
-}
-
-async function fetchSasslaXml(): Promise<SasslaFetchResult> {
-  const attempts: SasslaFetchResult['attempts'] = [];
-  for (const url of SASSLA_MIRRORS) {
-    try {
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'MATS/1.0 (Emergency Alert System)',
-          'Accept': 'application/rss+xml, application/xml, text/xml',
-        },
-        signal: AbortSignal.timeout(6000),
-      });
-      if (res.ok) {
-        const xml = await res.text();
-        attempts.push({ url, ok: true, status: res.status });
-        return { xml, mirror: url, attempts };
-      }
-      attempts.push({ url, ok: false, status: res.status });
-    } catch (e) {
-      attempts.push({ url, ok: false, error: (e as Error).message });
-      console.log('[SASSLA] Mirror failed:', url, (e as Error).message);
-    }
-  }
-  return { xml: null, mirror: null, attempts };
-}
-
 interface SasslaRawItem {
+  id: string;
   text: string;
   pubDate: string | null;
   timestamp: number | null;
 }
 
-function parseSasslaItems(xml: string): SasslaRawItem[] {
-  const items: SasslaRawItem[] = [];
-  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-  for (const itemMatch of xml.matchAll(itemRegex)) {
-    const item = itemMatch[1];
-    const titleMatch = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) ||
-                       item.match(/<title>([\s\S]*?)<\/title>/);
-    const descMatch = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) ||
-                      item.match(/<description>([\s\S]*?)<\/description>/);
-    const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
-
-    const text = (descMatch?.[1] || titleMatch?.[1] || '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (!text) continue;
-
-    const pubDate = dateMatch ? dateMatch[1].trim() : null;
-    const ts = pubDate ? new Date(pubDate).getTime() : NaN;
-    items.push({ text, pubDate, timestamp: isNaN(ts) ? null : ts });
-  }
-  return items;
+interface SasslaFetchResult {
+  items: SasslaRawItem[];
+  mirror: string | null;
+  attempts: Array<{ url: string; ok: boolean; status?: number; error?: string }>;
 }
 
-// Scrape SASSLA X/Twitter account via public Nitter RSS mirrors
-async function fetchSASSLA(): Promise<SkyAlert[]> {
+function decodeEntities(value: string): string {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseSasslaSyndication(html: string): SasslaRawItem[] {
+  const dataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+  if (!dataMatch) return [];
+
+  const data = JSON.parse(dataMatch[1]);
+  const entries = data?.props?.pageProps?.timeline?.entries;
+  if (!Array.isArray(entries)) return [];
+
+  return entries.flatMap((entry: any) => {
+    const tweet = entry?.content?.tweet;
+    const text = decodeEntities(tweet?.full_text || '');
+    if (!tweet || !text) return [];
+    const id = String(tweet.id_str || tweet.conversation_id_str || entry.entry_id || stableHash(text));
+    const pubDate = typeof tweet.created_at === 'string' ? tweet.created_at : null;
+    const timestamp = pubDate ? new Date(pubDate).getTime() : NaN;
+    return [{ id, text, pubDate, timestamp: Number.isNaN(timestamp) ? null : timestamp }];
+  });
+}
+
+async function fetchSasslaFeed(): Promise<SasslaFetchResult> {
+  const attempts: SasslaFetchResult['attempts'] = [];
+  const officialFeed = 'https://syndication.twitter.com/srv/timeline-profile/screen-name/SasslaMx';
+
+  try {
+    const response = await fetch(officialFeed, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; MATS Emergency Alert System)',
+        'Accept': 'text/html,application/xhtml+xml',
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) {
+      attempts.push({ url: officialFeed, ok: false, status: response.status });
+      return { items: [], mirror: null, attempts };
+    }
+
+    const items = parseSasslaSyndication(await response.text());
+    attempts.push({ url: officialFeed, ok: items.length > 0, status: response.status });
+    return { items, mirror: items.length > 0 ? officialFeed : null, attempts };
+  } catch (error) {
+    attempts.push({ url: officialFeed, ok: false, error: (error as Error).message });
+    console.error('[SASSLA] Official X feed failed:', error);
+    return { items: [], mirror: null, attempts };
+  }
+}
+
+// Read SASSLA posts from X's public profile syndication feed.
+async function fetchSASSLA(feedItems?: SasslaRawItem[]): Promise<SkyAlert[]> {
   const alerts: SkyAlert[] = [];
-  const { xml } = await fetchSasslaXml();
-  if (!xml) {
-    console.log('[SASSLA] All Nitter mirrors failed');
+  const items = feedItems ?? (await fetchSasslaFeed()).items;
+  if (items.length === 0) {
+    console.log('[SASSLA] Public X feed returned no posts');
     return alerts;
   }
 
   try {
     const cutoff = Date.now() - 15 * 60 * 1000;
-    for (const { text: rawText, timestamp } of parseSasslaItems(xml)) {
+    for (const { id, text: rawText, timestamp } of items) {
       const pubDate = timestamp ?? Date.now();
       if (pubDate < cutoff) continue;
 
@@ -288,10 +290,8 @@ async function fetchSASSLA(): Promise<SkyAlert[]> {
                           rawText.match(/en\s+([A-Za-záéíóúñÁÉÍÓÚÑ][A-Za-záéíóúñÁÉÍÓÚÑ\s,]{2,40}?)(?:\.|,|\||$)/);
       if (regionMatch) region = regionMatch[1].trim().slice(0, 80);
 
-      // Generate a stable unique ID
-      const textHash = rawText.length % 1000;
       alerts.push({
-        id: `sassla-${pubDate}-${textHash}`,
+        id: `sassla-${id}`,
         level,
         magnitude,
         region,
@@ -384,12 +384,12 @@ Deno.serve(async (req) => {
     const debug = url.searchParams.get('debug');
 
     if (debug === 'sassla') {
-      const { xml, mirror, attempts } = await fetchSasslaXml();
-      const items = xml ? parseSasslaItems(xml).slice(0, 10) : [];
-      const parsedAlerts = xml ? await fetchSASSLA() : [];
+      const { items: fetchedItems, mirror, attempts } = await fetchSasslaFeed();
+      const items = fetchedItems.slice(0, 10);
+      const parsedAlerts = await fetchSASSLA(fetchedItems);
       return new Response(
         JSON.stringify({
-          ok: !!xml,
+          ok: items.length > 0,
           mirror,
           attempts,
           itemCount: items.length,

@@ -28,6 +28,8 @@ interface SkyAlertResponse {
 }
 
 const STORAGE_KEY = 'mats-skyalert-cache';
+const SEEN_STORAGE_KEY = 'mats-skyalert-seen-v2';
+const LAST_SOUND_STORAGE_KEY = 'mats-skyalert-last-sound';
 const CACHE_TTL_MS = 30 * 1000; // 30 seconds
 const POLL_INTERVAL_MS = 10 * 1000; // 10 seconds
 
@@ -49,6 +51,8 @@ function areSkyAlertSoundsEnabled(): boolean {
 function getInitialSeenIds(): Set<string> {
   const set = new Set<string>();
   try {
+    const persistedIds = JSON.parse(localStorage.getItem(SEEN_STORAGE_KEY) || '[]');
+    if (Array.isArray(persistedIds)) persistedIds.forEach((id) => set.add(String(id)));
     const cached = localStorage.getItem(STORAGE_KEY);
     if (cached) {
       const { alerts: cachedAlerts } = JSON.parse(cached);
@@ -67,6 +71,18 @@ function getInitialSeenIds(): Set<string> {
 // Module-level set to persist across component remounts in the same session
 const sessionSeenIds = new Set<string>();
 
+function rememberSeenId(id: string): void {
+  sessionSeenIds.add(id);
+  try {
+    const persistedIds = JSON.parse(localStorage.getItem(SEEN_STORAGE_KEY) || '[]');
+    const nextIds = new Set<string>(Array.isArray(persistedIds) ? persistedIds.map(String) : []);
+    nextIds.add(id);
+    localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(Array.from(nextIds).slice(-100)));
+  } catch {
+    localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify([id]));
+  }
+}
+
 export function useSkyAlertAlerts() {
   const [alerts, setAlerts] = useState<SkyAlert[]>([]);
   const [loading, setLoading] = useState(false);
@@ -74,6 +90,14 @@ export function useSkyAlertAlerts() {
   const [isMonitoring, setIsMonitoring] = useState(true);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [isActive, setIsActive] = useState(false);
+  const [lastSoundAlert, setLastSoundAlert] = useState<SkyAlert | null>(() => {
+    try {
+      const stored = localStorage.getItem(LAST_SOUND_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   
   // Use a Ref initialized from session and localStorage
   const seenAlertIds = useRef<Set<string>>(new Set(sessionSeenIds));
@@ -138,9 +162,9 @@ export function useSkyAlertAlerts() {
       const soundsEnabled = areSkyAlertSoundsEnabled();
       
       for (const alert of response.alerts) {
-        if (!seenAlertIds.current.has(alert.id)) {
+        if (!seenAlertIds.current.has(alert.id) && !sessionSeenIds.has(alert.id)) {
           seenAlertIds.current.add(alert.id);
-          sessionSeenIds.add(alert.id);
+          rememberSeenId(alert.id);
           
           const isViolent = alert.level === 'violenta' || alert.level === 'violento';
           const isSevere = alert.level === 'severa' || alert.level === 'severo';
@@ -155,12 +179,15 @@ export function useSkyAlertAlerts() {
               toast.error(
                 `${isViolent ? '💥' : '🚨'} ALERTA SÍSMICA ${alert.level.toUpperCase()} — ${alert.region}`,
                 {
-                  description: `Fuente: ${alert.source}\n${alert.magnitude ? `Magnitud ${alert.magnitude.toFixed(1)} · ` : ''}${alert.message}`,
+                  id: `skyalert-${alert.id}`,
+                  description: `${alert.source} · ${alert.magnitude ? `Magnitud ${alert.magnitude.toFixed(1)} · ` : ''}${alert.message}`,
                   duration: Infinity,
                   closeButton: true,
                 }
               );
               if (soundsEnabled) {
+                setLastSoundAlert(alert);
+                localStorage.setItem(LAST_SOUND_STORAGE_KEY, JSON.stringify(alert));
                 playSkyAlertSevereAlert();
               }
             } else {
@@ -230,6 +257,7 @@ export function useSkyAlertAlerts() {
     setIsMonitoring,
     lastChecked,
     isActive,
+    lastSoundAlert,
     refresh,
   };
 }
