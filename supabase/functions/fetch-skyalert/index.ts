@@ -187,6 +187,103 @@ async function fetchSASMEX(): Promise<SkyAlert[]> {
   return alerts;
 }
 
+// Scrape SASSLA X/Twitter account via public Nitter RSS mirrors
+async function fetchSASSLA(): Promise<SkyAlert[]> {
+  const alerts: SkyAlert[] = [];
+  const nitterMirrors = [
+    'https://nitter.privacydev.net/SASSLA_/rss',
+    'https://nitter.poast.org/SASSLA_/rss',
+    'https://nitter.net/SASSLA_/rss',
+  ];
+
+  let xml: string | null = null;
+  for (const url of nitterMirrors) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'MATS/1.0 (Emergency Alert System)',
+          'Accept': 'application/rss+xml, application/xml, text/xml',
+        },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (res.ok) {
+        xml = await res.text();
+        break;
+      }
+    } catch (e) {
+      console.log('[SASSLA] Mirror failed:', url, (e as Error).message);
+    }
+  }
+
+  if (!xml) {
+    console.log('[SASSLA] All Nitter mirrors failed');
+    return alerts;
+  }
+
+  try {
+    // Only look at tweets from the last 15 minutes
+    const cutoff = Date.now() - 15 * 60 * 1000;
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    const items = xml.matchAll(itemRegex);
+
+    for (const itemMatch of items) {
+      const item = itemMatch[1];
+      const titleMatch = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) ||
+                         item.match(/<title>([\s\S]*?)<\/title>/);
+      const descMatch = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) ||
+                        item.match(/<description>([\s\S]*?)<\/description>/);
+      const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+
+      const rawText = (descMatch?.[1] || titleMatch?.[1] || '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (!rawText) continue;
+
+      const pubDate = dateMatch ? new Date(dateMatch[1]).getTime() : Date.now();
+      if (isNaN(pubDate) || pubDate < cutoff) continue;
+
+      const lower = rawText.toLowerCase();
+      // Only real seismic alert posts
+      const isSeismic = lower.includes('sism') || lower.includes('temblor') || lower.includes('terremoto') || lower.includes('alerta');
+      if (!isSeismic) continue;
+
+      let level: SkyAlert['level'] = 'preventiva';
+      if (lower.includes('violent')) level = 'violenta';
+      else if (lower.includes('sever')) level = 'severa';
+      else if (lower.includes('moderad')) level = 'moderada';
+
+      const magMatch = rawText.match(/[Mm](?:agnitud)?[:\s]*(\d+\.?\d*)/) || rawText.match(/M(\d+\.?\d*)/);
+      const magnitude = magMatch ? parseFloat(magMatch[1]) : undefined;
+
+      let region = 'México';
+      const regionMatch = rawText.match(/[Ee]picentro[:\s]*([A-Za-záéíóúñÁÉÍÓÚÑ\s,]+?)(?:\.|,|\||$)/) ||
+                          rawText.match(/en\s+([A-Za-záéíóúñÁÉÍÓÚÑ][A-Za-záéíóúñÁÉÍÓÚÑ\s,]{2,40}?)(?:\.|,|\||$)/);
+      if (regionMatch) region = regionMatch[1].trim().slice(0, 80);
+
+      alerts.push({
+        id: `sassla-${pubDate}`,
+        level,
+        magnitude,
+        region,
+        message: rawText.substring(0, 240),
+        timestamp: new Date(pubDate).toISOString(),
+        source: 'SASSLA (X)',
+      });
+    }
+  } catch (e) {
+    console.error('[SASSLA] Parse error:', e);
+  }
+
+  return alerts;
+}
+
 // Send push notification for severe alerts
 async function sendPushNotification(
   alert: SkyAlert
@@ -268,13 +365,14 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Fetch alerts from multiple sources in parallel
-    const [websiteAlerts, sasmexAlerts] = await Promise.all([
+    const [websiteAlerts, sasmexAlerts, sasslaAlerts] = await Promise.all([
       fetchSkyAlertWebsite(),
       fetchSASMEX(),
+      fetchSASSLA(),
     ]);
 
     // Combine all alerts
-    let allAlerts = [...websiteAlerts, ...sasmexAlerts];
+    let allAlerts = [...websiteAlerts, ...sasmexAlerts, ...sasslaAlerts];
 
     // Filter to only last 5 minutes
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();

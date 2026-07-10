@@ -515,9 +515,9 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               <Radio className="w-10 h-10" strokeWidth={2.5} />
             </div>
             <div className="flex-1 text-left min-w-0">
-              <h3 className="font-bold text-foreground text-xl">SkyAlert</h3>
+              <h3 className="font-bold text-foreground text-xl">Apps de Alertamiento Sísmico</h3>
               <p className="text-base text-muted-foreground line-clamp-3 leading-relaxed">
-                Esta función toma las alertas emitidas en la cuenta de SkyAlert, no es la aplicación en tiempo real.
+                Alertas tomadas de las cuentas oficiales de SkyAlert y SASSLA en X. No sustituyen a las apps oficiales en tiempo real.
               </p>
             </div>
             <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
@@ -633,7 +633,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   // Get section title based on current tab
   const getSectionTitle = () => {
     switch (initialTab) {
-      case 'skyalert': return 'SkyAlert';
+      case 'skyalert': return 'Apps de Alertamiento Sísmico';
       case 'earthquakes': return 'Sismos Recientes';
       case 'otros': return 'Otros Fenómenos';
       default: return 'Sismos';
