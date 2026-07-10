@@ -11,7 +11,7 @@ const corsHeaders = {
 
 interface SkyAlert {
   id: string;
-  level: 'preventiva' | 'moderada' | 'severa';
+  level: 'preventiva' | 'moderada' | 'severa' | 'violenta';
   magnitude?: number;
   region: string;
   message: string;
@@ -29,16 +29,14 @@ interface SkyAlertResponse {
 
 // Parse Twitter/X posts for seismic alerts
 function parseTwitterAlert(text: string, timestamp: string): SkyAlert | null {
-  // Example patterns from @SkyAlertMx:
-  // "🚨 ALERTA SÍSMICA SEVERA 🚨 Epicentro: Guerrero, Magnitud: 6.5"
-  // "⚠️ Alerta Sísmica Moderada - Se detectó sismo de M5.2 en Oaxaca"
-  
   const text_lower = text.toLowerCase();
   
-  let level: 'preventiva' | 'moderada' | 'severa' = 'preventiva';
-  if (text_lower.includes('severa') || text_lower.includes('🚨')) {
+  let level: 'preventiva' | 'moderada' | 'severa' | 'violenta' = 'preventiva';
+  if (text_lower.includes('violenta') || text_lower.includes('violento')) {
+    level = 'violenta';
+  } else if (text_lower.includes('severa') || text_lower.includes('severo') || text_lower.includes('🚨')) {
     level = 'severa';
-  } else if (text_lower.includes('moderada') || text_lower.includes('⚠️')) {
+  } else if (text_lower.includes('moderada') || text_lower.includes('moderad') || text_lower.includes('⚠️')) {
     level = 'moderada';
   }
   
@@ -82,7 +80,6 @@ async function fetchSkyAlertWebsite(): Promise<SkyAlert[]> {
   const alerts: SkyAlert[] = [];
   
   try {
-    // Try to fetch SkyAlert's main page
     const response = await fetch('https://www.skyalert.mx/', {
       headers: {
         'User-Agent': 'MATS/1.0 (Emergency Alert System)',
@@ -97,8 +94,6 @@ async function fetchSkyAlertWebsite(): Promise<SkyAlert[]> {
     
     const html = await response.text();
     
-    // Look for active alert banners in the HTML
-    // SkyAlert typically shows active alerts prominently
     const alertPatterns = [
       /<div[^>]*class="[^"]*alert[^"]*"[^>]*>([^<]+)/gi,
       /<span[^>]*class="[^"]*alerta[^"]*"[^>]*>([^<]+)/gi,
@@ -127,12 +122,11 @@ async function fetchSkyAlertWebsite(): Promise<SkyAlert[]> {
   return alerts;
 }
 
-// Fetch from SASMEX/SSN for real-time seismic data (backup source)
+// Fetch from SASMEX/SSN for real-time seismic data
 async function fetchSASMEX(): Promise<SkyAlert[]> {
   const alerts: SkyAlert[] = [];
   
   try {
-    // SSN Mexico provides seismic data
     const response = await fetch('http://www.ssn.unam.mx/sismicidad/ultimos/', {
       headers: {
         'User-Agent': 'MATS/1.0',
@@ -146,12 +140,9 @@ async function fetchSASMEX(): Promise<SkyAlert[]> {
     
     const html = await response.text();
     
-    // Parse recent earthquakes from SSN
-    // Look for events in the last 5 minutes with M >= 4.5
     const now = Date.now();
     const fiveMinutesAgo = now - 5 * 60 * 1000;
     
-    // SSN lists recent events - check for significant ones
     const eventPattern = /(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(\d+\.?\d*)\s+([^<\n]+)/g;
     const matches = html.matchAll(eventPattern);
     
@@ -160,12 +151,13 @@ async function fetchSASMEX(): Promise<SkyAlert[]> {
       const magnitude = parseFloat(magStr);
       const eventTime = new Date(dateStr.replace(' ', 'T') + '-06:00').getTime();
       
-      // Only recent significant events
       if (eventTime >= fiveMinutesAgo && magnitude >= 4.5) {
-        let level: 'preventiva' | 'moderada' | 'severa' = 'preventiva';
-        if (magnitude >= 6.0) {
+        let level: 'preventiva' | 'moderada' | 'severa' | 'violenta' = 'preventiva';
+        if (magnitude >= 6.5) {
+          level = 'violenta';
+        } else if (magnitude >= 5.5) {
           level = 'severa';
-        } else if (magnitude >= 5.0) {
+        } else if (magnitude >= 4.5) {
           level = 'moderada';
         }
         
@@ -188,16 +180,14 @@ async function fetchSASMEX(): Promise<SkyAlert[]> {
 }
 
 const SASSLA_MIRRORS = [
-  "https://nitter.cz/SasslaMx/rss",
-  "https://nitter.it/SasslaMx/rss",
-  "https://nitter.privacydev.net/SasslaMx/rss",
-  "https://nitter.poast.org/SasslaMx/rss",
-  "https://nitter.projectsegfau.lt/SasslaMx/rss",
+  'https://nitter.cz/SasslaMx/rss',
+  'https://nitter.it/SasslaMx/rss',
   'https://nitter.privacydev.net/SasslaMx/rss',
   'https://nitter.poast.org/SasslaMx/rss',
-  'https://nitter.net/SasslaMx/rss',
-  'https://nitter.tiekoetter.com/SasslaMx/rss',
-  'https://nitter.space/SasslaMx/rss',
+  'https://nitter.projectsegfau.lt/SasslaMx/rss',
+  'https://nitter.rawbit.ninja/SasslaMx/rss',
+  'https://nitter.moomoo.me/SasslaMx/rss',
+  'https://nitter.tiekoetter.com/SasslaMx/rss'
 ];
 
 interface SasslaFetchResult {
@@ -276,14 +266,12 @@ async function fetchSASSLA(): Promise<SkyAlert[]> {
   }
 
   try {
-    // Only look at tweets from the last 15 minutes
     const cutoff = Date.now() - 15 * 60 * 1000;
     for (const { text: rawText, timestamp } of parseSasslaItems(xml)) {
       const pubDate = timestamp ?? Date.now();
       if (pubDate < cutoff) continue;
 
       const lower = rawText.toLowerCase();
-      // Only real seismic alert posts
       const isSeismic = lower.includes('sism') || lower.includes('temblor') || lower.includes('terremoto') || lower.includes('alerta');
       if (!isSeismic) continue;
 
@@ -300,8 +288,10 @@ async function fetchSASSLA(): Promise<SkyAlert[]> {
                           rawText.match(/en\s+([A-Za-záéíóúñÁÉÍÓÚÑ][A-Za-záéíóúñÁÉÍÓÚÑ\s,]{2,40}?)(?:\.|,|\||$)/);
       if (regionMatch) region = regionMatch[1].trim().slice(0, 80);
 
+      // Generate a stable unique ID
+      const textHash = rawText.length % 1000;
       alerts.push({
-        id: `sassla-${pubDate}-${rawText.length}`,
+        id: `sassla-${pubDate}-${textHash}`,
         level,
         magnitude,
         region,
@@ -321,14 +311,13 @@ async function fetchSASSLA(): Promise<SkyAlert[]> {
 async function sendPushNotification(
   alert: SkyAlert
 ): Promise<void> {
-  if (alert.level !== 'severa') return;
+  if (alert.level !== 'severa' && alert.level !== 'violenta') return;
   
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get all push subscriptions
     const { data: subscriptions } = await supabase
       .from('push_subscriptions')
       .select('endpoint, p256dh, auth');
@@ -343,7 +332,6 @@ async function sendPushNotification(
       return;
     }
     
-    // Send to each subscription via send-web-push function
     const payload = {
       title: `🚨 ALERTA SÍSMICA ${alert.level.toUpperCase()}`,
       body: `${alert.magnitude ? `M${alert.magnitude.toFixed(1)} - ` : ''}${alert.region}`,
@@ -380,14 +368,13 @@ async function sendPushNotification(
       }
     }
     
-    console.log(`[SkyAlert] Sent push for severe alert to ${subscriptions.length} users`);
+    console.log(`[SkyAlert] Sent push for ${alert.level} alert to ${subscriptions.length} users`);
   } catch (error) {
     console.error('[SkyAlert] Error sending push notifications:', error);
   }
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -396,8 +383,6 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const debug = url.searchParams.get('debug');
 
-    // Diagnostic / verification mode for SASSLA scraping.
-    // Returns mirror attempt status and the latest raw items (unfiltered).
     if (debug === 'sassla') {
       const { xml, mirror, attempts } = await fetchSasslaXml();
       const items = xml ? parseSasslaItems(xml).slice(0, 10) : [];
@@ -430,25 +415,19 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch alerts from multiple sources in parallel
     const [websiteAlerts, sasmexAlerts, sasslaAlerts] = await Promise.all([
       fetchSkyAlertWebsite(),
       fetchSASMEX(),
       fetchSASSLA(),
     ]);
 
-    // Combine all alerts
     let allAlerts = [...websiteAlerts, ...sasmexAlerts, ...sasslaAlerts];
-
-    // Filter to only last 5 minutes
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     allAlerts = allAlerts.filter(alert => alert.timestamp >= fiveMinutesAgo);
 
-    // Deduplicate by checking cache
     const newAlerts: SkyAlert[] = [];
     
     for (const alert of allAlerts) {
-      // Check if already in cache
       const { data: existing } = await supabase
         .from('skyalert_cache')
         .select('id')
@@ -456,7 +435,6 @@ Deno.serve(async (req) => {
         .single();
       
       if (!existing) {
-        // Add to cache
         await supabase
           .from('skyalert_cache')
           .insert({
@@ -467,21 +445,17 @@ Deno.serve(async (req) => {
         
         newAlerts.push(alert);
         
-        // Send push for new severe alerts
-        if (alert.level === 'severa') {
+        if (alert.level === 'severa' || alert.level === 'violenta') {
           await sendPushNotification(alert);
         }
       }
     }
 
-    // Build response
     const response: SkyAlertResponse = {
       alerts: allAlerts,
       lastChecked: new Date().toISOString(),
-      isActive: allAlerts.some(a => a.level === 'severa' || a.level === 'moderada'),
+      isActive: allAlerts.some(a => a.level === 'severa' || a.level === 'violenta' || a.level === 'moderada'),
     };
-
-    console.log(`[SkyAlert] Returning ${allAlerts.length} alerts (${newAlerts.length} new)`);
 
     return new Response(
       JSON.stringify(response),
@@ -503,8 +477,11 @@ Deno.serve(async (req) => {
         isActive: false,
       }),
       { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        }, 
+        status: 200 
       }
     );
   }
