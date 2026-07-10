@@ -188,9 +188,11 @@ async function fetchSASMEX(): Promise<SkyAlert[]> {
 }
 
 const SASSLA_MIRRORS = [
-  'https://nitter.privacydev.net/SASSLA_/rss',
-  'https://nitter.poast.org/SASSLA_/rss',
-  'https://nitter.net/SASSLA_/rss',
+  'https://nitter.privacydev.net/SasslaMx/rss',
+  'https://nitter.poast.org/SasslaMx/rss',
+  'https://nitter.net/SasslaMx/rss',
+  'https://nitter.tiekoetter.com/SasslaMx/rss',
+  'https://nitter.space/SasslaMx/rss',
 ];
 
 interface SasslaFetchResult {
