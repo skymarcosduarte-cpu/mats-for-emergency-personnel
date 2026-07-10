@@ -124,12 +124,11 @@ export function useSkyAlertAlerts() {
           
           if (isViolent) {
             toast.error(
-              `💥 ALERTA SÍSMICA VIOLENTA - ${alert.region}`,
+              `💥 ALERTA SÍSMICA VIOLENTA — ${alert.region}`,
               {
-                description: alert.magnitude 
-                  ? `Magnitud ${alert.magnitude.toFixed(1)} - ${alert.message}`
-                  : alert.message,
-                duration: 20000,
+                description: `Fuente: ${alert.source}\n${alert.magnitude ? `Magnitud ${alert.magnitude.toFixed(1)} · ` : ''}${alert.message}`,
+                duration: Infinity,
+                closeButton: true,
               }
             );
             if (soundsEnabled) {
@@ -137,12 +136,11 @@ export function useSkyAlertAlerts() {
             }
           } else if (isSevere) {
             toast.error(
-              `🚨 ALERTA SÍSMICA SEVERA - ${alert.region}`,
+              `🚨 ALERTA SÍSMICA SEVERA — ${alert.region}`,
               {
-                description: alert.magnitude 
-                  ? `Magnitud ${alert.magnitude.toFixed(1)} - ${alert.message}`
-                  : alert.message,
-                duration: 15000,
+                description: `Fuente: ${alert.source}\n${alert.magnitude ? `Magnitud ${alert.magnitude.toFixed(1)} · ` : ''}${alert.message}`,
+                duration: Infinity,
+                closeButton: true,
               }
             );
             if (soundsEnabled) {
