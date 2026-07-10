@@ -188,6 +188,11 @@ async function fetchSASMEX(): Promise<SkyAlert[]> {
 }
 
 const SASSLA_MIRRORS = [
+  "https://nitter.cz/SasslaMx/rss",
+  "https://nitter.it/SasslaMx/rss",
+  "https://nitter.privacydev.net/SasslaMx/rss",
+  "https://nitter.poast.org/SasslaMx/rss",
+  "https://nitter.projectsegfau.lt/SasslaMx/rss",
   'https://nitter.privacydev.net/SasslaMx/rss',
   'https://nitter.poast.org/SasslaMx/rss',
   'https://nitter.net/SasslaMx/rss',
@@ -296,7 +301,7 @@ async function fetchSASSLA(): Promise<SkyAlert[]> {
       if (regionMatch) region = regionMatch[1].trim().slice(0, 80);
 
       alerts.push({
-        id: `sassla-${pubDate}`,
+        id: `sassla-${pubDate}-${rawText.length}`,
         level,
         magnitude,
         region,
