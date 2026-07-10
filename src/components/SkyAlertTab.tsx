@@ -49,33 +49,17 @@ export function SkyAlertTab() {
     setVerifyLoading(true);
     setVerifyError(null);
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-skyalert', {
-        method: 'GET',
-        // Pass ?debug=sassla via query string on the endpoint
-        // supabase-js appends this as a query string when method=GET
-        // and body is undefined.
-        // @ts-expect-error - supabase-js supports the second arg options
-        headers: { 'X-Debug': 'sassla' },
+      const projectUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+      const anon = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+        ?? import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined;
+      if (!projectUrl) throw new Error('Backend no configurado');
+      const target = `${projectUrl}/functions/v1/fetch-skyalert?debug=sassla`;
+      const res = await fetch(target, {
+        headers: anon ? { apikey: anon, Authorization: `Bearer ${anon}` } : undefined,
       });
-      // supabase.functions.invoke doesn't expose query params directly, so
-      // fall back to a manual fetch if the debug payload didn't come back.
-      if (error || !data || !('attempts' in (data as object))) {
-        const url = `${(supabase as any).functionsUrl ?? ''}/fetch-skyalert?debug=sassla`.replace(/^\//, '');
-        const projectUrl = (import.meta as any).env?.VITE_SUPABASE_URL;
-        const target = projectUrl
-          ? `${projectUrl}/functions/v1/fetch-skyalert?debug=sassla`
-          : url;
-        const anon = (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY
-          ?? (import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
-        const res = await fetch(target, {
-          headers: anon ? { apikey: anon, Authorization: `Bearer ${anon}` } : undefined,
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = (await res.json()) as SasslaDebugResult;
-        setVerifyData(json);
-      } else {
-        setVerifyData(data as SasslaDebugResult);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = (await res.json()) as SasslaDebugResult;
+      setVerifyData(json);
     } catch (e) {
       console.error('[SASSLA verify] error:', e);
       setVerifyError(e instanceof Error ? e.message : 'Error desconocido');
