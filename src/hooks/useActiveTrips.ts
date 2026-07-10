@@ -125,32 +125,18 @@ export function useActiveTrips() {
       }
       setError(null);
 
-      // Fetch active trips (RLS allows viewing trips with status='ACTIVE')
-      const { data: tripsData, error: tripsError } = await supabase
-        .from('transit_trips')
-        .select(`
-          id,
-          user_id,
-          transit_type,
-          origin,
-          destination,
-          eta,
-          created_at,
-          origin_lat,
-          origin_lng,
-          destination_lat,
-          destination_lng,
-          vehicle_type,
-          plates,
-          companions,
-          airline,
-          flight_number,
-          share_token
-        `)
-        .eq('status', 'ACTIVE')
-        .order('created_at', { ascending: false });
+      // Fetch active community trips through a SECURITY DEFINER RPC that
+      // excludes sensitive columns (boarding_pass_url, vehicle_photo_url,
+      // share_token) so any authenticated user can see the community feed
+      // without exposing private data.
+      const { data: rpcData, error: tripsError } = await supabase
+        .rpc('get_community_trips');
 
       if (tripsError) throw tripsError;
+
+      const tripsData = (rpcData || [])
+        .filter((t: any) => t.status === 'ACTIVE')
+        .map((t: any) => ({ ...t, share_token: null }));
 
       // If no active trips, clear state and cache immediately
       if (!tripsData || tripsData.length === 0) {
