@@ -48,49 +48,19 @@ export function useCommunityTripsHistory() {
       cutoffTime.setHours(cutoffTime.getHours() - HISTORY_HOURS);
       const cutoffIso = cutoffTime.toISOString();
 
-      // Fetch trips from last 24 hours with status ACTIVE, ARRIVED, or CANCELLED.
-      // IMPORTANT: We intentionally avoid a single `.or(...)` with an interpolated ISO timestamp,
-      // because it can be brittle in URL filter parsing. Two queries are clearer and reliable.
-      const selectFields = `
-        id,
-        user_id,
-        transit_type,
-        origin,
-        destination,
-        eta,
-        status,
-        created_at,
-        arrived_at,
-        origin_lat,
-        origin_lng,
-        destination_lat,
-        destination_lng,
-        vehicle_type,
-        plates,
-        companions,
-        airline,
-        flight_number
-      `;
+      // Fetch community trips (active + last 24h completed/cancelled) via
+      // a SECURITY DEFINER RPC that returns only safe columns.
+      const { data: rpcData, error: rpcError } = await supabase
+        .rpc('get_community_trips');
 
-      const [activeRes, completedRes] = await Promise.all([
-        supabase
-          .from('transit_trips')
-          .select(selectFields)
-          .eq('status', 'ACTIVE')
-          .gte('created_at', cutoffIso)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('transit_trips')
-          .select(selectFields)
-          .in('status', ['ARRIVED', 'CANCELLED'])
-          .gte('arrived_at', cutoffIso)
-          .order('arrived_at', { ascending: false }),
-      ]);
+      if (rpcError) throw rpcError;
 
-      if (activeRes.error) throw activeRes.error;
-      if (completedRes.error) throw completedRes.error;
-
-      const combined = [...(activeRes.data ?? []), ...(completedRes.data ?? [])];
+      const combined = (rpcData ?? []).filter((t: any) => {
+        if (t.status === 'ACTIVE') {
+          return new Date(t.created_at).getTime() >= cutoffTime.getTime();
+        }
+        return t.arrived_at && new Date(t.arrived_at).getTime() >= cutoffTime.getTime();
+      });
 
       // De-duplicate by id (defensive)
       const seen = new Set<string>();
