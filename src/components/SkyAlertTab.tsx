@@ -356,7 +356,7 @@ export function SkyAlertTab() {
               Verificación SASSLA
             </DialogTitle>
             <DialogDescription>
-              Estado del scraping desde la cuenta @SASSLA_ en X.
+              Estado del scraping desde la cuenta @SasslaMx en X.
             </DialogDescription>
           </DialogHeader>
 
