@@ -1411,13 +1411,6 @@ export type Database = {
             foreignKeyName: "trip_position_history_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
-            referencedRelation: "community_trips_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "trip_position_history_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
             referencedRelation: "transit_trips"
             referencedColumns: ["id"]
           },
@@ -1521,81 +1514,6 @@ export type Database = {
         }
         Relationships: []
       }
-      community_trips_view: {
-        Row: {
-          airline: string | null
-          arrival_airport: string | null
-          arrival_time: string | null
-          arrived_at: string | null
-          companions: string | null
-          created_at: string | null
-          departure_airport: string | null
-          departure_time: string | null
-          destination: string | null
-          destination_lat: number | null
-          destination_lng: number | null
-          eta: string | null
-          flight_number: string | null
-          id: string | null
-          origin: string | null
-          origin_lat: number | null
-          origin_lng: number | null
-          plates: string | null
-          status: string | null
-          transit_type: string | null
-          user_id: string | null
-          vehicle_type: string | null
-        }
-        Insert: {
-          airline?: string | null
-          arrival_airport?: string | null
-          arrival_time?: string | null
-          arrived_at?: string | null
-          companions?: string | null
-          created_at?: string | null
-          departure_airport?: string | null
-          departure_time?: string | null
-          destination?: string | null
-          destination_lat?: number | null
-          destination_lng?: number | null
-          eta?: string | null
-          flight_number?: string | null
-          id?: string | null
-          origin?: string | null
-          origin_lat?: number | null
-          origin_lng?: number | null
-          plates?: string | null
-          status?: string | null
-          transit_type?: string | null
-          user_id?: string | null
-          vehicle_type?: string | null
-        }
-        Update: {
-          airline?: string | null
-          arrival_airport?: string | null
-          arrival_time?: string | null
-          arrived_at?: string | null
-          companions?: string | null
-          created_at?: string | null
-          departure_airport?: string | null
-          departure_time?: string | null
-          destination?: string | null
-          destination_lat?: number | null
-          destination_lng?: number | null
-          eta?: string | null
-          flight_number?: string | null
-          id?: string | null
-          origin?: string | null
-          origin_lat?: number | null
-          origin_lng?: number | null
-          plates?: string | null
-          status?: string | null
-          transit_type?: string | null
-          user_id?: string | null
-          vehicle_type?: string | null
-        }
-        Relationships: []
-      }
       medical_providers: {
         Row: {
           can_provide_medical_assistance: boolean | null
@@ -1648,6 +1566,33 @@ export type Database = {
           community_events_total: number
           help_requests_resolved: number
           road_reports_total: number
+        }[]
+      }
+      get_community_trips: {
+        Args: never
+        Returns: {
+          airline: string
+          arrival_airport: string
+          arrival_time: string
+          arrived_at: string
+          companions: string
+          created_at: string
+          departure_airport: string
+          departure_time: string
+          destination: string
+          destination_lat: number
+          destination_lng: number
+          eta: string
+          flight_number: string
+          id: string
+          origin: string
+          origin_lat: number
+          origin_lng: number
+          plates: string
+          status: string
+          transit_type: string
+          user_id: string
+          vehicle_type: string
         }[]
       }
       get_nearby_birthdays: {
