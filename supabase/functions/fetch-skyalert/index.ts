@@ -195,6 +195,7 @@ interface XFeedResult {
   items: XFeedRawItem[];
   mirror: string | null;
   attempts: Array<{ url: string; ok: boolean; status?: number; error?: string }>;
+  retryAfterSeconds?: number;
 }
 
 interface CachedXFeed {
@@ -253,7 +254,13 @@ async function fetchXFeed(screenName: string, logLabel: string): Promise<XFeedRe
     });
     if (!response.ok) {
       attempts.push({ url: officialFeed, ok: false, status: response.status });
-      return cached?.result ?? { items: [], mirror: null, attempts };
+      const retryAfter = Number(response.headers.get('retry-after'));
+      return cached?.result ?? {
+        items: [],
+        mirror: null,
+        attempts,
+        retryAfterSeconds: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60,
+      };
     }
 
     const items = parseXSyndication(await response.text());
@@ -464,6 +471,7 @@ Deno.serve(async (req) => {
           ok: items.length > 0,
           mirror,
           attempts,
+          retryAfterSeconds: items.length === 0 ? 60 : undefined,
           itemCount: items.length,
           items: items.map((it) => ({
             text: it.text,
