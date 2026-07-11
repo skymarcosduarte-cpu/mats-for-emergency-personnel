@@ -28,6 +28,7 @@ interface ScrapingDebugResult {
   items: Array<{ text: string; pubDate: string | null; ageMinutes: number | null }>;
   matchedAlerts: SkyAlert[];
   checkedAt: string;
+  retryAfterSeconds?: number;
 }
 
 export function SkyAlertTab() {
@@ -313,6 +314,12 @@ export function SkyAlertTab() {
             )}
             {activeVerification && (
               <div className="space-y-4">
+                {!activeVerification.ok && (
+                  <div className="flex items-start gap-2 border border-warning bg-warning/10 p-3 text-sm" role="status">
+                    <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+                    <span>X limitó temporalmente la consulta. Espera {activeVerification.retryAfterSeconds ?? 60} segundos y usa “Reintentar consulta”.</span>
+                  </div>
+                )}
                 <div>
                   <h4 className="text-sm font-semibold mb-2">Fuentes consultadas</h4>
                   <ul className="space-y-1 text-xs">
