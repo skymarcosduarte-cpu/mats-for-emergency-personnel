@@ -326,6 +326,9 @@ interface UseGDACSAlertsOptions {
   onNewRedAlert?: (alert: GDACSAlert) => void;
 }
 
+// Preserve announced hazards while the Sismos screen is unmounted/remounted.
+const sessionNotifiedRedAlerts = new Set<string>();
+
 export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
   const [state, setState] = useState<GDACSAlertsState>({
     gdacsAlerts: [],
@@ -335,7 +338,8 @@ export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
     lastChecked: null,
   });
 
-  const notifiedRedAlertsRef = useRef<Set<string>>(new Set());
+  const notifiedRedAlertsRef = useRef<Set<string>>(new Set(sessionNotifiedRedAlerts));
+  const isFirstLoadRef = useRef(true);
 
   const fetchAlerts = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
@@ -379,15 +383,25 @@ export function useGDACSAlerts(options?: UseGDACSAlertsOptions) {
         return true;
       });
 
-      // Check for new red alerts
-      if (options?.onNewRedAlert) {
-        for (const alert of uniqueAlerts.filter(a => a.alertLevel === 'red')) {
+      const redAlerts = uniqueAlerts.filter(a => a.alertLevel === 'red');
+
+      // Existing feed items are baseline data, not new notifications. This
+      // prevents the Sismos screen from sounding every time it is opened.
+      if (isFirstLoadRef.current) {
+        redAlerts.forEach((alert) => {
           const alertKey = alert.title.toLowerCase().substring(0, 50);
-          if (!notifiedRedAlertsRef.current.has(alertKey)) {
-            notifiedRedAlertsRef.current.add(alertKey);
-            console.log('[Alerts] New RED alert:', alert.title);
-            options.onNewRedAlert(alert);
-          }
+          notifiedRedAlertsRef.current.add(alertKey);
+          sessionNotifiedRedAlerts.add(alertKey);
+        });
+        isFirstLoadRef.current = false;
+      } else if (options?.onNewRedAlert) {
+        for (const alert of redAlerts) {
+          const alertKey = alert.title.toLowerCase().substring(0, 50);
+          if (notifiedRedAlertsRef.current.has(alertKey)) continue;
+          notifiedRedAlertsRef.current.add(alertKey);
+          sessionNotifiedRedAlerts.add(alertKey);
+          console.log('[Alerts] New RED alert:', alert.title);
+          options.onNewRedAlert(alert);
         }
       }
 

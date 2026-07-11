@@ -2,12 +2,8 @@
 // Fetches active seismic alerts from SkyAlert sources
 // Only returns alerts from the last 5 minutes
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 interface SkyAlert {
   id: string;
@@ -188,18 +184,27 @@ async function fetchSASMEX(): Promise<SkyAlert[]> {
   return alerts;
 }
 
-interface SasslaRawItem {
+interface XFeedRawItem {
   id: string;
   text: string;
   pubDate: string | null;
   timestamp: number | null;
 }
 
-interface SasslaFetchResult {
-  items: SasslaRawItem[];
+interface XFeedResult {
+  items: XFeedRawItem[];
   mirror: string | null;
   attempts: Array<{ url: string; ok: boolean; status?: number; error?: string }>;
+  retryAfterSeconds?: number;
 }
+
+interface CachedXFeed {
+  expiresAt: number;
+  result: XFeedResult;
+}
+
+const xFeedCache = new Map<string, CachedXFeed>();
+const X_FEED_CACHE_MS = 60 * 1000;
 
 function decodeEntities(value: string): string {
   return value
@@ -212,7 +217,7 @@ function decodeEntities(value: string): string {
     .trim();
 }
 
-function parseSasslaSyndication(html: string): SasslaRawItem[] {
+function parseXSyndication(html: string): XFeedRawItem[] {
   const dataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
   if (!dataMatch) return [];
 
@@ -231,9 +236,13 @@ function parseSasslaSyndication(html: string): SasslaRawItem[] {
   });
 }
 
-async function fetchSasslaFeed(): Promise<SasslaFetchResult> {
-  const attempts: SasslaFetchResult['attempts'] = [];
-  const officialFeed = 'https://syndication.twitter.com/srv/timeline-profile/screen-name/SasslaMx';
+async function fetchXFeed(screenName: string, logLabel: string): Promise<XFeedResult> {
+  const attempts: XFeedResult['attempts'] = [];
+  const officialFeed = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${screenName}`;
+  const cached = xFeedCache.get(screenName);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.result;
+  }
 
   try {
     const response = await fetch(officialFeed, {
@@ -245,23 +254,33 @@ async function fetchSasslaFeed(): Promise<SasslaFetchResult> {
     });
     if (!response.ok) {
       attempts.push({ url: officialFeed, ok: false, status: response.status });
-      return { items: [], mirror: null, attempts };
+      const retryAfter = Number(response.headers.get('retry-after'));
+      return cached?.result ?? {
+        items: [],
+        mirror: null,
+        attempts,
+        retryAfterSeconds: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60,
+      };
     }
 
-    const items = parseSasslaSyndication(await response.text());
+    const items = parseXSyndication(await response.text());
     attempts.push({ url: officialFeed, ok: items.length > 0, status: response.status });
-    return { items, mirror: items.length > 0 ? officialFeed : null, attempts };
+    const result = { items, mirror: items.length > 0 ? officialFeed : null, attempts };
+    if (items.length > 0) {
+      xFeedCache.set(screenName, { result, expiresAt: Date.now() + X_FEED_CACHE_MS });
+    }
+    return result;
   } catch (error) {
     attempts.push({ url: officialFeed, ok: false, error: (error as Error).message });
-    console.error('[SASSLA] Official X feed failed:', error);
-    return { items: [], mirror: null, attempts };
+    console.error(`[${logLabel}] Official X feed failed:`, error);
+    return cached?.result ?? { items: [], mirror: null, attempts };
   }
 }
 
 // Read SASSLA posts from X's public profile syndication feed.
-async function fetchSASSLA(feedItems?: SasslaRawItem[]): Promise<SkyAlert[]> {
+async function fetchSASSLA(feedItems?: XFeedRawItem[]): Promise<SkyAlert[]> {
   const alerts: SkyAlert[] = [];
-  const items = feedItems ?? (await fetchSasslaFeed()).items;
+  const items = feedItems ?? (await fetchXFeed('SasslaMx', 'SASSLA')).items;
   if (items.length === 0) {
     console.log('[SASSLA] Public X feed returned no posts');
     return alerts;
@@ -302,6 +321,53 @@ async function fetchSASSLA(feedItems?: SasslaRawItem[]): Promise<SkyAlert[]> {
     }
   } catch (e) {
     console.error('[SASSLA] Parse error:', e);
+  }
+
+  return alerts;
+}
+
+// Read active alerts from SkyAlert's official X public profile feed.
+async function fetchSkyAlertX(feedItems?: XFeedRawItem[]): Promise<SkyAlert[]> {
+  const alerts: SkyAlert[] = [];
+  const items = feedItems ?? (await fetchXFeed('SkyAlertMx', 'SkyAlert X')).items;
+  if (items.length === 0) {
+    console.log('[SkyAlert X] Public X feed returned no posts');
+    return alerts;
+  }
+
+  const cutoff = Date.now() - 15 * 60 * 1000;
+  for (const { id, text: rawText, timestamp } of items) {
+    const pubDate = timestamp ?? 0;
+    if (!pubDate || pubDate < cutoff) continue;
+
+    const lower = rawText.toLowerCase();
+    // A finalized post is informational and must never restart the siren.
+    if (lower.includes('#sismofinalizado') || lower.includes('sismo finalizado')) continue;
+    const isActiveSeismicPost = lower.includes('#sismoendesarrollo') ||
+      lower.includes('#sismodetectado') ||
+      lower.includes('sismo en desarrollo') ||
+      lower.includes('alerta sísmica');
+    if (!isActiveSeismicPost) continue;
+
+    let level: SkyAlert['level'] = 'preventiva';
+    if (lower.includes('violent')) level = 'violenta';
+    else if (lower.includes('sever') || lower.includes('muy fuerte')) level = 'severa';
+    else if (lower.includes('moderad') || lower.includes('fuerte')) level = 'moderada';
+
+    const magMatch = rawText.match(/[Mm](?:agnitud)?[:\s]*(\d+\.?\d*)/) || rawText.match(/M(\d+\.?\d*)/);
+    const magnitude = magMatch ? parseFloat(magMatch[1]) : undefined;
+    const regionMatch = rawText.match(/(?:en|epicentro[:\s]*)\s*#?([A-Za-záéíóúñÁÉÍÓÚÑ][A-Za-záéíóúñÁÉÍÓÚÑ\s]{1,45}(?:,\s*[A-Za-záéíóúñÁÉÍÓÚÑ.]{2,15})?)(?:\.|\n|$)/i);
+    const region = regionMatch ? regionMatch[1].trim().slice(0, 80) : 'México';
+
+    alerts.push({
+      id: `skyalert-x-${id}`,
+      level,
+      magnitude,
+      region,
+      message: rawText.substring(0, 240),
+      timestamp: new Date(pubDate).toISOString(),
+      source: 'SkyAlert (X)',
+    });
   }
 
   return alerts;
@@ -383,15 +449,29 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const debug = url.searchParams.get('debug');
 
-    if (debug === 'sassla') {
-      const { items: fetchedItems, mirror, attempts } = await fetchSasslaFeed();
+    if (debug && debug !== 'sassla' && debug !== 'skyalert') {
+      return new Response(JSON.stringify({ error: 'Fuente de verificación no válida' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (debug === 'sassla' || debug === 'skyalert') {
+      const isSassla = debug === 'sassla';
+      const { items: fetchedItems, mirror, attempts } = await fetchXFeed(
+        isSassla ? 'SasslaMx' : 'SkyAlertMx',
+        isSassla ? 'SASSLA' : 'SkyAlert X',
+      );
       const items = fetchedItems.slice(0, 10);
-      const parsedAlerts = await fetchSASSLA(fetchedItems);
+      const parsedAlerts = isSassla
+        ? await fetchSASSLA(fetchedItems)
+        : await fetchSkyAlertX(fetchedItems);
       return new Response(
         JSON.stringify({
           ok: items.length > 0,
           mirror,
           attempts,
+          retryAfterSeconds: items.length === 0 ? 60 : undefined,
           itemCount: items.length,
           items: items.map((it) => ({
             text: it.text,
@@ -415,13 +495,13 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const [websiteAlerts, sasmexAlerts, sasslaAlerts] = await Promise.all([
-      fetchSkyAlertWebsite(),
+    const [skyAlertXAlerts, sasmexAlerts, sasslaAlerts] = await Promise.all([
+      fetchSkyAlertX(),
       fetchSASMEX(),
       fetchSASSLA(),
     ]);
 
-    let allAlerts = [...websiteAlerts, ...sasmexAlerts, ...sasslaAlerts];
+    let allAlerts = [...skyAlertXAlerts, ...sasmexAlerts, ...sasslaAlerts];
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     allAlerts = allAlerts.filter(alert => alert.timestamp >= fiveMinutesAgo);
 

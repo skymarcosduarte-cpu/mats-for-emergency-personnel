@@ -462,7 +462,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   );
 
   // SkyAlert monitoring for bottom navigation animation
-  const { isActive: hasSkyAlertActive } = useSkyAlertAlerts();
+  const { isActive: hasSkyAlertActive } = useSkyAlertAlerts({ soundNotifications: true });
   
   // Combine all seismic alert sources for bottom nav animation
   const hasActiveSeismicAlert = hasSkyAlertActive || !!majorSSNQuake || !!nearbyQuake;

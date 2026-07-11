@@ -30,8 +30,13 @@ interface SkyAlertResponse {
 const STORAGE_KEY = 'mats-skyalert-cache';
 const SEEN_STORAGE_KEY = 'mats-skyalert-seen-v2';
 const LAST_SOUND_STORAGE_KEY = 'mats-skyalert-last-sound';
+const SOUND_ALERT_EVENT = 'mats-skyalert-sound-alert';
 const CACHE_TTL_MS = 30 * 1000; // 30 seconds
 const POLL_INTERVAL_MS = 10 * 1000; // 10 seconds
+
+interface UseSkyAlertAlertsOptions {
+  soundNotifications?: boolean;
+}
 
 // Get SkyAlert settings from alert settings
 function areSkyAlertSoundsEnabled(): boolean {
@@ -83,7 +88,12 @@ function rememberSeenId(id: string): void {
   }
 }
 
-export function useSkyAlertAlerts() {
+function publishSoundAlert(alert: SkyAlert): void {
+  localStorage.setItem(LAST_SOUND_STORAGE_KEY, JSON.stringify(alert));
+  window.dispatchEvent(new CustomEvent<SkyAlert>(SOUND_ALERT_EVENT, { detail: alert }));
+}
+
+export function useSkyAlertAlerts({ soundNotifications = false }: UseSkyAlertAlertsOptions = {}) {
   const [alerts, setAlerts] = useState<SkyAlert[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +139,15 @@ export function useSkyAlertAlerts() {
     }
   }, []);
 
+  // Keep every mounted view synchronized with the single global sound monitor.
+  useEffect(() => {
+    const handleSoundAlert = (event: Event) => {
+      setLastSoundAlert((event as CustomEvent<SkyAlert>).detail);
+    };
+    window.addEventListener(SOUND_ALERT_EVENT, handleSoundAlert);
+    return () => window.removeEventListener(SOUND_ALERT_EVENT, handleSoundAlert);
+  }, []);
+
   // Fetch alerts from edge function
   const fetchAlerts = useCallback(async (force = false) => {
     const now = Date.now();
@@ -159,50 +178,54 @@ export function useSkyAlertAlerts() {
         timestamp: Date.now(),
       }));
 
-      const soundsEnabled = areSkyAlertSoundsEnabled();
-      
-      for (const alert of response.alerts) {
-        if (!seenAlertIds.current.has(alert.id) && !sessionSeenIds.has(alert.id)) {
-          seenAlertIds.current.add(alert.id);
-          rememberSeenId(alert.id);
-          
-          const isViolent = alert.level === 'violenta' || alert.level === 'violento';
-          const isSevere = alert.level === 'severa' || alert.level === 'severo';
-          
-          if (isViolent || isSevere) {
-            // Ignore alerts older than 2 minutes on the first successful fetch 
-            // to prevent "replay" of slightly old alerts on mount if not in cache
-            const alertTime = new Date(alert.timestamp).getTime();
-            const alertAge = now - alertTime;
-            
-            if (alertAge < 120000) { // 2 minutes
-              toast.error(
-                `${isViolent ? '💥' : '🚨'} ALERTA SÍSMICA ${alert.level.toUpperCase()} — ${alert.region}`,
-                {
-                  id: `skyalert-${alert.id}`,
-                  description: `${alert.source} · ${alert.magnitude ? `Magnitud ${alert.magnitude.toFixed(1)} · ` : ''}${alert.message}`,
-                  duration: Infinity,
-                  closeButton: true,
-                }
-              );
-              if (soundsEnabled) {
+      // Only the app-level monitor owns deduplication and audio. The Sismos view
+      // is read-only, so opening it cannot create a second notification sound.
+      if (soundNotifications) {
+        const soundsEnabled = areSkyAlertSoundsEnabled();
+
+        for (const alert of response.alerts) {
+          if (!seenAlertIds.current.has(alert.id) && !sessionSeenIds.has(alert.id)) {
+            seenAlertIds.current.add(alert.id);
+            rememberSeenId(alert.id);
+
+            const isViolent = alert.level === 'violenta' || alert.level === 'violento';
+            const isSevere = alert.level === 'severa' || alert.level === 'severo';
+
+            if (isViolent || isSevere) {
+              // Ignore alerts older than 2 minutes to prevent replays on app load.
+              const alertTime = new Date(alert.timestamp).getTime();
+              const alertAge = now - alertTime;
+
+              if (alertAge >= 0 && alertAge < 120000) {
+                // Publish the explanatory detail before starting the sound.
                 setLastSoundAlert(alert);
-                localStorage.setItem(LAST_SOUND_STORAGE_KEY, JSON.stringify(alert));
-                playSkyAlertSevereAlert();
+                publishSoundAlert(alert);
+                toast.error(
+                  `${isViolent ? '💥' : '🚨'} ALERTA SÍSMICA ${alert.level.toUpperCase()} — ${alert.region}`,
+                  {
+                    id: `skyalert-${alert.id}`,
+                    description: `${alert.source} · ${alert.magnitude ? `Magnitud ${alert.magnitude.toFixed(1)} · ` : ''}${alert.message}`,
+                    duration: Infinity,
+                    closeButton: true,
+                  }
+                );
+                if (soundsEnabled) {
+                  window.setTimeout(() => void playSkyAlertSevereAlert(), 250);
+                }
+              } else {
+                console.log('[SkyAlert] Skipping audio for stale alert:', alert.id);
               }
-            } else {
-              console.log('[SkyAlert] Skipping audio for stale alert:', alert.id);
             }
           }
         }
-      }
 
-      const hasActiveAlert = response.alerts.some(a => 
-        a.level === 'severa' || a.level === 'severo' || 
-        a.level === 'violenta' || a.level === 'violento'
-      );
-      if (!hasActiveAlert) {
-        stopSkyAlertAlert();
+        const hasActiveAlert = response.alerts.some(a =>
+          a.level === 'severa' || a.level === 'severo' ||
+          a.level === 'violenta' || a.level === 'violento'
+        );
+        if (!hasActiveAlert) {
+          stopSkyAlertAlert();
+        }
       }
 
     } catch (e) {
@@ -211,7 +234,7 @@ export function useSkyAlertAlerts() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [soundNotifications]);
 
   const refresh = useCallback(() => {
     fetchAlerts(true);
@@ -245,9 +268,9 @@ export function useSkyAlertAlerts() {
 
   useEffect(() => {
     return () => {
-      stopSkyAlertAlert();
+      if (soundNotifications) stopSkyAlertAlert();
     };
-  }, []);
+  }, [soundNotifications]);
 
   return {
     alerts,
