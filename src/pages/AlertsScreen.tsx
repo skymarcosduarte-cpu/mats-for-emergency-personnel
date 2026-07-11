@@ -212,8 +212,12 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       return;
     }
     console.log('[AlertsScreen] New RED alert:', alert.title);
-    showRedAlertNotification(alert);
-    playUrgentAlert();
+    const notificationShown = showRedAlertNotification(alert);
+    if (notificationShown) {
+      playUrgentAlert();
+    } else {
+      console.log('[AlertsScreen] Sound skipped because no visible notification was shown');
+    }
   }, [showRedAlertNotification]);
 
   // GDACS + AEMET international alerts with red alert callback
