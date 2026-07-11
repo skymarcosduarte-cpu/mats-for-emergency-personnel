@@ -197,6 +197,14 @@ interface XFeedResult {
   attempts: Array<{ url: string; ok: boolean; status?: number; error?: string }>;
 }
 
+interface CachedXFeed {
+  expiresAt: number;
+  result: XFeedResult;
+}
+
+const xFeedCache = new Map<string, CachedXFeed>();
+const X_FEED_CACHE_MS = 60 * 1000;
+
 function decodeEntities(value: string): string {
   return value
     .replace(/&amp;/g, '&')
@@ -230,6 +238,10 @@ function parseXSyndication(html: string): XFeedRawItem[] {
 async function fetchXFeed(screenName: string, logLabel: string): Promise<XFeedResult> {
   const attempts: XFeedResult['attempts'] = [];
   const officialFeed = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${screenName}`;
+  const cached = xFeedCache.get(screenName);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.result;
+  }
 
   try {
     const response = await fetch(officialFeed, {
@@ -241,16 +253,20 @@ async function fetchXFeed(screenName: string, logLabel: string): Promise<XFeedRe
     });
     if (!response.ok) {
       attempts.push({ url: officialFeed, ok: false, status: response.status });
-      return { items: [], mirror: null, attempts };
+      return cached?.result ?? { items: [], mirror: null, attempts };
     }
 
     const items = parseXSyndication(await response.text());
     attempts.push({ url: officialFeed, ok: items.length > 0, status: response.status });
-    return { items, mirror: items.length > 0 ? officialFeed : null, attempts };
+    const result = { items, mirror: items.length > 0 ? officialFeed : null, attempts };
+    if (items.length > 0) {
+      xFeedCache.set(screenName, { result, expiresAt: Date.now() + X_FEED_CACHE_MS });
+    }
+    return result;
   } catch (error) {
     attempts.push({ url: officialFeed, ok: false, error: (error as Error).message });
     console.error(`[${logLabel}] Official X feed failed:`, error);
-    return { items: [], mirror: null, attempts };
+    return cached?.result ?? { items: [], mirror: null, attempts };
   }
 }
 
