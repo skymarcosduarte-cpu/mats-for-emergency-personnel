@@ -159,7 +159,7 @@ export function useJobBoard() {
 
     const { error } = await supabase
       .from('job_board')
-      .update(updateData)
+      .update(updateData as never)
       .eq('id', postId)
       .eq('user_id', user.id);
 
