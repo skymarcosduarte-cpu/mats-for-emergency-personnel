@@ -2,7 +2,7 @@
 // Displays SkyAlert seismic monitoring status and active alerts
 
 import React, { useState, useCallback } from 'react';
-import { Activity, ExternalLink, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Radio, Bug, RotateCw } from 'lucide-react';
+import { Activity, ExternalLink, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Radio, Bug, RotateCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +47,7 @@ export function SkyAlertTab() {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [verifyData, setVerifyData] = useState<Partial<Record<VerificationSource, ScrapingDebugResult>>>({});
+  const [dismissedSoundAlertId, setDismissedSoundAlertId] = useState<string | null>(null);
 
   const runVerification = useCallback(async (source: VerificationSource) => {
     setVerifyLoading(true);
@@ -152,9 +153,9 @@ export function SkyAlertTab() {
         </div>
       </div>
 
-      {lastSoundAlert && (
-        <div className="p-4 border-2 border-destructive bg-destructive/10" role="alert" aria-live="assertive">
-          <div className="flex items-start gap-3">
+      {lastSoundAlert && dismissedSoundAlertId !== lastSoundAlert.id && (
+        <div className="p-4 border-2 border-destructive bg-destructive/10 relative" role="alert" aria-live="assertive">
+          <div className="flex items-start gap-3 pr-10">
             <AlertTriangle className="w-6 h-6 text-destructive shrink-0 mt-0.5" />
             <div className="min-w-0 space-y-1">
               <p className="font-bold text-destructive">La última notificación sonora corresponde a:</p>
@@ -167,6 +168,15 @@ export function SkyAlertTab() {
               </p>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Cerrar aviso"
+            className="absolute top-2 right-2 h-8 w-8 text-destructive hover:bg-destructive/20"
+            onClick={() => setDismissedSoundAlertId(lastSoundAlert.id)}
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </div>
       )}
 
