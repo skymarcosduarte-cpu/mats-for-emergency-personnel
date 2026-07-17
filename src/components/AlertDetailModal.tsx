@@ -265,16 +265,14 @@ export const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
         .eq('id', currentUserId)
         .single();
 
-      const responderName = responderProfile?.nickname || responderProfile?.full_name || 'Un rescatista';
-      
-      // Create a notification in the database
-      await supabase.from('notifications').insert({
-        user_id: alert.user_id,
-        type: 'responder_contact',
-        title: contactType === 'call' 
-          ? '📞 Rescatista te está llamando' 
-          : '💬 Rescatista te escribió por WhatsApp',
-        message: `${responderName} intenta contactarte para ayudarte con tu emergencia.`,
+      // Route through an edge function so the notification target is validated
+      // server-side (only active responders can notify the alert owner).
+      await supabase.functions.invoke('notify-responder-contact', {
+        body: {
+          alertId: alert.id,
+          targetUserId: alert.user_id,
+          contactType,
+        },
       });
 
       console.log('[AlertDetailModal] Notification sent to creator for', contactType);
