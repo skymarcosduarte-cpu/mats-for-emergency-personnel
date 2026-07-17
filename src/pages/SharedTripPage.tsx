@@ -62,12 +62,14 @@ export default function SharedTripPage() {
     }
 
     try {
-      // Fetch trip by share_token via SECURITY DEFINER RPC that excludes
-      // sensitive columns (boarding_pass_url, vehicle_photo_url, share_token).
-      const { data: rpcData, error: tripError } = await supabase
-        .rpc('get_shared_trip', { _share_token: shareToken });
+      // Fetch trip via edge function (uses service role internally).
+      // The DB RPC is no longer exposed to anon for security reasons.
+      const { data: fnData, error: tripError } = await supabase.functions.invoke(
+        'get-shared-trip',
+        { body: { token: shareToken } },
+      );
 
-      const tripData = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+      const tripData = (fnData as { trip?: any } | null)?.trip ?? null;
       if (tripError || !tripData) {
         setError('Viaje no encontrado o ya finalizó');
         setLoading(false);

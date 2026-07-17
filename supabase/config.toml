@@ -74,3 +74,9 @@ verify_jwt = false
 
 [functions.fetch-owm-weather]
 verify_jwt = false
+
+[functions.get-shared-trip]
+verify_jwt = false
+
+[functions.notify-responder-contact]
+verify_jwt = false

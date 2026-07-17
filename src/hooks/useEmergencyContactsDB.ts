@@ -107,7 +107,7 @@ export function useEmergencyContactsDB() {
         const { error: updateError } = await withTimeout(
           supabase
             .from('emergency_contacts')
-            .update(op.data)
+            .update(op.data as never)
             .eq('id', op.data.id as string),
           MUTATION_TIMEOUT_MS,
           'sync_update'
