@@ -27,6 +27,7 @@ import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt, UpdateIndicator } from '@/components/UpdatePrompt';
 import { SplashScreen } from '@/components/SplashScreen';
+import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 
 import { SeismicAlert } from '@/components/SeismicAlert';
 import { EmergencyAlertOverlay } from '@/components/EmergencyAlertOverlay';
@@ -884,31 +885,35 @@ const UIIssueReportPromptWrapper = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public pages - outside of InternalMessagesProvider to avoid auth blocking */}
-          <Route path="/install" element={<InstallPage />} />
-          <Route path="/trip/:shareToken" element={<SharedTripPage />} />
-          <Route path="/guia" element={<UserGuidePage />} />
-          <Route path="/guia-paso-a-paso" element={<StepByStepGuidePage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          {/* Main app with internal messages provider */}
-          <Route path="/" element={
-            <InternalMessagesProvider>
-              <UIIssueDetectorProvider>
-                <AppContent />
-              </UIIssueDetectorProvider>
-            </InternalMessagesProvider>
-          } />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-      <Toaster />
-      <Sonner />
-    </TooltipProvider>
-  </QueryClientProvider>
+  <AppErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public pages - outside of InternalMessagesProvider to avoid auth blocking */}
+            <Route path="/install" element={<InstallPage />} />
+            <Route path="/trip/:shareToken" element={<SharedTripPage />} />
+            <Route path="/guia" element={<UserGuidePage />} />
+            <Route path="/guia-paso-a-paso" element={<StepByStepGuidePage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            {/* Main app with internal messages provider */}
+            <Route path="/" element={
+              <InternalMessagesProvider>
+                <UIIssueDetectorProvider>
+                  <AppErrorBoundary>
+                    <AppContent />
+                  </AppErrorBoundary>
+                </UIIssueDetectorProvider>
+              </InternalMessagesProvider>
+            } />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+        <Toaster />
+        <Sonner />
+      </TooltipProvider>
+    </QueryClientProvider>
+  </AppErrorBoundary>
 );
 
 export default App;
