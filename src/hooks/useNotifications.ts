@@ -201,7 +201,7 @@ export function useNotifications() {
 
     // Subscribe to realtime updates
     const channel = supabase
-      .channel('notifications-realtime')
+      .channel(`notifications-realtime-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
