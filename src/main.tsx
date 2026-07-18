@@ -4,6 +4,14 @@ import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 
+// Surface unhandled errors so post-splash blank screens have a diagnostic trail.
+window.addEventListener('error', (e) => {
+  console.error('[GlobalError]', e.error ?? e.message, e.filename, e.lineno);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('[UnhandledRejection]', e.reason);
+});
+
 // Prevent pinch-to-zoom on the entire document
 document.addEventListener('gesturestart', (e) => e.preventDefault());
 document.addEventListener('gesturechange', (e) => e.preventDefault());
