@@ -194,6 +194,17 @@ export function useAuth() {
       }
     );
 
+    // Safety net: force loading=false after 10s so the app can never get
+    // permanently stuck on the auth spinner (e.g. corrupted refresh token,
+    // getSession() rejecting silently, offline on cold boot).
+    const loadingSafetyTimer = setTimeout(() => {
+      setState(prev => {
+        if (!prev.loading) return prev;
+        console.warn('[useAuth] Loading safety timeout hit — forcing loading=false');
+        return { ...prev, loading: false };
+      });
+    }, 10000);
+
     // THEN check for existing session - ALWAYS fetch profile from DB to validate
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
@@ -245,9 +256,20 @@ export function useAuth() {
       } else {
         setState(prev => ({ ...prev, session: null, user: null, loading: false }));
       }
+    }).catch((err) => {
+      // Corrupted local session / auth storage — clear and continue to AuthGate
+      console.error('[useAuth] getSession() rejected:', err);
+      try {
+        supabase.auth.signOut().catch(() => {});
+      } catch {
+        /* noop */
+      }
+      clearAuthSessionCache();
+      setState(prev => ({ ...prev, session: null, user: null, profile: null, role: null, loading: false }));
     });
 
     return () => {
+      clearTimeout(loadingSafetyTimer);
       subscription.unsubscribe();
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
