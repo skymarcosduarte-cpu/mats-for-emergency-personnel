@@ -26,7 +26,6 @@ import StepByStepGuidePage from '@/pages/StepByStepGuidePage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt, UpdateIndicator } from '@/components/UpdatePrompt';
-import { SplashScreen } from '@/components/SplashScreen';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 
 import { SeismicAlert } from '@/components/SeismicAlert';
