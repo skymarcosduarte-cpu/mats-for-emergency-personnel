@@ -96,7 +96,6 @@ function AppContent() {
   // Auto-update on app entry
   useAutoUpdate();
   
-  const [showSplash, setShowSplash] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showComprehensiveTutorial, setShowComprehensiveTutorial] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
@@ -144,23 +143,12 @@ function AppContent() {
     await signOut();
   };
 
-  // Check if splash was shown recently (within session)
+  // Hide the native splash immediately on app mount (no animated splash)
   useEffect(() => {
-    const splashShown = sessionStorage.getItem('splash-shown');
-    if (splashShown) {
-      setShowSplash(false);
+    if (typeof window !== 'undefined' && typeof (window as any).hideNativeSplash === 'function') {
+      (window as any).hideNativeSplash();
     }
   }, []);
-
-  const handleSplashComplete = () => {
-    setShowSplash(false);
-    sessionStorage.setItem('splash-shown', 'true');
-  };
-
-  // Show splash screen
-  if (showSplash) {
-    return <SplashScreen onComplete={handleSplashComplete} />;
-  }
 
   // Show loading while checking auth state
   if (authLoading) {
