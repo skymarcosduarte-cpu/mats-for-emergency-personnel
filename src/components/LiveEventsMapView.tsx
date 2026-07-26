@@ -1,9 +1,8 @@
 // Live Events Map View — weather + hazards overlay for the Community Map.
 // Layers (always-on, free / no zoom paywall):
 //   1. NASA FIRMS fire hotspots (server-cached)
-//   2. RainViewer animated precipitation radar (global, last 2h + nowcast)
-//   3. OpenWeatherMap point query — tap map to see local weather + official alerts
-//   4. NHC active tropical cyclones (Atlantic + Eastern Pacific)
+//   2. OpenWeatherMap point query — tap map to see local weather + official alerts
+//   3. NHC active tropical cyclones (Atlantic + Eastern Pacific)
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
@@ -21,12 +20,6 @@ interface EventsState {
   fires: FireHotspot[];
   loading: boolean;
   lastUpdate: Date | null;
-}
-
-interface RainFrame { path: string; time: number }
-interface RainViewerMaps {
-  host: string;
-  radar: { past: RainFrame[]; nowcast: RainFrame[] };
 }
 
 const createFireIcon = (confidence: 'low' | 'nominal' | 'high') => {
@@ -85,10 +78,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
 }) => {
   const fireMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const cycloneMarkersRef = useRef<Map<string, L.Marker>>(new Map());
-  const radarLayerRef = useRef<L.TileLayer | null>(null);
-  const radarTimerRef = useRef<number | null>(null);
-  const radarFramesRef = useRef<{ host: string; frames: RainFrame[] }>({ host: '', frames: [] });
-  const radarIndexRef = useRef(0);
   const owmClickHandlerRef = useRef<((e: L.LeafletMouseEvent) => void) | null>(null);
 
   const [events, setEvents] = useState<EventsState>({
@@ -149,8 +138,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       fireMarkersRef.current.clear();
       cycloneMarkersRef.current.forEach((m) => map.removeLayer(m));
       cycloneMarkersRef.current.clear();
-      if (radarLayerRef.current) { map.removeLayer(radarLayerRef.current); radarLayerRef.current = null; }
-      if (radarTimerRef.current) { clearInterval(radarTimerRef.current); radarTimerRef.current = null; }
     }
   }, [isActive, map]);
 
@@ -206,66 +193,6 @@ export const LiveEventsMapView: React.FC<LiveEventsMapViewProps> = ({
       cycloneMarkersRef.current.set(c.id, marker);
     });
   }, [map, isActive, cyclones]);
-
-  // RainViewer animated radar layer
-  useEffect(() => {
-    if (!map || !isActive) return;
-    let cancelled = false;
-
-    const cleanup = () => {
-      if (radarTimerRef.current) { clearInterval(radarTimerRef.current); radarTimerRef.current = null; }
-      if (radarLayerRef.current) { map.removeLayer(radarLayerRef.current); radarLayerRef.current = null; }
-    };
-
-    const start = async () => {
-      try {
-        // Cache for 5 min
-        const cached = radarFramesRef.current;
-        let host = cached.host;
-        let frames = cached.frames;
-        if (frames.length === 0) {
-          const res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
-          if (!res.ok) return;
-          const data: RainViewerMaps = await res.json();
-          host = data.host;
-          frames = [...(data.radar?.past || []), ...(data.radar?.nowcast || [])];
-          radarFramesRef.current = { host, frames };
-        }
-        if (cancelled || frames.length === 0) return;
-
-        const showFrame = (idx: number) => {
-          const f = frames[idx];
-          if (!f) return;
-          const url = `${host}${f.path}/256/{z}/{x}/{y}/2/1_1.png`;
-          const newLayer = L.tileLayer(url, {
-            opacity: 0.6,
-            zIndex: 350,
-            tileSize: 256,
-            maxZoom: 18,
-            maxNativeZoom: 10,
-          });
-          newLayer.addTo(map);
-          const prev = radarLayerRef.current;
-          radarLayerRef.current = newLayer;
-          // Remove previous after the new one fades in to avoid blink
-          if (prev) setTimeout(() => { try { map.removeLayer(prev); } catch {/* noop */} }, 250);
-        };
-
-        radarIndexRef.current = Math.max(0, (radarFramesRef.current.frames || []).findIndex(f => f.time > 0));
-        showFrame(radarIndexRef.current);
-
-        radarTimerRef.current = window.setInterval(() => {
-          radarIndexRef.current = (radarIndexRef.current + 1) % frames.length;
-          showFrame(radarIndexRef.current);
-        }, 700);
-      } catch (err) {
-        console.warn('[LiveEvents] RainViewer error:', err);
-      }
-    };
-
-    start();
-    return () => { cancelled = true; cleanup(); };
-  }, [map, isActive]);
 
   // OpenWeatherMap point query — tap map
   useEffect(() => {
