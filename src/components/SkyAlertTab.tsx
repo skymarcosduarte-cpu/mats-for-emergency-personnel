@@ -342,5 +342,7 @@ export function SkyAlertTab() {
             </div>
           )}
         </DialogContent>
+      </Dialog>
+    </div>
   );
 }
