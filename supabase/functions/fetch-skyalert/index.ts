@@ -204,7 +204,53 @@ interface CachedXFeed {
 }
 
 const xFeedCache = new Map<string, CachedXFeed>();
-const X_FEED_CACHE_MS = 60 * 1000;
+const X_FEED_CACHE_MS = 3 * 60 * 1000;
+const X_FEED_DB_CACHE_MS = 10 * 60 * 1000;
+
+function getServiceClient() {
+  const url = Deno.env.get('SUPABASE_URL');
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
+
+async function readDbFeedCache(screenName: string): Promise<XFeedResult | null> {
+  const supa = getServiceClient();
+  if (!supa) return null;
+  try {
+    const { data } = await supa
+      .from('skyalert_cache')
+      .select('alert_data, processed_at')
+      .eq('alert_id', `xfeed:${screenName}`)
+      .maybeSingle();
+    if (!data) return null;
+    const processedAt = new Date(data.processed_at as string).getTime();
+    if (Number.isNaN(processedAt) || Date.now() - processedAt > X_FEED_DB_CACHE_MS) return null;
+    const cached = data.alert_data as XFeedResult;
+    if (!cached || !Array.isArray(cached.items) || cached.items.length === 0) return null;
+    return cached;
+  } catch (e) {
+    console.error('[XFeed] DB cache read error:', e);
+    return null;
+  }
+}
+
+async function writeDbFeedCache(screenName: string, result: XFeedResult): Promise<void> {
+  if (result.items.length === 0) return;
+  const supa = getServiceClient();
+  if (!supa) return;
+  try {
+    await supa
+      .from('skyalert_cache')
+      .upsert({
+        alert_id: `xfeed:${screenName}`,
+        alert_data: result,
+        processed_at: new Date().toISOString(),
+      }, { onConflict: 'alert_id' });
+  } catch (e) {
+    console.error('[XFeed] DB cache write error:', e);
+  }
+}
 
 function decodeEntities(value: string): string {
   return value
@@ -281,12 +327,18 @@ async function fetchXFeed(screenName: string, logLabel: string): Promise<XFeedRe
       if (items.length > 0) {
         const result: XFeedResult = { items, mirror: source.url, attempts };
         xFeedCache.set(screenName, { result, expiresAt: Date.now() + X_FEED_CACHE_MS });
+        writeDbFeedCache(screenName, result).catch(() => {});
         return result;
       }
     } catch (error) {
       attempts.push({ url: source.url, ok: false, error: (error as Error).message });
       console.error(`[${logLabel}] Source ${source.url} failed:`, error);
     }
+  }
+
+  const dbCached = await readDbFeedCache(screenName);
+  if (dbCached && dbCached.items.length > 0) {
+    return { ...dbCached, attempts, mirror: dbCached.mirror ?? null };
   }
 
   return cached?.result ?? {
