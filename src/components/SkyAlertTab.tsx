@@ -183,26 +183,6 @@ export function SkyAlertTab() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {(['sassla', 'skyalert'] as const).map((source) => {
-          const name = source === 'skyalert' ? 'SkyAlert' : 'SASSLA';
-          return (
-            <div key={source} className="flex items-center justify-between gap-3 p-3 rounded-xl border-2 border-dashed border-border bg-background">
-              <div className="flex items-center gap-2 min-w-0">
-                <Bug className="w-5 h-5 text-primary shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-semibold text-base leading-tight">Verificación {name}</p>
-                  <p className="text-xs text-muted-foreground">Consulta el scraping en vivo.</p>
-                </div>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => openVerify(source)} className="shrink-0">
-                Abrir
-              </Button>
-            </div>
-          );
-        })}
-      </div>
-
       <div className="grid gap-3 md:grid-cols-2">
         {(['sassla', 'skyalert'] as const).map((source) => {
           const name = source === 'skyalert' ? 'SkyAlert' : 'SASSLA';
