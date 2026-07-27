@@ -71,11 +71,11 @@ export function SkyAlertTab() {
   }, []);
 
   useEffect(() => {
-    fetchFeed('sassla');
     fetchFeed('skyalert');
+    fetchFeed('sassla');
     const id = setInterval(() => {
-      fetchFeed('sassla');
       fetchFeed('skyalert');
+      fetchFeed('sassla');
     }, 2 * 60 * 1000);
     return () => clearInterval(id);
   }, [fetchFeed]);
