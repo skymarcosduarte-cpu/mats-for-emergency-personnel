@@ -74,37 +74,6 @@ export function SkyAlertTab() {
     return () => clearInterval(id);
   }, [fetchFeed]);
 
-  const runVerification = useCallback(async (source: VerificationSource) => {
-    setVerifyLoading(true);
-    setVerifyError(null);
-    try {
-      const projectUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-      const anon = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-        ?? import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined;
-      if (!projectUrl) throw new Error('Backend no configurado');
-      const target = `${projectUrl}/functions/v1/fetch-skyalert?debug=${source}`;
-      const res = await fetch(target, {
-        headers: anon ? { apikey: anon, Authorization: `Bearer ${anon}` } : undefined,
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = (await res.json()) as ScrapingDebugResult;
-      setVerifyData((current) => ({ ...current, [source]: json }));
-    } catch (e) {
-      console.error(`[${source} verify] error:`, e);
-      setVerifyError(e instanceof Error ? e.message : 'Error desconocido');
-    } finally {
-      setVerifyLoading(false);
-    }
-  }, []);
-
-  const openVerify = useCallback((source: VerificationSource) => {
-    setVerifySource(source);
-    if (!verifyData[source]) runVerification(source);
-  }, [runVerification, verifyData]);
-
-  const activeVerification = verifySource ? verifyData[verifySource] : null;
-  const verificationName = verifySource === 'skyalert' ? 'SkyAlert' : 'SASSLA';
-
   const getLevelColor = (level: SkyAlert['level']) => {
     const l = level.toLowerCase();
     if (l.includes('violen')) return 'bg-purple-600 text-white';
