@@ -2,17 +2,10 @@
 // Displays SkyAlert seismic monitoring status and active alerts
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Activity, ExternalLink, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Radio, Bug, RotateCw, X } from 'lucide-react';
+import { Activity, ExternalLink, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Radio, RotateCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -43,10 +36,6 @@ export function SkyAlertTab() {
   } = useSkyAlertAlerts();
   
   const [selectedAlert, setSelectedAlert] = useState<SkyAlert | null>(null);
-  const [verifySource, setVerifySource] = useState<VerificationSource | null>(null);
-  const [verifyLoading, setVerifyLoading] = useState(false);
-  const [verifyError, setVerifyError] = useState<string | null>(null);
-  const [verifyData, setVerifyData] = useState<Partial<Record<VerificationSource, ScrapingDebugResult>>>({});
   const [dismissedSoundAlertId, setDismissedSoundAlertId] = useState<string | null>(null);
 
   const [feeds, setFeeds] = useState<Partial<Record<VerificationSource, ScrapingDebugResult>>>({});
