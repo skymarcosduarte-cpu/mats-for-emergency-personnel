@@ -190,7 +190,7 @@ export function SkyAlertTab() {
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        {(['sassla', 'skyalert'] as const).map((source) => {
+        {(['skyalert', 'sassla'] as const).map((source) => {
           const name = source === 'skyalert' ? 'SkyAlert' : 'SASSLA';
           const handle = source === 'skyalert' ? 'SkyAlertMx' : 'SasslaMx';
           const feed = feeds[source];
