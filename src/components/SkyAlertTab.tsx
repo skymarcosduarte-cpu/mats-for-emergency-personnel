@@ -2,7 +2,7 @@
 // Displays SkyAlert seismic monitoring status and active alerts
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Activity, ExternalLink, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Radio, Bug, RotateCw, X } from 'lucide-react';
+import { Activity, ExternalLink, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Radio, RotateCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -43,10 +42,6 @@ export function SkyAlertTab() {
   } = useSkyAlertAlerts();
   
   const [selectedAlert, setSelectedAlert] = useState<SkyAlert | null>(null);
-  const [verifySource, setVerifySource] = useState<VerificationSource | null>(null);
-  const [verifyLoading, setVerifyLoading] = useState(false);
-  const [verifyError, setVerifyError] = useState<string | null>(null);
-  const [verifyData, setVerifyData] = useState<Partial<Record<VerificationSource, ScrapingDebugResult>>>({});
   const [dismissedSoundAlertId, setDismissedSoundAlertId] = useState<string | null>(null);
 
   const [feeds, setFeeds] = useState<Partial<Record<VerificationSource, ScrapingDebugResult>>>({});
@@ -84,37 +79,6 @@ export function SkyAlertTab() {
     }, 2 * 60 * 1000);
     return () => clearInterval(id);
   }, [fetchFeed]);
-
-  const runVerification = useCallback(async (source: VerificationSource) => {
-    setVerifyLoading(true);
-    setVerifyError(null);
-    try {
-      const projectUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-      const anon = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-        ?? import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined;
-      if (!projectUrl) throw new Error('Backend no configurado');
-      const target = `${projectUrl}/functions/v1/fetch-skyalert?debug=${source}`;
-      const res = await fetch(target, {
-        headers: anon ? { apikey: anon, Authorization: `Bearer ${anon}` } : undefined,
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = (await res.json()) as ScrapingDebugResult;
-      setVerifyData((current) => ({ ...current, [source]: json }));
-    } catch (e) {
-      console.error(`[${source} verify] error:`, e);
-      setVerifyError(e instanceof Error ? e.message : 'Error desconocido');
-    } finally {
-      setVerifyLoading(false);
-    }
-  }, []);
-
-  const openVerify = useCallback((source: VerificationSource) => {
-    setVerifySource(source);
-    if (!verifyData[source]) runVerification(source);
-  }, [runVerification, verifyData]);
-
-  const activeVerification = verifySource ? verifyData[verifySource] : null;
-  const verificationName = verifySource === 'skyalert' ? 'SkyAlert' : 'SASSLA';
 
   const getLevelColor = (level: SkyAlert['level']) => {
     const l = level.toLowerCase();
@@ -223,26 +187,6 @@ export function SkyAlertTab() {
             Esta sección monitorea las cuentas oficiales de <strong>SkyAlert</strong> y <strong>SASSLA</strong> en X. Para notificaciones en tiempo real, descarga las apps oficiales.
           </p>
         </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        {(['sassla', 'skyalert'] as const).map((source) => {
-          const name = source === 'skyalert' ? 'SkyAlert' : 'SASSLA';
-          return (
-            <div key={source} className="flex items-center justify-between gap-3 p-3 rounded-xl border-2 border-dashed border-border bg-background">
-              <div className="flex items-center gap-2 min-w-0">
-                <Bug className="w-5 h-5 text-primary shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-semibold text-base leading-tight">Verificación {name}</p>
-                  <p className="text-xs text-muted-foreground">Consulta el scraping en vivo.</p>
-                </div>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => openVerify(source)} className="shrink-0">
-                Abrir
-              </Button>
-            </div>
-          );
-        })}
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
@@ -397,63 +341,6 @@ export function SkyAlertTab() {
               </Button>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={verifySource !== null} onOpenChange={(open) => !open && setVerifySource(null)}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Bug className="w-5 h-5" />Verificación {verificationName}</DialogTitle>
-            <DialogDescription>Últimas publicaciones obtenidas de la cuenta oficial en X.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Button onClick={() => verifySource && runVerification(verifySource)} disabled={verifyLoading} size="sm" className="gap-2">
-              {verifyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCw className="w-4 h-4" />}
-              {verifyLoading ? 'Consultando...' : 'Reintentar consulta'}
-            </Button>
-            {verifyError && (
-              <div className="flex items-start gap-2 border border-destructive bg-destructive/10 p-3 text-sm text-destructive" role="alert">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>No fue posible consultar {verificationName}: {verifyError}</span>
-              </div>
-            )}
-            {activeVerification && (
-              <div className="space-y-4">
-                {!activeVerification.ok && (
-                  <div className="flex items-start gap-2 border border-warning bg-warning/10 p-3 text-sm" role="status">
-                    <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-                    <span>X limitó temporalmente la consulta. Espera {activeVerification.retryAfterSeconds ?? 60} segundos y usa “Reintentar consulta”.</span>
-                  </div>
-                )}
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">Fuentes consultadas</h4>
-                  <ul className="space-y-1 text-xs">
-                    {activeVerification.attempts.map((a, i) => (
-                      <li key={i} className="flex items-center gap-2 p-2 rounded bg-muted/50">
-                        {a.ok ? <CheckCircle2 className="w-3 h-3 text-success" /> : <AlertTriangle className="w-3 h-3 text-destructive" />}
-                        <span className="truncate flex-1">{a.url.includes('syndication.twitter.com') ? 'Feed público oficial de X' : a.url}</span>
-                        <span>{a.status || 'ERR'}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">Últimos tuits</h4>
-                  <ul className="space-y-2">
-                    {activeVerification.items.map((it, i) => (
-                      <li key={i} className="p-2 rounded-lg bg-muted/40 border border-border text-sm">
-                        {it.text}
-                        <div className="text-[11px] text-muted-foreground mt-1">{it.pubDate}</div>
-                      </li>
-                    ))}
-                  </ul>
-                  {activeVerification.items.length === 0 && (
-                    <p className="text-sm text-muted-foreground">La cuenta no devolvió publicaciones en esta consulta.</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
         </DialogContent>
       </Dialog>
     </div>

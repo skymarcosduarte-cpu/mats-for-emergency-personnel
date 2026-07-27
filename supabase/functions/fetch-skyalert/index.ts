@@ -204,7 +204,53 @@ interface CachedXFeed {
 }
 
 const xFeedCache = new Map<string, CachedXFeed>();
-const X_FEED_CACHE_MS = 60 * 1000;
+const X_FEED_CACHE_MS = 3 * 60 * 1000;
+const X_FEED_DB_CACHE_MS = 10 * 60 * 1000;
+
+function getServiceClient() {
+  const url = Deno.env.get('SUPABASE_URL');
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
+
+async function readDbFeedCache(screenName: string): Promise<XFeedResult | null> {
+  const supa = getServiceClient();
+  if (!supa) return null;
+  try {
+    const { data } = await supa
+      .from('skyalert_cache')
+      .select('alert_data, processed_at')
+      .eq('alert_id', `xfeed:${screenName}`)
+      .maybeSingle();
+    if (!data) return null;
+    const processedAt = new Date(data.processed_at as string).getTime();
+    if (Number.isNaN(processedAt) || Date.now() - processedAt > X_FEED_DB_CACHE_MS) return null;
+    const cached = data.alert_data as XFeedResult;
+    if (!cached || !Array.isArray(cached.items) || cached.items.length === 0) return null;
+    return cached;
+  } catch (e) {
+    console.error('[XFeed] DB cache read error:', e);
+    return null;
+  }
+}
+
+async function writeDbFeedCache(screenName: string, result: XFeedResult): Promise<void> {
+  if (result.items.length === 0) return;
+  const supa = getServiceClient();
+  if (!supa) return;
+  try {
+    await supa
+      .from('skyalert_cache')
+      .upsert({
+        alert_id: `xfeed:${screenName}`,
+        alert_data: result,
+        processed_at: new Date().toISOString(),
+      }, { onConflict: 'alert_id' });
+  } catch (e) {
+    console.error('[XFeed] DB cache write error:', e);
+  }
+}
 
 function decodeEntities(value: string): string {
   return value
@@ -238,42 +284,90 @@ function parseXSyndication(html: string): XFeedRawItem[] {
 
 async function fetchXFeed(screenName: string, logLabel: string): Promise<XFeedResult> {
   const attempts: XFeedResult['attempts'] = [];
-  const officialFeed = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${screenName}`;
   const cached = xFeedCache.get(screenName);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.result;
   }
 
-  try {
-    const response = await fetch(officialFeed, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; MATS Emergency Alert System)',
-        'Accept': 'text/html,application/xhtml+xml',
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!response.ok) {
-      attempts.push({ url: officialFeed, ok: false, status: response.status });
-      const retryAfter = Number(response.headers.get('retry-after'));
-      return cached?.result ?? {
-        items: [],
-        mirror: null,
-        attempts,
-        retryAfterSeconds: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60,
-      };
-    }
+  const browserUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+  const sources: Array<{ url: string; parser: (body: string) => XFeedRawItem[] }> = [
+    {
+      url: `https://syndication.twitter.com/srv/timeline-profile/screen-name/${screenName}`,
+      parser: parseXSyndication,
+    },
+    {
+      url: `https://cdn.syndication.twimg.com/timeline/profile?screen_name=${screenName}&suppress_response_codes=true`,
+      parser: parseTwimgCdn,
+    },
+  ];
 
-    const items = parseXSyndication(await response.text());
-    attempts.push({ url: officialFeed, ok: items.length > 0, status: response.status });
-    const result = { items, mirror: items.length > 0 ? officialFeed : null, attempts };
-    if (items.length > 0) {
-      xFeedCache.set(screenName, { result, expiresAt: Date.now() + X_FEED_CACHE_MS });
+  let lastRetryAfter: number | undefined;
+  for (const source of sources) {
+    try {
+      const response = await fetch(source.url, {
+        headers: {
+          'User-Agent': browserUA,
+          'Accept': 'text/html,application/json,application/xhtml+xml',
+          'Accept-Language': 'es-MX,es;q=0.9,en;q=0.8',
+          'Referer': 'https://platform.twitter.com/',
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!response.ok) {
+        attempts.push({ url: source.url, ok: false, status: response.status });
+        if (response.status === 429) {
+          const retryAfter = Number(response.headers.get('retry-after'));
+          lastRetryAfter = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60;
+        }
+        continue;
+      }
+      const body = await response.text();
+      const items = source.parser(body);
+      attempts.push({ url: source.url, ok: items.length > 0, status: response.status });
+      if (items.length > 0) {
+        const result: XFeedResult = { items, mirror: source.url, attempts };
+        xFeedCache.set(screenName, { result, expiresAt: Date.now() + X_FEED_CACHE_MS });
+        writeDbFeedCache(screenName, result).catch(() => {});
+        return result;
+      }
+    } catch (error) {
+      attempts.push({ url: source.url, ok: false, error: (error as Error).message });
+      console.error(`[${logLabel}] Source ${source.url} failed:`, error);
     }
-    return result;
-  } catch (error) {
-    attempts.push({ url: officialFeed, ok: false, error: (error as Error).message });
-    console.error(`[${logLabel}] Official X feed failed:`, error);
-    return cached?.result ?? { items: [], mirror: null, attempts };
+  }
+
+  const dbCached = await readDbFeedCache(screenName);
+  if (dbCached && dbCached.items.length > 0) {
+    return { ...dbCached, attempts, mirror: dbCached.mirror ?? null };
+  }
+
+  return cached?.result ?? {
+    items: [],
+    mirror: null,
+    attempts,
+    retryAfterSeconds: lastRetryAfter,
+  };
+}
+
+function parseTwimgCdn(body: string): XFeedRawItem[] {
+  try {
+    const data = JSON.parse(body);
+    const html: string = data?.body || '';
+    if (!html) return [];
+    // Extract tweet objects from embedded JSON if present
+    const items: XFeedRawItem[] = [];
+    const tweetRegex = /data-tweet-id="(\d+)"[\s\S]*?<p[^>]*class="[^"]*timeline-Tweet-text[^"]*"[^>]*>([\s\S]*?)<\/p>[\s\S]*?<time[^>]*datetime="([^"]+)"/g;
+    let m: RegExpExecArray | null;
+    while ((m = tweetRegex.exec(html)) !== null) {
+      const id = m[1];
+      const text = decodeEntities(m[2].replace(/<[^>]+>/g, ' '));
+      const pubDate = m[3];
+      const ts = Date.parse(pubDate);
+      items.push({ id, text, pubDate, timestamp: Number.isNaN(ts) ? null : ts });
+    }
+    return items;
+  } catch {
+    return [];
   }
 }
 
