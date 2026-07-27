@@ -1,7 +1,7 @@
 // SkyAlert Tab Component
 // Displays SkyAlert seismic monitoring status and active alerts
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Activity, ExternalLink, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Radio, Bug, RotateCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -48,6 +48,42 @@ export function SkyAlertTab() {
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [verifyData, setVerifyData] = useState<Partial<Record<VerificationSource, ScrapingDebugResult>>>({});
   const [dismissedSoundAlertId, setDismissedSoundAlertId] = useState<string | null>(null);
+
+  const [feeds, setFeeds] = useState<Partial<Record<VerificationSource, ScrapingDebugResult>>>({});
+  const [feedsLoading, setFeedsLoading] = useState<Partial<Record<VerificationSource, boolean>>>({});
+  const [feedsError, setFeedsError] = useState<Partial<Record<VerificationSource, string | null>>>({});
+
+  const fetchFeed = useCallback(async (source: VerificationSource) => {
+    setFeedsLoading((s) => ({ ...s, [source]: true }));
+    setFeedsError((s) => ({ ...s, [source]: null }));
+    try {
+      const projectUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+      const anon = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+        ?? import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined;
+      if (!projectUrl) throw new Error('Backend no configurado');
+      const target = `${projectUrl}/functions/v1/fetch-skyalert?debug=${source}`;
+      const res = await fetch(target, {
+        headers: anon ? { apikey: anon, Authorization: `Bearer ${anon}` } : undefined,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = (await res.json()) as ScrapingDebugResult;
+      setFeeds((s) => ({ ...s, [source]: json }));
+    } catch (e) {
+      setFeedsError((s) => ({ ...s, [source]: e instanceof Error ? e.message : 'Error' }));
+    } finally {
+      setFeedsLoading((s) => ({ ...s, [source]: false }));
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFeed('sassla');
+    fetchFeed('skyalert');
+    const id = setInterval(() => {
+      fetchFeed('sassla');
+      fetchFeed('skyalert');
+    }, 2 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [fetchFeed]);
 
   const runVerification = useCallback(async (source: VerificationSource) => {
     setVerifyLoading(true);
@@ -204,6 +240,65 @@ export function SkyAlertTab() {
               <Button size="sm" variant="outline" onClick={() => openVerify(source)} className="shrink-0">
                 Abrir
               </Button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        {(['sassla', 'skyalert'] as const).map((source) => {
+          const name = source === 'skyalert' ? 'SkyAlert' : 'SASSLA';
+          const handle = source === 'skyalert' ? 'SkyAlertMx' : 'SasslaMx';
+          const feed = feeds[source];
+          const isLoading = feedsLoading[source];
+          const err = feedsError[source];
+          const items = (feed?.items ?? []).slice(0, 6);
+          return (
+            <div key={source} className="rounded-xl border-2 border-border bg-background p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Radio className="w-4 h-4 text-primary shrink-0" />
+                  <p className="font-semibold text-sm leading-tight truncate">Últimos posts @{handle}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => fetchFeed(source)} disabled={isLoading} aria-label={`Actualizar ${name}`}>
+                    {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => window.open(`https://x.com/${handle}`, '_blank', 'noopener,noreferrer')} aria-label={`Abrir X ${handle}`}>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+              {err && items.length === 0 && (
+                <div className="flex items-start gap-2 border border-warning bg-warning/10 p-2 text-xs rounded">
+                  <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
+                  <span>No se pudo consultar {name}. Intenta de nuevo en unos segundos.</span>
+                </div>
+              )}
+              {!err && items.length === 0 && !isLoading && (
+                <p className="text-xs text-muted-foreground py-2">Sin publicaciones recientes.</p>
+              )}
+              {isLoading && items.length === 0 && (
+                <div className="flex justify-center py-3"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
+              )}
+              {items.length > 0 && (
+                <ul className="space-y-2">
+                  {items.map((it, i) => (
+                    <li key={i} className="p-2 rounded-lg bg-muted/40 border border-border text-sm">
+                      <p className="leading-snug break-words">{it.text}</p>
+                      {it.pubDate && (
+                        <div className="text-[11px] text-muted-foreground mt-1">
+                          {(() => {
+                            try {
+                              return formatDistanceToNow(new Date(it.pubDate), { addSuffix: true, locale: es });
+                            } catch { return it.pubDate; }
+                          })()}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           );
         })}
