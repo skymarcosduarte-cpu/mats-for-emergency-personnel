@@ -372,6 +372,49 @@ function parseTwimgCdn(body: string): XFeedRawItem[] {
 }
 
 // Read SASSLA posts from X's public profile syndication feed.
+// Keywords that indicate a foreign quake, retransmission, or informational content.
+const FOREIGN_COUNTRY_TERMS = [
+  'japón', 'japon', 'japan', '#japan', '#japon', 'kumamoto', 'tokio', 'tokyo', 'hokkaido', 'okinawa', 'kanto',
+  '#jma', 'jma ', ' jma', 'usgs', 'emsc', '#usgs', '#emsc',
+  'chile', '#chile', 'perú', 'peru', '#peru', 'argentina', 'colombia', 'ecuador', 'bolivia',
+  'venezuela', 'costa rica', 'guatemala', 'honduras', 'nicaragua', 'panamá', 'panama',
+  'salvador', 'republica dominicana', 'república dominicana', 'haití', 'haiti', 'cuba', 'puerto rico',
+  'estados unidos', 'california', 'alaska', 'hawái', 'hawaii', 'oregon',
+  'italia', 'grecia', 'turquía', 'turquia', 'indonesia', 'filipinas', 'china', 'taiwán', 'taiwan',
+  'nepal', 'india', 'irán', 'iran', 'afganistán', 'afganistan', 'rusia',
+  'nueva zelanda', 'australia', 'papúa', 'papua', 'vanuatu', 'fiji', 'tonga', 'samoa',
+  'islandia', 'marruecos', 'siria', 'pakistán', 'pakistan',
+];
+
+const RETRANSMISSION_TERMS = [
+  'momento del', 'grabado en', 'dashcam', 'cámara capta', 'camara capta', 'captado por',
+  'video del', 'vídeo del', 'imágenes del', 'imagenes del', 'así se sintió', 'asi se sintio',
+  'así se vivió', 'asi se vivio', 'retransmi', 'recordamos', 'hace un año',
+  'hace años', 'aniversario', 'efeméride', 'efemeride', 'documental',
+  'reportaje', 'análisis', 'analisis', '#tbt', 'throwback',
+];
+
+function isForeignOrRetransmission(lower: string): boolean {
+  for (const term of FOREIGN_COUNTRY_TERMS) {
+    if (lower.includes(term)) return true;
+  }
+  for (const term of RETRANSMISSION_TERMS) {
+    if (lower.includes(term)) return true;
+  }
+  return false;
+}
+
+// SASSLA emits real Mexico alerts with markers like these.
+const MEXICO_ALERT_MARKERS = [
+  '#alertasismica', '#alertasísmica', 'alerta sísmica', 'alerta sismica',
+  '#sismoendesarrollo', 'sismo en desarrollo', '#sismodetectado',
+  'sasmex', 'ssn', 'cires', 'servicio sismológico nacional',
+];
+
+function isActiveMexicoAlert(lower: string): boolean {
+  return MEXICO_ALERT_MARKERS.some((m) => lower.includes(m));
+}
+
 async function fetchSASSLA(feedItems?: XFeedRawItem[]): Promise<SkyAlert[]> {
   const alerts: SkyAlert[] = [];
   const items = feedItems ?? (await fetchXFeed('SasslaMx', 'SASSLA')).items;
