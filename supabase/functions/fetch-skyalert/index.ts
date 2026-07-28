@@ -390,6 +390,11 @@ async function fetchSASSLA(feedItems?: XFeedRawItem[]): Promise<SkyAlert[]> {
       const isSeismic = lower.includes('sism') || lower.includes('temblor') || lower.includes('terremoto') || lower.includes('alerta');
       if (!isSeismic) continue;
 
+      // Exclude foreign quakes / retransmissions / informational posts.
+      if (isForeignOrRetransmission(lower)) continue;
+      // Require an active real-alert marker for Mexico.
+      if (!isActiveMexicoAlert(lower)) continue;
+
       let level: SkyAlert['level'] = 'preventiva';
       if (lower.includes('violent')) level = 'violenta';
       else if (lower.includes('sever')) level = 'severa';
@@ -442,6 +447,9 @@ async function fetchSkyAlertX(feedItems?: XFeedRawItem[]): Promise<SkyAlert[]> {
       lower.includes('sismo en desarrollo') ||
       lower.includes('alerta sísmica');
     if (!isActiveSeismicPost) continue;
+
+    // Exclude foreign quakes / retransmissions / informational posts.
+    if (isForeignOrRetransmission(lower)) continue;
 
     let level: SkyAlert['level'] = 'preventiva';
     if (lower.includes('violent')) level = 'violenta';
