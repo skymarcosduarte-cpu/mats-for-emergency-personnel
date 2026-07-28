@@ -196,16 +196,37 @@ interface XFeedResult {
   mirror: string | null;
   attempts: Array<{ url: string; ok: boolean; status?: number; error?: string }>;
   retryAfterSeconds?: number;
+  stale?: boolean;
+  cachedAt?: string;
+  cacheAgeSeconds?: number;
+  source?: 'network' | 'memory' | 'db';
 }
 
 interface CachedXFeed {
-  expiresAt: number;
+  freshUntil: number;
+  cachedAt: number;
   result: XFeedResult;
 }
 
 const xFeedCache = new Map<string, CachedXFeed>();
-const X_FEED_CACHE_MS = 3 * 60 * 1000;
-const X_FEED_DB_CACHE_MS = 10 * 60 * 1000;
+// Fresh window: served without touching the network.
+const X_FEED_FRESH_MS = 3 * 60 * 1000;
+// Stale window (in-memory): served immediately while a background refresh runs.
+const X_FEED_STALE_MS = 6 * 60 * 60 * 1000;
+// Hard max age for DB fallback: after this we stop serving stale data.
+const X_FEED_DB_MAX_MS = 24 * 60 * 60 * 1000;
+
+// De-duplicate concurrent background refreshes per screen name.
+const inFlightRefresh = new Map<string, Promise<XFeedResult | null>>();
+
+function waitUntil(promise: Promise<unknown>): void {
+  const runtime = (globalThis as any).EdgeRuntime;
+  if (runtime && typeof runtime.waitUntil === 'function') {
+    runtime.waitUntil(promise.catch((e) => console.error('[XFeed] waitUntil error:', e)));
+  } else {
+    promise.catch((e) => console.error('[XFeed] background refresh error:', e));
+  }
+}
 
 function getServiceClient() {
   const url = Deno.env.get('SUPABASE_URL');
@@ -214,7 +235,10 @@ function getServiceClient() {
   return createClient(url, key);
 }
 
-async function readDbFeedCache(screenName: string): Promise<XFeedResult | null> {
+async function readDbFeedCache(
+  screenName: string,
+  maxAgeMs: number = X_FEED_DB_MAX_MS,
+): Promise<{ result: XFeedResult; cachedAt: number } | null> {
   const supa = getServiceClient();
   if (!supa) return null;
   try {
@@ -225,10 +249,10 @@ async function readDbFeedCache(screenName: string): Promise<XFeedResult | null> 
       .maybeSingle();
     if (!data) return null;
     const processedAt = new Date(data.processed_at as string).getTime();
-    if (Number.isNaN(processedAt) || Date.now() - processedAt > X_FEED_DB_CACHE_MS) return null;
+    if (Number.isNaN(processedAt) || Date.now() - processedAt > maxAgeMs) return null;
     const cached = data.alert_data as XFeedResult;
     if (!cached || !Array.isArray(cached.items) || cached.items.length === 0) return null;
-    return cached;
+    return { result: cached, cachedAt: processedAt };
   } catch (e) {
     console.error('[XFeed] DB cache read error:', e);
     return null;
@@ -244,7 +268,7 @@ async function writeDbFeedCache(screenName: string, result: XFeedResult): Promis
       .from('skyalert_cache')
       .upsert({
         alert_id: `xfeed:${screenName}`,
-        alert_data: result,
+        alert_data: { ...result, stale: false },
         processed_at: new Date().toISOString(),
       }, { onConflict: 'alert_id' });
   } catch (e) {
@@ -282,14 +306,18 @@ function parseXSyndication(html: string): XFeedRawItem[] {
   });
 }
 
-async function fetchXFeed(screenName: string, logLabel: string): Promise<XFeedResult> {
+// Attempt to fetch fresh items from network sources. Returns null on total failure.
+async function fetchFromNetwork(
+  screenName: string,
+  logLabel: string,
+): Promise<{ result: XFeedResult; retryAfterSeconds?: number } | { failed: true; attempts: XFeedResult['attempts']; retryAfterSeconds?: number }> {
   const attempts: XFeedResult['attempts'] = [];
-  const cached = xFeedCache.get(screenName);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.result;
-  }
-
   const browserUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+  const nitterMirrors = [
+    'https://nitter.privacydev.net',
+    'https://nitter.poast.org',
+    'https://nitter.net',
+  ];
   const sources: Array<{ url: string; parser: (body: string) => XFeedRawItem[] }> = [
     {
       url: `https://syndication.twitter.com/srv/timeline-profile/screen-name/${screenName}`,
@@ -299,6 +327,10 @@ async function fetchXFeed(screenName: string, logLabel: string): Promise<XFeedRe
       url: `https://cdn.syndication.twimg.com/timeline/profile?screen_name=${screenName}&suppress_response_codes=true`,
       parser: parseTwimgCdn,
     },
+    ...nitterMirrors.map((base) => ({
+      url: `${base}/${screenName}/rss`,
+      parser: parseNitterRss,
+    })),
   ];
 
   let lastRetryAfter: number | undefined;
@@ -307,7 +339,7 @@ async function fetchXFeed(screenName: string, logLabel: string): Promise<XFeedRe
       const response = await fetch(source.url, {
         headers: {
           'User-Agent': browserUA,
-          'Accept': 'text/html,application/json,application/xhtml+xml',
+          'Accept': 'text/html,application/json,application/xhtml+xml,application/rss+xml',
           'Accept-Language': 'es-MX,es;q=0.9,en;q=0.8',
           'Referer': 'https://platform.twitter.com/',
         },
@@ -325,28 +357,139 @@ async function fetchXFeed(screenName: string, logLabel: string): Promise<XFeedRe
       const items = source.parser(body);
       attempts.push({ url: source.url, ok: items.length > 0, status: response.status });
       if (items.length > 0) {
-        const result: XFeedResult = { items, mirror: source.url, attempts };
-        xFeedCache.set(screenName, { result, expiresAt: Date.now() + X_FEED_CACHE_MS });
-        writeDbFeedCache(screenName, result).catch(() => {});
-        return result;
+        return {
+          result: { items, mirror: source.url, attempts, source: 'network', stale: false },
+          retryAfterSeconds: lastRetryAfter,
+        };
       }
     } catch (error) {
       attempts.push({ url: source.url, ok: false, error: (error as Error).message });
       console.error(`[${logLabel}] Source ${source.url} failed:`, error);
     }
   }
+  return { failed: true, attempts, retryAfterSeconds: lastRetryAfter };
+}
 
-  const dbCached = await readDbFeedCache(screenName);
-  if (dbCached && dbCached.items.length > 0) {
-    return { ...dbCached, attempts, mirror: dbCached.mirror ?? null };
+function decorateStale(result: XFeedResult, cachedAt: number, source: 'memory' | 'db'): XFeedResult {
+  const ageMs = Date.now() - cachedAt;
+  const stale = ageMs > X_FEED_FRESH_MS;
+  return {
+    ...result,
+    stale,
+    cachedAt: new Date(cachedAt).toISOString(),
+    cacheAgeSeconds: Math.round(ageMs / 1000),
+    source,
+  };
+}
+
+async function refreshInBackground(screenName: string, logLabel: string): Promise<XFeedResult | null> {
+  const existing = inFlightRefresh.get(screenName);
+  if (existing) return existing;
+  const p = (async () => {
+    const outcome = await fetchFromNetwork(screenName, logLabel);
+    if ('result' in outcome) {
+      const now = Date.now();
+      xFeedCache.set(screenName, {
+        result: outcome.result,
+        freshUntil: now + X_FEED_FRESH_MS,
+        cachedAt: now,
+      });
+      writeDbFeedCache(screenName, outcome.result).catch(() => {});
+      return outcome.result;
+    }
+    return null;
+  })().finally(() => {
+    inFlightRefresh.delete(screenName);
+  });
+  inFlightRefresh.set(screenName, p);
+  return p;
+}
+
+// Stale-while-revalidate: always return the freshest available data, kicking off
+// a background refresh whenever the cache is beyond its "fresh" window.
+async function fetchXFeed(screenName: string, logLabel: string): Promise<XFeedResult> {
+  const now = Date.now();
+
+  // 1. Fresh in-memory hit → serve immediately, no network.
+  const memHit = xFeedCache.get(screenName);
+  if (memHit && memHit.freshUntil > now) {
+    return decorateStale(memHit.result, memHit.cachedAt, 'memory');
   }
 
-  return cached?.result ?? {
+  // 2. Any usable cached copy (memory or DB, up to X_FEED_STALE_MS).
+  let staleSource: 'memory' | 'db' | null = null;
+  let staleResult: XFeedResult | null = null;
+  let staleCachedAt = 0;
+
+  if (memHit && now - memHit.cachedAt <= X_FEED_STALE_MS) {
+    staleResult = memHit.result;
+    staleCachedAt = memHit.cachedAt;
+    staleSource = 'memory';
+  } else {
+    const dbHit = await readDbFeedCache(screenName, X_FEED_STALE_MS);
+    if (dbHit) {
+      staleResult = dbHit.result;
+      staleCachedAt = dbHit.cachedAt;
+      staleSource = 'db';
+      // Hydrate in-memory cache from DB so other invocations benefit.
+      xFeedCache.set(screenName, {
+        result: dbHit.result,
+        freshUntil: dbHit.cachedAt + X_FEED_FRESH_MS,
+        cachedAt: dbHit.cachedAt,
+      });
+    }
+  }
+
+  // 3. If we have any stale copy, revalidate in the background and return it now.
+  if (staleResult && staleSource) {
+    waitUntil(refreshInBackground(screenName, logLabel));
+    return decorateStale(staleResult, staleCachedAt, staleSource);
+  }
+
+  // 4. No cache at all — must wait for the network (blocking) this once.
+  const outcome = await fetchFromNetwork(screenName, logLabel);
+  if ('result' in outcome) {
+    const stamp = Date.now();
+    xFeedCache.set(screenName, { result: outcome.result, freshUntil: stamp + X_FEED_FRESH_MS, cachedAt: stamp });
+    writeDbFeedCache(screenName, outcome.result).catch(() => {});
+    return decorateStale(outcome.result, stamp, 'memory');
+  }
+
+  // 5. Last-ditch: try the DB one more time with the absolute max age.
+  const emergencyDb = await readDbFeedCache(screenName, X_FEED_DB_MAX_MS);
+  if (emergencyDb) {
+    return decorateStale(emergencyDb.result, emergencyDb.cachedAt, 'db');
+  }
+
+  return {
     items: [],
     mirror: null,
-    attempts,
-    retryAfterSeconds: lastRetryAfter,
+    attempts: outcome.attempts,
+    retryAfterSeconds: outcome.retryAfterSeconds,
+    stale: false,
+    source: 'network',
   };
+}
+
+function parseNitterRss(body: string): XFeedRawItem[] {
+  const items: XFeedRawItem[] = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+  let m: RegExpExecArray | null;
+  while ((m = itemRegex.exec(body)) !== null) {
+    const block = m[1];
+    const titleMatch = block.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/);
+    const descMatch = block.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/);
+    const pubMatch = block.match(/<pubDate>([^<]+)<\/pubDate>/);
+    const linkMatch = block.match(/<link>([^<]+)<\/link>/);
+    const rawText = decodeEntities((descMatch?.[1] || titleMatch?.[1] || '').replace(/<[^>]+>/g, ' '));
+    if (!rawText) continue;
+    const pubDate = pubMatch?.[1] ?? null;
+    const ts = pubDate ? Date.parse(pubDate) : NaN;
+    const idMatch = linkMatch?.[1]?.match(/status\/(\d+)/);
+    const id = idMatch?.[1] || stableHash(rawText);
+    items.push({ id, text: rawText, pubDate, timestamp: Number.isNaN(ts) ? null : ts });
+  }
+  return items;
 }
 
 function parseTwimgCdn(body: string): XFeedRawItem[] {
