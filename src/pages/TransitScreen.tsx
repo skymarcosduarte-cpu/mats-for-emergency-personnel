@@ -555,6 +555,12 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
     // Validate flight-specific fields
     if (transitType === 'FLIGHT') {
+      if (!tripForm.airline?.trim() || !tripForm.flightNumber?.trim()) {
+        toast.error('Aerolínea y número de vuelo requeridos', {
+          description: 'Captura la aerolínea y el número de vuelo para iniciar el viaje.',
+        });
+        return;
+      }
       if (!tripForm.departureAirport?.trim() || !tripForm.arrivalAirport?.trim()) {
         toast.error('Aeropuertos requeridos', {
           description: 'Indica el aeropuerto de salida y llegada.',
@@ -739,6 +745,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         })(),
         status: 'ACTIVE',
         plates: transitType === 'ROAD' ? tripForm.plates : null,
+        // For flights, reuse `plates` column to persist optional aircraft registration (matrícula)
+        ...(transitType === 'FLIGHT' ? { plates: tripForm.plates?.trim() || null } : {}),
         companions: tripForm.companions || null,
         vehicle_type: transitType === 'ROAD' ? tripForm.vehicleType : null,
         airline: (transitType === 'FLIGHT' || transitType === 'HELICOPTER') ? tripForm.airline : null,
