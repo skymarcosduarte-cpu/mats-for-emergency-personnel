@@ -2413,19 +2413,31 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               ) : (
                 <>
                   <div>
-                    <Label>Aerolínea</Label>
+                    <Label>Aerolínea *</Label>
                     <Input
                       value={tripForm.airline}
                       onChange={(e) => setTripForm({ ...tripForm, airline: e.target.value })}
                       placeholder="Volaris"
+                      required
                     />
                   </div>
                   <div>
-                    <Label>Número de vuelo</Label>
+                    <Label>Número de vuelo *</Label>
                     <Input
                       value={tripForm.flightNumber}
                       onChange={(e) => setTripForm({ ...tripForm, flightNumber: e.target.value })}
                       placeholder="Y4-123"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label>Matrícula de aeronave (opcional)</Label>
+                    <Input
+                      value={tripForm.plates}
+                      onChange={(e) => setTripForm({ ...tripForm, plates: e.target.value.toUpperCase() })}
+                      placeholder="XA-VOL"
+                      autoCapitalize="characters"
+                      style={{ textTransform: 'uppercase' }}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
