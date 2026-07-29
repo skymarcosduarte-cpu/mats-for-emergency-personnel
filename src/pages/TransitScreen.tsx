@@ -555,6 +555,12 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
     // Validate flight-specific fields
     if (transitType === 'FLIGHT') {
+      if (!tripForm.airline?.trim() || !tripForm.flightNumber?.trim()) {
+        toast.error('Aerolínea y número de vuelo requeridos', {
+          description: 'Captura la aerolínea y el número de vuelo para iniciar el viaje.',
+        });
+        return;
+      }
       if (!tripForm.departureAirport?.trim() || !tripForm.arrivalAirport?.trim()) {
         toast.error('Aeropuertos requeridos', {
           description: 'Indica el aeropuerto de salida y llegada.',
@@ -739,6 +745,8 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         })(),
         status: 'ACTIVE',
         plates: transitType === 'ROAD' ? tripForm.plates : null,
+        // For flights, reuse `plates` column to persist optional aircraft registration (matrícula)
+        ...(transitType === 'FLIGHT' ? { plates: tripForm.plates?.trim() || null } : {}),
         companions: tripForm.companions || null,
         vehicle_type: transitType === 'ROAD' ? tripForm.vehicleType : null,
         airline: (transitType === 'FLIGHT' || transitType === 'HELICOPTER') ? tripForm.airline : null,
@@ -2405,19 +2413,31 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
               ) : (
                 <>
                   <div>
-                    <Label>Aerolínea</Label>
+                    <Label>Aerolínea *</Label>
                     <Input
                       value={tripForm.airline}
                       onChange={(e) => setTripForm({ ...tripForm, airline: e.target.value })}
                       placeholder="Volaris"
+                      required
                     />
                   </div>
                   <div>
-                    <Label>Número de vuelo</Label>
+                    <Label>Número de vuelo *</Label>
                     <Input
                       value={tripForm.flightNumber}
                       onChange={(e) => setTripForm({ ...tripForm, flightNumber: e.target.value })}
                       placeholder="Y4-123"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label>Matrícula de aeronave (opcional)</Label>
+                    <Input
+                      value={tripForm.plates}
+                      onChange={(e) => setTripForm({ ...tripForm, plates: e.target.value.toUpperCase() })}
+                      placeholder="XA-VOL"
+                      autoCapitalize="characters"
+                      style={{ textTransform: 'uppercase' }}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
