@@ -198,6 +198,20 @@ export const DEFAULT_CAMERAS: Camera[] = [
     region: 'noticias',
   },
   // ═══════════════════════════════════════
+  // Latinoamérica
+  // ═══════════════════════════════════════
+  {
+    id: 'telesur-live',
+    name: 'TELESUR',
+    city: 'Latinoamérica',
+    country: 'Internacional',
+    description: 'Señal en vivo de TELESUR (abre en X/Twitter)',
+    sourceType: 'external_url',
+    embedUrl: '',
+    externalUrl: 'https://twitter.com/i/broadcasts/1qKVmyQXoyVxB',
+    region: 'latam',
+  },
+  // ═══════════════════════════════════════
   // Norteamérica (aeropuertos)
   // ═══════════════════════════════════════
   {
@@ -228,9 +242,9 @@ export const DEFAULT_CAMERAS: Camera[] = [
 // IDs de las 4 cámaras por defecto al abrir por primera vez
 export const DEFAULT_INITIAL_CAMERA_IDS = [
   'yt-nplus-live',
-  'yt-milenio-live',
   'yt-cnn-es-live',
-  'yt-telemundo-live',
+  'yt-sky-news-live',
+  'telesur-live',
 ];
 
 export const LAYOUT_OPTIONS: LayoutOption[] = [
@@ -249,6 +263,7 @@ export function getCellCount(layout: string): number {
 export const REGION_LABELS: Record<string, string> = {
   noticias: '📺 Noticias en Vivo',
   mexico: '🇲🇽 México',
+  latam: '🌎 Latinoamérica',
   northamerica: '🇺🇸 Norteamérica',
   europe: '🇪🇺 Europa',
   asia_mideast: '🌏 Asia y Medio Oriente',
