@@ -205,10 +205,9 @@ export const DEFAULT_CAMERAS: Camera[] = [
     name: 'TELESUR',
     city: 'Latinoamérica',
     country: 'Internacional',
-    description: 'Señal en vivo de TELESUR (abre en X/Twitter)',
-    sourceType: 'external_url',
-    embedUrl: '',
-    externalUrl: 'https://twitter.com/i/broadcasts/1qKVmyQXoyVxB',
+    description: 'Señal en vivo de teleSUR 24/7',
+    sourceType: 'youtube',
+    embedUrl: `https://www.youtube.com/embed/live_stream${YT_PARAMS.replace('?', '?channel=UCZSdNK_ZmMQcLTz-obKr-Dw&')}`,
     region: 'latam',
   },
   // ═══════════════════════════════════════
