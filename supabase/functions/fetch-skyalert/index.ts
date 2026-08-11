@@ -329,6 +329,12 @@ async function fetchFromNetwork(
       url: `https://cdn.syndication.twimg.com/timeline/profile?screen_name=${screenName}&suppress_response_codes=true`,
       parser: parseTwimgCdn,
     },
+    {
+      // Google News continuously indexes public X posts and remains available
+      // when X syndication returns an old curated timeline or rate-limits.
+      url: `https://news.google.com/rss/search?q=${encodeURIComponent(`site:x.com/${screenName}`)}&hl=es-419&gl=MX&ceid=MX:es-419`,
+      parser: parseGoogleNewsXFeed,
+    },
     ...nitterMirrors.map((base) => ({
       url: `${base}/${screenName}/rss`,
       parser: parseNitterRss,
@@ -511,6 +517,13 @@ function parseNitterRss(body: string): XFeedRawItem[] {
     items.push({ id, text: rawText, pubDate, timestamp: Number.isNaN(ts) ? null : ts });
   }
   return items;
+}
+
+function parseGoogleNewsXFeed(body: string): XFeedRawItem[] {
+  return parseNitterRss(body).map((item) => ({
+    ...item,
+    text: item.text.replace(/\s+-\s+x\.com\s*$/i, '').trim(),
+  }));
 }
 
 function parseTwimgCdn(body: string): XFeedRawItem[] {
