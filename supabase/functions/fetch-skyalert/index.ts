@@ -283,7 +283,24 @@ function decodeEntities(value: string): string {
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&nbsp;|&#160;/gi, ' ')
     .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function cleanFeedText(value: string): string {
+  let text = value;
+  // Google News can HTML-encode an entire anchor inside the RSS description.
+  // Decode before stripping tags, and repeat because some entries are encoded twice.
+  for (let pass = 0; pass < 3; pass += 1) {
+    const decoded = decodeEntities(text);
+    const withoutTags = decoded.replace(/<[^>]*>/g, ' ');
+    text = decodeEntities(withoutTags);
+    if (text === decoded) break;
+  }
+  return text
+    .replace(/\s+-\s+x\.com\s*$/i, '')
+    .replace(/\s+x\.com\s*$/i, '')
     .trim();
 }
 
@@ -508,7 +525,7 @@ function parseNitterRss(body: string): XFeedRawItem[] {
     const descMatch = block.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/);
     const pubMatch = block.match(/<pubDate>([^<]+)<\/pubDate>/);
     const linkMatch = block.match(/<link>([^<]+)<\/link>/);
-    const rawText = decodeEntities((descMatch?.[1] || titleMatch?.[1] || '').replace(/<[^>]+>/g, ' '));
+    const rawText = cleanFeedText(descMatch?.[1] || titleMatch?.[1] || '');
     if (!rawText) continue;
     const pubDate = pubMatch?.[1] ?? null;
     const ts = pubDate ? Date.parse(pubDate) : NaN;
@@ -522,7 +539,7 @@ function parseNitterRss(body: string): XFeedRawItem[] {
 function parseGoogleNewsXFeed(body: string): XFeedRawItem[] {
   return parseNitterRss(body).map((item) => ({
     ...item,
-    text: item.text.replace(/\s+-\s+x\.com\s*$/i, '').trim(),
+    text: cleanFeedText(item.text),
   }));
 }
 
@@ -537,7 +554,7 @@ function parseTwimgCdn(body: string): XFeedRawItem[] {
     let m: RegExpExecArray | null;
     while ((m = tweetRegex.exec(html)) !== null) {
       const id = m[1];
-      const text = decodeEntities(m[2].replace(/<[^>]+>/g, ' '));
+      const text = cleanFeedText(m[2]);
       const pubDate = m[3];
       const ts = Date.parse(pubDate);
       items.push({ id, text, pubDate, timestamp: Number.isNaN(ts) ? null : ts });

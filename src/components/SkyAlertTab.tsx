@@ -36,6 +36,17 @@ interface ScrapingDebugResult {
   retryAfterSeconds?: number;
 }
 
+function cleanPostText(value: string): string {
+  let text = value;
+  for (let pass = 0; pass < 3; pass += 1) {
+    const documentResult = new DOMParser().parseFromString(text, 'text/html');
+    const cleaned = documentResult.body.textContent?.replace(/\s+/g, ' ').trim() ?? text;
+    if (cleaned === text) break;
+    text = cleaned;
+  }
+  return text.replace(/\s+-?\s*x\.com\s*$/i, '').trim();
+}
+
 export function SkyAlertTab() {
   const { 
     alerts, 
@@ -341,7 +352,7 @@ export function SkyAlertTab() {
                 <ul className="space-y-2">
                   {items.map((it, i) => (
                     <li key={i} className="p-2 rounded-lg bg-muted/40 border border-border text-sm">
-                      <p className="leading-snug break-words">{it.text}</p>
+                      <p className="leading-snug break-words">{cleanPostText(it.text)}</p>
                       {it.pubDate && (
                         <div className="text-[11px] text-muted-foreground mt-1">
                           {(() => {
