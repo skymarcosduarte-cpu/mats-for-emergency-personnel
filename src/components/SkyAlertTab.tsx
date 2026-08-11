@@ -97,17 +97,37 @@ export function SkyAlertTab() {
 
     const container = document.getElementById('sassla-official-timeline');
     if (!container) return;
+    let retryId: number | undefined;
+    const loadTimeline = () => {
+      const currentContainer = document.getElementById('sassla-official-timeline');
+      if (currentContainer && window.twttr?.widgets) {
+        window.twttr.widgets.load(currentContainer);
+      }
+    };
     if (window.twttr?.widgets) {
-      window.twttr.widgets.load(container);
-      return;
+      loadTimeline();
+      return () => undefined;
     }
-    if (document.getElementById('x-widgets-script')) return;
-    const script = document.createElement('script');
-    script.id = 'x-widgets-script';
-    script.src = 'https://platform.twitter.com/widgets.js';
-    script.async = true;
-    script.charset = 'utf-8';
-    document.body.appendChild(script);
+    const existingScript = document.getElementById('x-widgets-script') as HTMLScriptElement | null;
+    const script = existingScript ?? document.createElement('script');
+    const handleLoad = () => {
+      loadTimeline();
+      retryId = window.setTimeout(loadTimeline, 800);
+    };
+    script.addEventListener('load', handleLoad);
+    if (!existingScript) {
+      script.id = 'x-widgets-script';
+      script.src = 'https://platform.twitter.com/widgets.js';
+      script.async = true;
+      script.charset = 'utf-8';
+      document.body.appendChild(script);
+    } else {
+      retryId = window.setTimeout(loadTimeline, 500);
+    }
+    return () => {
+      script.removeEventListener('load', handleLoad);
+      if (retryId !== undefined) window.clearTimeout(retryId);
+    };
   }, [feeds.sassla, feedsLoading.sassla]);
 
   const getLevelColor = (level: SkyAlert['level']) => {
@@ -287,13 +307,24 @@ export function SkyAlertTab() {
                     <a
                       className="twitter-timeline"
                       data-tweet-limit="6"
+                      data-height="520"
                       data-chrome="noheader nofooter noborders transparent"
                       data-dnt="true"
                       data-lang="es"
                       href="https://x.com/SasslaMx"
                     >
-                      Cargando publicaciones oficiales de SASSLA…
+                      Ver publicaciones recientes de @SasslaMx en X
                     </a>
+                    <div className="mt-3 border-t border-border pt-3 text-center">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => window.open('https://x.com/SasslaMx', '_blank', 'noopener,noreferrer')}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Abrir posts de SASSLA
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-xs text-muted-foreground py-2">
