@@ -354,7 +354,7 @@ async function fetchFromNetwork(
         continue;
       }
       const body = await response.text();
-      const items = source.parser(body);
+      const items = source.parser(body).sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0));
       attempts.push({ url: source.url, ok: items.length > 0, status: response.status });
       if (items.length > 0) {
         return {

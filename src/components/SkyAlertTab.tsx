@@ -196,7 +196,22 @@ export function SkyAlertTab() {
           const feed = feeds[source];
           const isLoading = feedsLoading[source];
           const err = feedsError[source];
-          const items = (feed?.items ?? []).slice(0, 6);
+          const MAX_AGE_MIN = 7 * 24 * 60; // solo posts de los últimos 7 días
+          const allItems = feed?.items ?? [];
+          const items = [...allItems]
+            .sort((a, b) => {
+              const ta = a.pubDate ? new Date(a.pubDate).getTime() : 0;
+              const tb = b.pubDate ? new Date(b.pubDate).getTime() : 0;
+              return tb - ta;
+            })
+            .filter((it) => {
+              if (it.ageMinutes != null) return it.ageMinutes <= MAX_AGE_MIN;
+              if (!it.pubDate) return false;
+              const t = new Date(it.pubDate).getTime();
+              return Number.isFinite(t) && Date.now() - t <= MAX_AGE_MIN * 60 * 1000;
+            })
+            .slice(0, 6);
+          const hasOnlyOld = items.length === 0 && allItems.length > 0;
           return (
             <div key={source} className="rounded-xl border-2 border-border bg-background p-3">
               <div className="flex items-center justify-between mb-2">
@@ -220,7 +235,11 @@ export function SkyAlertTab() {
                 </div>
               )}
               {!err && items.length === 0 && !isLoading && (
-                <p className="text-xs text-muted-foreground py-2">Sin publicaciones recientes.</p>
+                <p className="text-xs text-muted-foreground py-2">
+                  {hasOnlyOld
+                    ? `Sin publicaciones de @${handle} en los últimos 7 días.`
+                    : 'Sin publicaciones recientes.'}
+                </p>
               )}
               {isLoading && items.length === 0 && (
                 <div className="flex justify-center py-3"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
