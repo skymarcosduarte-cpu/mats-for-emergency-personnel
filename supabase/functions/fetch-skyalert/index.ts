@@ -560,7 +560,7 @@ function isActiveMexicoAlert(lower: string): boolean {
 
 async function fetchSASSLA(feedItems?: XFeedRawItem[]): Promise<SkyAlert[]> {
   const alerts: SkyAlert[] = [];
-  const items = feedItems ?? (await fetchXFeed('sasslamx', 'SASSLA')).items;
+  const items = feedItems ?? (await fetchXFeed('SasslaMx', 'SASSLA')).items;
   if (items.length === 0) {
     console.log('[SASSLA] Public X feed returned no posts');
     return alerts;
@@ -747,7 +747,7 @@ Deno.serve(async (req) => {
     if (debug === 'sassla' || debug === 'skyalert') {
       const isSassla = debug === 'sassla';
       const { items: fetchedItems, mirror, attempts } = await fetchXFeed(
-        isSassla ? 'sasslamx' : 'SkyAlertMx',
+        isSassla ? 'SasslaMx' : 'SkyAlertMx',
         isSassla ? 'SASSLA' : 'SkyAlert X',
       );
       const items = fetchedItems.slice(0, 10);

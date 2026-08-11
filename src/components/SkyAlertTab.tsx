@@ -209,7 +209,7 @@ export function SkyAlertTab() {
       <div className="grid gap-3 md:grid-cols-2">
         {(['skyalert', 'sassla'] as const).map((source) => {
           const name = source === 'skyalert' ? 'SkyAlert' : 'SASSLA';
-          const handle = source === 'skyalert' ? 'SkyAlertMx' : 'sasslamx';
+          const handle = source === 'skyalert' ? 'SkyAlertMx' : 'SasslaMx';
           const feed = feeds[source];
           const isLoading = feedsLoading[source];
           const err = feedsError[source];
@@ -372,7 +372,7 @@ export function SkyAlertTab() {
                 <h4 className="text-sm font-medium text-muted-foreground mb-1">Hora</h4>
                 <p>{new Date(selectedAlert.timestamp).toLocaleString('es-MX')}</p>
               </div>
-              <Button className="w-full" variant="outline" onClick={() => window.open(selectedAlert.source.includes('SkyAlert') ? 'https://x.com/SkyAlertMx' : 'https://x.com/sasslamx', '_blank')}>
+              <Button className="w-full" variant="outline" onClick={() => window.open(selectedAlert.source.includes('SkyAlert') ? 'https://x.com/SkyAlertMx' : 'https://x.com/SasslaMx', '_blank')}>
                 Ver fuente en X
               </Button>
             </div>
