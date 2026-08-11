@@ -189,6 +189,23 @@ export function SkyAlertTab() {
         </div>
       </div>
 
+      <Button
+        variant="outline"
+        className="w-full h-12 text-base font-semibold border-2"
+        onClick={() => {
+          fetchFeed('skyalert');
+          fetchFeed('sassla');
+        }}
+        disabled={!!feedsLoading.skyalert || !!feedsLoading.sassla}
+      >
+        {(feedsLoading.skyalert || feedsLoading.sassla) ? (
+          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+        ) : (
+          <RotateCw className="w-5 h-5 mr-2" />
+        )}
+        Actualizar feeds
+      </Button>
+
       <div className="grid gap-3 md:grid-cols-2">
         {(['skyalert', 'sassla'] as const).map((source) => {
           const name = source === 'skyalert' ? 'SkyAlert' : 'SASSLA';
