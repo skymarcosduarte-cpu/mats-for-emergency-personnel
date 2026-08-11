@@ -48,7 +48,7 @@ export function SkyAlertTab() {
   const [feedsLoading, setFeedsLoading] = useState<Partial<Record<VerificationSource, boolean>>>({});
   const [feedsError, setFeedsError] = useState<Partial<Record<VerificationSource, string | null>>>({});
 
-  const fetchFeed = useCallback(async (source: VerificationSource) => {
+  const fetchFeed = useCallback(async (source: VerificationSource, forceRefresh = false) => {
     setFeedsLoading((s) => ({ ...s, [source]: true }));
     setFeedsError((s) => ({ ...s, [source]: null }));
     try {
@@ -56,7 +56,7 @@ export function SkyAlertTab() {
       const anon = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
         ?? import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined;
       if (!projectUrl) throw new Error('Backend no configurado');
-      const target = `${projectUrl}/functions/v1/fetch-skyalert?debug=${source}`;
+      const target = `${projectUrl}/functions/v1/fetch-skyalert?debug=${source}${forceRefresh ? '&refresh=1' : ''}`;
       const res = await fetch(target, {
         headers: anon ? { apikey: anon, Authorization: `Bearer ${anon}` } : undefined,
       });
@@ -193,8 +193,8 @@ export function SkyAlertTab() {
         variant="outline"
         className="w-full h-12 text-base font-semibold border-2"
         onClick={() => {
-          fetchFeed('skyalert');
-          fetchFeed('sassla');
+          fetchFeed('skyalert', true);
+          fetchFeed('sassla', true);
         }}
         disabled={!!feedsLoading.skyalert || !!feedsLoading.sassla}
       >
@@ -237,7 +237,7 @@ export function SkyAlertTab() {
                   <p className="font-semibold text-sm leading-tight truncate">Últimos posts @{handle}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => fetchFeed(source)} disabled={isLoading} aria-label={`Actualizar ${name}`}>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => fetchFeed(source, true)} disabled={isLoading} aria-label={`Actualizar ${name}`}>
                     {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
                   </Button>
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => window.open(`https://x.com/${handle}`, '_blank', 'noopener,noreferrer')} aria-label={`Abrir X ${handle}`}>
