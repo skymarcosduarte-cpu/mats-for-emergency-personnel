@@ -314,6 +314,8 @@ async function fetchFromNetwork(
   const attempts: XFeedResult['attempts'] = [];
   const browserUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
   const nitterMirrors = [
+    'https://xcancel.com',
+    'https://nitter.privacyredirect.com',
     'https://nitter.privacydev.net',
     'https://nitter.poast.org',
     'https://nitter.net',
@@ -334,6 +336,9 @@ async function fetchFromNetwork(
   ];
 
   let lastRetryAfter: number | undefined;
+  let bestResult: XFeedResult | null = null;
+  let bestTimestamp = 0;
+  const recentCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
   for (const source of sources) {
     try {
       const response = await fetch(source.url, {
@@ -357,15 +362,25 @@ async function fetchFromNetwork(
       const items = source.parser(body).sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0));
       attempts.push({ url: source.url, ok: items.length > 0, status: response.status });
       if (items.length > 0) {
-        return {
-          result: { items, mirror: source.url, attempts, source: 'network', stale: false },
-          retryAfterSeconds: lastRetryAfter,
-        };
+        const newestTimestamp = items[0]?.timestamp ?? 0;
+        if (!bestResult || newestTimestamp > bestTimestamp) {
+          bestTimestamp = newestTimestamp;
+          bestResult = { items, mirror: source.url, attempts: [...attempts], source: 'network', stale: false };
+        }
+        // X syndication sometimes returns a valid but years-old "top posts" list.
+        // Only stop when the source contains an actually recent post; otherwise
+        // continue through every fallback and retain the freshest result found.
+        if (newestTimestamp >= recentCutoff) {
+          return { result: bestResult, retryAfterSeconds: lastRetryAfter };
+        }
       }
     } catch (error) {
       attempts.push({ url: source.url, ok: false, error: (error as Error).message });
       console.error(`[${logLabel}] Source ${source.url} failed:`, error);
     }
+  }
+  if (bestResult) {
+    return { result: { ...bestResult, attempts }, retryAfterSeconds: lastRetryAfter };
   }
   return { failed: true, attempts, retryAfterSeconds: lastRetryAfter };
 }
@@ -469,6 +484,12 @@ async function fetchXFeed(screenName: string, logLabel: string): Promise<XFeedRe
     stale: false,
     source: 'network',
   };
+}
+
+async function forceRefreshXFeed(screenName: string, logLabel: string): Promise<XFeedResult> {
+  const refreshed = await refreshInBackground(screenName, logLabel);
+  if (refreshed) return refreshed;
+  return fetchXFeed(screenName, logLabel);
 }
 
 function parseNitterRss(body: string): XFeedRawItem[] {
@@ -736,6 +757,7 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const debug = url.searchParams.get('debug');
+    const forceRefresh = url.searchParams.get('refresh') === '1';
 
     if (debug && debug !== 'sassla' && debug !== 'skyalert') {
       return new Response(JSON.stringify({ error: 'Fuente de verificación no válida' }), {
@@ -746,10 +768,11 @@ Deno.serve(async (req) => {
 
     if (debug === 'sassla' || debug === 'skyalert') {
       const isSassla = debug === 'sassla';
-      const { items: fetchedItems, mirror, attempts } = await fetchXFeed(
-        isSassla ? 'SasslaMx' : 'SkyAlertMx',
-        isSassla ? 'SASSLA' : 'SkyAlert X',
-      );
+      const screenName = isSassla ? 'SasslaMx' : 'SkyAlertMx';
+      const logLabel = isSassla ? 'SASSLA' : 'SkyAlert X';
+      const { items: fetchedItems, mirror, attempts } = forceRefresh
+        ? await forceRefreshXFeed(screenName, logLabel)
+        : await fetchXFeed(screenName, logLabel);
       const items = fetchedItems.slice(0, 10);
       const parsedAlerts = isSassla
         ? await fetchSASSLA(fetchedItems)

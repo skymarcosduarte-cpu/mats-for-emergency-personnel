@@ -17,6 +17,12 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useSkyAlertAlerts, SkyAlert } from '@/hooks/useSkyAlertAlerts';
 
+declare global {
+  interface Window {
+    twttr?: { widgets?: { load: (element?: HTMLElement) => void } };
+  }
+}
+
 type VerificationSource = 'sassla' | 'skyalert';
 
 interface ScrapingDebugResult {
@@ -48,7 +54,7 @@ export function SkyAlertTab() {
   const [feedsLoading, setFeedsLoading] = useState<Partial<Record<VerificationSource, boolean>>>({});
   const [feedsError, setFeedsError] = useState<Partial<Record<VerificationSource, string | null>>>({});
 
-  const fetchFeed = useCallback(async (source: VerificationSource) => {
+  const fetchFeed = useCallback(async (source: VerificationSource, forceRefresh = false) => {
     setFeedsLoading((s) => ({ ...s, [source]: true }));
     setFeedsError((s) => ({ ...s, [source]: null }));
     try {
@@ -56,7 +62,7 @@ export function SkyAlertTab() {
       const anon = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
         ?? import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined;
       if (!projectUrl) throw new Error('Backend no configurado');
-      const target = `${projectUrl}/functions/v1/fetch-skyalert?debug=${source}`;
+      const target = `${projectUrl}/functions/v1/fetch-skyalert?debug=${source}${forceRefresh ? '&refresh=1' : ''}`;
       const res = await fetch(target, {
         headers: anon ? { apikey: anon, Authorization: `Bearer ${anon}` } : undefined,
       });
@@ -79,6 +85,30 @@ export function SkyAlertTab() {
     }, 2 * 60 * 1000);
     return () => clearInterval(id);
   }, [fetchFeed]);
+
+  useEffect(() => {
+    const sasslaItems = feeds.sassla?.items ?? [];
+    const hasRecentSasslaPost = sasslaItems.some((item) => {
+      if (item.ageMinutes != null) return item.ageMinutes <= 7 * 24 * 60;
+      const timestamp = item.pubDate ? new Date(item.pubDate).getTime() : Number.NaN;
+      return Number.isFinite(timestamp) && Date.now() - timestamp <= 7 * 24 * 60 * 60 * 1000;
+    });
+    if (hasRecentSasslaPost || feedsLoading.sassla) return;
+
+    const container = document.getElementById('sassla-official-timeline');
+    if (!container) return;
+    if (window.twttr?.widgets) {
+      window.twttr.widgets.load(container);
+      return;
+    }
+    if (document.getElementById('x-widgets-script')) return;
+    const script = document.createElement('script');
+    script.id = 'x-widgets-script';
+    script.src = 'https://platform.twitter.com/widgets.js';
+    script.async = true;
+    script.charset = 'utf-8';
+    document.body.appendChild(script);
+  }, [feeds.sassla, feedsLoading.sassla]);
 
   const getLevelColor = (level: SkyAlert['level']) => {
     const l = level.toLowerCase();
@@ -193,8 +223,8 @@ export function SkyAlertTab() {
         variant="outline"
         className="w-full h-12 text-base font-semibold border-2"
         onClick={() => {
-          fetchFeed('skyalert');
-          fetchFeed('sassla');
+          fetchFeed('skyalert', true);
+          fetchFeed('sassla', true);
         }}
         disabled={!!feedsLoading.skyalert || !!feedsLoading.sassla}
       >
@@ -237,7 +267,7 @@ export function SkyAlertTab() {
                   <p className="font-semibold text-sm leading-tight truncate">Últimos posts @{handle}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => fetchFeed(source)} disabled={isLoading} aria-label={`Actualizar ${name}`}>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => fetchFeed(source, true)} disabled={isLoading} aria-label={`Actualizar ${name}`}>
                     {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
                   </Button>
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => window.open(`https://x.com/${handle}`, '_blank', 'noopener,noreferrer')} aria-label={`Abrir X ${handle}`}>
@@ -252,11 +282,26 @@ export function SkyAlertTab() {
                 </div>
               )}
               {!err && items.length === 0 && !isLoading && (
-                <p className="text-xs text-muted-foreground py-2">
-                  {hasOnlyOld
-                    ? `Sin publicaciones de @${handle} en los últimos 7 días.`
-                    : 'Sin publicaciones recientes.'}
-                </p>
+                source === 'sassla' ? (
+                  <div id="sassla-official-timeline" className="min-h-48 overflow-hidden">
+                    <a
+                      className="twitter-timeline"
+                      data-tweet-limit="6"
+                      data-chrome="noheader nofooter noborders transparent"
+                      data-dnt="true"
+                      data-lang="es"
+                      href="https://x.com/SasslaMx"
+                    >
+                      Cargando publicaciones oficiales de SASSLA…
+                    </a>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground py-2">
+                    {hasOnlyOld
+                      ? `Sin publicaciones de @${handle} en los últimos 7 días.`
+                      : 'Sin publicaciones recientes.'}
+                  </p>
+                )
               )}
               {isLoading && items.length === 0 && (
                 <div className="flex justify-center py-3"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
