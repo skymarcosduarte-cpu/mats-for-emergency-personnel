@@ -10,8 +10,6 @@ import {
   decodePacket,
   encodePacket,
   envelopeToPacket,
-  hashId,
-  hexToBytes,
   packetToEnvelope,
   type MeshPacket,
 } from './protocol';
