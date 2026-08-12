@@ -162,6 +162,7 @@ export function createMeshEnvelope(
  * Check if mesh is available
  */
 export function isMeshAvailable(): boolean {
+  if (isNativePlatform()) return true;
   return getMeshTransport().isAvailable();
 }
 
@@ -169,13 +170,13 @@ export function isMeshAvailable(): boolean {
  * Get mesh availability message
  */
 export function getMeshStatusMessage(): string {
+  if (isNativePlatform()) {
+    return 'Malla BLE disponible (app nativa)';
+  }
   if (isIOSSafari()) {
-    return 'Mesh BLE no disponible en Safari iOS. Requiere app nativa.';
+    return 'Malla BLE no disponible en Safari iOS. Requiere app nativa.';
   }
-  if (!isBLEAvailable()) {
-    return 'Mesh BLE no disponible en navegador web. Requiere app nativa con Capacitor.';
-  }
-  return 'Mesh BLE disponible';
+  return 'Malla BLE no disponible en navegador web. Requiere app nativa.';
 }
 
 /*
