@@ -1177,9 +1177,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                         setPassword(e.target.value);
                         setError(null);
                       }}
-                      onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder="Mínimo 8 caracteres"
                       className={password && password.length < 8 ? 'border-warning' : ''}
                       autoComplete="new-password"
                       onKeyDown={(e) => {
