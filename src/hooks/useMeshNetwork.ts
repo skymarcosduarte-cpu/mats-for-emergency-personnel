@@ -12,6 +12,8 @@ interface MeshController extends MeshTransport {
   setDisasterMode?: (enabled: boolean) => void;
   getPeerCount?: () => number;
   getPendingCount?: () => number;
+  getBackgroundMode?: () => 'foreground-service' | 'ios-background-modes' | 'unavailable';
+  getRejectedCount?: () => number;
 }
 
 export function useMeshNetwork(options: { disasterMode?: boolean; onMessage?: (e: MeshEnvelope) => void } = {}) {
@@ -20,6 +22,8 @@ export function useMeshNetwork(options: { disasterMode?: boolean; onMessage?: (e
   const [active, setActive] = useState(false);
   const [peers, setPeers] = useState(0);
   const [pending, setPending] = useState(0);
+  const [backgroundMode, setBackgroundMode] = useState<'foreground-service' | 'ios-background-modes' | 'unavailable'>('unavailable');
+  const [rejected, setRejected] = useState(0);
   const transportRef = useRef<MeshController | null>(null);
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;
@@ -58,6 +62,8 @@ export function useMeshNetwork(options: { disasterMode?: boolean; onMessage?: (e
     const id = setInterval(() => {
       setPeers(transportRef.current?.getPeerCount?.() ?? 0);
       setPending(transportRef.current?.getPendingCount?.() ?? 0);
+      setBackgroundMode(transportRef.current?.getBackgroundMode?.() ?? 'unavailable');
+      setRejected(transportRef.current?.getRejectedCount?.() ?? 0);
     }, 15000);
     return () => clearInterval(id);
   }, [active]);
@@ -74,6 +80,8 @@ export function useMeshNetwork(options: { disasterMode?: boolean; onMessage?: (e
     active,
     peers,
     pending,
+    backgroundMode,
+    rejected,
     toggle,
     broadcast: (envelope: MeshEnvelope) => transportRef.current?.broadcast(envelope),
   };

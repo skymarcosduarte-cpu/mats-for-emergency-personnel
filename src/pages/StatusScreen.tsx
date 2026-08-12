@@ -281,6 +281,7 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
             <p className="text-sm text-muted-foreground">
               Retransmite alertas entre teléfonos cercanos cuando no hay internet ni señal celular.
               Funciona con muy bajo consumo: la radio se enciende por segundos y descansa.
+              Cada mensaje va firmado, así solo se aceptan alertas de la red MATS.
             </p>
 
             <div className="flex items-center justify-between gap-3">
@@ -307,6 +308,17 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
                 {mesh.pending > 0
                   ? `${mesh.pending} mensaje(s) guardado(s) esperando a otro dispositivo. Se entregarán aunque cierres la app.`
                   : 'Sin mensajes pendientes por entregar.'}
+              </div>
+            )}
+
+            {mesh.active && (
+              <div className="text-xs text-muted-foreground">
+                {mesh.backgroundMode === 'foreground-service'
+                  ? 'Segundo plano activo: sigue escuchando con la pantalla apagada.'
+                  : mesh.backgroundMode === 'ios-background-modes'
+                    ? 'Segundo plano iOS: escucha reducida con la app cerrada; en primer plano es más rápida.'
+                    : 'Segundo plano no disponible en esta plataforma: mantén la app abierta.'}
+                {mesh.rejected > 0 && ` · ${mesh.rejected} mensaje(s) descartado(s) por firma inválida.`}
               </div>
             )}
 
