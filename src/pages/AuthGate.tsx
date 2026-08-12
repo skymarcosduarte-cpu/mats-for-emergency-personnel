@@ -117,6 +117,20 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
   // Check if user needs to complete profile - show profile form immediately if detected
   useEffect(() => {
+    // Prefill invite code from URL (?invite=MATS1977 / ?code=...) and jump to signup
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlCode = (params.get('invite') || params.get('code') || '').trim().toUpperCase();
+      if (urlCode) {
+        setInviteCode(urlCode);
+        setAuthTab('signup');
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
     if (needsProfileCompletion) {
       console.log('[AuthGate] User needs profile completion - redirecting to profile form');
       setStep('profile');
@@ -1001,7 +1015,10 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                                 setPassword(e.target.value);
                                 setError(null);
                               }}
-                              onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
+                              onKeyDown={(e) => {
+                                setCapsLockOn(e.getModifierState('CapsLock'));
+                                if (e.key === 'Enter' && !loading) handleLogin();
+                              }}
                               onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                               placeholder="••••••••"
                               autoComplete="current-password"
@@ -1120,7 +1137,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                     required
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Solicita tu código a un miembro de la comunidad
+                    ¿No tienes código?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInviteCode('MATS1977');
+                        setError(null);
+                      }}
+                      className="font-mono font-semibold text-primary underline"
+                    >
+                      Usar MATS1977
+                    </button>
                   </p>
                 </div>
 
@@ -1153,11 +1180,14 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                         setPassword(e.target.value);
                         setError(null);
                       }}
-                      onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
-                      placeholder="Mínimo 6 caracteres"
-                      className={password && password.length < 6 ? 'border-warning' : ''}
+                      placeholder="Mínimo 8 caracteres"
+                      className={password && password.length < 8 ? 'border-warning' : ''}
                       autoComplete="new-password"
+                      onKeyDown={(e) => {
+                        setCapsLockOn(e.getModifierState('CapsLock'));
+                        if (e.key === 'Enter' && !loading) handleSignup();
+                      }}
                     />
                     <button
                       type="button"
@@ -1172,12 +1202,12 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                       ⬆️ Bloq Mayús activado
                     </p>
                   )}
-                  {password && password.length < 6 && (
+                  {password && password.length < 8 && (
                     <p className="text-xs text-warning mt-1">
-                      {6 - password.length} caracteres más requeridos
+                      {8 - password.length} caracteres más requeridos
                     </p>
                   )}
-                  {password && password.length >= 6 && (
+                  {password && password.length >= 8 && (
                     <p className="text-xs text-safe mt-1">✓ Contraseña válida</p>
                   )}
                 </div>
@@ -1569,11 +1599,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
               <Button
                 onClick={handleProfileSubmit}
                 onTouchEnd={(e) => {
-                  if (!loading && profileForm.fullName && profileForm.phone && profileForm.role) {
+                  if (!loading && profileForm.fullName.trim() && profileForm.role) {
                     handleButtonTouchEnd(e, handleProfileSubmit);
                   }
                 }}
-                disabled={loading || !profileForm.fullName || !profileForm.phone || !profileForm.role}
+                disabled={loading || !profileForm.fullName.trim() || !profileForm.role}
                 className="w-full touch-manipulation"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
               >
