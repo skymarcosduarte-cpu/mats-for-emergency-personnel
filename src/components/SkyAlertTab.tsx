@@ -245,7 +245,7 @@ export function SkyAlertTab() {
         <Radio className="w-6 h-6 text-primary mt-0.5 flex-shrink-0" />
         <div className="flex-1 text-base">
           <p className="text-muted-foreground leading-relaxed">
-            Esta sección muestra publicaciones de <strong>SkyAlert</strong> y noticias recientes de <strong>SASSLA</strong> indexadas por Google Noticias. Para notificaciones en tiempo real, descarga las apps oficiales.
+            Esta sección monitorea la cuenta oficial de <strong>SkyAlert</strong> en X. Para notificaciones en tiempo real, descarga la app oficial.
           </p>
         </div>
       </div>
