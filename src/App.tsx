@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -9,21 +9,33 @@ import { MatsLogo } from '@/components/MatsLogo';
 import { PanicButton } from '@/components/PanicButton';
 import { AppHeader } from '@/components/AppHeader';
 import { AuthGate } from '@/pages/AuthGate';
-import { MapScreen } from '@/pages/MapScreen';
-import { TransitScreen } from '@/pages/TransitScreen';
-import { AlertsScreen } from '@/pages/AlertsScreen';
-import { StatusScreen } from '@/pages/StatusScreen';
-import { MarketScreen } from '@/pages/MarketScreen';
 import { HomeScreen } from '@/pages/HomeScreen';
-import { SettingsScreen } from '@/pages/SettingsScreen';
-import { CommunityScreen } from '@/pages/CommunityScreen';
-import ResourcesScreen from '@/pages/ResourcesScreen';
 
-import InstallPage from '@/pages/InstallPage';
-import SharedTripPage from '@/pages/SharedTripPage';
-import UserGuidePage from '@/pages/UserGuidePage';
-import StepByStepGuidePage from '@/pages/StepByStepGuidePage';
-import ResetPasswordPage from '@/pages/ResetPasswordPage';
+// Heavy screens are code-split so the home screen renders immediately,
+// even on slow connections. Chunks are warmed up during browser idle time.
+const loadMapScreen = () => import('@/pages/MapScreen');
+const loadTransitScreen = () => import('@/pages/TransitScreen');
+const loadAlertsScreen = () => import('@/pages/AlertsScreen');
+const loadCommunityScreen = () => import('@/pages/CommunityScreen');
+const loadResourcesScreen = () => import('@/pages/ResourcesScreen');
+const loadSettingsScreen = () => import('@/pages/SettingsScreen');
+const loadStatusScreen = () => import('@/pages/StatusScreen');
+const loadMarketScreen = () => import('@/pages/MarketScreen');
+
+const MapScreen = lazy(() => loadMapScreen().then(m => ({ default: m.MapScreen })));
+const TransitScreen = lazy(() => loadTransitScreen().then(m => ({ default: m.TransitScreen })));
+const AlertsScreen = lazy(() => loadAlertsScreen().then(m => ({ default: m.AlertsScreen })));
+const CommunityScreen = lazy(() => loadCommunityScreen().then(m => ({ default: m.CommunityScreen })));
+const ResourcesScreen = lazy(loadResourcesScreen);
+const SettingsScreen = lazy(() => loadSettingsScreen().then(m => ({ default: m.SettingsScreen })));
+const StatusScreen = lazy(() => loadStatusScreen().then(m => ({ default: m.StatusScreen })));
+const MarketScreen = lazy(() => loadMarketScreen().then(m => ({ default: m.MarketScreen })));
+
+const InstallPage = lazy(() => import('@/pages/InstallPage'));
+const SharedTripPage = lazy(() => import('@/pages/SharedTripPage'));
+const UserGuidePage = lazy(() => import('@/pages/UserGuidePage'));
+const StepByStepGuidePage = lazy(() => import('@/pages/StepByStepGuidePage'));
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt, UpdateIndicator } from '@/components/UpdatePrompt';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
@@ -85,7 +97,58 @@ import { toast } from 'sonner';
 import type { UserRole, USGSEarthquake, PanicType } from '@/types';
 import { diagLog } from '@/lib/diagnosticLogger';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Serve cached data instantly, revalidate in background
+      staleTime: 60_000,
+      gcTime: 30 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
+/** Lightweight inline fallback while a screen chunk loads */
+function ScreenFallback() {
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center">
+      <MatsLogo size={48} />
+    </div>
+  );
+}
+
+/** Warm up secondary screen chunks when the browser is idle */
+function useIdleChunkPrefetch() {
+  useEffect(() => {
+    const loaders = [
+      loadMapScreen,
+      loadAlertsScreen,
+      loadTransitScreen,
+      loadCommunityScreen,
+      loadResourcesScreen,
+      loadSettingsScreen,
+      loadStatusScreen,
+      loadMarketScreen,
+    ];
+    let cancelled = false;
+    const run = () => {
+      loaders.forEach((load, i) => {
+        setTimeout(() => {
+          if (!cancelled) load().catch(() => {});
+        }, i * 250);
+      });
+    };
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: () => void, opts?: { timeout: number }) => number)
+      | undefined;
+    const id = ric ? ric(run, { timeout: 3000 }) : window.setTimeout(run, 1500);
+    return () => {
+      cancelled = true;
+      if (!ric) window.clearTimeout(id as number);
+    };
+  }, []);
+}
 
 function AppContent() {
   // Log session start on first render
