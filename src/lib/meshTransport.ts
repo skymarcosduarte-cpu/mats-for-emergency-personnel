@@ -104,6 +104,15 @@ class WebMeshTransport implements MeshTransport {
 let meshTransport: MeshTransport | null = null;
 
 /**
+ * Native BLE support is detected synchronously (Capacitor already loaded),
+ * but the BLE plugin itself is imported lazily inside start().
+ */
+function isNativePlatform(): boolean {
+  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  return Boolean(cap?.isNativePlatform?.());
+}
+
+/**
  * Get mesh transport instance
  */
 export function getMeshTransport(): MeshTransport {
@@ -111,6 +120,26 @@ export function getMeshTransport(): MeshTransport {
     meshTransport = new WebMeshTransport();
   }
   return meshTransport;
+}
+
+/**
+ * Upgrade to the native BLE transport. Safe to call multiple times; on web it
+ * resolves immediately without loading any BLE code.
+ */
+export async function ensureNativeMeshTransport(): Promise<MeshTransport> {
+  if (!isNativePlatform()) return getMeshTransport();
+  if (meshTransport && 'setDisasterMode' in meshTransport) return meshTransport;
+
+  const { NativeMeshTransport } = await import('./mesh/nativeMeshTransport');
+  const native = new NativeMeshTransport();
+  meshTransport = native;
+  return native;
+}
+
+/** Peers heard recently (0 when the mesh is not running) */
+export function getMeshPeerCount(): number {
+  const transport = meshTransport as { getPeerCount?: () => number } | null;
+  return transport?.getPeerCount?.() ?? 0;
 }
 
 /**
