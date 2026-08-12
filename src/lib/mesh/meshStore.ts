@@ -9,7 +9,8 @@ const DB_VERSION = 1;
 const OUTBOX = 'outbox';
 const SEEN = 'seen';
 
-export type MeshPriority = 0 | 1 | 2; // 0 = highest (SOS)
+// 0 = SOS (auxilio), 1 = pánico, 2 = necesito ayuda, 3 = ubicación/estado
+export type MeshPriority = 0 | 1 | 2 | 3;
 
 export interface OutboxItem {
   /** `${origin}:${msgId}:${fragIndex}` — stable, so re-queueing never duplicates */
