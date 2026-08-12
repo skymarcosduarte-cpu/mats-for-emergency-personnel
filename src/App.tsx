@@ -110,12 +110,8 @@ const queryClient = new QueryClient({
 });
 
 /** Lightweight inline fallback while a screen chunk loads */
-function ScreenFallback() {
-  return (
-    <div className="min-h-[50vh] flex items-center justify-center">
-      <MatsLogo size={48} />
-    </div>
-  );
+function ScreenFallback({ variant = 'page' }: { variant?: SkeletonVariant }) {
+  return <ScreenSkeleton variant={variant} />;
 }
 
 /** Warm up secondary screen chunks when the browser is idle */
