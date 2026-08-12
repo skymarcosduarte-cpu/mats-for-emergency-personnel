@@ -39,6 +39,7 @@ const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt, UpdateIndicator } from '@/components/UpdatePrompt';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
+import { ScreenSkeleton, type SkeletonVariant } from '@/components/ScreenSkeletons';
 
 import { SeismicAlert } from '@/components/SeismicAlert';
 import { EmergencyAlertOverlay } from '@/components/EmergencyAlertOverlay';
