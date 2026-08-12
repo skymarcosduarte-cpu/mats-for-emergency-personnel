@@ -34,6 +34,8 @@ import {
   type MeshPriority,
   type OutboxItem,
 } from './meshStore';
+import { signFrame, verifyFrame } from './auth';
+import { getBackgroundMode, startBackground, stopBackground } from './background';
 
 // Optional native advertiser plugin (custom Capacitor plugin, see docs at bottom).
 interface MeshAdvertiserPlugin {
@@ -43,10 +45,25 @@ interface MeshAdvertiserPlugin {
 
 // How long a message keeps travelling in the store-and-forward buffer.
 const TTL_BY_PRIORITY: Record<MeshPriority, number> = {
-  0: 24 * 60 * 60 * 1000, // SOS: a full day of couriering
-  1: 6 * 60 * 60 * 1000,
-  2: 60 * 60 * 1000,
+  0: 24 * 60 * 60 * 1000, // SOS / auxilio: un día completo de acarreo
+  1: 12 * 60 * 60 * 1000, // pánico
+  2: 6 * 60 * 60 * 1000, // necesito ayuda
+  3: 60 * 60 * 1000, // ubicación / estado
 };
+
+// Jitter por prioridad: un SOS sale casi de inmediato, la ubicación espera más
+// para no competir con el tráfico crítico.
+const JITTER_BY_PRIORITY: Record<MeshPriority, number> = {
+  0: 250,
+  1: 600,
+  2: 1500,
+  3: 4000,
+};
+
+// Límite de retransmisiones que aceptamos originadas por un mismo vecino dentro
+// de la ventana: evita que un nodo (o un atacante con la clave) sature la banda.
+const NEIGHBOUR_WINDOW_MS = 5 * 60 * 1000;
+const NEIGHBOUR_RELAY_LIMIT = { idle: 12, disaster: 30 };
 
 // Retransmissions stop once this many copies of the same message are heard
 // from neighbours — classic gossip suppression, keeps the band usable when
@@ -69,6 +86,8 @@ export class NativeMeshTransport implements MeshTransport {
   private peers = new Map<number, number>();
   private reassembler = new Reassembler();
   private copies = new Map<number, number>();
+  private relaysByNeighbour = new Map<number, { count: number; windowStart: number }>();
+  private rejected = 0;
   private pendingCount = 0;
   private selfOrigin = 0;
 
@@ -86,7 +105,19 @@ export class NativeMeshTransport implements MeshTransport {
   }
 
   setDisasterMode(enabled: boolean): void {
+    const changed = this.disaster !== enabled;
     this.disaster = enabled;
+    if (changed && this.active) void startBackground(enabled);
+  }
+
+  /** 'foreground-service' (Android), 'ios-background-modes' o 'unavailable' */
+  getBackgroundMode() {
+    return getBackgroundMode();
+  }
+
+  /** Tramas descartadas por firma inválida (diagnóstico) */
+  getRejectedCount(): number {
+    return this.rejected;
   }
 
   /** Number of distinct mesh peers heard in the last 5 minutes */
@@ -120,6 +151,7 @@ export class NativeMeshTransport implements MeshTransport {
       }
 
       this.active = true;
+      void startBackground(this.disaster);
       this.scheduleCycle(0);
     } catch (error) {
       console.warn('[mesh] no se pudo iniciar BLE:', error);
@@ -131,6 +163,7 @@ export class NativeMeshTransport implements MeshTransport {
 
   stop(): void {
     this.active = false;
+    void stopBackground();
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
     this.ble?.stopLEScan().catch(() => undefined);
@@ -172,13 +205,17 @@ export class NativeMeshTransport implements MeshTransport {
 
   private async queueFrame(key: string, bytes: Uint8Array, priority: MeshPriority) {
     const now = Date.now();
+    // Firmamos con HMAC truncado: sólo los nodos con la clave de la red
+    // pueden emitir tramas que los demás acepten.
+    const signed = await signFrame(bytes);
     await enqueue({
       key,
-      dataHex: bytesToHex(bytes),
+      dataHex: bytesToHex(signed),
       priority,
       attempts: 0,
-      // random jitter avoids every phone advertising on the same millisecond
-      nextAt: now + Math.floor(Math.random() * 800),
+      // jitter proporcional a la prioridad: evita colisiones de radio sin
+      // retrasar los SOS
+      nextAt: now + Math.floor(Math.random() * JITTER_BY_PRIORITY[priority]),
       createdAt: now,
       expiresAt: now + TTL_BY_PRIORITY[priority],
     });
@@ -203,7 +240,7 @@ export class NativeMeshTransport implements MeshTransport {
       await this.ble.requestLEScan({ allowDuplicates: true }, (result) => {
         const data = result.manufacturerData?.[String(MESH_MANUFACTURER_ID)];
         if (!data) return;
-        this.handleIncoming(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+        void this.handleIncoming(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
       });
       await wait(cycle.scanMs);
       await this.ble.stopLEScan();
@@ -214,7 +251,12 @@ export class NativeMeshTransport implements MeshTransport {
     this.scheduleCycle(cycle.pauseMs);
   }
 
-  private handleIncoming(bytes: Uint8Array) {
+  private async handleIncoming(raw: Uint8Array) {
+    const bytes = await verifyFrame(raw);
+    if (!bytes) {
+      this.rejected++;
+      return; // firma inválida: SOS falso o ruido, se descarta
+    }
     if (isControlFrame(bytes)) {
       if (bytes[1] === FRAME_ACK) void this.handleAck(bytes);
       if (bytes[1] === FRAME_FRAG) void this.handleFragment(bytes);
@@ -241,7 +283,7 @@ export class NativeMeshTransport implements MeshTransport {
     this.emit(envelope);
 
     // store-and-forward: keep carrying it even if nobody is around right now
-    if (packet.ttl > 1 && copies < SUPPRESS_AFTER_COPIES) {
+    if (packet.ttl > 1 && copies < SUPPRESS_AFTER_COPIES && this.allowRelayFrom(packet.origin)) {
       const relay: MeshPacket = { ...packet, ttl: packet.ttl - 1 };
       await this.queueFrame(
         `${packet.origin}:${packet.msgId}:p`,
@@ -249,6 +291,23 @@ export class NativeMeshTransport implements MeshTransport {
         priorityOfType(packet.type)
       );
     }
+  }
+
+  /**
+   * Cuota de retransmisión por vecino. Los SOS propios nunca pasan por aquí;
+   * esto sólo limita cuánto reenviamos por cuenta de un mismo origen.
+   */
+  private allowRelayFrom(origin: number): boolean {
+    const now = Date.now();
+    const limit = this.disaster ? NEIGHBOUR_RELAY_LIMIT.disaster : NEIGHBOUR_RELAY_LIMIT.idle;
+    const entry = this.relaysByNeighbour.get(origin);
+    if (!entry || now - entry.windowStart > NEIGHBOUR_WINDOW_MS) {
+      this.relaysByNeighbour.set(origin, { count: 1, windowStart: now });
+      return true;
+    }
+    if (entry.count >= limit) return false;
+    entry.count++;
+    return true;
   }
 
   private async handleFragment(bytes: Uint8Array) {
@@ -261,7 +320,7 @@ export class NativeMeshTransport implements MeshTransport {
     await this.queueFrame(
       `ack:${frame.origin}:${frame.msgId}`,
       encodeAck({ msgId: frame.msgId, origin: frame.origin, bitmap }),
-      1
+      2
     );
 
     if (!complete) return;
@@ -357,10 +416,12 @@ function nextAttemptAt(attempts: number): number {
   return Date.now() + base + Math.floor(Math.random() * 800);
 }
 
+/** SOS (auxilio) > pánico > necesito ayuda > ubicación/estado */
 function priorityOfType(type: MeshEnvelope['type']): MeshPriority {
-  if (type === 'PANIC' || type === 'HELP_14') return 0;
-  if (type === 'STATUS_NEED_HELP') return 1;
-  return 2;
+  if (type === 'HELP_14') return 0;
+  if (type === 'PANIC') return 1;
+  if (type === 'STATUS_NEED_HELP') return 2;
+  return 3;
 }
 
 function priorityOf(envelope: MeshEnvelope): MeshPriority {
