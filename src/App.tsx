@@ -721,7 +721,9 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       />
       <UpdatePrompt />
       <UpdateIndicator />
-      <main className="main-content flex-1 overflow-y-auto overflow-x-hidden">{renderScreen()}</main>
+      <main className="main-content flex-1 overflow-y-auto overflow-x-hidden">
+        <Suspense fallback={<ScreenFallback />}>{renderScreen()}</Suspense>
+      </main>
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} onPanicTriggered={handlePanicTriggered} />
       
       {/* Unread Messages Banner - only show when chat modal is NOT open */}
@@ -934,6 +936,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <BrowserRouter>
+          <Suspense fallback={<ScreenFallback />}>
           <Routes>
             {/* Public pages - outside of InternalMessagesProvider to avoid auth blocking */}
             <Route path="/install" element={<InstallPage />} />
@@ -953,6 +956,7 @@ const App = () => (
             } />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </Suspense>
         </BrowserRouter>
         <Toaster />
         <Sonner />
