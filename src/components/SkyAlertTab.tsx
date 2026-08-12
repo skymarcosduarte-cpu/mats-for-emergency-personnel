@@ -245,7 +245,7 @@ export function SkyAlertTab() {
         <Radio className="w-6 h-6 text-primary mt-0.5 flex-shrink-0" />
         <div className="flex-1 text-base">
           <p className="text-muted-foreground leading-relaxed">
-            Esta sección monitorea las cuentas oficiales de <strong>SkyAlert</strong> y <strong>SASSLA</strong> en X. Para notificaciones en tiempo real, descarga las apps oficiales.
+            Esta sección muestra publicaciones de <strong>SkyAlert</strong> y noticias recientes de <strong>SASSLA</strong> indexadas por Google Noticias. Para notificaciones en tiempo real, descarga las apps oficiales.
           </p>
         </div>
       </div>
@@ -295,7 +295,11 @@ export function SkyAlertTab() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <Radio className="w-4 h-4 text-primary shrink-0" />
-                  <p className="font-semibold text-sm leading-tight truncate">Últimos posts @{handle}</p>
+                  <p className="font-semibold text-sm leading-tight truncate">
+                    {source === 'sassla'
+                      ? 'Noticias recientes de SASSLA · Fuente: Google Noticias'
+                      : `Últimos posts @${handle}`}
+                  </p>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => fetchFeed(source, true)} disabled={isLoading} aria-label={`Actualizar ${name}`}>
