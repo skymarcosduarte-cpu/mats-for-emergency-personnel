@@ -6,14 +6,36 @@ import type { MeshEnvelope } from '@/types';
 import type { MeshTransport } from '@/lib/meshTransport';
 import {
   MESH_MANUFACTURER_ID,
-  SeenCache,
   bytesToHex,
   decodePacket,
   encodePacket,
   envelopeToPacket,
+  hashId,
+  hexToBytes,
   packetToEnvelope,
   type MeshPacket,
 } from './protocol';
+import {
+  Reassembler,
+  decodeAck,
+  decodeFrag,
+  encodeAck,
+  fragment,
+  fullBitmap,
+  isControlFrame,
+  FRAME_ACK,
+  FRAME_FRAG,
+} from './frames';
+import {
+  enqueue,
+  hydrateSeen,
+  markSeen,
+  outboxSize,
+  removeFromOutbox,
+  takeDue,
+  type MeshPriority,
+  type OutboxItem,
+} from './meshStore';
 
 // Optional native advertiser plugin (custom Capacitor plugin, see docs at bottom).
 interface MeshAdvertiserPlugin {
@@ -21,8 +43,18 @@ interface MeshAdvertiserPlugin {
   stop(): Promise<void>;
 }
 
-const QUEUE_KEY = 'mesh_outbox_v1';
-const MAX_QUEUE = 40;
+// How long a message keeps travelling in the store-and-forward buffer.
+const TTL_BY_PRIORITY: Record<MeshPriority, number> = {
+  0: 24 * 60 * 60 * 1000, // SOS: a full day of couriering
+  1: 6 * 60 * 60 * 1000,
+  2: 60 * 60 * 1000,
+};
+
+// Retransmissions stop once this many copies of the same message are heard
+// from neighbours — classic gossip suppression, keeps the band usable when
+// hundreds of phones are packed together after a quake.
+const SUPPRESS_AFTER_COPIES = 3;
+const MAX_ATTEMPTS = 12;
 
 // Duty cycles keep the radio (and the UI thread) mostly idle.
 const CYCLE_IDLE = { scanMs: 4000, pauseMs: 45000 };
@@ -34,14 +66,17 @@ export class NativeMeshTransport implements MeshTransport {
   private starting = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private callbacks = new Set<(envelope: MeshEnvelope) => void>();
-  private seen = new SeenCache();
-  private outbox: MeshPacket[] = [];
   private ble: typeof import('@capacitor-community/bluetooth-le').BleClient | null = null;
   private advertiser: MeshAdvertiserPlugin | null = null;
   private peers = new Map<number, number>();
+  private reassembler = new Reassembler();
+  private copies = new Map<number, number>();
+  private pendingCount = 0;
+  private selfOrigin = 0;
 
   constructor() {
-    this.outbox = loadQueue();
+    void hydrateSeen();
+    void this.refreshPending();
   }
 
   isAvailable(): boolean {
@@ -64,6 +99,11 @@ export class NativeMeshTransport implements MeshTransport {
       if (at > cutoff) count++;
     });
     return count;
+  }
+
+  /** Messages still waiting to be handed to another node */
+  getPendingCount(): number {
+    return this.pendingCount;
   }
 
   async start(): Promise<void> {
@@ -100,9 +140,28 @@ export class NativeMeshTransport implements MeshTransport {
   }
 
   broadcast(envelope: MeshEnvelope): void {
+    void this.broadcastAsync(envelope);
+  }
+
+  private async broadcastAsync(envelope: MeshEnvelope) {
     const packet = envelopeToPacket(envelope);
-    this.seen.add(packet.msgId);
-    this.enqueue(packet);
+    this.selfOrigin = packet.origin;
+    await markSeen(packet.msgId);
+    const priority = priorityOf(envelope);
+
+    // Rich payloads (text, notes) travel fragmented; plain coordinate alerts
+    // fit in a single 21-byte advertisement.
+    const extra = extraPayload(envelope);
+    if (extra) {
+      const frames = fragment(packet.msgId, packet.origin, new TextEncoder().encode(extra));
+      await Promise.all(
+        frames.map((frame, index) =>
+          this.queueFrame(`${packet.origin}:${packet.msgId}:${index}`, frame, priority)
+        )
+      );
+    }
+
+    await this.queueFrame(`${packet.origin}:${packet.msgId}:p`, encodePacket(packet), priority);
     if (this.active) void this.flushOutbox();
   }
 
@@ -113,10 +172,23 @@ export class NativeMeshTransport implements MeshTransport {
 
   // --- internals -------------------------------------------------------
 
-  private enqueue(packet: MeshPacket) {
-    this.outbox.push(packet);
-    if (this.outbox.length > MAX_QUEUE) this.outbox.splice(0, this.outbox.length - MAX_QUEUE);
-    saveQueue(this.outbox);
+  private async queueFrame(key: string, bytes: Uint8Array, priority: MeshPriority) {
+    const now = Date.now();
+    await enqueue({
+      key,
+      dataHex: bytesToHex(bytes),
+      priority,
+      attempts: 0,
+      // random jitter avoids every phone advertising on the same millisecond
+      nextAt: now + Math.floor(Math.random() * 800),
+      createdAt: now,
+      expiresAt: now + TTL_BY_PRIORITY[priority],
+    });
+    await this.refreshPending();
+  }
+
+  private async refreshPending() {
+    this.pendingCount = await outboxSize();
   }
 
   private scheduleCycle(delay: number) {
@@ -145,13 +217,87 @@ export class NativeMeshTransport implements MeshTransport {
   }
 
   private handleIncoming(bytes: Uint8Array) {
+    if (isControlFrame(bytes)) {
+      if (bytes[1] === FRAME_ACK) void this.handleAck(bytes);
+      if (bytes[1] === FRAME_FRAG) void this.handleFragment(bytes);
+      return;
+    }
+    void this.handlePacket(bytes);
+  }
+
+  private async handlePacket(bytes: Uint8Array) {
     const packet = decodePacket(bytes);
     if (!packet) return;
-    if (this.seen.has(packet.msgId)) return;
-    this.seen.add(packet.msgId);
     this.peers.set(packet.origin, Date.now());
 
+    // Count duplicates even when already delivered: that is the suppression signal.
+    const copies = (this.copies.get(packet.msgId) ?? 0) + 1;
+    this.copies.set(packet.msgId, copies);
+    if (copies >= SUPPRESS_AFTER_COPIES) {
+      await this.dropRelay(packet.origin, packet.msgId);
+    }
+
+    if (await markSeen(packet.msgId)) return;
+
     const envelope = packetToEnvelope(packet);
+    this.emit(envelope);
+
+    // store-and-forward: keep carrying it even if nobody is around right now
+    if (packet.ttl > 1 && copies < SUPPRESS_AFTER_COPIES) {
+      const relay: MeshPacket = { ...packet, ttl: packet.ttl - 1 };
+      await this.queueFrame(
+        `${packet.origin}:${packet.msgId}:p`,
+        encodePacket(relay),
+        priorityOfType(packet.type)
+      );
+    }
+  }
+
+  private async handleFragment(bytes: Uint8Array) {
+    const frame = decodeFrag(bytes);
+    if (!frame) return;
+    this.peers.set(frame.origin, Date.now());
+    const { complete, bitmap } = this.reassembler.accept(frame);
+
+    // Acknowledge what we have so the sender can stop retransmitting.
+    await this.queueFrame(
+      `ack:${frame.origin}:${frame.msgId}`,
+      encodeAck({ msgId: frame.msgId, origin: frame.origin, bitmap }),
+      1
+    );
+
+    if (!complete) return;
+    if (await markSeen(frame.msgId ^ 0x5f5f5f5f)) return; // separate namespace for reassembled payloads
+    try {
+      const parsed = JSON.parse(new TextDecoder().decode(complete)) as Record<string, unknown>;
+      this.emit({
+        type: (parsed.type as MeshEnvelope['type']) ?? 'STATUS_NEED_HELP',
+        sender_id: `mesh:${frame.origin.toString(16)}`,
+        timestamp: typeof parsed.ts === 'number' ? parsed.ts : Date.now(),
+        payload: parsed,
+      });
+    } catch {
+      /* corrupted reassembly — dropped */
+    }
+  }
+
+  private async handleAck(bytes: Uint8Array) {
+    const ack = decodeAck(bytes);
+    if (!ack) return;
+    if (this.selfOrigin && ack.origin !== this.selfOrigin) return;
+    for (let i = 0; i < 32; i++) {
+      if (ack.bitmap & (1 << i)) await removeFromOutbox(`${ack.origin}:${ack.msgId}:${i}`);
+    }
+    if (ack.bitmap === fullBitmap(32) || ack.bitmap !== 0) await this.refreshPending();
+  }
+
+  private async dropRelay(origin: number, msgId: number) {
+    if (origin === this.selfOrigin) return; // never drop our own SOS
+    await removeFromOutbox(`${origin}:${msgId}:p`);
+    await this.refreshPending();
+  }
+
+  private emit(envelope: MeshEnvelope) {
     this.callbacks.forEach((cb) => {
       try {
         cb(envelope);
@@ -159,29 +305,47 @@ export class NativeMeshTransport implements MeshTransport {
         console.warn('[mesh] callback error:', error);
       }
     });
-
-    // store-and-forward
-    if (packet.ttl > 1) {
-      this.enqueue({ ...packet, ttl: packet.ttl - 1 });
-    }
   }
 
   private async flushOutbox() {
-    if (!this.advertiser || this.outbox.length === 0) return;
-    const batch = this.outbox.splice(0, 5);
-    saveQueue(this.outbox);
-    for (const packet of batch) {
+    if (!this.advertiser) return;
+    const batch = await takeDue(this.disaster ? 8 : 4);
+    if (batch.length === 0) return;
+
+    for (const item of batch) {
       try {
         await this.advertiser.advertise({
-          dataHex: bytesToHex(encodePacket(packet)),
+          dataHex: item.dataHex,
           durationMs: this.disaster ? 3000 : 1500,
         });
+        await this.onSent(item);
       } catch (error) {
         console.warn('[mesh] advertising falló:', error);
-        this.enqueue(packet);
+        await this.backoff(item);
         break;
       }
     }
+    await this.refreshPending();
+  }
+
+  /** Best-effort transport: keep re-announcing with backoff until ACK or TTL. */
+  private async onSent(item: OutboxItem) {
+    const attempts = item.attempts + 1;
+    const isAck = item.key.startsWith('ack:');
+    if (isAck || attempts >= MAX_ATTEMPTS) {
+      await removeFromOutbox(item.key);
+      return;
+    }
+    await enqueue({ ...item, attempts, nextAt: nextAttemptAt(attempts) });
+  }
+
+  private async backoff(item: OutboxItem) {
+    const attempts = item.attempts + 1;
+    if (attempts >= MAX_ATTEMPTS) {
+      await removeFromOutbox(item.key);
+      return;
+    }
+    await enqueue({ ...item, attempts, nextAt: nextAttemptAt(attempts) });
   }
 }
 
@@ -189,21 +353,33 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function loadQueue(): MeshPacket[] {
-  try {
-    const raw = localStorage.getItem(QUEUE_KEY);
-    return raw ? (JSON.parse(raw) as MeshPacket[]) : [];
-  } catch {
-    return [];
-  }
+/** Exponential backoff capped at 60 s, with jitter to avoid radio collisions. */
+function nextAttemptAt(attempts: number): number {
+  const base = Math.min(60000, 1500 * 2 ** (attempts - 1));
+  return Date.now() + base + Math.floor(Math.random() * 800);
 }
 
-function saveQueue(queue: MeshPacket[]) {
-  try {
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-  } catch {
-    /* storage full — the mesh keeps working in memory */
-  }
+function priorityOfType(type: MeshEnvelope['type']): MeshPriority {
+  if (type === 'PANIC' || type === 'HELP_14') return 0;
+  if (type === 'STATUS_NEED_HELP') return 1;
+  return 2;
+}
+
+function priorityOf(envelope: MeshEnvelope): MeshPriority {
+  return priorityOfType(envelope.type);
+}
+
+/** Returns the JSON to fragment when the envelope carries more than coordinates. */
+function extraPayload(envelope: MeshEnvelope): string | null {
+  const payload = (envelope.payload ?? {}) as Record<string, unknown>;
+  const keys = Object.keys(payload).filter((k) => k !== 'lat' && k !== 'lng');
+  if (keys.length === 0) return null;
+  const slim: Record<string, unknown> = { type: envelope.type, ts: envelope.timestamp };
+  keys.forEach((k) => {
+    slim[k] = payload[k];
+  });
+  const json = JSON.stringify(slim);
+  return json.length > 380 ? json.slice(0, 380) : json;
 }
 
 /*
