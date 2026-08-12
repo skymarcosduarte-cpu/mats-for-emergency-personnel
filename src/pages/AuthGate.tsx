@@ -1596,11 +1596,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
               <Button
                 onClick={handleProfileSubmit}
                 onTouchEnd={(e) => {
-                  if (!loading && profileForm.fullName && profileForm.phone && profileForm.role) {
+                  if (!loading && profileForm.fullName.trim() && profileForm.role) {
                     handleButtonTouchEnd(e, handleProfileSubmit);
                   }
                 }}
-                disabled={loading || !profileForm.fullName || !profileForm.phone || !profileForm.role}
+                disabled={loading || !profileForm.fullName.trim() || !profileForm.role}
                 className="w-full touch-manipulation"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
               >
