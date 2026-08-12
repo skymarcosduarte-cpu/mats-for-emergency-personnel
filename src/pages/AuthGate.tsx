@@ -117,6 +117,20 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
   // Check if user needs to complete profile - show profile form immediately if detected
   useEffect(() => {
+    // Prefill invite code from URL (?invite=MATS1977 / ?code=...) and jump to signup
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlCode = (params.get('invite') || params.get('code') || '').trim().toUpperCase();
+      if (urlCode) {
+        setInviteCode(urlCode);
+        setAuthTab('signup');
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
     if (needsProfileCompletion) {
       console.log('[AuthGate] User needs profile completion - redirecting to profile form');
       setStep('profile');
