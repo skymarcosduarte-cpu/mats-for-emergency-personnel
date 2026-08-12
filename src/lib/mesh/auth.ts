@@ -46,7 +46,8 @@ async function tag(bytes: Uint8Array): Promise<Uint8Array | null> {
   const key = await loadKey();
   const s = subtle();
   if (!key || !s) return null;
-  const mac = new Uint8Array(await s.sign('HMAC', key, bytes as unknown as ArrayBufferView));
+  const buffer = bytes.slice().buffer as ArrayBuffer;
+  const mac = new Uint8Array(await s.sign('HMAC', key, buffer));
   return mac.slice(0, TAG_BYTES);
 }
 
