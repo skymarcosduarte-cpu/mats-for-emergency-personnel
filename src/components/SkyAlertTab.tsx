@@ -296,9 +296,9 @@ export function SkyAlertTab() {
                 <div className="flex items-center gap-2 min-w-0">
                   <Radio className="w-4 h-4 text-primary shrink-0" />
                   <p className="font-semibold text-sm leading-tight truncate">
-                    {source === 'sassla'
-                      ? 'Noticias recientes de SASSLA · Fuente: Google Noticias'
-                      : `Últimos posts @${handle}`}
+                  {source === 'sassla'
+                    ? 'Noticias recientes de Sismos, Fuente; Google Noticias'
+                    : `Últimos posts @${handle}`}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
