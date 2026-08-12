@@ -302,6 +302,14 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
               />
             </div>
 
+            {mesh.active && (
+              <div className="text-xs text-muted-foreground">
+                {mesh.pending > 0
+                  ? `${mesh.pending} mensaje(s) guardado(s) esperando a otro dispositivo. Se entregarán aunque cierres la app.`
+                  : 'Sin mensajes pendientes por entregar.'}
+              </div>
+            )}
+
             {disasterMode && (
               <div className="text-xs text-destructive">
                 Modo desastre: la malla se mantiene activa automáticamente.
