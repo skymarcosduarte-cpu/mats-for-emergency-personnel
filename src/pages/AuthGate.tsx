@@ -1015,7 +1015,10 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                                 setPassword(e.target.value);
                                 setError(null);
                               }}
-                              onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
+                              onKeyDown={(e) => {
+                                setCapsLockOn(e.getModifierState('CapsLock'));
+                                if (e.key === 'Enter' && !loading) handleLogin();
+                              }}
                               onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                               placeholder="••••••••"
                               autoComplete="current-password"
