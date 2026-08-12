@@ -26,13 +26,6 @@ export class AppErrorBoundary extends React.Component<Props, State> {
     console.error("[AppErrorBoundary] Render crashed:", error);
     console.error("[AppErrorBoundary] Component stack:", info.componentStack);
     this.setState({ error, info: info.componentStack ?? null });
-
-    // Hide native splash if it is still visible (would otherwise cover the fallback).
-    try {
-      (window as unknown as { hideNativeSplash?: () => void }).hideNativeSplash?.();
-    } catch {
-      /* noop */
-    }
   }
 
   handleReload = () => {

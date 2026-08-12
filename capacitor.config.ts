@@ -10,19 +10,6 @@ const config: CapacitorConfig = {
     cleartext: true,
   },
   plugins: {
-    SplashScreen: {
-      launchShowDuration: 2000,
-      launchAutoHide: true,
-      backgroundColor: '#1a1a2e',
-      androidSplashResourceName: 'splash',
-      androidScaleType: 'CENTER_CROP',
-      showSpinner: false,
-      splashFullScreen: true,
-      splashImmersive: true,
-      // Use generated splash screens
-      layoutName: 'launch_screen',
-      useDialog: true,
-    },
     LocalNotifications: {
       smallIcon: 'ic_stat_icon',
       iconColor: '#ef4444',

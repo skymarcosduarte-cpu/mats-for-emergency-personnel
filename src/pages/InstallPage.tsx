@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -62,13 +62,6 @@ export default function InstallPage() {
     };
     generateQR();
   }, [installUrl]);
-
-  // Hide the native splash screen on mount (for public pages that don't go through SplashScreen)
-  useLayoutEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).hideNativeSplash) {
-      (window as any).hideNativeSplash();
-    }
-  }, []);
 
   useEffect(() => {
     // Check if already installed
