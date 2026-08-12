@@ -1134,7 +1134,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                     required
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Solicita tu código a un miembro de la comunidad
+                    ¿No tienes código?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInviteCode('MATS1977');
+                        setError(null);
+                      }}
+                      className="font-mono font-semibold text-primary underline"
+                    >
+                      Usar MATS1977
+                    </button>
                   </p>
                 </div>
 
@@ -1170,8 +1180,12 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                       onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       placeholder="Mínimo 6 caracteres"
-                      className={password && password.length < 6 ? 'border-warning' : ''}
+                      className={password && password.length < 8 ? 'border-warning' : ''}
                       autoComplete="new-password"
+                      onKeyDown={(e) => {
+                        setCapsLockOn(e.getModifierState('CapsLock'));
+                        if (e.key === 'Enter' && !loading) handleSignup();
+                      }}
                     />
                     <button
                       type="button"
@@ -1186,12 +1200,12 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                       ⬆️ Bloq Mayús activado
                     </p>
                   )}
-                  {password && password.length < 6 && (
+                  {password && password.length < 8 && (
                     <p className="text-xs text-warning mt-1">
-                      {6 - password.length} caracteres más requeridos
+                      {8 - password.length} caracteres más requeridos
                     </p>
                   )}
-                  {password && password.length >= 6 && (
+                  {password && password.length >= 8 && (
                     <p className="text-xs text-safe mt-1">✓ Contraseña válida</p>
                   )}
                 </div>
