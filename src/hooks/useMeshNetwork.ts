@@ -11,6 +11,7 @@ const PREF_KEY = 'mesh_enabled_v1';
 interface MeshController extends MeshTransport {
   setDisasterMode?: (enabled: boolean) => void;
   getPeerCount?: () => number;
+  getPendingCount?: () => number;
 }
 
 export function useMeshNetwork(options: { disasterMode?: boolean; onMessage?: (e: MeshEnvelope) => void } = {}) {
@@ -18,6 +19,7 @@ export function useMeshNetwork(options: { disasterMode?: boolean; onMessage?: (e
   const [enabled, setEnabled] = useState(() => localStorage.getItem(PREF_KEY) === '1');
   const [active, setActive] = useState(false);
   const [peers, setPeers] = useState(0);
+  const [pending, setPending] = useState(0);
   const transportRef = useRef<MeshController | null>(null);
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;
@@ -53,7 +55,10 @@ export function useMeshNetwork(options: { disasterMode?: boolean; onMessage?: (e
   // Peer counter polls slowly to avoid re-renders
   useEffect(() => {
     if (!active) return;
-    const id = setInterval(() => setPeers(transportRef.current?.getPeerCount?.() ?? 0), 15000);
+    const id = setInterval(() => {
+      setPeers(transportRef.current?.getPeerCount?.() ?? 0);
+      setPending(transportRef.current?.getPendingCount?.() ?? 0);
+    }, 15000);
     return () => clearInterval(id);
   }, [active]);
 
@@ -68,6 +73,7 @@ export function useMeshNetwork(options: { disasterMode?: boolean; onMessage?: (e
     enabled,
     active,
     peers,
+    pending,
     toggle,
     broadcast: (envelope: MeshEnvelope) => transportRef.current?.broadcast(envelope),
   };
