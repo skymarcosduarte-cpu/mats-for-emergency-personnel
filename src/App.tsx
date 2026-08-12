@@ -260,6 +260,8 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   // Prefetch critical data in parallel as soon as user is authenticated
   // Re-prefetch when app resumes from background
   usePrefetch(user?.id, lastResumeAt);
+  // Warm secondary screen chunks during idle time so tab switches feel instant
+  useIdleChunkPrefetch();
   // Test mode for simulating panic alerts
   const { testAlert, simulatePanicAlert, clearTestAlert } = useTestMode();
   
