@@ -719,7 +719,12 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <UpdatePrompt />
       <UpdateIndicator />
       <main className="main-content flex-1 overflow-y-auto overflow-x-hidden">
-        <Suspense fallback={<ScreenFallback />}>{renderScreen()}</Suspense>
+        <Suspense
+          key={activeTab}
+          fallback={<ScreenFallback variant={(activeTab as SkeletonVariant) ?? 'page'} />}
+        >
+          {renderScreen()}
+        </Suspense>
       </main>
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} onPanicTriggered={handlePanicTriggered} />
       
