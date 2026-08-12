@@ -39,6 +39,7 @@ const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt, UpdateIndicator } from '@/components/UpdatePrompt';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
+import { ScreenSkeleton, type SkeletonVariant } from '@/components/ScreenSkeletons';
 
 import { SeismicAlert } from '@/components/SeismicAlert';
 import { EmergencyAlertOverlay } from '@/components/EmergencyAlertOverlay';
@@ -110,12 +111,8 @@ const queryClient = new QueryClient({
 });
 
 /** Lightweight inline fallback while a screen chunk loads */
-function ScreenFallback() {
-  return (
-    <div className="min-h-[50vh] flex items-center justify-center">
-      <MatsLogo size={48} />
-    </div>
-  );
+function ScreenFallback({ variant = 'page' }: { variant?: SkeletonVariant }) {
+  return <ScreenSkeleton variant={variant} />;
 }
 
 /** Warm up secondary screen chunks when the browser is idle */
@@ -722,7 +719,12 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       <UpdatePrompt />
       <UpdateIndicator />
       <main className="main-content flex-1 overflow-y-auto overflow-x-hidden">
-        <Suspense fallback={<ScreenFallback />}>{renderScreen()}</Suspense>
+        <Suspense
+          key={activeTab}
+          fallback={<ScreenFallback variant={(activeTab as SkeletonVariant) ?? 'page'} />}
+        >
+          {renderScreen()}
+        </Suspense>
       </main>
       <PanicButton userRole={userRole} isOpen={panicOpen} onOpenChange={setPanicOpen} onPanicTriggered={handlePanicTriggered} />
       
