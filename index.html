@@ -43,46 +43,7 @@
     </script>
   </head>
   <body>
-    <!-- Instant splash to prevent white flash -->
-    <div id="native-splash" style="
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(145deg, #0a0a0a 0%, #1a1a2e 50%, #0f0f1a 100%);
-      opacity: 1;
-      transition: opacity 0.5s ease-out;
-    ">
-      <div style="
-        width: 120px;
-        height: 120px;
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 0 60px rgba(34, 197, 94, 0.2);
-        animation: pulse-glow 2s ease-in-out infinite;
-      ">
-        <img src="/icon-512.png" alt="M.A.T.S." style="width: 100%; height: 100%; object-fit: cover;" />
-      </div>
-      <style>
-        @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 0 40px rgba(34, 197, 94, 0.15); }
-          50% { box-shadow: 0 0 80px rgba(34, 197, 94, 0.3); }
-        }
-      </style>
-    </div>
     <div id="root"></div>
-    <script>
-      // Hide native splash when React app loads
-      window.hideNativeSplash = function() {
-        var splash = document.getElementById('native-splash');
-        if (splash) {
-          splash.style.opacity = '0';
-          setTimeout(function() { splash.remove(); }, 500);
-        }
-      };
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -143,13 +143,6 @@ function AppContent() {
     await signOut();
   };
 
-  // Hide the native splash immediately on app mount (no animated splash)
-  useEffect(() => {
-    if (typeof window !== 'undefined' && typeof (window as any).hideNativeSplash === 'function') {
-      (window as any).hideNativeSplash();
-    }
-  }, []);
-
   // Show loading while checking auth state
   if (authLoading) {
     return (
