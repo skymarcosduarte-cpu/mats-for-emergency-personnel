@@ -10,6 +10,8 @@ import { useAppState } from '@/hooks/useRealtime';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getMeshTransport, createMeshEnvelope, getMeshStatusMessage, isMeshAvailable } from '@/lib/meshTransport';
+import { useMeshNetwork } from '@/hooks/useMeshNetwork';
+import { Switch } from '@/components/ui/switch';
 import type { UserRole, StatusType } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -30,6 +32,7 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
   const { disasterMode } = useAppState();
   const { user } = useAuth();
   const meshTransport = getMeshTransport();
+  const mesh = useMeshNetwork({ disasterMode });
 
   // Handle status update
   const handleStatusUpdate = async (status: StatusType) => {
@@ -263,6 +266,47 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
               )} />
               <span>{getMeshStatusMessage()}</span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Red Malla (BLE) */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Radio className="w-5 h-5 text-accent" />
+              Red Malla Bluetooth
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Retransmite alertas entre teléfonos cercanos cuando no hay internet ni señal celular.
+              Funciona con muy bajo consumo: la radio se enciende por segundos y descansa.
+            </p>
+
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-medium text-foreground">Activar malla</div>
+                <div className="text-xs text-muted-foreground">
+                  {mesh.active
+                    ? `Activa · ${mesh.peers} dispositivo(s) cercano(s)`
+                    : mesh.available
+                      ? 'En espera'
+                      : 'Requiere la app nativa'}
+                </div>
+              </div>
+              <Switch
+                checked={mesh.enabled}
+                onCheckedChange={mesh.toggle}
+                disabled={!mesh.available}
+                aria-label="Activar red malla Bluetooth"
+              />
+            </div>
+
+            {disasterMode && (
+              <div className="text-xs text-destructive">
+                Modo desastre: la malla se mantiene activa automáticamente.
+              </div>
+            )}
           </CardContent>
         </Card>
 
