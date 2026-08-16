@@ -853,7 +853,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
         </div>
       </header>
 
-      <div className="px-4 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+      <div className="px-4 py-4 space-y-4 max-h-[60dvh] overflow-y-auto">
         {/* Remote location toggle */}
         <div className="p-3 rounded-lg bg-muted/30 space-y-3">
           <div className="flex items-center justify-between">
