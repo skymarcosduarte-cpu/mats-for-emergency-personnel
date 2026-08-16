@@ -354,8 +354,8 @@
   /* Main content wrapper - scrollable area between fixed header/footer */
   .main-content {
     padding-top: var(--app-header-height);
-    /* 56px nav + inset del home indicator + respiro para que iOS no corte el contenido */
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 28px);
+    /* 56px nav + inset acotado (igual que .bottom-nav) + respiro mínimo */
+    padding-bottom: calc(56px + min(env(safe-area-inset-bottom, 0px), 16px) + 16px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
     overflow-y: auto;
