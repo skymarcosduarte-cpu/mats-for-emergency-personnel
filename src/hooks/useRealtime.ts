@@ -653,7 +653,9 @@ export function useAppState() {
     fetchAppState();
 
     const channel = supabase
-      .channel('app_state_changes')
+      // Nombre único por instancia: dos pantallas pueden usar este hook a la vez
+      // y reutilizar el mismo canal ya suscrito rompía la app.
+      .channel(`app_state_changes:${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'app_state' },

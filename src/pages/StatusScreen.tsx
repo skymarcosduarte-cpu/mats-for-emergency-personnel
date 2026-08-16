@@ -12,16 +12,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { getMeshTransport, createMeshEnvelope, getMeshStatusMessage, isMeshAvailable } from '@/lib/meshTransport';
 import { useMeshNetwork } from '@/hooks/useMeshNetwork';
 import { Switch } from '@/components/ui/switch';
+import { BackToHomeButton } from '@/components/BackToHomeButton';
 import type { UserRole, StatusType } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface StatusScreenProps {
   userRole?: UserRole;
+  onGoHome?: () => void;
 }
 
 export const StatusScreen: React.FC<StatusScreenProps> = ({
-  userRole = 'RESCATISTA'
+  userRole = 'RESCATISTA',
+  onGoHome
 }) => {
   const [currentStatus, setCurrentStatus] = useState<StatusType>('UNKNOWN');
   const [submitting, setSubmitting] = useState(false);
@@ -125,9 +128,10 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
   };
 
   return (
-    <div className="flex-1 overflow-auto pb-20 scrollbar-thin">
+    <div className="flex-1 overflow-auto scrollbar-thin pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4 flex items-center gap-3">
+        {onGoHome && <BackToHomeButton onClick={onGoHome} />}
         <h1 className="text-xl font-bold text-foreground">Mi Estado</h1>
       </div>
 

@@ -367,6 +367,11 @@
   }
 
   /* FAB Container (legacy, kept for other uses) */
+  /* Respiro inferior para barras de acción fijas (SOS, formularios) en iPhone */
+  .pb-safe {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .fab-container {
     @apply fixed z-50;
     top: calc(16px + env(safe-area-inset-top, 0));
