@@ -315,9 +315,8 @@
     left: 0 !important;
     right: 0 !important;
     width: 100% !important;
-    /* Safe area for notch devices */
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    padding-bottom: constant(safe-area-inset-bottom);
+    /* Safe area para notch/home indicator, acotada para que el footer no crezca de más */
+    padding-bottom: min(env(safe-area-inset-bottom, 0px), 16px);
     /* High z-index to stay above everything */
     z-index: 99999 !important;
     /* GPU acceleration for smooth positioning */
@@ -355,8 +354,8 @@
   /* Main content wrapper - scrollable area between fixed header/footer */
   .main-content {
     padding-top: var(--app-header-height);
-    /* 56px nav + inset del home indicator + respiro para que iOS no corte el contenido */
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 28px);
+    /* 56px nav + inset acotado (igual que .bottom-nav) + respiro mínimo */
+    padding-bottom: calc(56px + min(env(safe-area-inset-bottom, 0px), 16px) + 16px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
     overflow-y: auto;
@@ -369,7 +368,7 @@
   /* FAB Container (legacy, kept for other uses) */
   /* Respiro inferior para barras de acción fijas (SOS, formularios) en iPhone */
   .pb-safe {
-    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(1rem + min(env(safe-area-inset-bottom, 0px), 16px));
   }
 
   .fab-container {
