@@ -1054,7 +1054,7 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label="Selecciona tipo de emergencia"
-          className="absolute left-1/2 top-4 z-[20010] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 rounded-lg border border-border bg-card text-card-foreground shadow-lg max-h-[calc(100dvh-2rem)] overflow-y-auto relative"
+          className="absolute left-1/2 top-4 z-[20010] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 rounded-lg border border-border bg-card text-card-foreground shadow-lg max-h-[calc(100dvh-6rem-env(safe-area-inset-bottom,0px))] overflow-y-auto relative"
         >
           <button
             type="button"
