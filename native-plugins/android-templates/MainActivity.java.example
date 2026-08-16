@@ -1,0 +1,15 @@
+package app.lovable.d9e2fc1183ac4ac8afca2eafa7a26069; // <-- deja el package que ya tenga tu archivo
+
+import android.os.Bundle;
+import com.getcapacitor.BridgeActivity;
+import app.lovable.mats.mesh.MeshAdvertiserPlugin;
+import app.lovable.mats.mesh.MeshForegroundServicePlugin;
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(MeshAdvertiserPlugin.class);
+        registerPlugin(MeshForegroundServicePlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+}
