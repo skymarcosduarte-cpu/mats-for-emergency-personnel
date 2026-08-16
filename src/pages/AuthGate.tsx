@@ -859,7 +859,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   return (
     <div 
       className="min-h-screen bg-background text-foreground flex flex-col overflow-y-auto" 
-      style={{ minHeight: '100vh', WebkitOverflowScrolling: 'touch' }}
+      style={{ minHeight: '100dvh', WebkitOverflowScrolling: 'touch' }}
     >
       {/* Privacy Consent Dialog */}
       <PrivacyConsentDialog

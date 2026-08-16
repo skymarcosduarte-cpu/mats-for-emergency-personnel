@@ -1809,7 +1809,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
 
         {/* Real-time Community Trips Map */}
         <TabsContent value="map" className="mt-4 -mx-4">
-          <div className="h-[calc(100vh-280px)] min-h-[400px]">
+          <div className="h-[calc(100dvh-280px)] min-h-[400px]">
             <MapErrorBoundary>
               <CommunityTripsMap 
                 trips={communityTrips}

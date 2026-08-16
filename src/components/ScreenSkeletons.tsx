@@ -45,7 +45,7 @@ export type SkeletonVariant =
 export function ScreenSkeleton({ variant = 'page' }: { variant?: SkeletonVariant }) {
   if (variant === 'map') {
     return (
-      <div className="relative h-[calc(100vh-120px)] w-full overflow-hidden" aria-busy="true">
+      <div className="relative h-[calc(100dvh-120px-env(safe-area-inset-bottom,0px))] w-full overflow-hidden" aria-busy="true">
         <Skeleton className="absolute inset-0 rounded-none" />
         <div className="absolute top-3 left-3 right-3 flex gap-2">
           <Skeleton className="h-9 flex-1 rounded-lg" />
