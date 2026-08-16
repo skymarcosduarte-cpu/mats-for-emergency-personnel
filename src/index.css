@@ -315,9 +315,8 @@
     left: 0 !important;
     right: 0 !important;
     width: 100% !important;
-    /* Safe area for notch devices */
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    padding-bottom: constant(safe-area-inset-bottom);
+    /* Safe area para notch/home indicator, acotada para que el footer no crezca de más */
+    padding-bottom: min(env(safe-area-inset-bottom, 0px), 16px);
     /* High z-index to stay above everything */
     z-index: 99999 !important;
     /* GPU acceleration for smooth positioning */
