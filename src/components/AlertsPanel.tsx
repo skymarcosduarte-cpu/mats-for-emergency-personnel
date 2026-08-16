@@ -368,7 +368,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
             </SheetTitle>
           </SheetHeader>
           
-          <ScrollArea className="h-[calc(100vh-80px)]">
+          <ScrollArea className="h-[calc(100dvh-80px)]">
             <div className="p-4 space-y-4">
               {/* Panic Events Section */}
               {panicEvents.length > 0 && (
