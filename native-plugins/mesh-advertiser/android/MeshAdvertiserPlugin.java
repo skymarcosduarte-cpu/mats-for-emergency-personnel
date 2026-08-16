@@ -1,4 +1,4 @@
-package app.lovable.mesh;
+package app.lovable.mats.mesh;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
@@ -19,7 +19,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 /**
  * BLE advertiser for the MATS mesh.
  *
- * Copy this file into android/app/src/main/java/app/lovable/mesh/ and register it
+ * Copy this file into android/app/src/main/java/app/lovable/mats/mesh/ and register it
  * in MainActivity: registerPlugin(MeshAdvertiserPlugin.class);
  *
  * Required manifest permissions:
