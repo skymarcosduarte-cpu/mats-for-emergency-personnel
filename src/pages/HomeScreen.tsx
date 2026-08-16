@@ -14,7 +14,8 @@ import {
   MapPin,
   Navigation,
   X,
-  MapPinned
+  MapPinned,
+  Radio
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -91,6 +92,17 @@ const SECTIONS: SectionItem[] = [
     iconBg: 'home-section-icon-settings'
   },
 ];
+
+// "Mi Estado" incluye la Red Malla Bluetooth y el test mensual: debe ser
+// alcanzable desde el inicio (no tiene pestaña propia en la barra inferior).
+SECTIONS.push({
+  id: 'status',
+  label: 'Mi Estado',
+  icon: <Radio className="w-10 h-10" strokeWidth={2.5} />,
+  description: 'Estoy bien / Necesito ayuda y Red Malla Bluetooth',
+  gradient: 'home-section-alerts',
+  iconBg: 'home-section-icon-alerts',
+});
 
 // Types for emergency alerts
 interface EmergencyAlert {

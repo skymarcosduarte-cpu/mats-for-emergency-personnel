@@ -672,7 +672,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       alerts: <AlertsScreen userRole={userRole} onGoHome={handleGoHome} />,
       community: <CommunityScreen userRole={userRole} onGoHome={handleGoHome} />,
       resources: <ResourcesScreen onGoHome={() => { setResourcesInitialView(undefined); handleGoHome(); }} initialSubView={resourcesInitialView} />,
-      status: <StatusScreen userRole={userRole} />,
+      status: <StatusScreen userRole={userRole} onGoHome={handleGoHome} />,
       settings: <SettingsScreen onLogout={handleLogout} onGoHome={handleGoHome} />,
     };
 
