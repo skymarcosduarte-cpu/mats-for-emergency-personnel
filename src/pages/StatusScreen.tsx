@@ -132,7 +132,7 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4 flex items-center gap-3">
         {onGoHome && <BackToHomeButton onClick={onGoHome} />}
-        <h1 className="text-xl font-bold text-foreground">Mi Estado</h1>
+        <h1 className="text-xl font-bold text-foreground">Red Mesh</h1>
       </div>
 
       <div className="p-4 space-y-6">

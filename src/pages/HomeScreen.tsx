@@ -93,15 +93,15 @@ const SECTIONS: SectionItem[] = [
   },
 ];
 
-// "Mi Estado" incluye la Red Malla Bluetooth y el test mensual: debe ser
+// "Red Mesh" incluye la Red Malla Bluetooth y el test mensual: debe ser
 // alcanzable desde el inicio (no tiene pestaña propia en la barra inferior).
 SECTIONS.push({
   id: 'status',
-  label: 'Mi Estado',
+  label: 'Red Mesh',
   icon: <Radio className="w-10 h-10" strokeWidth={2.5} />,
-  description: 'Estoy bien / Necesito ayuda y Red Malla Bluetooth',
-  gradient: 'home-section-alerts',
-  iconBg: 'home-section-icon-alerts',
+  description: 'Red Malla Bluetooth y test mensual',
+  gradient: 'home-section-mesh',
+  iconBg: 'home-section-icon-mesh',
 });
 
 // Types for emergency alerts
