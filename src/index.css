@@ -543,6 +543,13 @@
   .home-section-icon-settings {
     @apply bg-white text-[hsl(0,0%,15%)];
   }
+  /* Red Mesh: Morado */
+  .home-section-mesh {
+    @apply bg-[hsl(270,80%,45%)] border-[hsl(270,80%,35%)] hover:bg-[hsl(270,80%,40%)];
+  }
+  .home-section-icon-mesh {
+    @apply bg-white text-[hsl(270,80%,45%)];
+  }
 
   /* Internal section button styles - for subsections */
   .subsection-card-avisos {

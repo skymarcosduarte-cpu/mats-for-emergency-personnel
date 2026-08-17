@@ -45,7 +45,7 @@ export default function ResourcesScreen({ onGoHome, initialSubView }: ResourcesS
     {
       id: 'monitoring',
       label: 'Centro de Monitoreo',
-      description: 'Webcams en vivo de ciudades del mundo — sala de monitoreo de emergencias',
+      description: 'feeds de noticias en vivo',
       icon: <Cctv className="w-8 h-8 text-white" strokeWidth={2.5} />,
       iconBg: 'bg-[hsl(150,100%,35%)]',
       borderColor: 'border-[hsl(150,100%,35%)]/40',
