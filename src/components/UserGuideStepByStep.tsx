@@ -378,18 +378,19 @@ export const GUIDE_PAGES: GuidePageData[] = [
     sections: [
       {
         paragraphs: [
-          'El Centro de Monitoreo te permite ver cámaras en vivo de distintas ciudades del mundo y señales de noticias en tiempo real, todo desde la app.',
-          'Puedes elegir ver 4 o 9 cámaras simultáneamente en una cuadrícula.',
+          'El Centro de Monitoreo (RecurSOS → Centro de Monitoreo) reúne feeds de noticias en vivo y cámaras del mundo, todo desde la app.',
+          'Puedes verlos en cuadrícula de 1x1 hasta 3x3 y abrir cualquier señal en pantalla completa.',
         ],
       },
       {
-        heading: '¿Qué cámaras incluye?',
+        heading: 'Señales por defecto (actualizado)',
         paragraphs: [
-          '📹 Cámaras de Ciudad de México: Bosque de Chapultepec, Torre Latinoamericana, Paseo de la Reforma y más.',
-          '🌎 Cámaras internacionales: Nueva York, Toronto, Niágara, Roma, Florencia, Buenos Aires, Estambul, Hong Kong, LAX Airport y más.',
-          '📺 Señales de noticias en vivo: Milenio, FOX 26, SKY News, FOX Live, Al Jazeera, Euro News, CNN en Español.',
+          'Al abrirlo por primera vez ya vienen listas 4 señales de noticias en vivo: N+, CNN en Español, Sky News y TELESUR.',
+          'También están disponibles Milenio, Euronews, Al Jazeera y más, además de cámaras de Ciudad de México e internacionales.',
+          'Se depuraron las señales caídas para que casi todas las cámaras carguen correctamente.',
         ],
       },
+
       {
         heading: '¿Cómo personalizo mi vista?',
         paragraphs: [
