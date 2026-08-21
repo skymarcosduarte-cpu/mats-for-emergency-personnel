@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatsLogo } from '@/components/MatsLogo';
+import { GuidePdfButton } from '@/components/GuidePdfButton';
 import { cn } from '@/lib/utils';
 
 interface OnboardingStep {
@@ -28,7 +29,7 @@ interface OnboardingStep {
   color: string;
 }
 
-const ONBOARDING_STEPS: OnboardingStep[] = [
+export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     icon: <Heart className="w-12 h-12" />,
     title: '¡Bienvenido a la Comunidad!',
@@ -194,9 +195,13 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
           Anterior
         </Button>
 
-        <span className="text-sm text-muted-foreground">
-          {currentStep + 1} / {ONBOARDING_STEPS.length}
-        </span>
+        <div className="flex flex-col items-center gap-1">
+          <GuidePdfButton variant="ghost" label="Guía PDF" />
+          <span className="text-sm text-muted-foreground">
+            {currentStep + 1} / {ONBOARDING_STEPS.length}
+          </span>
+        </div>
+
 
         <Button onClick={handleNext}>
           {isLastStep ? (

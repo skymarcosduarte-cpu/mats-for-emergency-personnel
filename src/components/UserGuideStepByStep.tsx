@@ -34,6 +34,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { MatsLogo } from '@/components/MatsLogo';
+import { GuidePdfButton } from '@/components/GuidePdfButton';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface GuidePageData {
@@ -719,6 +720,8 @@ export const UserGuideStepByStep: React.FC<UserGuideStepByStepProps> = ({ onClos
           <MatsLogo size={28} />
           <h1 className="text-lg font-bold text-foreground">Guía Paso a Paso</h1>
         </div>
+        <div className="flex items-center gap-2">
+        <GuidePdfButton />
         <button
           onClick={handleClose}
           className="p-2 rounded-full hover:bg-muted transition-colors"
@@ -726,7 +729,9 @@ export const UserGuideStepByStep: React.FC<UserGuideStepByStepProps> = ({ onClos
         >
           <X className="w-5 h-5" />
         </button>
+        </div>
       </header>
+
 
       {/* Progress bar */}
       <div className="px-4 py-2 bg-muted/30">
