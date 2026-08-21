@@ -451,10 +451,10 @@ export default function UserGuidePage() {
             <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Iniciar un Viaje</h3>
             <ol className="space-y-2 text-gray-700 list-decimal list-inside">
               <li>Selecciona el tipo de viaje (Carretera, Vuelo, Taxi, etc.)</li>
-              <li>Ingresa el origen y destino</li>
+              <li>Ingresa el origen y destino con el buscador mejorado o tocando el punto exacto en el mapa</li>
               <li>Configura la hora estimada de llegada (ETA)</li>
               <li>Opcionalmente, agrega foto del vehículo y placas</li>
-              <li>Para vuelos: número de vuelo y pase de abordar</li>
+              <li>Para vuelos: <strong>aerolínea y número de vuelo son obligatorios</strong>; la matrícula de la aeronave es opcional</li>
             </ol>
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Durante el Viaje</h3>
@@ -473,9 +473,26 @@ export default function UserGuidePage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
-                <span>Puedes compartir un enlace de seguimiento con familiares</span>
+                <span>Puedes compartir un enlace de seguimiento con familiares y avisar por WhatsApp</span>
               </li>
             </ul>
+
+            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Detección Automática de Llegada</h3>
+            <p className="text-gray-700 leading-relaxed mb-4">
+              Si olvidas cerrar tu viaje, la app lo detecta por GPS: al entrar en el radio de tu destino marca el viaje
+              como <strong>llegada</strong> y notifica a la comunidad. Puedes ajustar la sensibilidad del radio entre
+              <strong> 100 y 500 metros</strong> en <strong>Ajustes → Alertas</strong>.
+            </p>
+
+            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">📶 Red Mesh Bluetooth (sin internet)</h3>
+            <p className="text-gray-700 leading-relaxed mb-4">
+              La Red Mesh permite que la app siga comunicándose cuando no hay internet ni señal celular. Los
+              dispositivos cercanos retransmiten los mensajes por Bluetooth formando una malla; las alertas SOS tienen
+              prioridad y viajan firmadas y verificadas criptográficamente. Se activa desde el botón morado
+              <strong> Red Mesh</strong> en la pantalla de Inicio y su alcance completo requiere la app instalada como
+              aplicación nativa (Android/iOS).
+            </p>
+
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Reportes de Carretera</h3>
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
