@@ -28,7 +28,7 @@ interface OnboardingStep {
   color: string;
 }
 
-const ONBOARDING_STEPS: OnboardingStep[] = [
+export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     icon: <Heart className="w-12 h-12" />,
     title: '¡Bienvenido a la Comunidad!',
