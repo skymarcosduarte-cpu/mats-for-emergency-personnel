@@ -34,6 +34,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { MatsLogo } from '@/components/MatsLogo';
+import { GuidePdfButton } from '@/components/GuidePdfButton';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface GuidePageData {

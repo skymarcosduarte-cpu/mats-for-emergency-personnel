@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatsLogo } from '@/components/MatsLogo';
+import { GuidePdfButton } from '@/components/GuidePdfButton';
 import { cn } from '@/lib/utils';
 
 interface OnboardingStep {
