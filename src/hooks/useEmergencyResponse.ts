@@ -404,20 +404,15 @@ export function useEmergencyResponse() {
 
         // Update user location in database - don't let errors stop the flow
         try {
-          const { error: locationError } = await supabase
-            .from('user_locations')
-            .upsert({
-              user_id: user.id,
-              lat,
-              lng,
-              accuracy: position.coords.accuracy,
-              heading: position.coords.heading,
-              speed: position.coords.speed,
-              is_online: true,
-              updated_at: new Date().toISOString(),
-            }, { onConflict: 'user_id' });
-          
-          if (locationError) {
+          const { ok: locationOk, error: locationError } = await upsertUserLocation({
+            lat,
+            lng,
+            accuracy: position.coords.accuracy,
+            heading: position.coords.heading,
+            speed: position.coords.speed,
+          });
+
+          if (!locationOk) {
             console.warn('[useEmergencyResponse] Error updating user_locations (non-fatal):', locationError);
           }
         } catch (err) {

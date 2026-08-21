@@ -130,18 +130,13 @@ export function useNativeLocation() {
     }
 
     try {
-      await supabase
-        .from('user_locations')
-        .upsert({
-          user_id: user.id,
-          lat: position.lat,
-          lng: position.lng,
-          accuracy: position.accuracy,
-          heading: position.heading,
-          speed: effectiveSpeed,
-          is_online: true,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
+      await upsertUserLocation({
+        lat: position.lat,
+        lng: position.lng,
+        accuracy: position.accuracy,
+        heading: position.heading,
+        speed: effectiveSpeed,
+      });
 
       lastUpdateRef.current = now;
       lastPositionRef.current = position;
