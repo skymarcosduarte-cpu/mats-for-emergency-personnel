@@ -5,6 +5,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { touchUserPresence } from '@/lib/locationSync';
 
 // Interval for the keep-alive timer (25 seconds – below Chrome's 30 s throttle)
 const KEEP_ALIVE_INTERVAL = 25_000;

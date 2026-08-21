@@ -3,6 +3,7 @@
 
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { upsertUserLocation } from '@/lib/locationSync';
 import { useAuth } from './useAuth';
 import type { GeoPosition } from '@/types';
 

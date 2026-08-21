@@ -3,6 +3,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { upsertUserLocation } from '@/lib/locationSync';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { usePushNotifications } from '@/hooks/usePushNotifications';

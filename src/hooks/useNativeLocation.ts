@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Geolocation, type Position } from '@capacitor/geolocation';
 import { supabase } from '@/integrations/supabase/client';
+import { upsertUserLocation } from '@/lib/locationSync';
 import { useAuth } from './useAuth';
 import type { GeoPosition } from '@/types';
 import type { BackgroundGeolocationPlugin } from '@capacitor-community/background-geolocation';
