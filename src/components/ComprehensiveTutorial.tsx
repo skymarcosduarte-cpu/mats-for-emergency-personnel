@@ -214,6 +214,7 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
                 <li>Recibes notificación con sonido y vibración</li>
                 <li>Ves magnitud, distancia y ubicación</li>
                 <li>Reportas: "¿Estás bien?" y la intensidad percibida</li>
+                <li>Puedes cerrar cada aviso con la ✕ después de leerlo</li>
               </ol>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -221,6 +222,50 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
             </p>
           </div>
         ),
+      },
+      {
+        title: '📡 Apps de Alertamiento Sísmico',
+        content: (
+          <div className="space-y-4">
+            <p>
+              La subsección "SkyAlert" ahora se llama <strong>Apps de Alertamiento Sísmico</strong>.
+            </p>
+            <div className="bg-muted rounded-lg p-3 text-xs space-y-1">
+              <p>• Muestra automáticamente los <strong>6 avisos más recientes</strong> de SASSLA y SkyAlert.</p>
+              <p>• Ya no necesitas hacer clic: se cargan solos y puedes actualizar manualmente.</p>
+              <p>• Si las fuentes se saturan, se usa un respaldo de noticias.</p>
+            </div>
+          </div>
+        ),
+        tip: 'Es información complementaria; no sustituye a tu app oficial de alertamiento',
+      },
+    ],
+  },
+  {
+    id: 'mesh',
+    title: 'Red Mesh',
+    icon: <Radio className="w-6 h-6" />,
+    color: 'text-primary',
+    steps: [
+      {
+        title: '📶 Red Mesh Bluetooth (sin internet)',
+        content: (
+          <div className="space-y-4">
+            <p>
+              <strong>Nuevo:</strong> comunicación de emergencia por Bluetooth cuando no hay internet ni señal celular.
+            </p>
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 text-xs space-y-1">
+              <p>• Los teléfonos cercanos retransmiten los mensajes formando una malla.</p>
+              <p>• Las alertas <strong>SOS tienen prioridad</strong> y viajan firmadas y verificadas.</p>
+              <p>• Entra desde el botón morado <strong>"Red Mesh"</strong> en Inicio y actívala.</p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              El alcance completo requiere la app instalada como aplicación nativa (Android/iOS).
+            </p>
+          </div>
+        ),
+        important: true,
+        tip: 'Mantén el Bluetooth encendido para que la malla funcione',
       },
     ],
   },
@@ -235,23 +280,27 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
         content: (
           <div className="space-y-4">
             <p>
-              Registra tus viajes en carretera para que la comunidad sepa tu ruta.
+              Registra tus viajes en carretera o en avión para que la comunidad sepa tu ruta.
             </p>
             <div className="bg-accent/10 rounded-lg p-3 text-sm">
               <p className="font-medium mb-1">Incluye:</p>
-              <p className="text-xs text-muted-foreground">Origen, destino, ETA, tipo de transporte, placas y acompañantes</p>
+              <p className="text-xs text-muted-foreground">Origen, destino (búsqueda mejorada o toque en el mapa), ETA, tipo de transporte, placas y acompañantes</p>
+            </div>
+            <div className="bg-muted rounded-lg p-3 text-xs">
+              <strong>Vuelos:</strong> aerolínea y número de vuelo son obligatorios; la matrícula de la aeronave es opcional.
+            </div>
+            <div className="bg-safe/10 border border-safe/30 rounded-lg p-3 text-xs">
+              <strong>Llegada automática:</strong> si olvidas cerrar el viaje, la app lo cierra al detectar que llegaste. Ajusta el radio (100–500 m) en <strong>Ajustes → Alertas</strong>.
             </div>
             <div className="bg-muted rounded-lg p-3 text-xs">
               <strong>Si no llegas a tiempo</strong>, se enviará una alerta automática a la comunidad.
             </div>
-            <p className="text-xs text-muted-foreground">
-              Puedes compartir tu viaje con personas fuera de la app mediante un link.
-            </p>
           </div>
         ),
       },
     ],
   },
+
   {
     id: 'community',
     title: 'Comunidad',
