@@ -17,7 +17,7 @@ export async function downloadGuidePdf(): Promise<void> {
       <div class="block">
         <h3>${i + 1}. ${esc(s.title)}</h3>
         <p>${esc(s.description)}</p>
-        ${s.tip ? `<p class="tip">💡 ${esc(s.tip)}</p>` : ''}
+        ${s.tip ? `<p class="tip">Tip: ${esc(s.tip)}</p>` : ''}
       </div>`
   ).join('');
 
@@ -31,8 +31,8 @@ export async function downloadGuidePdf(): Promise<void> {
           <div class="block">
             ${sec.heading ? `<h3>${esc(sec.heading)}</h3>` : ''}
             ${sec.paragraphs.map((t) => `<p>${esc(t)}</p>`).join('')}
-            ${sec.tip ? `<p class="tip">💡 ${esc(sec.tip)}</p>` : ''}
-            ${sec.warning ? `<p class="warn">⚠️ ${esc(sec.warning)}</p>` : ''}
+            ${sec.tip ? `<p class="tip">Tip: ${esc(sec.tip)}</p>` : ''}
+            ${sec.warning ? `<p class="warn">Importante: ${esc(sec.warning)}</p>` : ''}
           </div>`
           )
           .join('')}
