@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Geolocation, type Position } from '@capacitor/geolocation';
 import { supabase } from '@/integrations/supabase/client';
+import { upsertUserLocation } from '@/lib/locationSync';
 import { useAuth } from './useAuth';
 import type { GeoPosition } from '@/types';
 import type { BackgroundGeolocationPlugin } from '@capacitor-community/background-geolocation';
@@ -129,18 +130,13 @@ export function useNativeLocation() {
     }
 
     try {
-      await supabase
-        .from('user_locations')
-        .upsert({
-          user_id: user.id,
-          lat: position.lat,
-          lng: position.lng,
-          accuracy: position.accuracy,
-          heading: position.heading,
-          speed: effectiveSpeed,
-          is_online: true,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
+      await upsertUserLocation({
+        lat: position.lat,
+        lng: position.lng,
+        accuracy: position.accuracy,
+        heading: position.heading,
+        speed: effectiveSpeed,
+      });
 
       lastUpdateRef.current = now;
       lastPositionRef.current = position;
