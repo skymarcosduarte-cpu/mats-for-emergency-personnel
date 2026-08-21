@@ -278,9 +278,19 @@ export const GUIDE_PAGES: GuidePageData[] = [
           '1. Ve a la sección de Tránsito (ícono de auto en la barra inferior o desde Inicio).',
           '2. Presiona "Nuevo Viaje".',
           '3. Llena los datos: origen, destino, hora estimada de llegada, tipo de transporte.',
-          '4. Opcionalmente agrega: placas del vehículo, acompañantes, número de vuelo.',
-          '5. Presiona "Iniciar Viaje".',
+          '4. El buscador de destino mejoró: escribe el lugar y elige la sugerencia, o toca el mapa para fijar el punto exacto.',
+          '5. Si el viaje es en AVIÓN, ahora son obligatorios la aerolínea y el número de vuelo (la matrícula de la aeronave es opcional).',
+          '6. Presiona "Iniciar Viaje". Puedes compartirlo por WhatsApp con un toque.',
         ],
+      },
+      {
+        heading: 'Detección automática de llegada (NUEVO)',
+        paragraphs: [
+          'Si olvidas cerrar tu viaje, la app lo detecta sola: cuando estás dentro del radio de tu destino, marca el viaje como "LLEGUÉ" y avisa a la comunidad.',
+          'Puedes ajustar la sensibilidad del radio de llegada entre 100 y 500 metros en Ajustes → Alertas.',
+          'Los viajes activos y el historial de las últimas 24 horas se ven en Tránsito y en el mapa.',
+        ],
+        tip: 'Un radio pequeño (100 m) es más preciso en ciudad; uno grande (500 m) funciona mejor en carretera o con GPS débil.',
       },
       {
         heading: '¿Qué pasa si no llego a tiempo?',
@@ -291,6 +301,7 @@ export const GUIDE_PAGES: GuidePageData[] = [
         tip: 'Usa esta función especialmente para viajes largos o en carreteras peligrosas.',
         warning: 'Recuerda confirmar tu llegada cuando llegues a tu destino para evitar falsas alarmas.',
       },
+
     ],
   },
 
