@@ -195,9 +195,13 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
           Anterior
         </Button>
 
-        <span className="text-sm text-muted-foreground">
-          {currentStep + 1} / {ONBOARDING_STEPS.length}
-        </span>
+        <div className="flex flex-col items-center gap-1">
+          <GuidePdfButton variant="ghost" label="Guía PDF" />
+          <span className="text-sm text-muted-foreground">
+            {currentStep + 1} / {ONBOARDING_STEPS.length}
+          </span>
+        </div>
+
 
         <Button onClick={handleNext}>
           {isLastStep ? (
