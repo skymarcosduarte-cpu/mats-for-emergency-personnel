@@ -416,7 +416,7 @@ export default function UserGuidePage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">SkyAlert:</strong> Alertas sísmicas en tiempo real</span>
+                <span><strong className="text-gray-900">Apps de Alertamiento Sísmico:</strong> Últimos 6 avisos de SASSLA y SkyAlert, cargados automáticamente y con actualización manual</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
