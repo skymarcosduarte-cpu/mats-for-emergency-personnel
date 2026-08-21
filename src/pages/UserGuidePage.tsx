@@ -315,22 +315,12 @@ export default function UserGuidePage() {
               </div>
             </div>
 
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Modos de Vista</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Comunidad:</strong> Vista estándar con todos los miembros</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">En Vivo:</strong> Modo de respuesta a desastres con sismos, incendios, ciclones y datos meteorológicos en tiempo real</span>
-              </li>
-            </ul>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Mapa En Vivo — Capas Meteorológicas</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Mapa unificado</h3>
             <p className="text-gray-700 leading-relaxed mb-4">
-              El modo <strong>En Vivo</strong> integra datos meteorológicos en tiempo real directamente sobre el mapa,
-              siempre visibles para monitoreo continuo:
+              La antigua vista <strong>En Vivo</strong> se integró al <strong>Mapa de Comunidad</strong>: ahora existe un
+              solo mapa con todas las funciones. Muestra a los miembros (apodo y nombre completo), alertas SOS,
+              rescatistas en camino con ruta y ETA, viajes activos, reportes de carretera vigentes, puntos de calor de
+              NASA FIRMS y capas de clima. Las capas inestables fueron retiradas para mejorar el rendimiento.
             </p>
             <div className="grid gap-4 md:grid-cols-2 print:grid-cols-2">
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -342,6 +332,7 @@ export default function UserGuidePage() {
                   cada 5 minutos mostrando lluvias, tormentas y precipitaciones sobre el territorio.
                 </p>
               </div>
+
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
                   ⚠️ Alertas SMN/CONAGUA
@@ -402,10 +393,11 @@ export default function UserGuidePage() {
               </div>
               
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">⚡ SkyAlert</h4>
+                <h4 className="font-medium text-gray-900 mb-2">⚡ Apps de Alertamiento Sísmico</h4>
                 <p className="text-sm text-gray-600">
-                  Alertas sísmicas en tiempo real con tiempos de arribo de ondas P y S.
+                  Avisos públicos recientes de SASSLA y SkyAlert (6 posts por fuente), con respaldo de noticias.
                 </p>
+
               </div>
               
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -424,7 +416,7 @@ export default function UserGuidePage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">SkyAlert:</strong> Alertas sísmicas en tiempo real</span>
+                <span><strong className="text-gray-900">Apps de Alertamiento Sísmico:</strong> Últimos 6 avisos de SASSLA y SkyAlert, cargados automáticamente y con actualización manual</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
@@ -459,10 +451,10 @@ export default function UserGuidePage() {
             <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Iniciar un Viaje</h3>
             <ol className="space-y-2 text-gray-700 list-decimal list-inside">
               <li>Selecciona el tipo de viaje (Carretera, Vuelo, Taxi, etc.)</li>
-              <li>Ingresa el origen y destino</li>
+              <li>Ingresa el origen y destino con el buscador mejorado o tocando el punto exacto en el mapa</li>
               <li>Configura la hora estimada de llegada (ETA)</li>
               <li>Opcionalmente, agrega foto del vehículo y placas</li>
-              <li>Para vuelos: número de vuelo y pase de abordar</li>
+              <li>Para vuelos: <strong>aerolínea y número de vuelo son obligatorios</strong>; la matrícula de la aeronave es opcional</li>
             </ol>
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Durante el Viaje</h3>
@@ -481,9 +473,26 @@ export default function UserGuidePage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
-                <span>Puedes compartir un enlace de seguimiento con familiares</span>
+                <span>Puedes compartir un enlace de seguimiento con familiares y avisar por WhatsApp</span>
               </li>
             </ul>
+
+            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Detección Automática de Llegada</h3>
+            <p className="text-gray-700 leading-relaxed mb-4">
+              Si olvidas cerrar tu viaje, la app lo detecta por GPS: al entrar en el radio de tu destino marca el viaje
+              como <strong>llegada</strong> y notifica a la comunidad. Puedes ajustar la sensibilidad del radio entre
+              <strong> 100 y 500 metros</strong> en <strong>Ajustes → Alertas</strong>.
+            </p>
+
+            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">📶 Red Mesh Bluetooth (sin internet)</h3>
+            <p className="text-gray-700 leading-relaxed mb-4">
+              La Red Mesh permite que la app siga comunicándose cuando no hay internet ni señal celular. Los
+              dispositivos cercanos retransmiten los mensajes por Bluetooth formando una malla; las alertas SOS tienen
+              prioridad y viajan firmadas y verificadas criptográficamente. Se activa desde el botón morado
+              <strong> Red Mesh</strong> en la pantalla de Inicio y su alcance completo requiere la app instalada como
+              aplicación nativa (Android/iOS).
+            </p>
+
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Reportes de Carretera</h3>
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">

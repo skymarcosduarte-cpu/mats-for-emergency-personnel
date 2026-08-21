@@ -149,58 +149,67 @@ export const GUIDE_PAGES: GuidePageData[] = [
     ],
   },
 
-  // ── 5. MAPA - COMUNIDAD ──
+  // ── 5. MAPA UNIFICADO ──
   {
     icon: <MapPin className="w-14 h-14" />,
-    title: 'Mapa — Vista Comunidad',
+    title: 'Mapa de Comunidad (unificado)',
     accentColor: 'text-primary',
     sections: [
       {
         paragraphs: [
-          'El Mapa es una de las funciones más útiles de M.A.T.S. Tiene dos vistas que puedes cambiar con los botones en la parte superior: "Comunidad" y "En Vivo".',
-          'La vista de Comunidad muestra la ubicación en tiempo real de todos los miembros de la app que tienen su ubicación compartida.',
+          'Ahora hay UN SOLO mapa. La antigua vista "En Vivo" se integró al Mapa de Comunidad, así que ya no tienes que cambiar de pantalla: todas las funciones están juntas.',
+          'El mapa muestra en tiempo real a los miembros de la comunidad, sus viajes activos y los eventos de riesgo cercanos.',
         ],
       },
       {
         heading: '¿Qué puedo ver en el mapa?',
         paragraphs: [
-          '• Puntos verdes: Miembros activos de la comunidad.',
-          '• Puntos rojos con sirena: Alertas SOS activas.',
-          '• Íconos de auto: Miembros que están en un viaje registrado.',
-          '• Íconos de ambulancia: Miembros con capacidad médica.',
-          'Puedes tocar cualquier marcador para ver más detalles sobre esa persona o evento.',
+          '• Miembros activos de la comunidad, con su apodo y nombre completo para identificarlos mejor.',
+          '• Tu propia posición marcada como "TÚ" con halo dorado.',
+          '• Alertas SOS activas y rescatistas en camino, con ruta y tiempo estimado de llegada.',
+          '• Viajes en curso (auto y avión) con posición estimada cuando se pierde la señal.',
+          '• 🔥 Incendios y puntos de calor detectados por satélite NASA FIRMS.',
+          '• 🌀 Ciclones tropicales activos y consulta de clima por punto.',
+          '• 🚧 Reportes de carretera vigentes (expiran a las 12 horas).',
         ],
         tip: 'Para que los demás te vean en el mapa, activa "Compartir ubicación" en Ajustes → Privacidad.',
+      },
+      {
+        heading: 'Capas y controles',
+        paragraphs: [
+          'Usa el menú de capas para encender o apagar lo que quieres ver (FIRMS, viajes, reportes, clima).',
+          'Se eliminaron las capas que fallaban o mostraban "zoom no soportado" para que el mapa sea más rápido y estable.',
+        ],
       },
     ],
   },
 
-  // ── 6. MAPA - EN VIVO ──
+  // ── 6. RED MESH BLUETOOTH ──
   {
     icon: <Radio className="w-14 h-14" />,
-    title: 'Mapa — Vista En Vivo',
-    accentColor: 'text-warning',
+    title: 'Red Mesh (sin internet)',
+    accentColor: 'text-primary',
     sections: [
       {
         paragraphs: [
-          'La vista "En Vivo" del mapa muestra eventos naturales y meteorológicos en tiempo real sobre el mapa.',
-          'Esta vista es ideal para monitorear peligros naturales cerca de ti o en las zonas donde viajan tus seres queridos.',
+          'NUEVO: la Red Mesh permite que la app siga comunicándose cuando NO hay internet ni señal celular, usando Bluetooth entre dispositivos cercanos.',
+          'Cada teléfono retransmite los mensajes a otros teléfonos cercanos, formando una red en malla que amplía el alcance en zonas de desastre.',
         ],
       },
       {
-        heading: '¿Qué se muestra?',
+        heading: '¿Cómo la uso?',
         paragraphs: [
-          '🔴 Sismos: Datos del USGS (mundial) y SSN (México). Muestra magnitud, profundidad y ubicación.',
-          '🟠 Incendios: Puntos de calor detectados por satélite NASA/FIRMS.',
-          '🌀 Ciclones: Trayectorias de ciclones tropicales activos.',
-          '🌧️ Radar de Lluvia: Capa de precipitación en tiempo real con datos de RainViewer.',
-          '📡 Radares Doppler: 8 estaciones de radar SMN en México con cobertura de 250 km cada una.',
-          '🛰️ Satélite: Imagen de nubes por satélite infrarrojo de RainViewer.',
+          '1. Entra a la sección "Red Mesh" (botón morado en Inicio).',
+          '2. Activa la red y acepta los permisos de Bluetooth y ubicación.',
+          '3. Verás los dispositivos cercanos conectados y los mensajes recibidos.',
+          'Las alertas SOS tienen prioridad máxima y se retransmiten primero. Los mensajes viajan firmados y verificados para evitar suplantaciones.',
         ],
-        tip: 'Los colores del radar indican la intensidad de la lluvia: verde es ligera, amarillo moderada, rojo fuerte y morado muy fuerte.',
+        tip: 'La Red Mesh completa requiere la app instalada como aplicación nativa (Android/iOS). En el navegador el alcance es limitado.',
+        warning: 'Mantén el Bluetooth encendido y la batería con carga: la malla depende de que haya dispositivos activos cerca.',
       },
     ],
   },
+
 
   // ── 7. ALERTAS Y SISMOS ──
   {
@@ -221,7 +230,17 @@ export const GUIDE_PAGES: GuidePageData[] = [
           'Cuando ocurre un sismo cercano, recibes una notificación con sonido y vibración.',
           'Después del sismo, la app te pregunta "¿Estás bien?" y puedes reportar la intensidad que sentiste.',
           'Puedes configurar el radio de detección (de 20 a 400 km) en Ajustes → Alertas.',
+          'NUEVO: cada aviso se puede cerrar con la ✕ una vez que lo leíste.',
         ],
+      },
+      {
+        heading: 'Apps de Alertamiento Sísmico (antes SkyAlert)',
+        paragraphs: [
+          'Esta subsección cambió de nombre y ahora reúne los avisos públicos de SASSLA y SkyAlert.',
+          'Se muestran automáticamente los 6 posts más recientes de cada cuenta, sin que tengas que hacer clic.',
+          'Si las fuentes están saturadas, la app usa un respaldo de noticias para seguir informándote, y puedes actualizar manualmente.',
+        ],
+        tip: 'Estas son fuentes informativas complementarias; no sustituyen a tu app oficial de alertamiento.',
       },
       {
         heading: 'Monitor de Sismos Globales 24/7',
@@ -231,6 +250,7 @@ export const GUIDE_PAGES: GuidePageData[] = [
         ],
         tip: 'Estos monitores te permiten ver la actividad sísmica mundial sin salir de la app.',
       },
+
       {
         heading: 'Alertas SMN y CONAGUA',
         paragraphs: [
@@ -258,9 +278,19 @@ export const GUIDE_PAGES: GuidePageData[] = [
           '1. Ve a la sección de Tránsito (ícono de auto en la barra inferior o desde Inicio).',
           '2. Presiona "Nuevo Viaje".',
           '3. Llena los datos: origen, destino, hora estimada de llegada, tipo de transporte.',
-          '4. Opcionalmente agrega: placas del vehículo, acompañantes, número de vuelo.',
-          '5. Presiona "Iniciar Viaje".',
+          '4. El buscador de destino mejoró: escribe el lugar y elige la sugerencia, o toca el mapa para fijar el punto exacto.',
+          '5. Si el viaje es en AVIÓN, ahora son obligatorios la aerolínea y el número de vuelo (la matrícula de la aeronave es opcional).',
+          '6. Presiona "Iniciar Viaje". Puedes compartirlo por WhatsApp con un toque.',
         ],
+      },
+      {
+        heading: 'Detección automática de llegada (NUEVO)',
+        paragraphs: [
+          'Si olvidas cerrar tu viaje, la app lo detecta sola: cuando estás dentro del radio de tu destino, marca el viaje como "LLEGUÉ" y avisa a la comunidad.',
+          'Puedes ajustar la sensibilidad del radio de llegada entre 100 y 500 metros en Ajustes → Alertas.',
+          'Los viajes activos y el historial de las últimas 24 horas se ven en Tránsito y en el mapa.',
+        ],
+        tip: 'Un radio pequeño (100 m) es más preciso en ciudad; uno grande (500 m) funciona mejor en carretera o con GPS débil.',
       },
       {
         heading: '¿Qué pasa si no llego a tiempo?',
@@ -271,6 +301,7 @@ export const GUIDE_PAGES: GuidePageData[] = [
         tip: 'Usa esta función especialmente para viajes largos o en carreteras peligrosas.',
         warning: 'Recuerda confirmar tu llegada cuando llegues a tu destino para evitar falsas alarmas.',
       },
+
     ],
   },
 
@@ -347,18 +378,19 @@ export const GUIDE_PAGES: GuidePageData[] = [
     sections: [
       {
         paragraphs: [
-          'El Centro de Monitoreo te permite ver cámaras en vivo de distintas ciudades del mundo y señales de noticias en tiempo real, todo desde la app.',
-          'Puedes elegir ver 4 o 9 cámaras simultáneamente en una cuadrícula.',
+          'El Centro de Monitoreo (RecurSOS → Centro de Monitoreo) reúne feeds de noticias en vivo y cámaras del mundo, todo desde la app.',
+          'Puedes verlos en cuadrícula de 1x1 hasta 3x3 y abrir cualquier señal en pantalla completa.',
         ],
       },
       {
-        heading: '¿Qué cámaras incluye?',
+        heading: 'Señales por defecto (actualizado)',
         paragraphs: [
-          '📹 Cámaras de Ciudad de México: Bosque de Chapultepec, Torre Latinoamericana, Paseo de la Reforma y más.',
-          '🌎 Cámaras internacionales: Nueva York, Toronto, Niágara, Roma, Florencia, Buenos Aires, Estambul, Hong Kong, LAX Airport y más.',
-          '📺 Señales de noticias en vivo: Milenio, FOX 26, SKY News, FOX Live, Al Jazeera, Euro News, CNN en Español.',
+          'Al abrirlo por primera vez ya vienen listas 4 señales de noticias en vivo: N+, CNN en Español, Sky News y TELESUR.',
+          'También están disponibles Milenio, Euronews, Al Jazeera y más, además de cámaras de Ciudad de México e internacionales.',
+          'Se depuraron las señales caídas para que casi todas las cámaras carguen correctamente.',
         ],
       },
+
       {
         heading: '¿Cómo personalizo mi vista?',
         paragraphs: [

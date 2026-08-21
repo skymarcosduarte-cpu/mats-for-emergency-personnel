@@ -12,7 +12,9 @@ import {
   ChevronLeft,
   Check,
   AlertTriangle,
+  Radio,
   Heart
+
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatsLogo } from '@/components/MatsLogo';
@@ -44,24 +46,32 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     icon: <MapPin className="w-12 h-12" />,
     title: 'Mapa en Tiempo Real',
-    description: 'Visualiza la ubicación de todos los miembros de la comunidad. Ve quién está cerca y disponible para ayudar.',
+    description: 'Un solo mapa con todo: miembros de la comunidad con su nombre, viajes activos, alertas SOS, incendios NASA FIRMS y clima.',
     tip: 'Mantén tu ubicación activa para que otros puedan encontrarte',
+    color: 'text-primary',
+  },
+  {
+    icon: <Radio className="w-12 h-12" />,
+    title: 'Red Mesh Bluetooth',
+    description: 'Si no hay internet ni señal celular, la Red Mesh conecta tu teléfono con otros cercanos por Bluetooth para enviar y retransmitir alertas SOS.',
+    tip: 'Actívala desde el botón morado "Red Mesh" en Inicio',
     color: 'text-primary',
   },
   {
     icon: <Bell className="w-12 h-12" />,
     title: 'Alertas Sísmicas',
-    description: 'Recibe notificaciones de sismos cercanos automáticamente. Después de un sismo, reporta que estás bien con "Todo bien" o solicita ayuda con "14".',
-    tip: 'Activa las notificaciones para no perderte ninguna alerta',
+    description: 'Recibe alertas de sismos automáticamente y consulta los avisos recientes de SASSLA y SkyAlert en "Apps de Alertamiento Sísmico". Reporta "Todo bien" o pide ayuda con "14".',
+    tip: 'Cada aviso se puede cerrar con la ✕ después de leerlo',
     color: 'text-warning',
   },
   {
     icon: <Car className="w-12 h-12" />,
-    title: 'Registro de Tránsito',
-    description: 'Cuando viajes, registra tu ruta para que tu comunidad sepa dónde estás. Ideal para viajes largos o en carretera.',
-    tip: 'También puedes reportar incidentes viales',
+    title: 'Tránsito Seguro',
+    description: 'Registra tus viajes por carretera o avión. Si olvidas cerrarlo, la app detecta tu llegada por GPS y lo cierra sola.',
+    tip: 'Ajusta el radio de llegada (100–500 m) en Ajustes → Alertas',
     color: 'text-accent',
   },
+
   {
     icon: <Users className="w-12 h-12" />,
     title: 'Tu Comunidad',

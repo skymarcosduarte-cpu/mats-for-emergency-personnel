@@ -163,53 +163,36 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
     color: 'text-primary',
     steps: [
       {
-        title: '🗺️ Mapa Comunidad y En Vivo',
+        title: '🗺️ Mapa unificado de Comunidad',
         content: (
           <div className="space-y-4">
             <p>
-              El mapa tiene <strong>dos vistas</strong> que puedes alternar con los botones superiores:
+              Ahora hay <strong>un solo mapa</strong>: la antigua vista "En Vivo" se integró al Mapa de Comunidad.
             </p>
             <div className="space-y-2">
               <div className="flex items-start gap-3 p-3 bg-primary/10 rounded-lg border border-primary/30">
                 <Users className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-primary">Comunidad</p>
-                  <p className="text-xs text-muted-foreground">Ubicación en tiempo real de miembros, alertas activas y viajes</p>
+                  <p className="font-medium text-primary">Personas y viajes</p>
+                  <p className="text-xs text-muted-foreground">Miembros con apodo y nombre completo, alertas SOS, rescatistas en camino y viajes activos</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 bg-warning/10 rounded-lg border border-warning/30">
-                <Radio className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
+                <Flame className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-warning">En Vivo</p>
-                  <p className="text-xs text-muted-foreground">Sismos, incendios, ciclones + radar de lluvia y alertas SMN</p>
+                  <p className="font-medium text-warning">Eventos de riesgo</p>
+                  <p className="text-xs text-muted-foreground">Incendios NASA FIRMS, ciclones, clima por punto y reportes de carretera</p>
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-xs text-center">
-              <div className="bg-muted rounded p-2">
-                <Bell className="w-4 h-4 mx-auto mb-1 text-warning" />
-                <p>Sismos</p>
-              </div>
-              <div className="bg-muted rounded p-2">
-                <Flame className="w-4 h-4 mx-auto mb-1 text-orange-500" />
-                <p>Incendios</p>
-              </div>
-              <div className="bg-muted rounded p-2">
-                <Radio className="w-4 h-4 mx-auto mb-1 text-blue-500" />
-                <p>Ciclones</p>
-              </div>
-              <div className="bg-muted rounded p-2">
-                <span className="text-base">🌧️</span>
-                <p>Radar lluvia</p>
-              </div>
-            </div>
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 text-xs">
-              <p className="font-medium text-blue-600">🌧️ El radar de precipitación y las alertas del SMN/CONAGUA se muestran siempre visibles sobre el mapa.</p>
+              <p className="font-medium text-blue-600">Se eliminaron las capas inestables (las que mostraban "zoom no soportado") para un mapa más rápido.</p>
             </div>
           </div>
         ),
         tip: 'Toca cualquier marcador para ver más detalles del evento o miembro',
       },
+
     ],
   },
   {
@@ -231,6 +214,7 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
                 <li>Recibes notificación con sonido y vibración</li>
                 <li>Ves magnitud, distancia y ubicación</li>
                 <li>Reportas: "¿Estás bien?" y la intensidad percibida</li>
+                <li>Puedes cerrar cada aviso con la ✕ después de leerlo</li>
               </ol>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -238,6 +222,50 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
             </p>
           </div>
         ),
+      },
+      {
+        title: '📡 Apps de Alertamiento Sísmico',
+        content: (
+          <div className="space-y-4">
+            <p>
+              La subsección "SkyAlert" ahora se llama <strong>Apps de Alertamiento Sísmico</strong>.
+            </p>
+            <div className="bg-muted rounded-lg p-3 text-xs space-y-1">
+              <p>• Muestra automáticamente los <strong>6 avisos más recientes</strong> de SASSLA y SkyAlert.</p>
+              <p>• Ya no necesitas hacer clic: se cargan solos y puedes actualizar manualmente.</p>
+              <p>• Si las fuentes se saturan, se usa un respaldo de noticias.</p>
+            </div>
+          </div>
+        ),
+        tip: 'Es información complementaria; no sustituye a tu app oficial de alertamiento',
+      },
+    ],
+  },
+  {
+    id: 'mesh',
+    title: 'Red Mesh',
+    icon: <Radio className="w-6 h-6" />,
+    color: 'text-primary',
+    steps: [
+      {
+        title: '📶 Red Mesh Bluetooth (sin internet)',
+        content: (
+          <div className="space-y-4">
+            <p>
+              <strong>Nuevo:</strong> comunicación de emergencia por Bluetooth cuando no hay internet ni señal celular.
+            </p>
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 text-xs space-y-1">
+              <p>• Los teléfonos cercanos retransmiten los mensajes formando una malla.</p>
+              <p>• Las alertas <strong>SOS tienen prioridad</strong> y viajan firmadas y verificadas.</p>
+              <p>• Entra desde el botón morado <strong>"Red Mesh"</strong> en Inicio y actívala.</p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              El alcance completo requiere la app instalada como aplicación nativa (Android/iOS).
+            </p>
+          </div>
+        ),
+        important: true,
+        tip: 'Mantén el Bluetooth encendido para que la malla funcione',
       },
     ],
   },
@@ -252,23 +280,27 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
         content: (
           <div className="space-y-4">
             <p>
-              Registra tus viajes en carretera para que la comunidad sepa tu ruta.
+              Registra tus viajes en carretera o en avión para que la comunidad sepa tu ruta.
             </p>
             <div className="bg-accent/10 rounded-lg p-3 text-sm">
               <p className="font-medium mb-1">Incluye:</p>
-              <p className="text-xs text-muted-foreground">Origen, destino, ETA, tipo de transporte, placas y acompañantes</p>
+              <p className="text-xs text-muted-foreground">Origen, destino (búsqueda mejorada o toque en el mapa), ETA, tipo de transporte, placas y acompañantes</p>
+            </div>
+            <div className="bg-muted rounded-lg p-3 text-xs">
+              <strong>Vuelos:</strong> aerolínea y número de vuelo son obligatorios; la matrícula de la aeronave es opcional.
+            </div>
+            <div className="bg-safe/10 border border-safe/30 rounded-lg p-3 text-xs">
+              <strong>Llegada automática:</strong> si olvidas cerrar el viaje, la app lo cierra al detectar que llegaste. Ajusta el radio (100–500 m) en <strong>Ajustes → Alertas</strong>.
             </div>
             <div className="bg-muted rounded-lg p-3 text-xs">
               <strong>Si no llegas a tiempo</strong>, se enviará una alerta automática a la comunidad.
             </div>
-            <p className="text-xs text-muted-foreground">
-              Puedes compartir tu viaje con personas fuera de la app mediante un link.
-            </p>
           </div>
         ),
       },
     ],
   },
+
   {
     id: 'community',
     title: 'Comunidad',
@@ -363,7 +395,7 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
         content: (
           <div className="space-y-4">
             <p>
-              <strong>RecurSOS</strong> está en el menú principal y contiene dos secciones clave:
+              <strong>RecurSOS</strong> está en el menú principal y contiene cuatro secciones:
             </p>
             <div className="space-y-2">
               <div className="flex items-start gap-3 p-3 bg-destructive/10 rounded-lg border border-destructive/30">
@@ -380,10 +412,25 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
                   <p className="text-xs text-muted-foreground">Tarjetas con protocolos de primeros auxilios, evacuación, seguridad y más</p>
                 </div>
               </div>
+              <div className="flex items-start gap-3 p-3 bg-safe/10 rounded-lg border border-safe/30">
+                <Radio className="w-5 h-5 text-safe mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-safe">Centro de Monitoreo — feeds de noticias en vivo</p>
+                  <p className="text-xs text-muted-foreground">Abre por defecto con N+, CNN en Español, Sky News y TELESUR. Cuadrículas de 1x1 a 3x3 y pantalla completa</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-warning/10 rounded-lg border border-warning/30">
+                <Radio className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-warning">Canal Zello</p>
+                  <p className="text-xs text-muted-foreground">Radio PoC de la comunidad EMERGENCIAS ARABA</p>
+                </div>
+              </div>
             </div>
             <div className="bg-safe/10 border border-safe/30 rounded-lg p-2 text-xs">
               <p className="font-medium text-safe">📥 El directorio se descarga automáticamente y funciona SIN INTERNET</p>
             </div>
+
           </div>
         ),
         tip: 'Busca por país, ciudad o usa tu GPS para encontrar números de emergencia cercanos',
