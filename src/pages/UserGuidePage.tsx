@@ -315,22 +315,12 @@ export default function UserGuidePage() {
               </div>
             </div>
 
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Modos de Vista</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Comunidad:</strong> Vista estándar con todos los miembros</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">En Vivo:</strong> Modo de respuesta a desastres con sismos, incendios, ciclones y datos meteorológicos en tiempo real</span>
-              </li>
-            </ul>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Mapa En Vivo — Capas Meteorológicas</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Mapa unificado</h3>
             <p className="text-gray-700 leading-relaxed mb-4">
-              El modo <strong>En Vivo</strong> integra datos meteorológicos en tiempo real directamente sobre el mapa,
-              siempre visibles para monitoreo continuo:
+              La antigua vista <strong>En Vivo</strong> se integró al <strong>Mapa de Comunidad</strong>: ahora existe un
+              solo mapa con todas las funciones. Muestra a los miembros (apodo y nombre completo), alertas SOS,
+              rescatistas en camino con ruta y ETA, viajes activos, reportes de carretera vigentes, puntos de calor de
+              NASA FIRMS y capas de clima. Las capas inestables fueron retiradas para mejorar el rendimiento.
             </p>
             <div className="grid gap-4 md:grid-cols-2 print:grid-cols-2">
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -342,6 +332,7 @@ export default function UserGuidePage() {
                   cada 5 minutos mostrando lluvias, tormentas y precipitaciones sobre el territorio.
                 </p>
               </div>
+
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
                   ⚠️ Alertas SMN/CONAGUA
