@@ -98,30 +98,11 @@ export function useBackgroundSurvival() {
   const isBackgroundRef = useRef(false);
 
   // Ensure user has a row in user_locations (even without GPS).
-  // ignoreDuplicates: true → only inserts if no row exists, never overwrites coords.
+  // Uses the live session id so RLS (auth.uid() = user_id) always matches.
   const ensurePresenceRow = useCallback(async () => {
     if (!user) return;
     try {
-      // Insert a placeholder row if none exists (ignoreDuplicates skips if row exists)
-      await supabase
-        .from('user_locations')
-        .upsert(
-          {
-            user_id: user.id,
-            lat: 0,
-            lng: 0,
-            is_online: true,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id', ignoreDuplicates: true }
-        );
-
-      // Always mark as online (works whether row was just created or already existed)
-      await supabase
-        .from('user_locations')
-        .update({ is_online: true, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id);
-
+      await touchUserPresence(true);
       console.log('[BackgroundSurvival] Presence row ensured');
     } catch {
       // non-critical
@@ -132,10 +113,7 @@ export function useBackgroundSurvival() {
   const heartbeat = useCallback(async () => {
     if (!user) return;
     try {
-      await supabase
-        .from('user_locations')
-        .update({ updated_at: new Date().toISOString(), is_online: true })
-        .eq('user_id', user.id);
+      await touchUserPresence(true);
     } catch {
       // non-critical
     }
