@@ -127,7 +127,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const { user, profile, role, signOut, updateProfile, updateRole, deleteAccount } = useAuth();
   const { permission, isSupported, requestPermission, showEarthquakeNotification } = usePushNotifications();
   const { isSupported: webPushSupported, isSubscribed: webPushSubscribed, subscribe: subscribeToPush } = useWebPushSubscription();
-  const { helpRequestSounds, earthquakeSounds, earthquakeRadiusKm, internationalRedAlerts, ssnNationalAlertMagnitude, skyAlertSounds, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusKm, setInternationalRedAlerts, setSsnNationalAlertMagnitude, setSkyAlertSounds } = useAlertSettings();
+  const { helpRequestSounds, earthquakeSounds, earthquakeRadiusKm, internationalRedAlerts, ssnNationalAlertMagnitude, skyAlertSounds, arrivalRadiusMeters, setArrivalRadiusMeters, setHelpRequestSounds, setEarthquakeSounds, setEarthquakeRadiusKm, setInternationalRedAlerts, setSsnNationalAlertMagnitude, setSkyAlertSounds } = useAlertSettings();
   const { loading: loadingDataExport, data: userDataExport, fetchAllUserData, downloadAsJson } = useUserDataExport();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showDataExportDialog, setShowDataExportDialog] = useState(false);
@@ -1796,6 +1796,41 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   <span>20 km</span>
                   <span>400 km</span>
                 </div>
+              </div>
+
+              {/* Arrival Detection Radius Slider */}
+              <div className="space-y-3 p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-foreground font-medium">
+                      Radio de llegada (Tránsito Seguro)
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Distancia al destino para cerrar el viaje automáticamente
+                    </p>
+                  </div>
+                  <span className="text-lg font-bold text-primary">
+                    {arrivalRadiusMeters} m
+                  </span>
+                </div>
+                <Slider
+                  value={[arrivalRadiusMeters]}
+                  onValueChange={(v) => setArrivalRadiusMeters(v[0])}
+                  min={100}
+                  max={500}
+                  step={50}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground px-1">
+                  <span>100 m</span>
+                  <span>500 m</span>
+                </div>
+                <p className="text-xs text-muted-foreground italic">
+                  Un radio menor es más preciso; uno mayor detecta la llegada aunque el GPS tenga poca señal
+                </p>
               </div>
 
               {/* SSN National Alert Magnitude Slider */}
