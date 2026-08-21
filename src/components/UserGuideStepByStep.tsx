@@ -149,58 +149,67 @@ export const GUIDE_PAGES: GuidePageData[] = [
     ],
   },
 
-  // ── 5. MAPA - COMUNIDAD ──
+  // ── 5. MAPA UNIFICADO ──
   {
     icon: <MapPin className="w-14 h-14" />,
-    title: 'Mapa — Vista Comunidad',
+    title: 'Mapa de Comunidad (unificado)',
     accentColor: 'text-primary',
     sections: [
       {
         paragraphs: [
-          'El Mapa es una de las funciones más útiles de M.A.T.S. Tiene dos vistas que puedes cambiar con los botones en la parte superior: "Comunidad" y "En Vivo".',
-          'La vista de Comunidad muestra la ubicación en tiempo real de todos los miembros de la app que tienen su ubicación compartida.',
+          'Ahora hay UN SOLO mapa. La antigua vista "En Vivo" se integró al Mapa de Comunidad, así que ya no tienes que cambiar de pantalla: todas las funciones están juntas.',
+          'El mapa muestra en tiempo real a los miembros de la comunidad, sus viajes activos y los eventos de riesgo cercanos.',
         ],
       },
       {
         heading: '¿Qué puedo ver en el mapa?',
         paragraphs: [
-          '• Puntos verdes: Miembros activos de la comunidad.',
-          '• Puntos rojos con sirena: Alertas SOS activas.',
-          '• Íconos de auto: Miembros que están en un viaje registrado.',
-          '• Íconos de ambulancia: Miembros con capacidad médica.',
-          'Puedes tocar cualquier marcador para ver más detalles sobre esa persona o evento.',
+          '• Miembros activos de la comunidad, con su apodo y nombre completo para identificarlos mejor.',
+          '• Tu propia posición marcada como "TÚ" con halo dorado.',
+          '• Alertas SOS activas y rescatistas en camino, con ruta y tiempo estimado de llegada.',
+          '• Viajes en curso (auto y avión) con posición estimada cuando se pierde la señal.',
+          '• 🔥 Incendios y puntos de calor detectados por satélite NASA FIRMS.',
+          '• 🌀 Ciclones tropicales activos y consulta de clima por punto.',
+          '• 🚧 Reportes de carretera vigentes (expiran a las 12 horas).',
         ],
         tip: 'Para que los demás te vean en el mapa, activa "Compartir ubicación" en Ajustes → Privacidad.',
+      },
+      {
+        heading: 'Capas y controles',
+        paragraphs: [
+          'Usa el menú de capas para encender o apagar lo que quieres ver (FIRMS, viajes, reportes, clima).',
+          'Se eliminaron las capas que fallaban o mostraban "zoom no soportado" para que el mapa sea más rápido y estable.',
+        ],
       },
     ],
   },
 
-  // ── 6. MAPA - EN VIVO ──
+  // ── 6. RED MESH BLUETOOTH ──
   {
     icon: <Radio className="w-14 h-14" />,
-    title: 'Mapa — Vista En Vivo',
-    accentColor: 'text-warning',
+    title: 'Red Mesh (sin internet)',
+    accentColor: 'text-primary',
     sections: [
       {
         paragraphs: [
-          'La vista "En Vivo" del mapa muestra eventos naturales y meteorológicos en tiempo real sobre el mapa.',
-          'Esta vista es ideal para monitorear peligros naturales cerca de ti o en las zonas donde viajan tus seres queridos.',
+          'NUEVO: la Red Mesh permite que la app siga comunicándose cuando NO hay internet ni señal celular, usando Bluetooth entre dispositivos cercanos.',
+          'Cada teléfono retransmite los mensajes a otros teléfonos cercanos, formando una red en malla que amplía el alcance en zonas de desastre.',
         ],
       },
       {
-        heading: '¿Qué se muestra?',
+        heading: '¿Cómo la uso?',
         paragraphs: [
-          '🔴 Sismos: Datos del USGS (mundial) y SSN (México). Muestra magnitud, profundidad y ubicación.',
-          '🟠 Incendios: Puntos de calor detectados por satélite NASA/FIRMS.',
-          '🌀 Ciclones: Trayectorias de ciclones tropicales activos.',
-          '🌧️ Radar de Lluvia: Capa de precipitación en tiempo real con datos de RainViewer.',
-          '📡 Radares Doppler: 8 estaciones de radar SMN en México con cobertura de 250 km cada una.',
-          '🛰️ Satélite: Imagen de nubes por satélite infrarrojo de RainViewer.',
+          '1. Entra a la sección "Red Mesh" (botón morado en Inicio).',
+          '2. Activa la red y acepta los permisos de Bluetooth y ubicación.',
+          '3. Verás los dispositivos cercanos conectados y los mensajes recibidos.',
+          'Las alertas SOS tienen prioridad máxima y se retransmiten primero. Los mensajes viajan firmados y verificados para evitar suplantaciones.',
         ],
-        tip: 'Los colores del radar indican la intensidad de la lluvia: verde es ligera, amarillo moderada, rojo fuerte y morado muy fuerte.',
+        tip: 'La Red Mesh completa requiere la app instalada como aplicación nativa (Android/iOS). En el navegador el alcance es limitado.',
+        warning: 'Mantén el Bluetooth encendido y la batería con carga: la malla depende de que haya dispositivos activos cerca.',
       },
     ],
   },
+
 
   // ── 7. ALERTAS Y SISMOS ──
   {
