@@ -3,9 +3,10 @@ import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { calculateDistance } from './useLocation';
+import { getArrivalRadiusMeters } from './useAlertSettings';
 
 // Arrival detection radius in kilometers
-const ARRIVAL_RADIUS_KM = 0.3; // 300 meters
+// Default fallback; user-configurable via Settings (100-500 m)
 const CHECK_INTERVAL_MS = 30000; // Check every 30 seconds for better responsiveness
 
 interface ActiveTrip {
@@ -65,6 +66,7 @@ export function useAutoArrivalDetection() {
         async (position) => {
           const userLat = position.coords.latitude;
           const userLng = position.coords.longitude;
+          const arrivalRadiusKm = getArrivalRadiusMeters() / 1000;
 
           for (const trip of tripsWithCoords) {
             if (!trip.destination_lat || !trip.destination_lng) continue;
@@ -78,7 +80,7 @@ export function useAutoArrivalDetection() {
 
             console.log(`[AutoArrival] Trip ${trip.id}: Distance to destination = ${distance.toFixed(2)} km`);
 
-            if (distance <= ARRIVAL_RADIUS_KM) {
+            if (distance <= arrivalRadiusKm) {
               // User is at destination! Auto-mark as arrived
               console.log(`[AutoArrival] User is at destination, auto-completing trip ${trip.id}`);
               

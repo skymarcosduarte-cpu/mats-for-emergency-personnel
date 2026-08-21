@@ -7,6 +7,7 @@ const STORAGE_KEY = 'mats-alert-settings';
 
 const DEFAULT_EARTHQUAKE_RADIUS_KM = 50;
 const DEFAULT_SSN_NATIONAL_ALERT_MAGNITUDE = 6.0;
+const DEFAULT_ARRIVAL_RADIUS_M = 300;
 
 interface AlertSettings {
   helpRequestSounds: boolean;
@@ -15,6 +16,7 @@ interface AlertSettings {
   internationalRedAlerts: boolean;
   ssnNationalAlertMagnitude: number;
   skyAlertSounds: boolean;
+  arrivalRadiusMeters: number;
 }
 
 const DEFAULT_SETTINGS: AlertSettings = {
@@ -24,6 +26,7 @@ const DEFAULT_SETTINGS: AlertSettings = {
   internationalRedAlerts: true,
   ssnNationalAlertMagnitude: DEFAULT_SSN_NATIONAL_ALERT_MAGNITUDE,
   skyAlertSounds: true,
+  arrivalRadiusMeters: DEFAULT_ARRIVAL_RADIUS_M,
 };
 
 export function useAlertSettings() {
@@ -81,6 +84,12 @@ export function useAlertSettings() {
     saveSettings({ ssnNationalAlertMagnitude: clampedMagnitude });
   }, [saveSettings]);
 
+  const setArrivalRadiusMeters = useCallback((meters: number) => {
+    // Clamp between 100 and 500 meters
+    const clamped = Math.max(100, Math.min(500, Math.round(meters)));
+    saveSettings({ arrivalRadiusMeters: clamped });
+  }, [saveSettings]);
+
   const setSkyAlertSounds = useCallback((enabled: boolean) => {
     saveSettings({ skyAlertSounds: enabled });
   }, [saveSettings]);
@@ -94,6 +103,7 @@ export function useAlertSettings() {
     setInternationalRedAlerts,
     setSsnNationalAlertMagnitude,
     setSkyAlertSounds,
+    setArrivalRadiusMeters,
   };
 }
 
@@ -179,4 +189,21 @@ export function areSkyAlertSoundsEnabled(): boolean {
     // Ignore
   }
   return true;
+}
+
+// Standalone function to get arrival detection radius in meters
+export function getArrivalRadiusMeters(): number {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      const value = parsed.arrivalRadiusMeters;
+      if (typeof value === 'number' && isFinite(value)) {
+        return Math.max(100, Math.min(500, value));
+      }
+    }
+  } catch (e) {
+    // Ignore
+  }
+  return DEFAULT_ARRIVAL_RADIUS_M;
 }
