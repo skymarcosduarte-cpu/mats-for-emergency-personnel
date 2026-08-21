@@ -728,7 +728,9 @@ export const UserGuideStepByStep: React.FC<UserGuideStepByStepProps> = ({ onClos
         >
           <X className="w-5 h-5" />
         </button>
+        </div>
       </header>
+
 
       {/* Progress bar */}
       <div className="px-4 py-2 bg-muted/30">
