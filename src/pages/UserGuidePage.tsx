@@ -393,10 +393,11 @@ export default function UserGuidePage() {
               </div>
               
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">⚡ SkyAlert</h4>
+                <h4 className="font-medium text-gray-900 mb-2">⚡ Apps de Alertamiento Sísmico</h4>
                 <p className="text-sm text-gray-600">
-                  Alertas sísmicas en tiempo real con tiempos de arribo de ondas P y S.
+                  Avisos públicos recientes de SASSLA y SkyAlert (6 posts por fuente), con respaldo de noticias.
                 </p>
+
               </div>
               
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
