@@ -230,7 +230,17 @@ export const GUIDE_PAGES: GuidePageData[] = [
           'Cuando ocurre un sismo cercano, recibes una notificación con sonido y vibración.',
           'Después del sismo, la app te pregunta "¿Estás bien?" y puedes reportar la intensidad que sentiste.',
           'Puedes configurar el radio de detección (de 20 a 400 km) en Ajustes → Alertas.',
+          'NUEVO: cada aviso se puede cerrar con la ✕ una vez que lo leíste.',
         ],
+      },
+      {
+        heading: 'Apps de Alertamiento Sísmico (antes SkyAlert)',
+        paragraphs: [
+          'Esta subsección cambió de nombre y ahora reúne los avisos públicos de SASSLA y SkyAlert.',
+          'Se muestran automáticamente los 6 posts más recientes de cada cuenta, sin que tengas que hacer clic.',
+          'Si las fuentes están saturadas, la app usa un respaldo de noticias para seguir informándote, y puedes actualizar manualmente.',
+        ],
+        tip: 'Estas son fuentes informativas complementarias; no sustituyen a tu app oficial de alertamiento.',
       },
       {
         heading: 'Monitor de Sismos Globales 24/7',
@@ -240,6 +250,7 @@ export const GUIDE_PAGES: GuidePageData[] = [
         ],
         tip: 'Estos monitores te permiten ver la actividad sísmica mundial sin salir de la app.',
       },
+
       {
         heading: 'Alertas SMN y CONAGUA',
         paragraphs: [
