@@ -163,53 +163,36 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
     color: 'text-primary',
     steps: [
       {
-        title: '🗺️ Mapa Comunidad y En Vivo',
+        title: '🗺️ Mapa unificado de Comunidad',
         content: (
           <div className="space-y-4">
             <p>
-              El mapa tiene <strong>dos vistas</strong> que puedes alternar con los botones superiores:
+              Ahora hay <strong>un solo mapa</strong>: la antigua vista "En Vivo" se integró al Mapa de Comunidad.
             </p>
             <div className="space-y-2">
               <div className="flex items-start gap-3 p-3 bg-primary/10 rounded-lg border border-primary/30">
                 <Users className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-primary">Comunidad</p>
-                  <p className="text-xs text-muted-foreground">Ubicación en tiempo real de miembros, alertas activas y viajes</p>
+                  <p className="font-medium text-primary">Personas y viajes</p>
+                  <p className="text-xs text-muted-foreground">Miembros con apodo y nombre completo, alertas SOS, rescatistas en camino y viajes activos</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 bg-warning/10 rounded-lg border border-warning/30">
-                <Radio className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
+                <Flame className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-warning">En Vivo</p>
-                  <p className="text-xs text-muted-foreground">Sismos, incendios, ciclones + radar de lluvia y alertas SMN</p>
+                  <p className="font-medium text-warning">Eventos de riesgo</p>
+                  <p className="text-xs text-muted-foreground">Incendios NASA FIRMS, ciclones, clima por punto y reportes de carretera</p>
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-xs text-center">
-              <div className="bg-muted rounded p-2">
-                <Bell className="w-4 h-4 mx-auto mb-1 text-warning" />
-                <p>Sismos</p>
-              </div>
-              <div className="bg-muted rounded p-2">
-                <Flame className="w-4 h-4 mx-auto mb-1 text-orange-500" />
-                <p>Incendios</p>
-              </div>
-              <div className="bg-muted rounded p-2">
-                <Radio className="w-4 h-4 mx-auto mb-1 text-blue-500" />
-                <p>Ciclones</p>
-              </div>
-              <div className="bg-muted rounded p-2">
-                <span className="text-base">🌧️</span>
-                <p>Radar lluvia</p>
-              </div>
-            </div>
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 text-xs">
-              <p className="font-medium text-blue-600">🌧️ El radar de precipitación y las alertas del SMN/CONAGUA se muestran siempre visibles sobre el mapa.</p>
+              <p className="font-medium text-blue-600">Se eliminaron las capas inestables (las que mostraban "zoom no soportado") para un mapa más rápido.</p>
             </div>
           </div>
         ),
         tip: 'Toca cualquier marcador para ver más detalles del evento o miembro',
       },
+
     ],
   },
   {
