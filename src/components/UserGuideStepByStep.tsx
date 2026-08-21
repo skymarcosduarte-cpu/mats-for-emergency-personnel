@@ -719,6 +719,8 @@ export const UserGuideStepByStep: React.FC<UserGuideStepByStepProps> = ({ onClos
           <MatsLogo size={28} />
           <h1 className="text-lg font-bold text-foreground">Guía Paso a Paso</h1>
         </div>
+        <div className="flex items-center gap-2">
+        <GuidePdfButton />
         <button
           onClick={handleClose}
           className="p-2 rounded-full hover:bg-muted transition-colors"
