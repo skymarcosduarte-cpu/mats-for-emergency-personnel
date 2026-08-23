@@ -48,26 +48,42 @@ Bluetooth* y activa el interruptor.
 
 ## iOS
 
+### Opción A — En la nube (sin Mac)
+
+GitHub → **Actions** → **Build IPA con Red Mesh (iOS)** → *Run workflow*.
+Al terminar descarga el artefacto **MATS-mesh-ipa**. El IPA sale **sin firmar**:
+se instala con AltStore / Sideloadly, o se firma con tu certificado de
+desarrollador para TestFlight / App Store.
+
+### Opción B — Con Mac y Xcode
+
 ```bash
 npx cap add ios && npm run build && npx cap sync ios
+gem install xcodeproj          # una sola vez
+bash native-plugins/install-ios.sh
+npx cap open ios
 ```
 
-Copia `mesh-advertiser/ios/MeshAdvertiserPlugin.swift` a `ios/App/App/` (Xcode →
-*Add Files to "App"*), y en `ios/App/App/Info.plist` agrega:
+El script copia `MeshAdvertiserPlugin.swift` y `MeshAdvertiserPlugin.m`, crea el
+bridging header, los añade al target de Xcode y parcha `Info.plist`
+(`NSBluetoothAlwaysUsageDescription`, `NSBluetoothPeripheralUsageDescription`,
+descripciones de ubicación y `UIBackgroundModes` con `bluetooth-central`,
+`bluetooth-peripheral` y `location`).
 
-```xml
-<key>NSBluetoothAlwaysUsageDescription</key>
-<string>MATS usa Bluetooth para crear una red malla de emergencia sin internet.</string>
-<key>NSBluetoothPeripheralUsageDescription</key>
-<string>MATS usa Bluetooth para retransmitir alertas SOS entre dispositivos cercanos.</string>
-<key>UIBackgroundModes</key>
-<array>
-  <string>bluetooth-central</string>
-  <string>bluetooth-peripheral</string>
-</array>
-```
+En Xcode: *Signing & Capabilities* → **Background Modes** → marca
+"Uses Bluetooth LE accessories" y "Acts as a Bluetooth LE accessory", elige tu
+equipo de firma y ejecuta en un iPhone real (el simulador no tiene BLE).
 
-En iOS el registro del plugin es automático gracias a `@objc(MeshAdvertiserPlugin)`.
+El registro del plugin lo hace la macro `CAP_PLUGIN` de
+`MeshAdvertiserPlugin.m`; sin ese archivo el plugin **no** aparece en Capacitor.
+
+### Límites de iOS
+- En segundo plano el anuncio va al *overflow area*: sólo lo ven otros iPhone
+  con la app instalada. Para interoperar con Android, la app debe estar en
+  primer plano al emitir.
+- El escaneo en background es más lento y sin `allowDuplicates`; los mensajes
+  pendientes (DTN en IndexedDB) se emiten al volver a primer plano.
+
 
 ## Prueba
 Dos teléfonos con el APK/IPA instalado, **modo avión con Bluetooth encendido**,
