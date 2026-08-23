@@ -66,6 +66,11 @@ jobs:
       - name: Compilar APK de depuración
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon --stacktrace
 
+      - name: Renombrar APK con fecha
+        run: |
+          mkdir -p release
+          cp android/app/build/outputs/apk/debug/*.apk release/MATS-RedMesh.apk
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -73,3 +78,20 @@ jobs:
           path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
           if-no-files-found: warn
+
+      - name: Crear Release público con APK
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: MATS Red Mesh APK #${{ github.run_number }}
+          body: |
+            APK de depuración con Red Mesh activada.
+
+            **Para instalar:**
+            1. Descarga el archivo .apk abajo
+            2. Ábrelo en tu Android (acepta "instalar apps desconocidas")
+            3. Si Google Play Protect lo bloquea, toca "Instalar de todos modos"
+            4. Abre la app → Red Mesh → activa el interruptor
+          files: release/MATS-RedMesh.apk
+          prerelease: false
