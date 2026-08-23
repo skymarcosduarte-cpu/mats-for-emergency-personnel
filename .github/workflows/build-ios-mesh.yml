@@ -1,0 +1,78 @@
+name: Build IPA con Red Mesh (iOS)
+
+# Cómo usarlo:
+#   GitHub -> pestaña "Actions" -> "Build IPA con Red Mesh (iOS)" -> "Run workflow".
+#   Al terminar (~15 min) descarga el artefacto "MATS-mesh-ipa".
+#   El IPA sale SIN FIRMAR: se instala con AltStore / Sideloadly / una cuenta de
+#   desarrollador. Para publicar en TestFlight hay que firmarlo con tu certificado.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'ipa-*'
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependencias
+        run: |
+          set -x
+          rm -f bun.lockb bun.lock package-lock.json
+          npm install --legacy-peer-deps --no-audit --no-fund
+          gem install xcodeproj --no-document || sudo gem install xcodeproj --no-document
+
+      - name: Compilar la app web
+        run: npx vite build
+
+      - name: Usar assets locales (app offline, sin servidor remoto)
+        run: |
+          node -e "
+          const fs=require('fs');
+          let s=fs.readFileSync('capacitor.config.ts','utf8');
+          s=s.replace(/\n\s*server:\s*\{[\s\S]*?\n\s*\},/, '');
+          fs.writeFileSync('capacitor.config.ts', s);
+          "
+
+      - name: Añadir plataforma iOS
+        run: |
+          if [ ! -d ios ]; then npx cap add ios; fi
+
+      - name: Sincronizar
+        run: npx cap sync ios
+
+      - name: Instalar plugin de la malla + Info.plist
+        run: bash native-plugins/install-ios.sh
+
+      - name: Compilar (sin firmar)
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
+            clean build
+
+      - name: Empaquetar IPA
+        run: |
+          cd ios/App/build/Build/Products/Release-iphoneos
+          mkdir -p Payload
+          cp -r App.app Payload/
+          zip -qr MATS-mesh-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: MATS-mesh-ipa
+          path: ios/App/build/Build/Products/Release-iphoneos/*.ipa
+          retention-days: 30
+          if-no-files-found: warn
