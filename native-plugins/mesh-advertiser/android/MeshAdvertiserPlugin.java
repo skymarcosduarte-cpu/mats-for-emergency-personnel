@@ -1,5 +1,6 @@
 package app.lovable.mats.mesh;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.AdvertiseCallback;
@@ -9,12 +10,16 @@ import android.bluetooth.le.BluetoothLeAdvertiser;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Build;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
+import com.getcapacitor.PermissionState;
 
 /**
  * BLE advertiser for the MATS mesh.
@@ -25,7 +30,12 @@ import com.getcapacitor.annotation.CapacitorPlugin;
  * Required manifest permissions:
  *   BLUETOOTH_ADVERTISE (API 31+), BLUETOOTH_CONNECT, BLUETOOTH_SCAN
  */
-@CapacitorPlugin(name = "MeshAdvertiser")
+@CapacitorPlugin(
+    name = "MeshAdvertiser",
+    permissions = {
+        @Permission(alias = "advertise", strings = { Manifest.permission.BLUETOOTH_ADVERTISE })
+    }
+)
 public class MeshAdvertiserPlugin extends Plugin {
 
     private static final int MANUFACTURER_ID = 0xFFFF;
@@ -36,6 +46,24 @@ public class MeshAdvertiserPlugin extends Plugin {
 
     @PluginMethod
     public void advertise(PluginCall call) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                && getPermissionState("advertise") != PermissionState.GRANTED) {
+            requestPermissionForAlias("advertise", call, "advertisePermissionCallback");
+            return;
+        }
+        startAdvertising(call);
+    }
+
+    @PermissionCallback
+    private void advertisePermissionCallback(PluginCall call) {
+        if (getPermissionState("advertise") != PermissionState.GRANTED) {
+            call.reject("Permiso Dispositivos cercanos rechazado");
+            return;
+        }
+        startAdvertising(call);
+    }
+
+    private void startAdvertising(PluginCall call) {
         String dataHex = call.getString("dataHex");
         int durationMs = call.getInt("durationMs", 1500);
         if (dataHex == null) {

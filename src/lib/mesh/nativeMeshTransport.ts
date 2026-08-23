@@ -309,16 +309,21 @@ export class NativeMeshTransport implements MeshTransport {
     const cycle = discovering ? CYCLE_DISCOVERY : this.disaster ? CYCLE_DISASTER : CYCLE_IDLE;
 
     try {
-      if (discovering || this.disaster) await this.announcePresence();
-      await this.flushOutbox();
+      // Escuchar primero y emitir mientras el escáner está activo. Antes ambos
+      // teléfonos emitían, esperaban y luego escuchaban en ciclos iguales, por
+      // lo que podían alternarse para siempre sin oírse entre sí.
       await this.ble.requestLEScan({ allowDuplicates: true }, (result) => {
         const data = result.manufacturerData?.[String(MESH_MANUFACTURER_ID)];
         if (!data) return;
         void this.handleIncoming(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
       });
-      await wait(cycle.scanMs);
+      if (discovering || this.disaster) await this.announcePresence();
+      await this.flushOutbox();
+      // Jitter independiente evita que dos equipos con ciclos iniciados a la
+      // vez vuelvan a sincronizarse después de una pausa.
+      await wait(cycle.scanMs + Math.floor(Math.random() * 1200));
       await this.ble.stopLEScan();
-      this.lastError = null;
+      if (this.advertiser) this.lastError = null;
     } catch (error) {
       console.warn('[mesh] ciclo de escaneo falló:', error);
       this.lastError =
@@ -458,6 +463,10 @@ export class NativeMeshTransport implements MeshTransport {
         await this.onSent(item);
       } catch (error) {
         console.warn('[mesh] advertising falló:', error);
+        this.lastError =
+          error instanceof Error
+            ? `Emisión Bluetooth falló: ${error.message}`
+            : 'Emisión Bluetooth falló (revisa el permiso Dispositivos cercanos).';
         await this.backoff(item);
         break;
       }
