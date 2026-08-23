@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getMeshTransport, createMeshEnvelope, getMeshStatusMessage, isMeshAvailable } from '@/lib/meshTransport';
 import { useMeshNetwork } from '@/hooks/useMeshNetwork';
+import { getFreshAuthUserId } from '@/lib/locationSync';
 import { Switch } from '@/components/ui/switch';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import type { UserRole, StatusType } from '@/types';
@@ -35,7 +36,7 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
   const { disasterMode } = useAppState();
   const { user } = useAuth();
   const meshTransport = getMeshTransport();
-  const mesh = useMeshNetwork({ disasterMode });
+  const mesh = useMeshNetwork({ disasterMode, userId: user?.id, discovery: true });
 
   // Handle status update
   const handleStatusUpdate = async (status: StatusType) => {
@@ -51,9 +52,12 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
 
     setSubmitting(true);
     try {
-      // Save status to database
+      // La sesión puede estar caducada en un segundo dispositivo: refrescarla
+      // antes de escribir, o RLS rechaza el insert.
+      const freshId = (await getFreshAuthUserId()) ?? user.id;
+
       const { error } = await supabase.from('status_messages').insert({
-        user_id: user.id,
+        user_id: freshId,
         status: status,
         lat: position.lat,
         lng: position.lng,
@@ -61,7 +65,18 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
 
       if (error) {
         console.error('Error saving status:', error);
-        toast.error('Error al guardar estado');
+        // Sin conexión o sesión: el estado igual viaja por la malla
+        if (mesh.active) {
+          const messageType = status === 'OK' ? 'STATUS_OK' : 'STATUS_NEED_HELP';
+          mesh.broadcast(
+            createMeshEnvelope(messageType, freshId, { lat: position.lat, lng: position.lng })
+          );
+          toast.warning('Sin conexión al servidor: estado enviado por Red Mesh', {
+            description: error.message,
+          });
+        } else {
+          toast.error('Error al guardar estado', { description: error.message });
+        }
         return;
       }
 
@@ -323,6 +338,19 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
                     ? 'Segundo plano iOS: escucha reducida con la app cerrada; en primer plano es más rápida.'
                     : 'Segundo plano no disponible en esta plataforma: mantén la app abierta.'}
                 {mesh.rejected > 0 && ` · ${mesh.rejected} mensaje(s) descartado(s) por firma inválida.`}
+              </div>
+            )}
+
+            {mesh.lastError && (
+              <div className="text-xs text-destructive">
+                {mesh.lastError}
+              </div>
+            )}
+
+            {mesh.active && mesh.peers === 0 && !mesh.lastError && (
+              <div className="text-xs text-muted-foreground">
+                Buscando dispositivos cercanos… mantén esta pantalla abierta en ambos teléfonos,
+                con Bluetooth y ubicación encendidos y a menos de 30 m.
               </div>
             )}
 

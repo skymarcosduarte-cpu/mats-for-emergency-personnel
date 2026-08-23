@@ -45,7 +45,8 @@ export type MeshMessageType =
   | 'STATUS_NEED_HELP' 
   | 'DRILL_TEST' 
   | 'DRILL_ACK' 
-  | 'HELP_14';
+  | 'HELP_14'
+  | 'MESH_HELLO';
 
 export interface Profile {
   id: string;

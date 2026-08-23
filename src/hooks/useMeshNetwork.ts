@@ -14,16 +14,27 @@ interface MeshController extends MeshTransport {
   getPendingCount?: () => number;
   getBackgroundMode?: () => 'foreground-service' | 'ios-background-modes' | 'unavailable';
   getRejectedCount?: () => number;
+  getLastError?: () => string | null;
+  setIdentity?: (userId: string) => void;
+  setDiscovery?: (enabled: boolean) => void;
 }
 
-export function useMeshNetwork(options: { disasterMode?: boolean; onMessage?: (e: MeshEnvelope) => void } = {}) {
-  const { disasterMode = false, onMessage } = options;
+export function useMeshNetwork(
+  options: {
+    disasterMode?: boolean;
+    onMessage?: (e: MeshEnvelope) => void;
+    userId?: string;
+    discovery?: boolean;
+  } = {}
+) {
+  const { disasterMode = false, onMessage, userId, discovery = false } = options;
   const [enabled, setEnabled] = useState(() => localStorage.getItem(PREF_KEY) === '1');
   const [active, setActive] = useState(false);
   const [peers, setPeers] = useState(0);
   const [pending, setPending] = useState(0);
   const [backgroundMode, setBackgroundMode] = useState<'foreground-service' | 'ios-background-modes' | 'unavailable'>('unavailable');
   const [rejected, setRejected] = useState(0);
+  const [lastError, setLastError] = useState<string | null>(null);
   const transportRef = useRef<MeshController | null>(null);
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;
@@ -45,6 +56,8 @@ export function useMeshNetwork(options: { disasterMode?: boolean; onMessage?: (e
       if (cancelled) return;
       transportRef.current = transport;
       transport.setDisasterMode?.(disasterMode);
+      if (userId) transport.setIdentity?.(userId);
+      transport.setDiscovery?.(discovery);
       unsubscribe = transport.onMessage((envelope) => onMessageRef.current?.(envelope));
       await transport.start();
       if (!cancelled) setActive(transport.isActive());
@@ -54,19 +67,31 @@ export function useMeshNetwork(options: { disasterMode?: boolean; onMessage?: (e
       cancelled = true;
       unsubscribe?.();
     };
-  }, [shouldRun, disasterMode]);
+  }, [shouldRun, disasterMode, userId, discovery]);
+
+  // Ciclo rápido de descubrimiento mientras la pantalla de Red Mesh está abierta
+  useEffect(() => {
+    if (!active) return;
+    transportRef.current?.setDiscovery?.(discovery);
+    if (!discovery) return;
+    const id = setInterval(() => transportRef.current?.setDiscovery?.(true), 4 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [active, discovery]);
 
   // Peer counter polls slowly to avoid re-renders
   useEffect(() => {
     if (!active) return;
-    const id = setInterval(() => {
+    const tick = () => {
       setPeers(transportRef.current?.getPeerCount?.() ?? 0);
       setPending(transportRef.current?.getPendingCount?.() ?? 0);
       setBackgroundMode(transportRef.current?.getBackgroundMode?.() ?? 'unavailable');
       setRejected(transportRef.current?.getRejectedCount?.() ?? 0);
-    }, 15000);
+      setLastError(transportRef.current?.getLastError?.() ?? null);
+    };
+    tick();
+    const id = setInterval(tick, discovery ? 3000 : 15000);
     return () => clearInterval(id);
-  }, [active]);
+  }, [active, discovery]);
 
   const toggle = useCallback((value: boolean) => {
     localStorage.setItem(PREF_KEY, value ? '1' : '0');
@@ -82,6 +107,7 @@ export function useMeshNetwork(options: { disasterMode?: boolean; onMessage?: (e
     pending,
     backgroundMode,
     rejected,
+    lastError,
     toggle,
     broadcast: (envelope: MeshEnvelope) => transportRef.current?.broadcast(envelope),
   };
