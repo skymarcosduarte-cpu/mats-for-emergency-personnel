@@ -125,17 +125,19 @@ export default function DownloadAppPage() {
     []
   );
 
-  const runCheck = useCallback(async () => {
+  const runCheck = useCallback(async (force = false) => {
     setApkStatus("checking");
     setIsChecking(true);
 
-    // 1) Intentar caché primero
-    const cached = readCache();
-    if (cached) {
-      setApkUrl(cached.url);
-      setApkStatus(cached.status);
-      setIsChecking(false);
-      return;
+    // 1) Intentar caché primero (salvo verificación forzada)
+    if (!force) {
+      const cached = readCache();
+      if (cached) {
+        setApkUrl(cached.url);
+        setApkStatus(cached.status);
+        setIsChecking(false);
+        return;
+      }
     }
 
     // 2) Verificación en vivo
@@ -156,6 +158,7 @@ export default function DownloadAppPage() {
   useEffect(() => {
     runCheck();
   }, [runCheck]);
+
 
   const shareText = `Descarga la app MATS (alertas y seguridad) desde este enlace seguro:\n${pageUrl}`;
 
