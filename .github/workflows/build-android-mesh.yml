@@ -2,7 +2,7 @@ name: Build APK con Red Mesh
 
 # Cómo usarlo:
 #   GitHub -> pestaña "Actions" -> "Build APK con Red Mesh" -> "Run workflow".
-#   Al terminar (~8 min) descarga el artefacto "MATS-mesh-apk" y ábrelo en el
+#   Al terminar (~10 min) descarga el artefacto "MATS-mesh-apk" y ábrelo en el
 #   teléfono Android. No necesitas Android Studio ni SDK en tu computadora.
 
 on:
@@ -19,18 +19,24 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
 
       - name: Instalar dependencias
-        run: npm ci || npm install
+        run: bun install
 
       - name: Compilar la app web
-        run: npm run build
+        run: bunx vite build
 
       - name: Usar assets locales (app offline, sin servidor remoto)
         run: |
@@ -42,10 +48,10 @@ jobs:
           "
 
       - name: Añadir plataforma Android
-        run: npx cap add android
+        run: bunx cap add android
 
       - name: Sincronizar
-        run: npx cap sync android
+        run: bunx cap sync android
 
       - name: Instalar plugins de la malla
         run: bash native-plugins/install-android.sh
@@ -54,10 +60,12 @@ jobs:
         run: node native-plugins/patch-android-manifest.mjs
 
       - name: Compilar APK de depuración
-        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon --stacktrace
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: MATS-mesh-apk
           path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
+          if-no-files-found: warn
