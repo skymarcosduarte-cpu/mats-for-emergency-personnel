@@ -31,6 +31,8 @@ function detectPlatform(): Platform {
 export default function DownloadAppPage() {
   const [platform, setPlatform] = useState<Platform>("desktop");
   const [qr, setQr] = useState<string | null>(null);
+  const [apkUrl, setApkUrl] = useState<string>(APK_URL);
+  const [apkStatus, setApkStatus] = useState<"checking" | "ok" | "unavailable">("checking");
 
   const pageUrl = useMemo(
     () =>
@@ -46,6 +48,30 @@ export default function DownloadAppPage() {
       .then(setQr)
       .catch(() => setQr(null));
   }, [pageUrl]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((data) => {
+        if (cancelled) return;
+        const asset = (data?.assets ?? []).find((a: { name?: string }) =>
+          a?.name?.toLowerCase().endsWith(".apk")
+        );
+        if (asset?.browser_download_url) {
+          setApkUrl(asset.browser_download_url);
+          setApkStatus("ok");
+        } else {
+          setApkStatus("unavailable");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setApkStatus("unavailable");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const shareText = `Descarga la app MATS (alertas y seguridad) desde este enlace seguro:\n${pageUrl}`;
 
