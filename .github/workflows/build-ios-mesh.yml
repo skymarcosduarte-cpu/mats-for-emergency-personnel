@@ -92,12 +92,16 @@ jobs:
       - name: Empaquetar IPA
         run: |
           set -euo pipefail
-          APP_PATH="$(find ios/App/build/Build/Products -type d -name 'App.app' -path '*Release-iphoneos*' -print -quit)"
+          APP_PATH="$(find ios/App/build -type d -name '*.app' -path '*iphoneos*' -print -quit)"
           if [ -z "$APP_PATH" ]; then
-            echo "No se encontró App.app después de compilar"
-            find ios/App/build/Build/Products -maxdepth 3 -print || true
+            APP_PATH="$(find ~/Library/Developer/Xcode/DerivedData ios/App/build -type d -name '*.app' -path '*iphoneos*' -print -quit 2>/dev/null || true)"
+          fi
+          if [ -z "$APP_PATH" ]; then
+            echo "No se encontró el .app después de compilar"
+            find ios/App/build -maxdepth 5 -name '*.app' -print || true
             exit 1
           fi
+          echo "Usando: $APP_PATH"
           OUTPUT="$GITHUB_WORKSPACE/ios-artifact"
           rm -rf "$OUTPUT"
           mkdir -p "$OUTPUT/Payload"
