@@ -73,6 +73,8 @@ import { AdminPanel } from '@/components/AdminPanel';
 import { APP_VERSION, BUILD_TIME, getFullVersionString } from '@/lib/versionCheck';
 import { useAuth } from '@/hooks/useAuth';
 import { UpdateButton, InstallButton } from '@/components/UpdatePrompt';
+import { isNative } from '@/lib/capacitor';
+
 import { supabase } from '@/integrations/supabase/client';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useWebPushSubscription } from '@/hooks/useWebPushSubscription';
@@ -2138,13 +2140,22 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Install section */}
-            <div>
-              <p className="text-sm text-muted-foreground mb-3">
-                Instala la app para acceder más rápido y recibir notificaciones.
-              </p>
-              <InstallButton />
-            </div>
+            {/* Install section (solo en navegador; en la app nativa no aplica) */}
+            {!isNative() ? (
+              <div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Instala la app para acceder más rápido y recibir notificaciones.
+                </p>
+                <InstallButton />
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Estás usando la app nativa instalada en tu dispositivo. No necesitas instalarla de nuevo.
+                </p>
+              </div>
+            )}
+
 
             {/* Version info */}
             <div className="border-t border-border pt-4 space-y-2">

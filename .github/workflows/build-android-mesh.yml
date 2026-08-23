@@ -56,6 +56,14 @@ jobs:
       - name: Sincronizar
         run: npx cap sync android
 
+      - name: Generar iconos y splash con el logo MATS
+        run: |
+          mkdir -p assets
+          cp public/app-icon-1024.png assets/icon.png
+          cp public/app-icon-1024.png assets/icon-foreground.png
+          cp public/splash-portrait.png assets/splash.png || true
+          npx @capacitor/assets generate --android --iconBackgroundColor '#0B0B0B' --iconBackgroundColorDark '#0B0B0B' --splashBackgroundColor '#0B0B0B' --splashBackgroundColorDark '#0B0B0B'
+
 
       - name: Instalar plugins de la malla
         run: bash native-plugins/install-android.sh

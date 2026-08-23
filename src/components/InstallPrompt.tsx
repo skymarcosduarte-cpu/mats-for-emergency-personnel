@@ -8,6 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { isNative } from "@/lib/capacitor";
+
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -49,12 +51,19 @@ export function InstallPrompt() {
   }, []);
 
   useEffect(() => {
+    // En la app nativa (Capacitor) nunca mostrar instrucciones de instalación web
+    if (isNative()) {
+      setIsStandalone(true);
+      return;
+    }
+
     // Check if already installed as PWA
     const standalone = window.matchMedia("(display-mode: standalone)").matches 
       || (window.navigator as any).standalone === true;
     setIsStandalone(standalone);
 
     if (standalone) return;
+
 
     // Detect platform
     const detectedPlatform = detectPlatform();
