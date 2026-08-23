@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MatsLogo } from "@/components/MatsLogo";
+import { GitHubSyncStatus } from "@/components/GitHubSyncStatus";
 import {
   Download,
   Smartphone,
