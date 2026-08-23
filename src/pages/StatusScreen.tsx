@@ -79,15 +79,17 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
       description: item.note
         ? item.note
         : hasCoords
-          ? `Ubicación: ${item.lat!.toFixed(4)}, ${item.lng!.toFixed(4)}`
+          ? `Ubicación: ${item.lat?.toFixed(4)}, ${item.lng?.toFixed(4)}`
           : 'Sin ubicación reportada',
       duration: info.urgent ? 15000 : 6000,
       ...(hasCoords
         ? {
             action: {
               label: 'Ver en mapa',
-              onClick: () =>
-                focusMeshPin({ id: item.id, type: item.type, lat: item.lat!, lng: item.lng! }),
+              onClick: () => {
+                if (item.lat == null || item.lng == null) return;
+                focusMeshPin({ id: item.id, type: item.type, lat: item.lat, lng: item.lng });
+              },
             },
           }
         : {}),
@@ -258,9 +260,11 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         <h1 className="text-xl font-bold text-foreground">Red Mesh</h1>
       </div>
 
-      <div className="p-4 space-y-6">
+      <div className="space-y-6 p-4">
         {/* Buzón de mensajes Mesh */}
-        <MeshInbox messages={meshInbox} onClear={() => { setMeshInbox([]); clearMeshPins(); }} />
+        <section aria-label="Buzón de mensajes Mesh">
+          <MeshInbox messages={meshInbox} onClear={() => { setMeshInbox([]); clearMeshPins(); }} />
+        </section>
 
         {/* Disaster Mode Banner */}
         {disasterMode && (
