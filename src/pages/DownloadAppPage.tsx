@@ -198,6 +198,8 @@ export default function DownloadAppPage() {
           Elige tu dispositivo y sigue los pasos. Solo toma un minuto.
         </p>
 
+        <GitHubSyncStatus />
+
         {/* ANDROID */}
         <Card className={platform === "android" ? "border-primary border-2" : ""}>
           <CardContent className="space-y-4 p-5">
