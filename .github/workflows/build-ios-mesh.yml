@@ -14,9 +14,17 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    # Capacitor 8 requiere la generación actual de Xcode disponible en macOS 26.
+    runs-on: macos-26
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
+      - name: Mostrar entorno de compilación
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
 
       - uses: actions/setup-node@v4
         with:
@@ -24,7 +32,7 @@ jobs:
 
       - name: Instalar dependencias
         run: |
-          set -x
+          set -euo pipefail
           rm -f bun.lockb bun.lock package-lock.json
           npm install --legacy-peer-deps --no-audit --no-fund
           gem install xcodeproj --no-document || sudo gem install xcodeproj --no-document
@@ -48,13 +56,17 @@ jobs:
       - name: Sincronizar
         run: npx cap sync ios
 
-      - name: Instalar CocoaPods
+      - name: Resolver dependencias nativas
         run: |
-          set -x
-          gem install cocoapods --no-document || sudo gem install cocoapods --no-document
+          set -euo pipefail
           cd ios/App
-          pod repo update || true
-          pod install || pod install --repo-update
+          if [ -f Podfile ]; then
+            gem install cocoapods --no-document || sudo gem install cocoapods --no-document
+            pod install --repo-update
+          else
+            echo "Proyecto generado con Swift Package Manager; CocoaPods no es necesario."
+            xcodebuild -project App.xcodeproj -resolvePackageDependencies
+          fi
 
       - name: Instalar plugin de la malla + Info.plist
         run: bash native-plugins/install-ios.sh
@@ -63,7 +75,7 @@ jobs:
         run: |
           set -euo pipefail
           cd ios/App
-          if [ -d App.xcworkspace ]; then
+          if [ -f Podfile ] && [ -d App.xcworkspace ]; then
             CONTAINER=(-workspace App.xcworkspace)
           elif [ -d App.xcodeproj ]; then
             CONTAINER=(-project App.xcodeproj)
@@ -81,8 +93,9 @@ jobs:
             -sdk iphoneos \
             -derivedDataPath build \
             -destination 'generic/platform=iOS' \
+            ONLY_ACTIVE_ARCH=NO \
             CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
-            clean build
+            clean build | tee "$GITHUB_WORKSPACE/ios-build.log"
 
       - name: Verificar salida de compilación
         run: |
@@ -116,3 +129,12 @@ jobs:
           path: ios-artifact/MATS-mesh-unsigned.ipa
           retention-days: 30
           if-no-files-found: error
+
+      - name: Guardar diagnóstico si falla
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: MATS-ios-build-log
+          path: ios-build.log
+          retention-days: 7
+          if-no-files-found: warn
