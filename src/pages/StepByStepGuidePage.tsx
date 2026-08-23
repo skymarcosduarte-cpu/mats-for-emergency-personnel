@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { Share2, Download, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -64,6 +65,14 @@ export default function StepByStepGuidePage() {
 
   return (
     <div className="min-h-screen bg-white print:bg-white">
+      <Helmet>
+        <title>Guía paso a paso de M.A.T.S.: SOS, sismos y viajes</title>
+        <meta name="description" content="Tutorial paso a paso de COMUNIDAD SOS: configurar el botón SOS, alertas sísmicas, Tránsito Seguro, Red Mesh y mapa comunitario. Descargable en PDF." />
+        <link rel="canonical" href="https://mats-app.com/guia-paso-a-paso" />
+        <meta property="og:title" content="Guía paso a paso de M.A.T.S.: SOS, sismos y viajes" />
+        <meta property="og:url" content="https://mats-app.com/guia-paso-a-paso" />
+        <meta property="og:description" content="Tutorial ilustrado de todas las funciones de COMUNIDAD SOS, página por página." />
+      </Helmet>
       {/* Sticky action bar */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 print:hidden">
         <div className="max-w-3xl mx-auto flex items-center justify-between px-4 py-3 gap-2">
