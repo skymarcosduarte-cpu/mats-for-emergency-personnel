@@ -489,8 +489,6 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
           </CardContent>
         </Card>
 
-        {/* Buzón de mensajes Mesh */}
-        <MeshInbox messages={meshInbox} onClear={() => { setMeshInbox([]); clearMeshPins(); }} />
 
         {/* Role Badge */}
         <div className="text-center">
