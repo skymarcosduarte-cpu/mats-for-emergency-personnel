@@ -106,7 +106,8 @@ jobs:
           rm -rf "$OUTPUT"
           mkdir -p "$OUTPUT/Payload"
           cp -R "$APP_PATH" "$OUTPUT/Payload/App.app"
-          zip -qr MATS-mesh-unsigned.ipa Payload
+          (cd "$OUTPUT" && zip -qr MATS-mesh-unsigned.ipa Payload)
+          ls -lh "$OUTPUT"
 
       - uses: actions/upload-artifact@v4
         if: always()
