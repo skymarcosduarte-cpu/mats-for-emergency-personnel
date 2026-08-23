@@ -21,10 +21,6 @@ jobs:
         with:
           node-version: 22
 
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -34,10 +30,12 @@ jobs:
 
       - name: Instalar dependencias
         run: |
-          bun install --no-frozen-lockfile || npm install --legacy-peer-deps
+          set -x
+          rm -f bun.lockb bun.lock package-lock.json
+          npm install --legacy-peer-deps --no-audit --no-fund
 
       - name: Compilar la app web
-        run: bunx --bun vite build
+        run: npx vite build
 
       - name: Usar assets locales (app offline, sin servidor remoto)
         run: |
