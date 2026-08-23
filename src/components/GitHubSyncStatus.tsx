@@ -219,6 +219,46 @@ export function GitHubSyncStatus() {
               )}
             </div>
 
+            {/* Forzar reconexión + monitoreo en vivo */}
+            <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3 text-base">
+              <p className="font-bold">Forzar reconexión y sincronización</p>
+              <ol className="mt-1 space-y-1 text-muted-foreground">
+                <li>1. Toca el botón: se abre Lovable en otra pestaña.</li>
+                <li>2. En el menú de GitHub elige «Disconnect» y luego «Connect» al repo.</li>
+                <li>3. Regresa aquí: esta tarjeta avisa sola cuando llegue el commit nuevo.</li>
+              </ol>
+              <Button
+                onClick={startWatching}
+                size="lg"
+                className="mt-3 h-12 w-full text-base"
+                disabled={watching}
+              >
+                <RefreshCw className={`mr-2 h-5 w-5 ${watching ? "animate-spin" : ""}`} />
+                {watching ? "Esperando el commit nuevo…" : "Forzar reconexión y vigilar"}
+              </Button>
+              {watching && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Revisando GitHub cada 10 segundos. Última revisión:{" "}
+                  {lastCheck ? lastCheck.toLocaleTimeString("es-MX") : "—"}
+                </p>
+              )}
+              {changed && (
+                <div className="mt-2 flex items-start gap-2 rounded-lg border-2 border-green-600/40 bg-green-600/10 p-2">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+                  <p>¡Sincronización detectada! Ya puedes ejecutar el workflow.</p>
+                </div>
+              )}
+              {watching && (
+                <Button
+                  onClick={() => setWatching(false)}
+                  variant="ghost"
+                  className="mt-2 w-full"
+                >
+                  Detener vigilancia
+                </Button>
+              )}
+            </div>
+
             <div className="flex flex-wrap gap-2">
               <Button asChild variant="secondary">
                 <a
