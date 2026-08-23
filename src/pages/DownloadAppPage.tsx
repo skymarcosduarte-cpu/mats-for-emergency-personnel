@@ -118,12 +118,30 @@ export default function DownloadAppPage() {
               Versión completa con <strong>Red Mesh por Bluetooth</strong> para usarla
               aún sin internet.
             </p>
-            <Button asChild size="lg" className="h-14 w-full text-lg">
-              <a href={APK_URL}>
-                <Download className="mr-2 h-6 w-6" />
-                Descargar app para Android
-              </a>
-            </Button>
+            {apkStatus === "unavailable" ? (
+              <div className="rounded-lg border-2 border-destructive/40 bg-destructive/10 p-4 text-base">
+                <p className="font-bold">Descarga no disponible por ahora</p>
+                <p className="mt-1">
+                  Mientras tanto puedes instalar MATS desde el navegador: menú de Chrome
+                  (⋮) → <strong>“Instalar aplicación”</strong> o “Agregar a pantalla de inicio”.
+                </p>
+                <Button asChild variant="secondary" size="lg" className="mt-3 h-12 w-full text-base">
+                  <Link to="/install">Ver guía con imágenes</Link>
+                </Button>
+              </div>
+            ) : (
+              <Button
+                asChild
+                size="lg"
+                className="h-14 w-full text-lg"
+                disabled={apkStatus === "checking"}
+              >
+                <a href={apkUrl}>
+                  <Download className="mr-2 h-6 w-6" />
+                  {apkStatus === "checking" ? "Verificando descarga..." : "Descargar app para Android"}
+                </a>
+              </Button>
+            )}
             <ol className="space-y-2 text-base">
               <li>1. Toca el botón y espera a que baje el archivo.</li>
               <li>2. Ábrelo y acepta “Instalar apps desconocidas”.</li>
