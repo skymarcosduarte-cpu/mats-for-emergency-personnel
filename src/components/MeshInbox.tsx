@@ -2,7 +2,7 @@
 // Lista en tiempo real: tipo, origen, coordenadas y hora.
 
 import React from 'react';
-import { Inbox, MapPin } from 'lucide-react';
+import { Inbox, MapPin, Radio } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { MeshEnvelope } from '@/types';
@@ -58,24 +58,36 @@ interface MeshInboxProps {
 
 export const MeshInbox: React.FC<MeshInboxProps> = ({ messages, onClear }) => {
   return (
-    <Card className="bg-card border-border">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Inbox className="w-5 h-5 text-primary" />
-          Buzón Mesh ({messages.length})
+    <Card className="overflow-hidden border-2 border-accent bg-card shadow-md">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-accent p-4 text-accent-foreground">
+        <CardTitle className="flex min-w-0 items-center gap-3 text-lg font-extrabold">
+          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-background/20">
+            <Inbox className="h-6 w-6" />
+            {messages.length > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-bold text-destructive-foreground">
+                {messages.length > 99 ? '99+' : messages.length}
+              </span>
+            )}
+          </span>
+          <span>BUZÓN DE MENSAJES MESH</span>
         </CardTitle>
         {messages.length > 0 && onClear && (
-          <Button variant="ghost" size="sm" onClick={onClear}>
+          <Button variant="secondary" size="sm" onClick={onClear} className="shrink-0">
             Limpiar
           </Button>
         )}
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-2 p-4">
         {messages.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            Aún no se reciben mensajes por Bluetooth. Los mensajes de otros dispositivos
-            cercanos aparecerán aquí en tiempo real.
-          </p>
+          <div className="flex items-start gap-3 rounded-lg border border-dashed border-accent bg-accent/5 p-4">
+            <Radio className="mt-0.5 h-6 w-6 shrink-0 text-accent" />
+            <div>
+              <p className="font-semibold text-foreground">Esperando mensajes Bluetooth</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Los mensajes de dispositivos cercanos aparecerán aquí en tiempo real con su tipo, origen, ubicación y hora.
+              </p>
+            </div>
+          </div>
         ) : (
           <ul className="space-y-2 max-h-80 overflow-y-auto">
             {messages.map((m) => (
@@ -107,9 +119,10 @@ export const MeshInbox: React.FC<MeshInboxProps> = ({ messages, onClear }) => {
                       size="sm"
                       variant="secondary"
                       className="h-7 text-xs"
-                      onClick={() =>
-                        focusMeshPin({ id: m.id, type: m.type, lat: m.lat!, lng: m.lng! })
-                      }
+                      onClick={() => {
+                        if (m.lat == null || m.lng == null) return;
+                        focusMeshPin({ id: m.id, type: m.type, lat: m.lat, lng: m.lng });
+                      }}
                     >
                       <MapPin className="w-3 h-3 mr-1" />
                       Ver en mapa
