@@ -78,9 +78,11 @@ jobs:
 
           cd ios/App
           if [ -f Podfile ]; then
-            sudo gem install cocoapods --no-document || gem install cocoapods --no-document || true
-            pod install --repo-update || true
+            # Usar el CocoaPods preinstalado del runner; si no existe, instalarlo
+            command -v pod >/dev/null 2>&1 || brew install cocoapods || sudo gem install cocoapods --no-document || true
+            pod install --repo-update || pod install || true
           fi
+
 
           if [ -d App.xcworkspace ]; then
             CONTAINER=(-workspace App.xcworkspace)
