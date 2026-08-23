@@ -86,6 +86,8 @@ import { useEmergencyNotification } from '@/hooks/useEmergencyNotification';
 import { useInternalMessages } from '@/hooks/useInternalMessages';
 import { InternalMessagesProvider } from '@/providers/InternalMessagesProvider';
 import { useNewUserNotification } from '@/hooks/useNewUserNotification';
+import { useStatusNotifications } from '@/hooks/useStatusNotifications';
+
 import { useWebPushSubscription } from '@/hooks/useWebPushSubscription';
 import { useBackgroundConnection } from '@/hooks/useBackgroundConnection';
 import { useAutoWakeLock } from '@/hooks/useWakeLock';
@@ -389,6 +391,10 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   
   // New user notifications
   useNewUserNotification();
+
+  // Estados de la comunidad (siempre, sin depender del modo desastre)
+  useStatusNotifications();
+
   
   // Background sync - keeps data fresh every 2 minutes
   useBackgroundSync();

@@ -13,6 +13,8 @@ import { getMeshTransport, createMeshEnvelope, getMeshStatusMessage, isMeshAvail
 import { useMeshNetwork } from '@/hooks/useMeshNetwork';
 import { getFreshAuthUserId } from '@/lib/locationSync';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import type { UserRole, StatusType } from '@/types';
 import { cn } from '@/lib/utils';
@@ -28,9 +30,11 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
   onGoHome
 }) => {
   const [currentStatus, setCurrentStatus] = useState<StatusType>('UNKNOWN');
+  const [statusNote, setStatusNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [testInProgress, setTestInProgress] = useState(false);
   const [lastStatusTime, setLastStatusTime] = useState<Date | null>(null);
+
   
   const { position } = useLocation();
   const { disasterMode } = useAppState();
@@ -66,9 +70,11 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         }
       }
 
+      const note = statusNote.trim().slice(0, 280);
       const payload = {
         user_id: freshId,
         status: status,
+        message: note || null,
         lat: position.lat,
         lng: position.lng,
       };
@@ -87,11 +93,12 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         }
       }
 
+      const messageType = status === 'OK' ? 'STATUS_OK' : 'STATUS_NEED_HELP';
+
       if (error) {
         console.error('Error saving status:', error);
         // Sin conexión o sesión: el estado igual viaja por la malla
         if (mesh.active) {
-          const messageType = status === 'OK' ? 'STATUS_OK' : 'STATUS_NEED_HELP';
           mesh.broadcast(
             createMeshEnvelope(messageType, freshId, { lat: position.lat, lng: position.lng })
           );
@@ -105,20 +112,26 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
       }
 
       console.log('Status saved:', status, position.lat, position.lng);
-      toast.success(status === 'OK' ? '✅ Estado "Estoy Bien" enviado' : '🆘 Alerta de ayuda enviada');
+      toast.success(
+        status === 'OK'
+          ? '✅ Estado "Estoy Bien" enviado a toda la comunidad'
+          : '🆘 Alerta de ayuda enviada a toda la comunidad'
+      );
 
-      // If disaster mode, also broadcast via mesh
-      if (disasterMode && mesh.active) {
-        const messageType = status === 'OK' ? 'STATUS_OK' : 'STATUS_NEED_HELP';
-        const envelope = createMeshEnvelope(messageType, user.id, {
-          lat: position.lat,
-          lng: position.lng,
-        });
-        mesh.broadcast(envelope);
+      // La malla siempre replica el estado (haya o no modo desastre)
+      if (mesh.active) {
+        mesh.broadcast(
+          createMeshEnvelope(messageType, freshId, {
+            lat: position.lat,
+            lng: position.lng,
+          })
+        );
       }
 
       setCurrentStatus(status);
+      setStatusNote('');
       setLastStatusTime(new Date());
+
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('Error al actualizar estado');
@@ -219,8 +232,27 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
           </Card>
         )}
 
+        {/* Mensaje opcional */}
+        <div className="space-y-2">
+          <label htmlFor="status-note" className="text-sm font-medium text-foreground">
+            Mensaje (opcional)
+          </label>
+          <Textarea
+            id="status-note"
+            value={statusNote}
+            onChange={(e) => setStatusNote(e.target.value)}
+            maxLength={280}
+            rows={3}
+            placeholder="Ej. Estoy en casa sin daños / Necesito agua y medicamentos"
+          />
+          <p className="text-xs text-muted-foreground">
+            Se envía junto con tu ubicación GPS a toda la comunidad ({statusNote.length}/280).
+          </p>
+        </div>
+
         {/* Status Buttons */}
         <div className="grid grid-cols-1 gap-4">
+
           <button
             onClick={() => handleStatusUpdate('OK')}
             disabled={submitting}
