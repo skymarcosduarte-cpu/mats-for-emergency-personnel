@@ -68,9 +68,11 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         }
       }
 
+      const note = statusNote.trim().slice(0, 280);
       const payload = {
         user_id: freshId,
         status: status,
+        message: note || null,
         lat: position.lat,
         lng: position.lng,
       };
@@ -89,11 +91,12 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         }
       }
 
+      const messageType = status === 'OK' ? 'STATUS_OK' : 'STATUS_NEED_HELP';
+
       if (error) {
         console.error('Error saving status:', error);
         // Sin conexión o sesión: el estado igual viaja por la malla
         if (mesh.active) {
-          const messageType = status === 'OK' ? 'STATUS_OK' : 'STATUS_NEED_HELP';
           mesh.broadcast(
             createMeshEnvelope(messageType, freshId, { lat: position.lat, lng: position.lng })
           );
@@ -107,20 +110,26 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
       }
 
       console.log('Status saved:', status, position.lat, position.lng);
-      toast.success(status === 'OK' ? '✅ Estado "Estoy Bien" enviado' : '🆘 Alerta de ayuda enviada');
+      toast.success(
+        status === 'OK'
+          ? '✅ Estado "Estoy Bien" enviado a toda la comunidad'
+          : '🆘 Alerta de ayuda enviada a toda la comunidad'
+      );
 
-      // If disaster mode, also broadcast via mesh
-      if (disasterMode && mesh.active) {
-        const messageType = status === 'OK' ? 'STATUS_OK' : 'STATUS_NEED_HELP';
-        const envelope = createMeshEnvelope(messageType, user.id, {
-          lat: position.lat,
-          lng: position.lng,
-        });
-        mesh.broadcast(envelope);
+      // La malla siempre replica el estado (haya o no modo desastre)
+      if (mesh.active) {
+        mesh.broadcast(
+          createMeshEnvelope(messageType, freshId, {
+            lat: position.lat,
+            lng: position.lng,
+          })
+        );
       }
 
       setCurrentStatus(status);
+      setStatusNote('');
       setLastStatusTime(new Date());
+
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('Error al actualizar estado');
