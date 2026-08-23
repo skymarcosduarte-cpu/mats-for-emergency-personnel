@@ -73,6 +73,8 @@ import { AdminPanel } from '@/components/AdminPanel';
 import { APP_VERSION, BUILD_TIME, getFullVersionString } from '@/lib/versionCheck';
 import { useAuth } from '@/hooks/useAuth';
 import { UpdateButton, InstallButton } from '@/components/UpdatePrompt';
+import { isNative } from '@/lib/capacitor';
+
 import { supabase } from '@/integrations/supabase/client';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useWebPushSubscription } from '@/hooks/useWebPushSubscription';
