@@ -389,6 +389,10 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
   
   // New user notifications
   useNewUserNotification();
+
+  // Estados de la comunidad (siempre, sin depender del modo desastre)
+  useStatusNotifications();
+
   
   // Background sync - keeps data fresh every 2 minutes
   useBackgroundSync();
