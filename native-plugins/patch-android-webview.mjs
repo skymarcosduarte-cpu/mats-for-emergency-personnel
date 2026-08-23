@@ -56,9 +56,19 @@ if (isKotlin) {
         settings.useWideViewPort = false
     }
 `;
-  // Inserta antes de la última llave de la clase
-  const idx = src.lastIndexOf('}');
-  src = src.slice(0, idx) + body + src.slice(idx);
+  if (/fun\s+onCreate\s*\(/.test(src)) {
+    src = src.replace(/(super\.onCreate\(savedInstanceState\))/, `$1
+        val settings = this.bridge.webView.settings
+        settings.textZoom = 100
+        settings.setSupportZoom(false)
+        settings.builtInZoomControls = false
+        settings.displayZoomControls = false
+        settings.loadWithOverviewMode = false
+        settings.useWideViewPort = false`);
+  } else {
+    const idx = src.lastIndexOf('}');
+    src = src.slice(0, idx) + body + src.slice(idx);
+  }
 } else {
   if (!src.includes('import android.os.Bundle;')) {
     src = src.replace(/(package .*;\n)/, '$1\nimport android.os.Bundle;\nimport android.webkit.WebSettings;\n');
@@ -78,8 +88,20 @@ if (isKotlin) {
         settings.setUseWideViewPort(false);
     }
 `;
-  const idx = src.lastIndexOf('}');
-  src = src.slice(0, idx) + body + src.slice(idx);
+  if (/void\s+onCreate\s*\(/.test(src)) {
+    // Ya existe onCreate (p. ej. añadido por install-android.sh): inyectamos dentro.
+    src = src.replace(/(super\.onCreate\(savedInstanceState\);)/, `$1
+        WebSettings settings = this.bridge.getWebView().getSettings();
+        settings.setTextZoom(100);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
+        settings.setLoadWithOverviewMode(false);
+        settings.setUseWideViewPort(false);`);
+  } else {
+    const idx = src.lastIndexOf('}');
+    src = src.slice(0, idx) + body + src.slice(idx);
+  }
 }
 
 fs.writeFileSync(file, src);
