@@ -227,7 +227,7 @@ export default function DownloadAppPage() {
                 </p>
                 <div className="mt-3 flex flex-col gap-2">
                   <Button
-                    onClick={runCheck}
+                    onClick={() => runCheck(true)}
                     variant="outline"
                     size="lg"
                     className="h-12 w-full text-base"
