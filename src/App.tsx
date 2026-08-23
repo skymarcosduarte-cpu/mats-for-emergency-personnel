@@ -32,6 +32,7 @@ const StatusScreen = lazy(() => loadStatusScreen().then(m => ({ default: m.Statu
 const MarketScreen = lazy(() => loadMarketScreen().then(m => ({ default: m.MarketScreen })));
 
 const InstallPage = lazy(() => import('@/pages/InstallPage'));
+const DownloadAppPage = lazy(() => import('@/pages/DownloadAppPage'));
 const SharedTripPage = lazy(() => import('@/pages/SharedTripPage'));
 const UserGuidePage = lazy(() => import('@/pages/UserGuidePage'));
 const StepByStepGuidePage = lazy(() => import('@/pages/StepByStepGuidePage'));
