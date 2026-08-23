@@ -230,8 +230,27 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
           </Card>
         )}
 
+        {/* Mensaje opcional */}
+        <div className="space-y-2">
+          <label htmlFor="status-note" className="text-sm font-medium text-foreground">
+            Mensaje (opcional)
+          </label>
+          <Textarea
+            id="status-note"
+            value={statusNote}
+            onChange={(e) => setStatusNote(e.target.value)}
+            maxLength={280}
+            rows={3}
+            placeholder="Ej. Estoy en casa sin daños / Necesito agua y medicamentos"
+          />
+          <p className="text-xs text-muted-foreground">
+            Se envía junto con tu ubicación GPS a toda la comunidad ({statusNote.length}/280).
+          </p>
+        </div>
+
         {/* Status Buttons */}
         <div className="grid grid-cols-1 gap-4">
+
           <button
             onClick={() => handleStatusUpdate('OK')}
             disabled={submitting}
