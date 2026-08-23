@@ -48,6 +48,14 @@ jobs:
       - name: Sincronizar
         run: npx cap sync ios
 
+      - name: Instalar CocoaPods
+        run: |
+          set -x
+          gem install cocoapods --no-document || sudo gem install cocoapods --no-document
+          cd ios/App
+          pod repo update || true
+          pod install || pod install --repo-update
+
       - name: Instalar plugin de la malla + Info.plist
         run: bash native-plugins/install-ios.sh
 
@@ -74,7 +82,7 @@ jobs:
             -derivedDataPath build \
             -destination 'generic/platform=iOS' \
             CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
-            clean build
+            clean build 2>&1 | tail -n 200
 
       - name: Empaquetar IPA
         run: |
