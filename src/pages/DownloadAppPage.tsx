@@ -14,8 +14,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-const APK_URL =
-  "https://github.com/skymarcosduarte-cpu/safe-guard-link/releases/latest/download/MATS-RedMesh.apk";
+const GITHUB_REPO = "skymarcosduarte-cpu/safe-guard-link";
+const APK_URL = `https://github.com/${GITHUB_REPO}/releases/latest/download/MATS-RedMesh.apk`;
 
 type Platform = "android" | "ios" | "desktop";
 
