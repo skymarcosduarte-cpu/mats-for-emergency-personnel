@@ -106,7 +106,6 @@ jobs:
           rm -rf "$OUTPUT"
           mkdir -p "$OUTPUT/Payload"
           cp -R "$APP_PATH" "$OUTPUT/Payload/App.app"
-          cd "$OUTPUT"
           zip -qr MATS-mesh-unsigned.ipa Payload
 
       - uses: actions/upload-artifact@v4
