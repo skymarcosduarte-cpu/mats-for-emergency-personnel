@@ -216,9 +216,9 @@ export default function DownloadAppPage() {
                     variant="outline"
                     size="lg"
                     className="h-12 w-full text-base"
-                    disabled={apkStatus === "checking"}
+                    disabled={isChecking}
                   >
-                    <RefreshCw className={`mr-2 h-5 w-5 ${apkStatus === "checking" ? "animate-spin" : ""}`} />
+                    <RefreshCw className={`mr-2 h-5 w-5 ${isChecking ? "animate-spin" : ""}`} />
                     Reintentar verificación
                   </Button>
                   <Button asChild variant="secondary" size="lg" className="h-12 w-full text-base">
