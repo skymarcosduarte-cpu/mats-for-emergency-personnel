@@ -125,12 +125,14 @@ export default function DownloadAppPage() {
 
   const runCheck = useCallback(async () => {
     setApkStatus("checking");
+    setIsChecking(true);
 
     // 1) Intentar caché primero
     const cached = readCache();
     if (cached) {
       setApkUrl(cached.url);
       setApkStatus(cached.status);
+      setIsChecking(false);
       return;
     }
 
@@ -139,6 +141,7 @@ export default function DownloadAppPage() {
     setApkUrl(result.url);
     setApkStatus(result.status);
     writeCache(result);
+    setIsChecking(false);
   }, []);
 
   useEffect(() => {
