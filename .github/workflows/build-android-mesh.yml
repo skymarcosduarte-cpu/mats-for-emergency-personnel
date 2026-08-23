@@ -11,6 +11,9 @@ on:
     tags:
       - 'apk-*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -95,3 +98,5 @@ jobs:
             4. Abre la app → Red Mesh → activa el interruptor
           files: release/MATS-RedMesh.apk
           prerelease: false
+          make_latest: true
+          token: ${{ secrets.GITHUB_TOKEN }}
