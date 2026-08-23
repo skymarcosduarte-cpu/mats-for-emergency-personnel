@@ -10,6 +10,7 @@ import {
   decodePacket,
   encodePacket,
   envelopeToPacket,
+  hashId,
   packetToEnvelope,
   type MeshPacket,
 } from './protocol';
@@ -74,6 +75,10 @@ const MAX_ATTEMPTS = 12;
 // Duty cycles keep the radio (and the UI thread) mostly idle.
 const CYCLE_IDLE = { scanMs: 4000, pauseMs: 45000 };
 const CYCLE_DISASTER = { scanMs: 8000, pauseMs: 10000 };
+// Modo descubrimiento: ciclo casi continuo para que dos teléfonos se vean en
+// segundos mientras el usuario tiene la pantalla de Red Mesh abierta.
+const CYCLE_DISCOVERY = { scanMs: 6000, pauseMs: 1500 };
+const DISCOVERY_WINDOW_MS = 5 * 60 * 1000;
 
 export class NativeMeshTransport implements MeshTransport {
   private active = false;
@@ -90,6 +95,9 @@ export class NativeMeshTransport implements MeshTransport {
   private rejected = 0;
   private pendingCount = 0;
   private selfOrigin = 0;
+  private identity = 0;
+  private discoveryUntil = 0;
+  private lastError: string | null = null;
 
   constructor() {
     void hydrateSeen();
@@ -113,6 +121,27 @@ export class NativeMeshTransport implements MeshTransport {
   /** 'foreground-service' (Android), 'ios-background-modes' o 'unavailable' */
   getBackgroundMode() {
     return getBackgroundMode();
+  }
+
+  /** Último error de radio/permisos, para mostrarlo en la interfaz */
+  getLastError(): string | null {
+    return this.lastError;
+  }
+
+  /** Identidad local: permite anunciar presencia aunque no se envíe alerta */
+  setIdentity(userId: string): void {
+    if (!userId) return;
+    this.identity = hashId(userId);
+    if (!this.selfOrigin) this.selfOrigin = this.identity;
+  }
+
+  /** Activa el ciclo rápido de descubrimiento entre dispositivos cercanos */
+  setDiscovery(enabled: boolean): void {
+    this.discoveryUntil = enabled ? Date.now() + DISCOVERY_WINDOW_MS : 0;
+    if (enabled && this.active) {
+      if (this.timer) clearTimeout(this.timer);
+      this.scheduleCycle(0);
+    }
   }
 
   /** Tramas descartadas por firma inválida (diagnóstico) */
@@ -148,6 +177,19 @@ export class NativeMeshTransport implements MeshTransport {
 
       if (Capacitor.isPluginAvailable('MeshAdvertiser')) {
         this.advertiser = registerPlugin<MeshAdvertiserPlugin>('MeshAdvertiser');
+        this.lastError = null;
+      } else {
+        this.lastError =
+          'Este dispositivo solo puede recibir: la app instalada no incluye el emisor Bluetooth (MeshAdvertiser).';
+      }
+
+      try {
+        const enabled = await BleClient.isEnabled();
+        if (!enabled) {
+          this.lastError = 'Bluetooth apagado: enciéndelo para que la malla detecte otros teléfonos.';
+        }
+      } catch {
+        /* isEnabled no disponible en algunas plataformas */
       }
 
       this.active = true;
@@ -155,6 +197,10 @@ export class NativeMeshTransport implements MeshTransport {
       this.scheduleCycle(0);
     } catch (error) {
       console.warn('[mesh] no se pudo iniciar BLE:', error);
+      this.lastError =
+        error instanceof Error
+          ? `No se pudo iniciar Bluetooth: ${error.message}`
+          : 'No se pudo iniciar Bluetooth (revisa permisos de Bluetooth y ubicación).';
       this.active = false;
     } finally {
       this.starting = false;
@@ -222,6 +268,32 @@ export class NativeMeshTransport implements MeshTransport {
     await this.refreshPending();
   }
 
+  /** Baliza de presencia: paquete mínimo, sin reenvío, para verse entre vecinos */
+  private async announcePresence() {
+    const origin = this.identity || this.selfOrigin;
+    if (!origin) return;
+    const now = Date.now();
+    const bytes = encodePacket({
+      type: 'MESH_HELLO',
+      msgId: (Math.random() * 0xffffffff) >>> 0,
+      ttl: 1,
+      origin,
+      lat: null,
+      lng: null,
+      timestamp: now,
+    });
+    const signed = await signFrame(bytes);
+    await enqueue({
+      key: `hello:${origin}`,
+      dataHex: bytesToHex(signed),
+      priority: 3,
+      attempts: MAX_ATTEMPTS - 1, // se envía una vez y se descarta
+      nextAt: now,
+      createdAt: now,
+      expiresAt: now + 60000,
+    });
+  }
+
   private async refreshPending() {
     this.pendingCount = await outboxSize();
   }
@@ -233,9 +305,11 @@ export class NativeMeshTransport implements MeshTransport {
 
   private async runCycle() {
     if (!this.active || !this.ble) return;
-    const cycle = this.disaster ? CYCLE_DISASTER : CYCLE_IDLE;
+    const discovering = Date.now() < this.discoveryUntil;
+    const cycle = discovering ? CYCLE_DISCOVERY : this.disaster ? CYCLE_DISASTER : CYCLE_IDLE;
 
     try {
+      if (discovering || this.disaster) await this.announcePresence();
       await this.flushOutbox();
       await this.ble.requestLEScan({ allowDuplicates: true }, (result) => {
         const data = result.manufacturerData?.[String(MESH_MANUFACTURER_ID)];
@@ -244,8 +318,13 @@ export class NativeMeshTransport implements MeshTransport {
       });
       await wait(cycle.scanMs);
       await this.ble.stopLEScan();
+      this.lastError = null;
     } catch (error) {
       console.warn('[mesh] ciclo de escaneo falló:', error);
+      this.lastError =
+        error instanceof Error
+          ? `Escaneo Bluetooth falló: ${error.message}`
+          : 'Escaneo Bluetooth falló (revisa permisos de Bluetooth y ubicación).';
     }
 
     this.scheduleCycle(cycle.pauseMs);
@@ -269,6 +348,7 @@ export class NativeMeshTransport implements MeshTransport {
     const packet = decodePacket(bytes);
     if (!packet) return;
     this.peers.set(packet.origin, Date.now());
+    if (packet.type === 'MESH_HELLO') return; // solo presencia: no se reenvía ni se muestra
 
     // Count duplicates even when already delivered: that is the suppression signal.
     const copies = (this.copies.get(packet.msgId) ?? 0) + 1;
