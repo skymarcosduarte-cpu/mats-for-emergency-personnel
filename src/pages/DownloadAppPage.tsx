@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MatsLogo } from "@/components/MatsLogo";
+import { GitHubSyncStatus } from "@/components/GitHubSyncStatus";
 import {
   Download,
   Smartphone,
@@ -197,6 +198,8 @@ export default function DownloadAppPage() {
         <p className="text-lg text-muted-foreground">
           Elige tu dispositivo y sigue los pasos. Solo toma un minuto.
         </p>
+
+        <GitHubSyncStatus />
 
         {/* ANDROID */}
         <Card className={platform === "android" ? "border-primary border-2" : ""}>
