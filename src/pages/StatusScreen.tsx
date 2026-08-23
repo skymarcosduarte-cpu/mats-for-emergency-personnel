@@ -40,7 +40,20 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
   const { disasterMode } = useAppState();
   const { user } = useAuth();
   const meshTransport = getMeshTransport();
-  const mesh = useMeshNetwork({ disasterMode, userId: user?.id, discovery: true });
+  const [meshInbox, setMeshInbox] = useState<MeshInboxItem[]>([]);
+  const handleMeshMessage = React.useCallback((envelope: MeshEnvelope) => {
+    const item = envelopeToInboxItem(envelope);
+    setMeshInbox((prev) => {
+      if (prev.some((m) => m.id === item.id)) return prev;
+      return [item, ...prev].slice(0, 50);
+    });
+  }, []);
+  const mesh = useMeshNetwork({
+    disasterMode,
+    userId: user?.id,
+    discovery: true,
+    onMessage: handleMeshMessage,
+  });
 
   // Handle status update
   const handleStatusUpdate = async (status: StatusType) => {
