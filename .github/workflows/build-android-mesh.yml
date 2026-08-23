@@ -58,11 +58,30 @@ jobs:
 
       - name: Generar iconos y splash con el logo MATS
         run: |
+          set -e
           mkdir -p assets
-          cp public/app-icon-1024.png assets/icon.png
-          cp public/app-icon-1024.png assets/icon-foreground.png
-          cp public/splash-portrait.png assets/splash.png || true
-          npx @capacitor/assets generate --android --iconBackgroundColor '#0B0B0B' --iconBackgroundColorDark '#0B0B0B' --splashBackgroundColor '#0B0B0B' --splashBackgroundColorDark '#0B0B0B'
+          # Icono cuadrado (legacy) directamente del logo MATS
+          convert public/app-icon-1024.png -resize 1024x1024 assets/icon.png
+          # Foreground adaptativo: logo al 68% sobre lienzo transparente
+          convert public/app-icon-1024.png -resize 700x700 \
+            -background none -gravity center -extent 1024x1024 assets/icon-foreground.png
+          cp assets/icon-foreground.png assets/icon-background.png || true
+          convert public/app-icon-1024.png -resize 1024x1024 -background '#0F7A3C' \
+            -gravity center -extent 2732x2732 assets/splash.png
+          cp assets/splash.png assets/splash-dark.png
+          npm i -D @capacitor/assets@3 --no-audit --no-fund
+          npx @capacitor/assets generate --android \
+            --iconBackgroundColor '#0F7A3C' --iconBackgroundColorDark '#0F7A3C' \
+            --splashBackgroundColor '#0F7A3C' --splashBackgroundColorDark '#0F7A3C'
+          # Eliminar cualquier icono genérico de Capacitor que haya quedado
+          rm -f android/app/src/main/res/mipmap-*/ic_launcher.webp \
+                android/app/src/main/res/mipmap-*/ic_launcher_round.webp \
+                android/app/src/main/res/mipmap-*/ic_launcher_foreground.webp || true
+          # Verificar que los iconos MATS realmente se generaron
+          test -f android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          test -f android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
+          ls -la android/app/src/main/res/mipmap-xxxhdpi/
+
 
 
       - name: Instalar plugins de la malla
