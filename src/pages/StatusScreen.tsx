@@ -44,11 +44,21 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
   const [meshInbox, setMeshInbox] = useState<MeshInboxItem[]>([]);
   const handleMeshMessage = React.useCallback((envelope: MeshEnvelope) => {
     const item = envelopeToInboxItem(envelope);
+    if (item.lat != null && item.lng != null) {
+      addMeshPin({
+        id: item.id,
+        type: item.type,
+        lat: item.lat,
+        lng: item.lng,
+        receivedAt: item.receivedAt,
+      });
+    }
     setMeshInbox((prev) => {
       if (prev.some((m) => m.id === item.id)) return prev;
       return [item, ...prev].slice(0, 50);
     });
   }, []);
+
   const mesh = useMeshNetwork({
     disasterMode,
     userId: user?.id,
