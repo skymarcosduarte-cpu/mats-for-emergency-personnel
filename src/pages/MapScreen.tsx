@@ -2611,13 +2611,15 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   // Centrar el mapa cuando se pide "Ver en mapa" desde el buzón Mesh
   useEffect(() => {
     const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { lat: number; lng: number } | undefined;
+      const detail = (e as CustomEvent).detail as { id: string; lat: number; lng: number } | undefined;
       if (!detail) return;
       setMeshPins(getMeshPins());
       const focus = () => {
         const map = mapInstanceRef.current;
         if (!map) return false;
         map.setView([detail.lat, detail.lng], 16, { animate: true });
+        const marker = markersRef.current.get(`meshpin-${detail.id}`);
+        marker?.openPopup();
         return true;
       };
       if (!focus()) setTimeout(focus, 800);
@@ -2651,9 +2653,14 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       const key = `meshpin-${pin.id}`;
       if (markersRef.current.has(key)) return;
       const urgent = pin.type === 'PANIC' || pin.type === 'STATUS_NEED_HELP' || pin.type === 'HELP_14';
+      const isNew = Date.now() - pin.receivedAt < 5 * 60 * 1000;
+      const color = urgent ? '#dc2626' : '#7c3aed';
       const icon = L.divIcon({
         className: 'mesh-pin-marker',
-        html: `<div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;background:${urgent ? '#dc2626' : '#7c3aed'};color:#fff;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.45);">📡</div>`,
+        html: `<div style="position:relative;width:34px;height:34px;">
+          ${isNew ? `<div style="position:absolute;inset:-8px;border-radius:50%;background:${color};opacity:.35;animation:mesh-pin-pulse 1.4s ease-out infinite;"></div>` : ''}
+          <div style="position:relative;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;background:${color};color:#fff;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.45);">📡</div>
+        </div>`,
         iconSize: [34, 34],
         iconAnchor: [17, 17],
       });

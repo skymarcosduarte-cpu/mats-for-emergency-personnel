@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { MeshInbox, envelopeToInboxItem, type MeshInboxItem } from '@/components/MeshInbox';
-import { addMeshPin, clearMeshPins } from '@/lib/meshPins';
+import { addMeshPin, clearMeshPins, focusMeshPin } from '@/lib/meshPins';
 import type { UserRole, StatusType, MeshEnvelope } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -54,11 +54,57 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         receivedAt: item.receivedAt,
       });
     }
+    let isNew = true;
     setMeshInbox((prev) => {
-      if (prev.some((m) => m.id === item.id)) return prev;
+      if (prev.some((m) => m.id === item.id)) {
+        isNew = false;
+        return prev;
+      }
       return [item, ...prev].slice(0, 50);
     });
+
+    // Notificación en la app para mensajes relevantes
+    const RELEVANT: Record<string, { label: string; urgent: boolean }> = {
+      PANIC: { label: '🚨 Pánico recibido por Mesh', urgent: true },
+      STATUS_NEED_HELP: { label: '🆘 Alguien necesita ayuda (Mesh)', urgent: true },
+      HELP_14: { label: '🆘 Ayuda 14 recibida por Mesh', urgent: true },
+      STATUS_OK: { label: '✅ Estado "Estoy bien" recibido (Mesh)', urgent: false },
+      DRILL_TEST: { label: '🧪 Simulacro recibido por Mesh', urgent: false },
+    };
+    const info = RELEVANT[item.type];
+    if (!isNew || !info) return;
+
+    const hasCoords = item.lat != null && item.lng != null;
+    const options = {
+      description: item.note
+        ? item.note
+        : hasCoords
+          ? `Ubicación: ${item.lat!.toFixed(4)}, ${item.lng!.toFixed(4)}`
+          : 'Sin ubicación reportada',
+      duration: info.urgent ? 15000 : 6000,
+      ...(hasCoords
+        ? {
+            action: {
+              label: 'Ver en mapa',
+              onClick: () =>
+                focusMeshPin({ id: item.id, type: item.type, lat: item.lat!, lng: item.lng! }),
+            },
+          }
+        : {}),
+    };
+
+    if (info.urgent) {
+      toast.error(info.label, options);
+      try {
+        navigator.vibrate?.([200, 100, 200, 100, 400]);
+      } catch {
+        /* ignore */
+      }
+    } else {
+      toast.success(info.label, options);
+    }
   }, []);
+
 
   const mesh = useMeshNetwork({
     disasterMode,
