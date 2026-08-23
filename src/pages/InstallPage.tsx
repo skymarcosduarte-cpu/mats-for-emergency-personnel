@@ -144,6 +144,14 @@ export default function InstallPage() {
 
   return (
     <div className="fixed inset-0 bg-gradient-to-b from-background to-muted/30 overflow-y-auto">
+      <Helmet>
+        <title>Instalar COMUNIDAD SOS en tu teléfono | M.A.T.S.</title>
+        <meta name="description" content="Instala la app COMUNIDAD SOS (M.A.T.S.) en Android, iPhone o PC en menos de un minuto: alertas sísmicas, botón SOS y seguimiento de viajes sin tienda de apps." />
+        <link rel="canonical" href="https://mats-app.com/install" />
+        <meta property="og:title" content="Instalar COMUNIDAD SOS en tu teléfono | M.A.T.S." />
+        <meta property="og:url" content="https://mats-app.com/install" />
+        <meta property="og:description" content="Guía rápida para instalar la app de emergencias COMUNIDAD SOS en Android, iPhone o escritorio." />
+      </Helmet>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="container mx-auto px-4 py-3 flex items-center gap-4">
