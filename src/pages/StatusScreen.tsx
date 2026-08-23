@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { MeshInbox, envelopeToInboxItem, type MeshInboxItem } from '@/components/MeshInbox';
+import { addMeshPin, clearMeshPins } from '@/lib/meshPins';
 import type { UserRole, StatusType, MeshEnvelope } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -443,7 +444,7 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         </Card>
 
         {/* Buzón de mensajes Mesh */}
-        <MeshInbox messages={meshInbox} onClear={() => setMeshInbox([])} />
+        <MeshInbox messages={meshInbox} onClear={() => { setMeshInbox([]); clearMeshPins(); }} />
 
         {/* Role Badge */}
         <div className="text-center">
