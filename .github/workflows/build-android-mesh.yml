@@ -1,0 +1,63 @@
+name: Build APK con Red Mesh
+
+# Cómo usarlo:
+#   GitHub -> pestaña "Actions" -> "Build APK con Red Mesh" -> "Run workflow".
+#   Al terminar (~8 min) descarga el artefacto "MATS-mesh-apk" y ábrelo en el
+#   teléfono Android. No necesitas Android Studio ni SDK en tu computadora.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'apk-*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Instalar dependencias
+        run: npm ci || npm install
+
+      - name: Compilar la app web
+        run: npm run build
+
+      - name: Usar assets locales (app offline, sin servidor remoto)
+        run: |
+          node -e "
+          const fs=require('fs');
+          let s=fs.readFileSync('capacitor.config.ts','utf8');
+          s=s.replace(/\n\s*server:\s*\{[\s\S]*?\n\s*\},/, '');
+          fs.writeFileSync('capacitor.config.ts', s);
+          "
+
+      - name: Añadir plataforma Android
+        run: npx cap add android
+
+      - name: Sincronizar
+        run: npx cap sync android
+
+      - name: Instalar plugins de la malla
+        run: bash native-plugins/install-android.sh
+
+      - name: Parchear AndroidManifest (permisos BLE + servicio)
+        run: node native-plugins/patch-android-manifest.mjs
+
+      - name: Compilar APK de depuración
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MATS-mesh-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
