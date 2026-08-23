@@ -52,16 +52,40 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
 
     setSubmitting(true);
     try {
-      // La sesión puede estar caducada en un segundo dispositivo: refrescarla
-      // antes de escribir, o RLS rechaza el insert.
-      const freshId = (await getFreshAuthUserId()) ?? user.id;
+      // Nunca escribimos con el usuario guardado en React si la sesión nativa
+      // ya no existe: el backend comprueba la identidad contenida en el token.
+      let freshId = await getFreshAuthUserId();
+      if (!freshId) {
+        const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+        freshId = refreshed.session?.user?.id ?? null;
+        if (!freshId) {
+          toast.error('Tu sesión venció', {
+            description: refreshError?.message ?? 'Vuelve a iniciar sesión para guardar tu estado.',
+          });
+          return;
+        }
+      }
 
-      const { error } = await supabase.from('status_messages').insert({
+      const payload = {
         user_id: freshId,
         status: status,
         lat: position.lat,
         lng: position.lng,
-      });
+      };
+
+      let { error } = await supabase.from('status_messages').insert(payload);
+
+      // Si el token venció justo durante la petición, renovarlo y repetir una
+      // sola vez por la misma ruta directa.
+      if (error && (error.code === '42501' || /JWT|permission|row-level security/i.test(error.message))) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        const retryId = refreshed.session?.user?.id;
+        if (retryId) {
+          freshId = retryId;
+          const retry = await supabase.from('status_messages').insert({ ...payload, user_id: retryId });
+          error = retry.error;
+        }
+      }
 
       if (error) {
         console.error('Error saving status:', error);
@@ -84,13 +108,13 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
       toast.success(status === 'OK' ? '✅ Estado "Estoy Bien" enviado' : '🆘 Alerta de ayuda enviada');
 
       // If disaster mode, also broadcast via mesh
-      if (disasterMode && meshTransport.isActive()) {
+      if (disasterMode && mesh.active) {
         const messageType = status === 'OK' ? 'STATUS_OK' : 'STATUS_NEED_HELP';
         const envelope = createMeshEnvelope(messageType, user.id, {
           lat: position.lat,
           lng: position.lng,
         });
-        meshTransport.broadcast(envelope);
+        mesh.broadcast(envelope);
       }
 
       setCurrentStatus(status);
