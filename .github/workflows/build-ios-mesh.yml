@@ -82,7 +82,12 @@ jobs:
             -derivedDataPath build \
             -destination 'generic/platform=iOS' \
             CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
-            clean build 2>&1 | tail -n 200
+            clean build
+
+      - name: Verificar salida de compilación
+        run: |
+          echo "Contenido de Build/Products:"
+          find ios/App/build/Build/Products -maxdepth 3 -print || true
 
       - name: Empaquetar IPA
         run: |
