@@ -93,23 +93,48 @@ export function GitHubSyncStatus() {
   const [info, setInfo] = useState<SyncInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [watching, setWatching] = useState(false);
+  const [lastCheck, setLastCheck] = useState<Date | null>(null);
+  const baselineSha = useRef<string | null>(null);
+  const [changed, setChanged] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
       const result = await fetchSyncInfo();
-      if (result) setInfo(result);
-      else setError(true);
+      if (result) {
+        setInfo(result);
+        if (baselineSha.current && result.commitSha !== baselineSha.current) {
+          setChanged(true);
+          setWatching(false);
+        }
+      } else setError(true);
     } catch {
       setError(true);
     }
+    setLastCheck(new Date());
     setLoading(false);
   }, []);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Monitoreo en vivo: consulta GitHub cada 10s hasta detectar un commit nuevo
+  useEffect(() => {
+    if (!watching) return;
+    const id = setInterval(load, 10000);
+    return () => clearInterval(id);
+  }, [watching, load]);
+
+  const startWatching = () => {
+    baselineSha.current = info?.commitSha ?? null;
+    setChanged(false);
+    setWatching(true);
+    window.open("https://lovable.dev/projects", "_blank", "noopener,noreferrer");
+    load();
+  };
 
   const ready = info?.hasFix ?? false;
   const alreadyBuilt = info && info.runSha === info.commitSha;
