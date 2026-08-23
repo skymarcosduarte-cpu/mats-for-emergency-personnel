@@ -113,6 +113,7 @@ export default function DownloadAppPage() {
   const [qr, setQr] = useState<string | null>(null);
   const [apkUrl, setApkUrl] = useState<string>(APK_FALLBACK_URL);
   const [apkStatus, setApkStatus] = useState<ApkStatus>("checking");
+  const [isChecking, setIsChecking] = useState(false);
 
   const pageUrl = useMemo(
     () =>
