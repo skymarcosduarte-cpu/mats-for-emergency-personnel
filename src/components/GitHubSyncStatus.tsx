@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, RefreshCw, AlertTriangle, GitCommitHorizontal, PlayCircle } from "lucide-react";
@@ -93,23 +93,48 @@ export function GitHubSyncStatus() {
   const [info, setInfo] = useState<SyncInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [watching, setWatching] = useState(false);
+  const [lastCheck, setLastCheck] = useState<Date | null>(null);
+  const baselineSha = useRef<string | null>(null);
+  const [changed, setChanged] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
       const result = await fetchSyncInfo();
-      if (result) setInfo(result);
-      else setError(true);
+      if (result) {
+        setInfo(result);
+        if (baselineSha.current && result.commitSha !== baselineSha.current) {
+          setChanged(true);
+          setWatching(false);
+        }
+      } else setError(true);
     } catch {
       setError(true);
     }
+    setLastCheck(new Date());
     setLoading(false);
   }, []);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Monitoreo en vivo: consulta GitHub cada 10s hasta detectar un commit nuevo
+  useEffect(() => {
+    if (!watching) return;
+    const id = setInterval(load, 10000);
+    return () => clearInterval(id);
+  }, [watching, load]);
+
+  const startWatching = () => {
+    baselineSha.current = info?.commitSha ?? null;
+    setChanged(false);
+    setWatching(true);
+    window.open("https://lovable.dev/projects", "_blank", "noopener,noreferrer");
+    load();
+  };
 
   const ready = info?.hasFix ?? false;
   const alreadyBuilt = info && info.runSha === info.commitSha;
@@ -191,6 +216,46 @@ export function GitHubSyncStatus() {
                     </span>
                   </span>
                 </p>
+              )}
+            </div>
+
+            {/* Forzar reconexión + monitoreo en vivo */}
+            <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3 text-base">
+              <p className="font-bold">Forzar reconexión y sincronización</p>
+              <ol className="mt-1 space-y-1 text-muted-foreground">
+                <li>1. Toca el botón: se abre Lovable en otra pestaña.</li>
+                <li>2. En el menú de GitHub elige «Disconnect» y luego «Connect» al repo.</li>
+                <li>3. Regresa aquí: esta tarjeta avisa sola cuando llegue el commit nuevo.</li>
+              </ol>
+              <Button
+                onClick={startWatching}
+                size="lg"
+                className="mt-3 h-12 w-full text-base"
+                disabled={watching}
+              >
+                <RefreshCw className={`mr-2 h-5 w-5 ${watching ? "animate-spin" : ""}`} />
+                {watching ? "Esperando el commit nuevo…" : "Forzar reconexión y vigilar"}
+              </Button>
+              {watching && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Revisando GitHub cada 10 segundos. Última revisión:{" "}
+                  {lastCheck ? lastCheck.toLocaleTimeString("es-MX") : "—"}
+                </p>
+              )}
+              {changed && (
+                <div className="mt-2 flex items-start gap-2 rounded-lg border-2 border-green-600/40 bg-green-600/10 p-2">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+                  <p>¡Sincronización detectada! Ya puedes ejecutar el workflow.</p>
+                </div>
+              )}
+              {watching && (
+                <Button
+                  onClick={() => setWatching(false)}
+                  variant="ghost"
+                  className="mt-2 w-full"
+                >
+                  Detener vigilancia
+                </Button>
               )}
             </div>
 
