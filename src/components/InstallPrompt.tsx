@@ -8,6 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { isNative } from "@/lib/capacitor";
+
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
