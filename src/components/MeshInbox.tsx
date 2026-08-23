@@ -6,6 +6,8 @@ import { Inbox, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { MeshEnvelope } from '@/types';
+import { focusMeshPin } from '@/lib/meshPins';
+
 
 export interface MeshInboxItem {
   id: string;
