@@ -4,7 +4,19 @@ La malla BLE **solo funciona en la app nativa** (APK/IPA). En Chrome o PWA el
 interruptor "Activar malla" aparece bloqueado porque el navegador no permite
 anunciar ni escanear Bluetooth en segundo plano.
 
-## Android (rápido)
+## Forma más simple: compilar el APK en la nube (sin Android Studio)
+
+1. En GitHub abre la pestaña **Actions**.
+2. Elige el flujo **"Build APK con Red Mesh"** y pulsa **Run workflow**.
+3. Espera ~8 minutos y descarga el artefacto **MATS-mesh-apk**.
+4. Pasa el `.apk` al teléfono, instálalo (permite "orígenes desconocidos"),
+   acepta permisos de Bluetooth y Ubicación y activa *Red Mesh*.
+
+El flujo copia los plugins, parchea el `AndroidManifest.xml` y compila solo.
+No necesitas instalar nada en tu computadora.
+
+## Android en local (avanzado)
+
 
 ```bash
 git pull                 # tras exportar a GitHub
