@@ -60,6 +60,9 @@ jobs:
       - name: Parchear AndroidManifest (permisos BLE + servicio)
         run: node native-plugins/patch-android-manifest.mjs
 
+      - name: Parchear WebView (evitar zoom del sistema)
+        run: node native-plugins/patch-android-webview.mjs
+
       - name: Compilar APK de depuración
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon --stacktrace
 
