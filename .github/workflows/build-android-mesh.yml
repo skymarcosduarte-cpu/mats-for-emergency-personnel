@@ -60,18 +60,18 @@ jobs:
         run: |
           set -euo pipefail
 
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq imagemagick
+
           RES=android/app/src/main/res
           SOURCE=public/app-icon-1024.png
           test -f "$SOURCE"
 
-          # Elimina primero todos los launchers generados por Capacitor para que
-          # Android/One UI nunca pueda elegir el icono genérico por prioridad.
-          find "$RES" -type f \( \
-            -name 'ic_launcher.png' -o -name 'ic_launcher.webp' -o \
-            -name 'ic_launcher_round.png' -o -name 'ic_launcher_round.webp' -o \
-            -name 'ic_launcher_foreground.png' -o -name 'ic_launcher_foreground.webp' -o \
-            -name 'ic_launcher.xml' -o -name 'ic_launcher_round.xml' \
-          \) -delete
+          # Elimina primero TODOS los launchers generados por Capacitor (png,
+          # webp, xml, en mipmap-* y drawable-*) para que Android/One UI nunca
+          # pueda elegir el icono genérico por prioridad de densidad.
+          find "$RES" -type f -name 'ic_launcher*' -delete
+
 
           # Iconos legacy y foreground adaptativo para todas las densidades.
           make_icons() {
@@ -121,8 +121,17 @@ jobs:
             echo 'Error: todavía existe un icono genérico WebP'
             exit 1
           fi
+
+          # El manifiesto debe apuntar a nuestros mipmaps (icono + icono redondo).
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          grep -q 'android:icon="@mipmap/ic_launcher"' "$MANIFEST"
+          grep -q 'android:roundIcon="@mipmap/ic_launcher_round"' "$MANIFEST" || \
+            sed -i 's#android:icon="@mipmap/ic_launcher"#android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"#' "$MANIFEST"
+          grep -q 'android:roundIcon="@mipmap/ic_launcher_round"' "$MANIFEST"
+
           identify "$RES/mipmap-xxxhdpi/ic_launcher.png" \
                    "$RES/mipmap-xxxhdpi/ic_launcher_foreground.png"
+
 
 
 
