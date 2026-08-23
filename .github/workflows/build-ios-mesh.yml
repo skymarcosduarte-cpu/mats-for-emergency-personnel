@@ -53,26 +53,49 @@ jobs:
 
       - name: Compilar (sin firmar)
         run: |
+          set -euo pipefail
           cd ios/App
-          xcodebuild -workspace App.xcworkspace \
+          if [ -d App.xcworkspace ]; then
+            CONTAINER=(-workspace App.xcworkspace)
+          elif [ -d App.xcodeproj ]; then
+            CONTAINER=(-project App.xcodeproj)
+          else
+            echo "No se encontró App.xcworkspace ni App.xcodeproj"
+            exit 1
+          fi
+
+          echo "Esquemas disponibles:"
+          xcodebuild "${CONTAINER[@]}" -list
+          xcodebuild "${CONTAINER[@]}" -resolvePackageDependencies
+          xcodebuild "${CONTAINER[@]}" \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
+            -destination 'generic/platform=iOS' \
             CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
             clean build
 
       - name: Empaquetar IPA
         run: |
-          cd ios/App/build/Build/Products/Release-iphoneos
-          mkdir -p Payload
-          cp -r App.app Payload/
+          set -euo pipefail
+          APP_PATH="$(find ios/App/build/Build/Products -type d -name 'App.app' -path '*Release-iphoneos*' -print -quit)"
+          if [ -z "$APP_PATH" ]; then
+            echo "No se encontró App.app después de compilar"
+            find ios/App/build/Build/Products -maxdepth 3 -print || true
+            exit 1
+          fi
+          OUTPUT="$GITHUB_WORKSPACE/ios-artifact"
+          rm -rf "$OUTPUT"
+          mkdir -p "$OUTPUT/Payload"
+          cp -R "$APP_PATH" "$OUTPUT/Payload/App.app"
+          cd "$OUTPUT"
           zip -qr MATS-mesh-unsigned.ipa Payload
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: MATS-mesh-ipa
-          path: ios/App/build/Build/Products/Release-iphoneos/*.ipa
+          path: ios-artifact/MATS-mesh-unsigned.ipa
           retention-days: 30
-          if-no-files-found: warn
+          if-no-files-found: error
