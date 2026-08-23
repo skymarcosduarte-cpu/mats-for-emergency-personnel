@@ -28,9 +28,11 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
   onGoHome
 }) => {
   const [currentStatus, setCurrentStatus] = useState<StatusType>('UNKNOWN');
+  const [statusNote, setStatusNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [testInProgress, setTestInProgress] = useState(false);
   const [lastStatusTime, setLastStatusTime] = useState<Date | null>(null);
+
   
   const { position } = useLocation();
   const { disasterMode } = useAppState();
