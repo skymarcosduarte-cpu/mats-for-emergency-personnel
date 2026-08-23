@@ -33,10 +33,11 @@ jobs:
       - uses: android-actions/setup-android@v3
 
       - name: Instalar dependencias
-        run: bun install
+        run: |
+          bun install --no-frozen-lockfile || npm install --legacy-peer-deps
 
       - name: Compilar la app web
-        run: bunx vite build
+        run: bunx --bun vite build
 
       - name: Usar assets locales (app offline, sin servidor remoto)
         run: |
@@ -48,10 +49,12 @@ jobs:
           "
 
       - name: Añadir plataforma Android
-        run: bunx cap add android
+        run: |
+          if [ ! -d android ]; then npx cap add android; fi
 
       - name: Sincronizar
-        run: bunx cap sync android
+        run: npx cap sync android
+
 
       - name: Instalar plugins de la malla
         run: bash native-plugins/install-android.sh
