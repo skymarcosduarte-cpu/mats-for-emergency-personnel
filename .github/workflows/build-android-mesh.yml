@@ -63,8 +63,9 @@ jobs:
       - name: Parchear AndroidManifest (permisos BLE + servicio)
         run: node native-plugins/patch-android-manifest.mjs
 
-      - name: Parchear WebView (evitar zoom del sistema)
-        run: node native-plugins/patch-android-webview.mjs
+      - name: Escribir MainActivity canónico (mesh + zoom fijo)
+        run: node native-plugins/write-android-mainactivity.mjs
+
 
       - name: Validar configuración nativa
         run: |
