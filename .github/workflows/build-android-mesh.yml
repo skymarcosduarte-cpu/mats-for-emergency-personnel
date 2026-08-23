@@ -18,13 +18,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
@@ -66,6 +66,20 @@ jobs:
       - name: Parchear WebView (evitar zoom del sistema)
         run: node native-plugins/patch-android-webview.mjs
 
+      - name: Validar configuración nativa
+        run: |
+          MAIN=$(find android/app/src/main/java -name MainActivity.java | head -1)
+          test -n "$MAIN"
+          ONCREATE_COUNT=$(grep -c 'void onCreate' "$MAIN")
+          if [ "$ONCREATE_COUNT" -ne 1 ]; then
+            echo "Error: MainActivity debe contener exactamente un método onCreate; se encontraron $ONCREATE_COUNT."
+            sed -n '1,160p' "$MAIN"
+            exit 1
+          fi
+          grep -q 'MeshAdvertiserPlugin.class' "$MAIN"
+          grep -q 'MeshForegroundServicePlugin.class' "$MAIN"
+          grep -q 'setTextZoom(100)' "$MAIN"
+
       - name: Ajustar memoria de Gradle
         run: |
           mkdir -p android
@@ -95,12 +109,12 @@ jobs:
           cp android/app/build/outputs/apk/debug/*.apk release/MATS-RedMesh.apk
 
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: success()
         with:
           name: MATS-mesh-apk
           path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Crear Release público con APK
         if: success()
