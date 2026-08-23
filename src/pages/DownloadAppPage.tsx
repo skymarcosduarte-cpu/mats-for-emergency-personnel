@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,23 @@ import {
   Share2,
   ArrowLeft,
   CheckCircle2,
+  RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 
 const GITHUB_REPO = "skymarcosduarte-cpu/safe-guard-link";
-const APK_URL = `https://github.com/${GITHUB_REPO}/releases/latest/download/MATS-RedMesh.apk`;
+const APK_FALLBACK_URL = `https://github.com/${GITHUB_REPO}/releases/latest/download/MATS-RedMesh.apk`;
+const CACHE_KEY = "mats-apk-check-v1";
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutos
 
 type Platform = "android" | "ios" | "desktop";
+type ApkStatus = "checking" | "ok" | "unavailable";
+
+interface CachedResult {
+  status: ApkStatus;
+  url: string;
+  ts: number;
+}
 
 function detectPlatform(): Platform {
   if (typeof navigator === "undefined") return "desktop";
@@ -28,11 +39,81 @@ function detectPlatform(): Platform {
   return "desktop";
 }
 
+/**
+ * Verifica la disponibilidad del APK en dos pasos:
+ * 1) API de GitHub (/releases/latest) — entrega la URL real del asset y metadatos.
+ *    Si el repo es privado o no hay release, responde 404 y caemos al paso 2.
+ * 2) HEAD directo a la URL de descrega (releases/latest/download/*.apk) — no
+ *    consume cuota de la API y confirma si el archivo redirige a un 200.
+ * El resultado se cachea en sessionStorage 10 min para no agotar el límite de
+ * 60 peticiones/hora por IP de la API no autenticada.
+ */
+async function checkApkAvailability(): Promise<{ status: ApkStatus; url: string }> {
+  // 1) API de GitHub
+  try {
+    const apiRes = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
+      { headers: { Accept: "application/vnd.github+json" } }
+    );
+    if (apiRes.ok) {
+      const data = await apiRes.json();
+      const asset = (data?.assets ?? []).find((a: { name?: string }) =>
+        a?.name?.toLowerCase().endsWith(".apk")
+      );
+      if (asset?.browser_download_url) {
+        return { status: "ok", url: asset.browser_download_url };
+      }
+      // El release existe pero sin asset .apk
+      return { status: "unavailable", url: APK_FALLBACK_URL };
+    }
+    // 404 = repo privado o sin releases → caer al HEAD de respaldo
+  } catch {
+    // error de red → caer al HEAD de respaldo
+  }
+
+  // 2) HEAD directo al enlace de descarga (respaldo, sin límite de API)
+  try {
+    const headRes = await fetch(APK_FALLBACK_URL, {
+      method: "HEAD",
+      redirect: "follow",
+    });
+    if (headRes.ok) {
+      return { status: "ok", url: APK_FALLBACK_URL };
+    }
+  } catch {
+    // ignorar y reportar no disponible
+  }
+
+  return { status: "unavailable", url: APK_FALLBACK_URL };
+}
+
+function readCache(): CachedResult | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedResult;
+    if (Date.now() - parsed.ts > CACHE_TTL) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(result: { status: ApkStatus; url: string }) {
+  try {
+    const entry: CachedResult = { ...result, ts: Date.now() };
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+  } catch {
+    /* sessionStorage no disponible */
+  }
+}
+
 export default function DownloadAppPage() {
   const [platform, setPlatform] = useState<Platform>("desktop");
   const [qr, setQr] = useState<string | null>(null);
-  const [apkUrl, setApkUrl] = useState<string>(APK_URL);
-  const [apkStatus, setApkStatus] = useState<"checking" | "ok" | "unavailable">("checking");
+  const [apkUrl, setApkUrl] = useState<string>(APK_FALLBACK_URL);
+  const [apkStatus, setApkStatus] = useState<ApkStatus>("checking");
+  const [isChecking, setIsChecking] = useState(false);
 
   const pageUrl = useMemo(
     () =>
@@ -42,6 +123,27 @@ export default function DownloadAppPage() {
     []
   );
 
+  const runCheck = useCallback(async () => {
+    setApkStatus("checking");
+    setIsChecking(true);
+
+    // 1) Intentar caché primero
+    const cached = readCache();
+    if (cached) {
+      setApkUrl(cached.url);
+      setApkStatus(cached.status);
+      setIsChecking(false);
+      return;
+    }
+
+    // 2) Verificación en vivo
+    const result = await checkApkAvailability();
+    setApkUrl(result.url);
+    setApkStatus(result.status);
+    writeCache(result);
+    setIsChecking(false);
+  }, []);
+
   useEffect(() => {
     setPlatform(detectPlatform());
     QRCode.toDataURL(pageUrl, { width: 240, margin: 2 })
@@ -50,28 +152,8 @@ export default function DownloadAppPage() {
   }, [pageUrl]);
 
   useEffect(() => {
-    let cancelled = false;
-    fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((data) => {
-        if (cancelled) return;
-        const asset = (data?.assets ?? []).find((a: { name?: string }) =>
-          a?.name?.toLowerCase().endsWith(".apk")
-        );
-        if (asset?.browser_download_url) {
-          setApkUrl(asset.browser_download_url);
-          setApkStatus("ok");
-        } else {
-          setApkStatus("unavailable");
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setApkStatus("unavailable");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    runCheck();
+  }, [runCheck]);
 
   const shareText = `Descarga la app MATS (alertas y seguridad) desde este enlace seguro:\n${pageUrl}`;
 
@@ -120,14 +202,29 @@ export default function DownloadAppPage() {
             </p>
             {apkStatus === "unavailable" ? (
               <div className="rounded-lg border-2 border-destructive/40 bg-destructive/10 p-4 text-base">
-                <p className="font-bold">Descarga no disponible por ahora</p>
-                <p className="mt-1">
-                  Mientras tanto puedes instalar MATS desde el navegador: menú de Chrome
-                  (⋮) → <strong>“Instalar aplicación”</strong> o “Agregar a pantalla de inicio”.
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                  <p className="font-bold">Descarga no disponible por ahora</p>
+                </div>
+                <p className="mt-2">
+                  El archivo APK aún no se ha publicado o el repositorio es privado.
+                  Esto suele resolverse en unos minutos tras ejecutar el build en GitHub Actions.
                 </p>
-                <Button asChild variant="secondary" size="lg" className="mt-3 h-12 w-full text-base">
-                  <Link to="/install">Ver guía con imágenes</Link>
-                </Button>
+                <div className="mt-3 flex flex-col gap-2">
+                  <Button
+                    onClick={runCheck}
+                    variant="outline"
+                    size="lg"
+                    className="h-12 w-full text-base"
+                    disabled={isChecking}
+                  >
+                    <RefreshCw className={`mr-2 h-5 w-5 ${isChecking ? "animate-spin" : ""}`} />
+                    Reintentar verificación
+                  </Button>
+                  <Button asChild variant="secondary" size="lg" className="h-12 w-full text-base">
+                    <Link to="/install">Instalar desde el navegador (alternativa)</Link>
+                  </Button>
+                </div>
               </div>
             ) : (
               <Button
