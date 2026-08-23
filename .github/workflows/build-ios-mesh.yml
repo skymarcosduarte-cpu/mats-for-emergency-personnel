@@ -50,6 +50,28 @@ jobs:
           if [ ! -d ios ]; then npx cap add ios; fi
           npx cap sync ios
 
+          # --- Icono M.A.T.S. en el AppIcon de iOS ---
+          SOURCE="$GITHUB_WORKSPACE/public/app-icon-1024.png"
+          ICONSET="ios/App/App/Assets.xcassets/AppIcon.appiconset"
+          test -f "$SOURCE"
+          rm -rf "$ICONSET"; mkdir -p "$ICONSET"
+          # 1024 sin canal alfa (requisito de Apple)
+          sips -s format jpeg "$SOURCE" --out /tmp/icon.jpg >/dev/null
+          sips -s format png /tmp/icon.jpg --out "$ICONSET/AppIcon-512@2x.png" >/dev/null
+          sips -z 1024 1024 "$ICONSET/AppIcon-512@2x.png" >/dev/null
+          cat > "$ICONSET/Contents.json" <<'EOF'
+          {
+            "images": [
+              { "filename": "AppIcon-512@2x.png", "idiom": "universal", "platform": "ios", "size": "1024x1024" }
+            ],
+            "info": { "author": "xcode", "version": 1 }
+          }
+          EOF
+          test -s "$ICONSET/AppIcon-512@2x.png"
+          sips -g pixelWidth -g pixelHeight "$ICONSET/AppIcon-512@2x.png"
+
+
+
           # Plugin de la malla + permisos Info.plist (no debe abortar el build)
           sudo gem install xcodeproj --no-document || gem install xcodeproj --no-document || true
           bash native-plugins/install-ios.sh || echo "AVISO: install-ios.sh falló, se continúa"
