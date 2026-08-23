@@ -100,16 +100,29 @@ export const MeshInbox: React.FC<MeshInboxProps> = ({ messages, onClear }) => {
                   <p className="text-xs text-foreground mt-1 break-words">{m.note}</p>
                 )}
                 {m.lat != null && m.lng != null && (
-                  <a
-                    className="inline-flex items-center gap-1 text-xs text-primary mt-1 underline"
-                    href={`https://www.google.com/maps?q=${m.lat},${m.lng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <MapPin className="w-3 h-3" />
-                    {m.lat.toFixed(5)}, {m.lng.toFixed(5)}
-                  </a>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-7 text-xs"
+                      onClick={() =>
+                        focusMeshPin({ id: m.id, type: m.type, lat: m.lat!, lng: m.lng! })
+                      }
+                    >
+                      <MapPin className="w-3 h-3 mr-1" />
+                      Ver en mapa
+                    </Button>
+                    <a
+                      className="inline-flex items-center gap-1 text-xs text-primary underline"
+                      href={`https://www.google.com/maps?q=${m.lat},${m.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {m.lat.toFixed(5)}, {m.lng.toFixed(5)}
+                    </a>
+                  </div>
                 )}
+
               </li>
             ))}
           </ul>
