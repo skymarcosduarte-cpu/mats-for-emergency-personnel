@@ -16,7 +16,8 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 
 import { BackToHomeButton } from '@/components/BackToHomeButton';
-import type { UserRole, StatusType } from '@/types';
+import { MeshInbox, envelopeToInboxItem, type MeshInboxItem } from '@/components/MeshInbox';
+import type { UserRole, StatusType, MeshEnvelope } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -40,7 +41,20 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
   const { disasterMode } = useAppState();
   const { user } = useAuth();
   const meshTransport = getMeshTransport();
-  const mesh = useMeshNetwork({ disasterMode, userId: user?.id, discovery: true });
+  const [meshInbox, setMeshInbox] = useState<MeshInboxItem[]>([]);
+  const handleMeshMessage = React.useCallback((envelope: MeshEnvelope) => {
+    const item = envelopeToInboxItem(envelope);
+    setMeshInbox((prev) => {
+      if (prev.some((m) => m.id === item.id)) return prev;
+      return [item, ...prev].slice(0, 50);
+    });
+  }, []);
+  const mesh = useMeshNetwork({
+    disasterMode,
+    userId: user?.id,
+    discovery: true,
+    onMessage: handleMeshMessage,
+  });
 
   // Handle status update
   const handleStatusUpdate = async (status: StatusType) => {
@@ -417,6 +431,9 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
             )}
           </CardContent>
         </Card>
+
+        {/* Buzón de mensajes Mesh */}
+        <MeshInbox messages={meshInbox} onClear={() => setMeshInbox([])} />
 
         {/* Role Badge */}
         <div className="text-center">
