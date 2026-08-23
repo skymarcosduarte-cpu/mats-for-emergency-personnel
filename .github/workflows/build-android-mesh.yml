@@ -66,8 +66,28 @@ jobs:
       - name: Parchear WebView (evitar zoom del sistema)
         run: node native-plugins/patch-android-webview.mjs
 
-      - name: Compilar APK de depuración
-        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: Ajustar memoria de Gradle
+        run: |
+          mkdir -p android
+          {
+            echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g"
+            echo "org.gradle.parallel=false"
+            echo "org.gradle.daemon=false"
+            echo "android.useAndroidX=true"
+            echo "android.enableJetifier=true"
+          } >> android/gradle.properties
+
+      - name: Compilar APK de depuración (con reintento)
+        run: |
+          cd android && chmod +x gradlew
+          for i in 1 2; do
+            ./gradlew assembleDebug --no-daemon --stacktrace && exit 0
+            echo "Intento $i falló, reintentando en 20s..."
+            ./gradlew --stop || true
+            sleep 20
+          done
+          exit 1
+
 
       - name: Renombrar APK con fecha
         run: |
