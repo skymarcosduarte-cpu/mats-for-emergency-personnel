@@ -14,8 +14,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-const APK_URL =
-  "https://github.com/skymarcosduarte-cpu/safe-guard-link/releases/latest/download/MATS-RedMesh.apk";
+const GITHUB_REPO = "skymarcosduarte-cpu/safe-guard-link";
+const APK_URL = `https://github.com/${GITHUB_REPO}/releases/latest/download/MATS-RedMesh.apk`;
 
 type Platform = "android" | "ios" | "desktop";
 
@@ -31,6 +31,8 @@ function detectPlatform(): Platform {
 export default function DownloadAppPage() {
   const [platform, setPlatform] = useState<Platform>("desktop");
   const [qr, setQr] = useState<string | null>(null);
+  const [apkUrl, setApkUrl] = useState<string>(APK_URL);
+  const [apkStatus, setApkStatus] = useState<"checking" | "ok" | "unavailable">("checking");
 
   const pageUrl = useMemo(
     () =>
@@ -46,6 +48,30 @@ export default function DownloadAppPage() {
       .then(setQr)
       .catch(() => setQr(null));
   }, [pageUrl]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((data) => {
+        if (cancelled) return;
+        const asset = (data?.assets ?? []).find((a: { name?: string }) =>
+          a?.name?.toLowerCase().endsWith(".apk")
+        );
+        if (asset?.browser_download_url) {
+          setApkUrl(asset.browser_download_url);
+          setApkStatus("ok");
+        } else {
+          setApkStatus("unavailable");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setApkStatus("unavailable");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const shareText = `Descarga la app MATS (alertas y seguridad) desde este enlace seguro:\n${pageUrl}`;
 
@@ -92,12 +118,30 @@ export default function DownloadAppPage() {
               Versión completa con <strong>Red Mesh por Bluetooth</strong> para usarla
               aún sin internet.
             </p>
-            <Button asChild size="lg" className="h-14 w-full text-lg">
-              <a href={APK_URL}>
-                <Download className="mr-2 h-6 w-6" />
-                Descargar app para Android
-              </a>
-            </Button>
+            {apkStatus === "unavailable" ? (
+              <div className="rounded-lg border-2 border-destructive/40 bg-destructive/10 p-4 text-base">
+                <p className="font-bold">Descarga no disponible por ahora</p>
+                <p className="mt-1">
+                  Mientras tanto puedes instalar MATS desde el navegador: menú de Chrome
+                  (⋮) → <strong>“Instalar aplicación”</strong> o “Agregar a pantalla de inicio”.
+                </p>
+                <Button asChild variant="secondary" size="lg" className="mt-3 h-12 w-full text-base">
+                  <Link to="/install">Ver guía con imágenes</Link>
+                </Button>
+              </div>
+            ) : (
+              <Button
+                asChild
+                size="lg"
+                className="h-14 w-full text-lg"
+                disabled={apkStatus === "checking"}
+              >
+                <a href={apkUrl}>
+                  <Download className="mr-2 h-6 w-6" />
+                  {apkStatus === "checking" ? "Verificando descarga..." : "Descargar app para Android"}
+                </a>
+              </Button>
+            )}
             <ol className="space-y-2 text-base">
               <li>1. Toca el botón y espera a que baje el archivo.</li>
               <li>2. Ábrelo y acepta “Instalar apps desconocidas”.</li>
