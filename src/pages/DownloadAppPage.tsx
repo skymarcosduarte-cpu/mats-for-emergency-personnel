@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Helmet } from 'react-helmet-async';
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
@@ -171,6 +172,14 @@ export default function DownloadAppPage() {
 
   return (
     <div className="min-h-[100dvh] bg-background pb-[env(safe-area-inset-bottom)]">
+      <Helmet>
+        <title>Descargar la app Android de COMUNIDAD SOS (Red Mesh)</title>
+        <meta name="description" content="Descarga el APK oficial de COMUNIDAD SOS para Android con Red Mesh Bluetooth: comunicación de emergencia sin internet, alertas sísmicas y botón SOS." />
+        <link rel="canonical" href="https://mats-app.com/descargar" />
+        <meta property="og:title" content="Descargar la app Android de COMUNIDAD SOS (Red Mesh)" />
+        <meta property="og:url" content="https://mats-app.com/descargar" />
+        <meta property="og:description" content="APK oficial para Android con Red Mesh Bluetooth, alertas sísmicas y botón SOS." />
+      </Helmet>
       <header className="flex items-center gap-3 border-b p-4">
         <Link to="/" aria-label="Volver al inicio">
           <Button variant="ghost" size="icon">

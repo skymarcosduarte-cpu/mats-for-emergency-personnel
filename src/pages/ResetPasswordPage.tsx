@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -96,6 +97,11 @@ const ResetPasswordPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <Helmet>
+        <title>Restablecer contraseña | COMUNIDAD SOS</title>
+        <meta name="description" content="Crea una nueva contraseña para tu cuenta de COMUNIDAD SOS (M.A.T.S.)." />
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className="w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center gap-3">
           <MatsLogo size={48} showText />
