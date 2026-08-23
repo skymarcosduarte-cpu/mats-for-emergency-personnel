@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import 'leaflet/dist/leaflet.css';
+import { getMeshPins, MESH_PINS_EVENT, MESH_FOCUS_EVENT, type MeshPin } from '@/lib/meshPins';
 
 // Sanitize user content for safe HTML rendering
 const sanitize = (text: string | null | undefined): string => {
@@ -2597,6 +2598,76 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       }
     });
   }, [activeTrips, locations, mapReady]);
+
+  // ===== Pines de mensajes Mesh (Bluetooth) =====
+  const [meshPins, setMeshPins] = useState<MeshPin[]>(() => getMeshPins());
+
+  useEffect(() => {
+    const refresh = () => setMeshPins(getMeshPins());
+    window.addEventListener(MESH_PINS_EVENT, refresh);
+    return () => window.removeEventListener(MESH_PINS_EVENT, refresh);
+  }, []);
+
+  // Centrar el mapa cuando se pide "Ver en mapa" desde el buzón Mesh
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { lat: number; lng: number } | undefined;
+      if (!detail) return;
+      setMeshPins(getMeshPins());
+      const focus = () => {
+        const map = mapInstanceRef.current;
+        if (!map) return false;
+        map.setView([detail.lat, detail.lng], 16, { animate: true });
+        return true;
+      };
+      if (!focus()) setTimeout(focus, 800);
+    };
+    window.addEventListener(MESH_FOCUS_EVENT, handler as EventListener);
+    return () => window.removeEventListener(MESH_FOCUS_EVENT, handler as EventListener);
+  }, [mapReady]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady) return;
+    const map = mapInstanceRef.current;
+
+    markersRef.current.forEach((marker, key) => {
+      if (key.startsWith('meshpin-') && !meshPins.find(p => `meshpin-${p.id}` === key)) {
+        map.removeLayer(marker);
+        markersRef.current.delete(key);
+      }
+    });
+
+    const LABELS: Record<string, string> = {
+      PANIC: '🚨 Pánico (Mesh)',
+      STATUS_OK: '✅ Estoy bien (Mesh)',
+      STATUS_NEED_HELP: '🆘 Necesita ayuda (Mesh)',
+      DRILL_TEST: '🧪 Simulacro (Mesh)',
+      DRILL_ACK: '🧪 Confirmación (Mesh)',
+      HELP_14: '🆘 Ayuda 14 (Mesh)',
+      MESH_HELLO: '📡 Presencia (Mesh)',
+    };
+
+    meshPins.forEach((pin) => {
+      const key = `meshpin-${pin.id}`;
+      if (markersRef.current.has(key)) return;
+      const urgent = pin.type === 'PANIC' || pin.type === 'STATUS_NEED_HELP' || pin.type === 'HELP_14';
+      const icon = L.divIcon({
+        className: 'mesh-pin-marker',
+        html: `<div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;background:${urgent ? '#dc2626' : '#7c3aed'};color:#fff;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.45);">📡</div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
+      });
+      const marker = L.marker([pin.lat, pin.lng], { icon, zIndexOffset: 450 }).addTo(map);
+      marker.bindPopup(`
+        <div style="text-align:center;padding:4px;">
+          <div style="font-size:14px;font-weight:bold;">${LABELS[pin.type] ?? pin.type}</div>
+          <div style="font-size:11px;color:#666;margin-top:4px;">${pin.lat.toFixed(5)}, ${pin.lng.toFixed(5)}</div>
+          <div style="font-size:11px;color:#666;">${new Date(pin.receivedAt).toLocaleTimeString('es-MX')}</div>
+        </div>
+      `);
+      markersRef.current.set(key, marker);
+    });
+  }, [meshPins, mapReady]);
 
   // Update help 14 markers - clicking opens detail modal
   useEffect(() => {

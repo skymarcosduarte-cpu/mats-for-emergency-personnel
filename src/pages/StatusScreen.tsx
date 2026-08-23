@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { MeshInbox, envelopeToInboxItem, type MeshInboxItem } from '@/components/MeshInbox';
+import { addMeshPin, clearMeshPins } from '@/lib/meshPins';
 import type { UserRole, StatusType, MeshEnvelope } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -44,11 +45,21 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
   const [meshInbox, setMeshInbox] = useState<MeshInboxItem[]>([]);
   const handleMeshMessage = React.useCallback((envelope: MeshEnvelope) => {
     const item = envelopeToInboxItem(envelope);
+    if (item.lat != null && item.lng != null) {
+      addMeshPin({
+        id: item.id,
+        type: item.type,
+        lat: item.lat,
+        lng: item.lng,
+        receivedAt: item.receivedAt,
+      });
+    }
     setMeshInbox((prev) => {
       if (prev.some((m) => m.id === item.id)) return prev;
       return [item, ...prev].slice(0, 50);
     });
   }, []);
+
   const mesh = useMeshNetwork({
     disasterMode,
     userId: user?.id,
@@ -433,7 +444,7 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         </Card>
 
         {/* Buzón de mensajes Mesh */}
-        <MeshInbox messages={meshInbox} onClear={() => setMeshInbox([])} />
+        <MeshInbox messages={meshInbox} onClear={() => { setMeshInbox([]); clearMeshPins(); }} />
 
         {/* Role Badge */}
         <div className="text-center">

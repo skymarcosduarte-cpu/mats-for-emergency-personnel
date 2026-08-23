@@ -13,6 +13,7 @@ import { HomeScreen } from '@/pages/HomeScreen';
 
 // Heavy screens are code-split so the home screen renders immediately,
 // even on slow connections. Chunks are warmed up during browser idle time.
+import { MESH_FOCUS_EVENT } from '@/lib/meshPins';
 const loadMapScreen = () => import('@/pages/MapScreen');
 const loadTransitScreen = () => import('@/pages/TransitScreen');
 const loadAlertsScreen = () => import('@/pages/AlertsScreen');
@@ -163,6 +164,14 @@ function AppContent() {
   const [showComprehensiveTutorial, setShowComprehensiveTutorial] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('home');
+
+  // Al tocar "Ver en mapa" en el buzón Mesh, cambiar a la pestaña de mapa
+  useEffect(() => {
+    const handler = () => setActiveTab('map');
+    window.addEventListener(MESH_FOCUS_EVENT, handler as EventListener);
+    return () => window.removeEventListener(MESH_FOCUS_EVENT, handler as EventListener);
+  }, []);
+
   const [userRole] = useState<UserRole>('SOS_ACTIVO');
   
   // Use the auth hook to check for existing session
