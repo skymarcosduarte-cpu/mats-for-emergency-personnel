@@ -15,6 +15,7 @@ const TYPES: MeshMessageType[] = [
   'DRILL_TEST',
   'DRILL_ACK',
   'HELP_14',
+  'MESH_HELLO',
 ];
 
 export interface MeshPacket {
