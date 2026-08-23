@@ -13,6 +13,8 @@ import { getMeshTransport, createMeshEnvelope, getMeshStatusMessage, isMeshAvail
 import { useMeshNetwork } from '@/hooks/useMeshNetwork';
 import { getFreshAuthUserId } from '@/lib/locationSync';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import type { UserRole, StatusType } from '@/types';
 import { cn } from '@/lib/utils';
