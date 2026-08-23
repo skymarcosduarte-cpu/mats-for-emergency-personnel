@@ -121,8 +121,17 @@ jobs:
             echo 'Error: todavía existe un icono genérico WebP'
             exit 1
           fi
+
+          # El manifiesto debe apuntar a nuestros mipmaps (icono + icono redondo).
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          grep -q 'android:icon="@mipmap/ic_launcher"' "$MANIFEST"
+          grep -q 'android:roundIcon="@mipmap/ic_launcher_round"' "$MANIFEST" || \
+            sed -i 's#android:icon="@mipmap/ic_launcher"#android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"#' "$MANIFEST"
+          grep -q 'android:roundIcon="@mipmap/ic_launcher_round"' "$MANIFEST"
+
           identify "$RES/mipmap-xxxhdpi/ic_launcher.png" \
                    "$RES/mipmap-xxxhdpi/ic_launcher_foreground.png"
+
 
 
 
