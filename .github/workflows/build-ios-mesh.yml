@@ -153,10 +153,24 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      - name: Resumen de errores
+        if: always()
+        run: |
+          {
+            echo "## Registro de compilación iOS (últimas 120 líneas)"
+            echo '```'
+            tail -n 120 ios-build.log 2>/dev/null || echo "sin registro"
+            echo '```'
+            echo "### Errores detectados"
+            echo '```'
+            grep -Ei "error|npm ERR|fatal|not found" ios-build.log 2>/dev/null | tail -n 40 || echo "ninguno"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Resultado final
         run: |
           if [ ! -f ios-artifact/MATS-mesh-unsigned.ipa ]; then
-            echo "La compilación falló. Descarga el artefacto MATS-ios-build-log para ver el error completo."
+            echo "La compilación falló. Revisa el resumen del job o el artefacto MATS-ios-build-log."
             exit 1
           fi
           echo "IPA generado correctamente."
