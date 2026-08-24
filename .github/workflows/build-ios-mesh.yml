@@ -39,6 +39,12 @@ jobs:
 
           npx vite build
 
+          # Verificar que el bundle lleva las últimas funciones de la malla
+          APP_VERSION=$(node -e "const s=require('fs').readFileSync('src/lib/versionCheck.ts','utf8');console.log(s.match(/APP_VERSION\s*=\s*'([^']+)'/)[1])")
+          echo "Compilando MATS v$APP_VERSION"
+          grep -Rqs "BUZÓN DE MENSAJES MESH" dist/assets
+          grep -Rqs "MESH_HELLO" dist/assets
+
           # Usar assets locales (app offline, sin servidor remoto)
           node -e "
           const fs=require('fs');
@@ -48,6 +54,7 @@ jobs:
           "
 
           if [ ! -d ios ]; then npx cap add ios; fi
+
           npx cap sync ios
 
           # --- Icono M.A.T.S. en el AppIcon de iOS ---
