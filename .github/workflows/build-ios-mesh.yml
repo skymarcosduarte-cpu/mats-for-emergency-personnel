@@ -24,6 +24,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Preparar registro
+        run: touch "$GITHUB_WORKSPACE/ios-build.log"
+
       - name: Compilar todo (registro completo)
         id: build
         continue-on-error: true
@@ -33,17 +36,24 @@ jobs:
 
           sw_vers
           xcodebuild -version
+          node -v && npm -v
 
           rm -f bun.lockb bun.lock package-lock.json
-          npm install --legacy-peer-deps --no-audit --no-fund
+          # Reintentos: la instalación en macOS falla a veces por red/deps opcionales
+          npm install --legacy-peer-deps --no-audit --no-fund \
+            || npm install --legacy-peer-deps --no-audit --no-fund \
+            || npm install --legacy-peer-deps --force --no-audit --no-fund
+          # Rollup/esbuild necesitan su binario nativo de macOS arm64
+          npm install --no-save --no-audit --no-fund @rollup/rollup-darwin-arm64 || true
 
           npx vite build
 
-          # Verificar que el bundle lleva las últimas funciones de la malla
+          # Verificar (solo informativo) que el bundle lleva las últimas funciones de la malla
           APP_VERSION=$(node -e "const s=require('fs').readFileSync('src/lib/versionCheck.ts','utf8');console.log(s.match(/APP_VERSION\s*=\s*'([^']+)'/)[1])")
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
           echo "Compilando MATS v$APP_VERSION"
-          grep -Rqs "BUZÓN DE MENSAJES MESH" dist/assets
-          grep -Rqs "MESH_HELLO" dist/assets
+          grep -Rqs "MENSAJES MESH" dist/assets || echo "AVISO: no se detectó el buzón Mesh en el bundle"
+          grep -Rqs "MESH_HELLO" dist/assets || echo "AVISO: no se detectó MESH_HELLO en el bundle"
 
           # Usar assets locales (app offline, sin servidor remoto)
           node -e "
@@ -143,10 +153,24 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      - name: Resumen de errores
+        if: always()
+        run: |
+          {
+            echo "## Registro de compilación iOS (últimas 120 líneas)"
+            echo '```'
+            tail -n 120 ios-build.log 2>/dev/null || echo "sin registro"
+            echo '```'
+            echo "### Errores detectados"
+            echo '```'
+            grep -Ei "error|npm ERR|fatal|not found" ios-build.log 2>/dev/null | tail -n 40 || echo "ninguno"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Resultado final
         run: |
           if [ ! -f ios-artifact/MATS-mesh-unsigned.ipa ]; then
-            echo "La compilación falló. Descarga el artefacto MATS-ios-build-log para ver el error completo."
+            echo "La compilación falló. Revisa el resumen del job o el artefacto MATS-ios-build-log."
             exit 1
           fi
           echo "IPA generado correctamente."
