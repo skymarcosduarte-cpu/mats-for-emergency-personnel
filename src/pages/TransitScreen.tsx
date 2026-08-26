@@ -179,7 +179,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     arrivalAirport: '',
     departureTime: '',
     arrivalTime: '',
-    eta: '',
+    eta: defaultDateTimeLocal(2),
     // Origin coordinates (captured from location picker or GPS)
     originLat: null as number | null,
     originLng: null as number | null,
