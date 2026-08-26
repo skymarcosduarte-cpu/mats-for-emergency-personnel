@@ -50,7 +50,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { TransitType, ReportCategory, ReportSeverity, UserRole } from '@/types';
 import { cn } from '@/lib/utils';
-import { dateTimeLocalToISOString } from '@/lib/datetimeLocal';
+import { dateTimeLocalToISOString, defaultDateTimeLocal } from '@/lib/datetimeLocal';
 import { getCachedMyTrips, cacheMyTrips } from '@/lib/offlineDataCache';
 
 const REPORT_CATEGORIES: { value: ReportCategory; label: string; emoji: string }[] = [
