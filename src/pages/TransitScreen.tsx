@@ -948,7 +948,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       arrivalAirport: '',
       departureTime: '',
       arrivalTime: '',
-      eta: '',
+      eta: defaultDateTimeLocal(2),
       originLat: null,
       originLng: null,
       destinationLat: null,
