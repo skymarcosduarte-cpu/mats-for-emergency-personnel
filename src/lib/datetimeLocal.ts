@@ -18,3 +18,10 @@ export function dateTimeLocalToISOString(value: string): string | null {
 
   return date.toISOString();
 }
+
+/** Returns a value usable by <input type="datetime-local"> for now + `hours`. */
+export function defaultDateTimeLocal(hours = 2): string {
+  const d = new Date(Date.now() + hours * 60 * 60 * 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

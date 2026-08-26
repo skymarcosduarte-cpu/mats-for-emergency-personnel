@@ -50,7 +50,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { TransitType, ReportCategory, ReportSeverity, UserRole } from '@/types';
 import { cn } from '@/lib/utils';
-import { dateTimeLocalToISOString } from '@/lib/datetimeLocal';
+import { dateTimeLocalToISOString, defaultDateTimeLocal } from '@/lib/datetimeLocal';
 import { getCachedMyTrips, cacheMyTrips } from '@/lib/offlineDataCache';
 
 const REPORT_CATEGORIES: { value: ReportCategory; label: string; emoji: string }[] = [
@@ -179,7 +179,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     arrivalAirport: '',
     departureTime: '',
     arrivalTime: '',
-    eta: '',
+    eta: defaultDateTimeLocal(2),
     // Origin coordinates (captured from location picker or GPS)
     originLat: null as number | null,
     originLng: null as number | null,
@@ -948,7 +948,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       arrivalAirport: '',
       departureTime: '',
       arrivalTime: '',
-      eta: '',
+      eta: defaultDateTimeLocal(2),
       originLat: null,
       originLng: null,
       destinationLat: null,
@@ -2442,19 +2442,21 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label>Aeropuerto salida</Label>
+                      <Label>Aeropuerto salida *</Label>
                       <Input
                         value={tripForm.departureAirport}
                         onChange={(e) => setTripForm({ ...tripForm, departureAirport: e.target.value })}
                         placeholder="MEX"
+                        required
                       />
                     </div>
                     <div>
-                      <Label>Aeropuerto llegada</Label>
+                      <Label>Aeropuerto llegada *</Label>
                       <Input
                         value={tripForm.arrivalAirport}
                         onChange={(e) => setTripForm({ ...tripForm, arrivalAirport: e.target.value })}
                         placeholder="GDL"
+                        required
                       />
                     </div>
                   </div>
@@ -2475,14 +2477,30 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
                 </>
               )}
 
-              <div>
-                <Label>ETA (Hora estimada de llegada)</Label>
+              <div className="p-3 rounded-lg border-2 border-primary/40 bg-primary/5 space-y-2">
+                <Label className="font-semibold">ETA (Hora estimada de llegada) *</Label>
                 <Input
                   type="datetime-local"
+                  className="min-h-[48px]"
                   value={tripForm.eta}
                   onChange={(e) => setTripForm({ ...tripForm, eta: e.target.value })}
+                  required
                 />
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 4, 8].map((h) => (
+                    <Button
+                      key={h}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setTripForm({ ...tripForm, eta: defaultDateTimeLocal(h) })}
+                    >
+                      +{h} h
+                    </Button>
+                  ))}
+                </div>
               </div>
+
             </div>
           </div>
 
