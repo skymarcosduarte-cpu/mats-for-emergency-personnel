@@ -60,7 +60,22 @@ export function clearMeshPins() {
   window.dispatchEvent(new CustomEvent(MESH_PINS_EVENT));
 }
 
+export interface MeshFocusRequest { id: string; lat: number; lng: number; type: string; requestedAt: number }
+
+let pendingFocus: MeshFocusRequest | null = null;
+const PENDING_TTL_MS = 30 * 1000;
+
+/** Devuelve (y consume) la petición de centrado pendiente, si sigue vigente. */
+export function consumePendingMeshFocus(): MeshFocusRequest | null {
+  const pending = pendingFocus;
+  if (!pending) return null;
+  pendingFocus = null;
+  if (Date.now() - pending.requestedAt > PENDING_TTL_MS) return null;
+  return pending;
+}
+
 /** Pide al mapa centrarse en un pin (App cambia a la pestaña de mapa). */
 export function focusMeshPin(pin: { lat: number; lng: number; type: string; id: string }) {
+  pendingFocus = { ...pin, requestedAt: Date.now() };
   window.dispatchEvent(new CustomEvent(MESH_FOCUS_EVENT, { detail: pin }));
 }

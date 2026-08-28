@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import 'leaflet/dist/leaflet.css';
-import { getMeshPins, MESH_PINS_EVENT, MESH_FOCUS_EVENT, type MeshPin } from '@/lib/meshPins';
+import { getMeshPins, MESH_PINS_EVENT, MESH_FOCUS_EVENT, consumePendingMeshFocus, type MeshPin } from '@/lib/meshPins';
 
 // Sanitize user content for safe HTML rendering
 const sanitize = (text: string | null | undefined): string => {
@@ -2609,24 +2609,38 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
   }, []);
 
   // Centrar el mapa cuando se pide "Ver en mapa" desde el buzón Mesh
+  const focusOnMeshPin = useCallback((detail: { id: string; lat: number; lng: number }) => {
+    setMeshPins(getMeshPins());
+    let attempts = 0;
+    const focus = () => {
+      const map = mapInstanceRef.current;
+      if (!map) {
+        if (attempts++ < 10) setTimeout(focus, 400);
+        return;
+      }
+      map.setView([detail.lat, detail.lng], 16, { animate: true });
+      const marker = markersRef.current.get(`meshpin-${detail.id}`);
+      if (marker) marker.openPopup();
+      else if (attempts++ < 10) setTimeout(focus, 400);
+    };
+    focus();
+  }, []);
+
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail as { id: string; lat: number; lng: number } | undefined;
       if (!detail) return;
-      setMeshPins(getMeshPins());
-      const focus = () => {
-        const map = mapInstanceRef.current;
-        if (!map) return false;
-        map.setView([detail.lat, detail.lng], 16, { animate: true });
-        const marker = markersRef.current.get(`meshpin-${detail.id}`);
-        marker?.openPopup();
-        return true;
-      };
-      if (!focus()) setTimeout(focus, 800);
+      focusOnMeshPin(detail);
     };
     window.addEventListener(MESH_FOCUS_EVENT, handler as EventListener);
     return () => window.removeEventListener(MESH_FOCUS_EVENT, handler as EventListener);
-  }, [mapReady]);
+  }, [focusOnMeshPin]);
+
+  // Al montar (el mapa es lazy), atender una petición de centrado emitida antes del montaje
+  useEffect(() => {
+    const pending = consumePendingMeshFocus();
+    if (pending) focusOnMeshPin(pending);
+  }, [focusOnMeshPin]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
