@@ -330,13 +330,9 @@ async function fetchFromNetwork(
 ): Promise<{ result: XFeedResult; retryAfterSeconds?: number } | { failed: true; attempts: XFeedResult['attempts']; retryAfterSeconds?: number }> {
   const attempts: XFeedResult['attempts'] = [];
   const browserUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
-  const nitterMirrors = [
-    'https://xcancel.com',
-    'https://nitter.privacyredirect.com',
-    'https://nitter.privacydev.net',
-    'https://nitter.poast.org',
-    'https://nitter.net',
-  ];
+  // Nitter mirrors (privacyredirect / privacydev / poast / nitter.net) are dead:
+  // DNS failures, ECONNREFUSED, 410 and RSS-client whitelists. They were removed
+  // because every attempt only burned the function's time budget.
   const sources: Array<{ url: string; parser: (body: string) => XFeedRawItem[] }> = [
     {
       url: `https://syndication.twitter.com/srv/timeline-profile/screen-name/${screenName}`,
@@ -352,11 +348,14 @@ async function fetchFromNetwork(
       url: `https://news.google.com/rss/search?q=${encodeURIComponent(`site:x.com/${screenName}`)}&hl=es-419&gl=MX&ceid=MX:es-419`,
       parser: parseGoogleNewsXFeed,
     },
-    ...nitterMirrors.map((base) => ({
-      url: `${base}/${screenName}/rss`,
-      parser: parseNitterRss,
-    })),
+    {
+      // Secondary Google News query: catches reposts/coverage naming the account
+      // when the site: query returns nothing.
+      url: `https://news.google.com/rss/search?q=${encodeURIComponent(`"@${screenName}" sismo`)}&hl=es-419&gl=MX&ceid=MX:es-419`,
+      parser: parseGoogleNewsXFeed,
+    },
   ];
+
 
   let lastRetryAfter: number | undefined;
   let bestResult: XFeedResult | null = null;
@@ -371,7 +370,7 @@ async function fetchFromNetwork(
           'Accept-Language': 'es-MX,es;q=0.9,en;q=0.8',
           'Referer': 'https://platform.twitter.com/',
         },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(15000),
       });
       if (!response.ok) {
         attempts.push({ url: source.url, ok: false, status: response.status });
