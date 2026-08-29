@@ -370,7 +370,7 @@ async function fetchFromNetwork(
           'Accept-Language': 'es-MX,es;q=0.9,en;q=0.8',
           'Referer': 'https://platform.twitter.com/',
         },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(15000),
       });
       if (!response.ok) {
         attempts.push({ url: source.url, ok: false, status: response.status });
