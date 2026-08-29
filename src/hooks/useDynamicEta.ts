@@ -33,11 +33,16 @@ export function useDynamicEta({
   enabled = true,
   minUpdateIntervalMs = 60000, // Update ETA at most every 60 seconds
   defaultSpeedKmh = 60, // Default to 60 km/h if no speed available
+  transitType = null,
 }: UseDynamicEtaOptions) {
   const [etaInfo, setEtaInfo] = useState<EtaInfo | null>(null);
   const [updating, setUpdating] = useState(false);
   const lastUpdateRef = useRef<number>(0);
   const speedHistoryRef = useRef<number[]>([]);
+
+  // Only ground trips may auto-update the stored ETA. For flights/helicopters the
+  // ground-speed model produces absurd values (e.g. 1300 km at 60 km/h = +21 h).
+  const canAutoUpdateDb = !transitType || transitType === 'ROAD';
 
   // Calculate average speed from recent measurements
   const getAverageSpeed = useCallback((currentSpeed: number | null): number => {
