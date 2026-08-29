@@ -152,11 +152,14 @@ export function useDynamicEta({
       lastUpdated: new Date(),
     });
 
-    // Update database
-    await updateEtaInDb(result.estimatedMinutes);
+    // Update database only for ground trips and only when we have real GPS speed
+    // samples; otherwise the user-defined ETA stays authoritative.
+    if (canAutoUpdateDb && speedHistoryRef.current.length >= 3) {
+      await updateEtaInDb(result.estimatedMinutes);
+    }
 
     setUpdating(false);
-  }, [enabled, tripId, destinationLat, destinationLng, minUpdateIntervalMs, calculateNewEta, updateEtaInDb]);
+  }, [enabled, tripId, destinationLat, destinationLng, minUpdateIntervalMs, calculateNewEta, updateEtaInDb, canAutoUpdateDb]);
 
   // Force update ETA (for manual trigger)
   const forceUpdateEta = useCallback(async (position: GeoPosition) => {
