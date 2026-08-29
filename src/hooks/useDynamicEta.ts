@@ -15,6 +15,8 @@ interface UseDynamicEtaOptions {
   minUpdateIntervalMs?: number;
   // Default average speed in km/h if GPS speed not available
   defaultSpeedKmh?: number;
+  // Transit type: only ground trips get automatic ETA recalculation
+  transitType?: string | null;
 }
 
 interface EtaInfo {
