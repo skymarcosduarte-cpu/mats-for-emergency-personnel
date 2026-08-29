@@ -15,6 +15,8 @@ interface UseDynamicEtaOptions {
   minUpdateIntervalMs?: number;
   // Default average speed in km/h if GPS speed not available
   defaultSpeedKmh?: number;
+  // Transit type: only ground trips get automatic ETA recalculation
+  transitType?: string | null;
 }
 
 interface EtaInfo {
@@ -31,11 +33,16 @@ export function useDynamicEta({
   enabled = true,
   minUpdateIntervalMs = 60000, // Update ETA at most every 60 seconds
   defaultSpeedKmh = 60, // Default to 60 km/h if no speed available
+  transitType = null,
 }: UseDynamicEtaOptions) {
   const [etaInfo, setEtaInfo] = useState<EtaInfo | null>(null);
   const [updating, setUpdating] = useState(false);
   const lastUpdateRef = useRef<number>(0);
   const speedHistoryRef = useRef<number[]>([]);
+
+  // Only ground trips may auto-update the stored ETA. For flights/helicopters the
+  // ground-speed model produces absurd values (e.g. 1300 km at 60 km/h = +21 h).
+  const canAutoUpdateDb = !transitType || transitType === 'ROAD';
 
   // Calculate average speed from recent measurements
   const getAverageSpeed = useCallback((currentSpeed: number | null): number => {
@@ -145,11 +152,14 @@ export function useDynamicEta({
       lastUpdated: new Date(),
     });
 
-    // Update database
-    await updateEtaInDb(result.estimatedMinutes);
+    // Update database only for ground trips and only when we have real GPS speed
+    // samples; otherwise the user-defined ETA stays authoritative.
+    if (canAutoUpdateDb && speedHistoryRef.current.length >= 3) {
+      await updateEtaInDb(result.estimatedMinutes);
+    }
 
     setUpdating(false);
-  }, [enabled, tripId, destinationLat, destinationLng, minUpdateIntervalMs, calculateNewEta, updateEtaInDb]);
+  }, [enabled, tripId, destinationLat, destinationLng, minUpdateIntervalMs, calculateNewEta, updateEtaInDb, canAutoUpdateDb]);
 
   // Force update ETA (for manual trigger)
   const forceUpdateEta = useCallback(async (position: GeoPosition) => {
