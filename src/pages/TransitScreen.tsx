@@ -271,6 +271,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
     destinationLng: activeInProgressTrip?.destination_lng || null,
     enabled: !!activeInProgressTrip,
     minUpdateIntervalMs: 60000, // Update ETA every 60 seconds max
+    transitType: activeInProgressTrip?.transit_type || null,
   });
   
   // Record position and update ETA when GPS updates during active trip
