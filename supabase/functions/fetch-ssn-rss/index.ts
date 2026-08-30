@@ -82,10 +82,12 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('[fetch-ssn-rss] All attempts failed:', error);
+    console.warn('[fetch-ssn-rss] All attempts failed:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
+    // Return 200 so the client can fall back to USGS silently instead of
+    // surfacing an invoke error for an upstream outage we cannot control.
     return new Response(JSON.stringify({ success: false, error: message }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
