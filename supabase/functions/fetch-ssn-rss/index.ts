@@ -5,19 +5,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Direct SSN URLs
+// Direct SSN URLs (https only; the http variant hit the same refused connection)
 const SSN_URLS = [
   'https://www.ssn.unam.mx/rss/ultimos-sismos.xml',
-  'http://www.ssn.unam.mx/rss/ultimos-sismos.xml',
 ];
 
-// CORS/Proxy fallbacks (when SSN blocks direct connections from datacenter)
+// Proxy fallbacks (SSN refuses connections from datacenter IPs).
+// corsproxy.io legacy keyless URLs now return 403, so it was removed.
 const PROXY_TEMPLATES = [
   (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
 ];
 
-const TIMEOUT_MS = 20000;
+const TIMEOUT_MS = 8000;
 
 async function tryFetch(url: string, label: string): Promise<string | null> {
   try {
