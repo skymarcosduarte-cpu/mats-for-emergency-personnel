@@ -198,12 +198,10 @@ export function GitHubSyncStatus() {
     baselineSha.current = info?.commitSha ?? null;
     setChanged(false);
     try {
-      await supabase.functions
-        .invoke("github-dispatch", { body: { target: "ping" } })
-        .catch(() => null);
       await load();
       setWatching(true);
       toast.success("Reintento solicitado. Vigilando GitHub cada 10 s…");
+
     } finally {
       setRetrying(false);
     }
