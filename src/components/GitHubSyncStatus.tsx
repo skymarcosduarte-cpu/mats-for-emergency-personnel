@@ -276,6 +276,12 @@ export function GitHubSyncStatus() {
                 <span className="text-muted-foreground">{formatDate(info.commitDate)}</span>
               </p>
               <p className="line-clamp-2 text-muted-foreground">{info.commitMessage}</p>
+              <p className="pt-1">
+                Versión en la app: <strong>{APP_VERSION}</strong> · en GitHub:{" "}
+                <strong className={versionSynced === false ? "text-amber-600" : "text-green-600"}>
+                  {info.remoteVersion ?? "desconocida"}
+                </strong>
+              </p>
               {info.runNumber !== null && (
                 <p className="flex items-center gap-2 pt-1">
                   <PlayCircle className="h-5 w-5 text-muted-foreground" />
@@ -291,6 +297,19 @@ export function GitHubSyncStatus() {
                 </p>
               )}
             </div>
+
+            {/* Reintento de sincronización sin desconectar */}
+            <Button
+              onClick={retrySync}
+              size="lg"
+              variant="outline"
+              className="h-12 w-full text-base"
+              disabled={retrying || loading}
+            >
+              <RotateCw className={`mr-2 h-5 w-5 ${retrying ? "animate-spin" : ""}`} />
+              {retrying ? "Reintentando sincronización…" : "Reintentar sincronización y actualizar estado"}
+            </Button>
+
 
             {/* Forzar reconexión + monitoreo en vivo */}
             <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3 text-base">
