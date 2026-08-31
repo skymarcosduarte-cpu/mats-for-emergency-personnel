@@ -190,8 +190,27 @@ export function GitHubSyncStatus() {
     load();
   };
 
-  const ready = info?.hasFix ?? false;
+  /** Reintento de sincronización sin desconectar/reconectar manualmente. */
+  const retrySync = async () => {
+    setRetrying(true);
+    baselineSha.current = info?.commitSha ?? null;
+    setChanged(false);
+    try {
+      await supabase.functions
+        .invoke("github-dispatch", { body: { target: "ping" } })
+        .catch(() => null);
+      await load();
+      setWatching(true);
+      toast.success("Reintento solicitado. Vigilando GitHub cada 10 s…");
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const versionSynced = info?.remoteVersion ? info.remoteVersion === APP_VERSION : null;
+  const ready = (info?.hasFix ?? false) && versionSynced !== false;
   const alreadyBuilt = info && info.runSha === info.commitSha;
+
 
   return (
     <Card className="border-2">
