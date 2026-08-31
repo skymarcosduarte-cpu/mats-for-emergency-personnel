@@ -37,6 +37,7 @@ import {
 } from './meshStore';
 import { signFrame, verifyFrame } from './auth';
 import { getBackgroundMode, startBackground, stopBackground } from './background';
+import { logMesh } from './meshDiagnostics';
 
 // Optional native advertiser plugin (custom Capacitor plugin, see docs at bottom).
 interface MeshAdvertiserPlugin {
@@ -193,10 +194,12 @@ export class NativeMeshTransport implements MeshTransport {
       }
 
       this.active = true;
+      logMesh('start', `Malla iniciada (emisor: ${this.advertiser ? 'sí' : 'no'})`);
       void startBackground(this.disaster);
       this.scheduleCycle(0);
     } catch (error) {
       console.warn('[mesh] no se pudo iniciar BLE:', error);
+      logMesh('error', `No se pudo iniciar BLE: ${error instanceof Error ? error.message : String(error)}`);
       this.lastError =
         error instanceof Error
           ? `No se pudo iniciar Bluetooth: ${error.message}`
@@ -209,6 +212,7 @@ export class NativeMeshTransport implements MeshTransport {
 
   stop(): void {
     this.active = false;
+    logMesh('stop', 'Malla detenida');
     void stopBackground();
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
@@ -283,6 +287,7 @@ export class NativeMeshTransport implements MeshTransport {
       timestamp: now,
     });
     const signed = await signFrame(bytes);
+    logMesh('hello-sent', `MESH_HELLO emitido desde ${origin.toString(16)}`);
     await enqueue({
       key: `hello:${origin}`,
       dataHex: bytesToHex(signed),
@@ -353,7 +358,15 @@ export class NativeMeshTransport implements MeshTransport {
     const packet = decodePacket(bytes);
     if (!packet) return;
     this.peers.set(packet.origin, Date.now());
-    if (packet.type === 'MESH_HELLO') return; // solo presencia: no se reenvía ni se muestra
+    logMesh('peer-seen', `Vecino ${packet.origin.toString(16)} (${packet.type})`);
+    if (packet.type === 'MESH_HELLO') {
+      logMesh('hello-received', `Handshake con ${packet.origin.toString(16)}`);
+      return;
+    }
+    logMesh(
+      'message-received',
+      `${packet.type} de ${packet.origin.toString(16)} lat=${packet.lat ?? '-'} lng=${packet.lng ?? '-'}`
+    );
 
     // Count duplicates even when already delivered: that is the suppression signal.
     const copies = (this.copies.get(packet.msgId) ?? 0) + 1;
@@ -463,6 +476,7 @@ export class NativeMeshTransport implements MeshTransport {
         await this.onSent(item);
       } catch (error) {
         console.warn('[mesh] advertising falló:', error);
+        logMesh('error', `Emisión falló: ${error instanceof Error ? error.message : String(error)}`);
         this.lastError =
           error instanceof Error
             ? `Emisión Bluetooth falló: ${error.message}`

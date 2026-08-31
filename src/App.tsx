@@ -38,6 +38,7 @@ const SharedTripPage = lazy(() => import('@/pages/SharedTripPage'));
 const UserGuidePage = lazy(() => import('@/pages/UserGuidePage'));
 const StepByStepGuidePage = lazy(() => import('@/pages/StepByStepGuidePage'));
 const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
+const AppInfoPage = lazy(() => import('@/pages/AppInfoPage'));
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdatePrompt, UpdateIndicator } from '@/components/UpdatePrompt';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
@@ -964,6 +965,7 @@ const App = () => (
             <Route path="/guia" element={<UserGuidePage />} />
             <Route path="/guia-paso-a-paso" element={<StepByStepGuidePage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/info" element={<AppInfoPage />} />
             {/* Main app with internal messages provider */}
             <Route path="/" element={
               <InternalMessagesProvider>
