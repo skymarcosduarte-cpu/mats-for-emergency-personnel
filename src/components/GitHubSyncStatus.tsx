@@ -1,20 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, RefreshCw, AlertTriangle, GitCommitHorizontal, PlayCircle, Rocket } from "lucide-react";
+import { CheckCircle2, RefreshCw, AlertTriangle, GitCommitHorizontal, PlayCircle, Rocket, RotateCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { APP_VERSION } from "@/lib/versionCheck";
 
 const GITHUB_REPO = "skymarcosduarte-cpu/safe-guard-link";
 const WORKFLOW_FILE = "build-android-mesh.yml";
 /** Archivo que solo existe en la versión corregida del proyecto. */
 const MARKER_PATH = "native-plugins/write-android-mainactivity.mjs";
+const VERSION_PATH = "src/lib/versionCheck.ts";
 
 interface SyncInfo {
   commitSha: string;
   commitMessage: string;
   commitDate: string;
   hasFix: boolean;
+  remoteVersion: string | null;
   runSha: string | null;
   runStatus: string | null;
   runConclusion: string | null;
@@ -22,12 +25,14 @@ interface SyncInfo {
   runUrl: string | null;
 }
 
+
 async function fetchSyncInfo(): Promise<SyncInfo | null> {
   const headers = { Accept: "application/vnd.github+json" };
+  const bust = `_=${Date.now()}`;
 
   const commitsRes = await fetch(
-    `https://api.github.com/repos/${GITHUB_REPO}/commits?per_page=1`,
-    { headers }
+    `https://api.github.com/repos/${GITHUB_REPO}/commits?per_page=1&${bust}`,
+    { headers, cache: "no-store" }
   );
   if (!commitsRes.ok) return null;
   const commits = await commitsRes.json();
@@ -35,9 +40,25 @@ async function fetchSyncInfo(): Promise<SyncInfo | null> {
   if (!commit) return null;
 
   const markerRes = await fetch(
-    `https://api.github.com/repos/${GITHUB_REPO}/contents/${MARKER_PATH}?ref=${commit.sha}`,
-    { headers }
+    `https://api.github.com/repos/${GITHUB_REPO}/contents/${MARKER_PATH}?ref=${commit.sha}&${bust}`,
+    { headers, cache: "no-store" }
   );
+
+  // Versión declarada en el repo remoto
+  let remoteVersion: string | null = null;
+  try {
+    const raw = await fetch(
+      `https://raw.githubusercontent.com/${GITHUB_REPO}/${commit.sha}/${VERSION_PATH}?${bust}`,
+      { cache: "no-store" }
+    );
+    if (raw.ok) {
+      const text = await raw.text();
+      remoteVersion = text.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/)?.[1] ?? null;
+    }
+  } catch {
+    /* sin versión remota */
+  }
+
 
   let runSha: string | null = null;
   let runStatus: string | null = null;
@@ -69,8 +90,10 @@ async function fetchSyncInfo(): Promise<SyncInfo | null> {
     commitMessage: (commit.commit?.message ?? "").split("\n")[0],
     commitDate: commit.commit?.author?.date ?? commit.commit?.committer?.date ?? "",
     hasFix: markerRes.ok,
+    remoteVersion,
     runSha,
     runStatus,
+
     runConclusion,
     runNumber,
     runUrl,
@@ -100,6 +123,8 @@ export function GitHubSyncStatus() {
   const baselineSha = useRef<string | null>(null);
   const [changed, setChanged] = useState(false);
   const [dispatching, setDispatching] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
+
 
   const dispatchWorkflow = async (target: "android" | "ios") => {
     setDispatching(target);
@@ -167,8 +192,25 @@ export function GitHubSyncStatus() {
     load();
   };
 
-  const ready = info?.hasFix ?? false;
+  /** Reintento de sincronización sin desconectar/reconectar manualmente. */
+  const retrySync = async () => {
+    setRetrying(true);
+    baselineSha.current = info?.commitSha ?? null;
+    setChanged(false);
+    try {
+      await load();
+      setWatching(true);
+      toast.success("Reintento solicitado. Vigilando GitHub cada 10 s…");
+
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const versionSynced = info?.remoteVersion ? info.remoteVersion === APP_VERSION : null;
+  const ready = (info?.hasFix ?? false) && versionSynced !== false;
   const alreadyBuilt = info && info.runSha === info.commitSha;
+
 
   return (
     <Card className="border-2">
@@ -234,6 +276,12 @@ export function GitHubSyncStatus() {
                 <span className="text-muted-foreground">{formatDate(info.commitDate)}</span>
               </p>
               <p className="line-clamp-2 text-muted-foreground">{info.commitMessage}</p>
+              <p className="pt-1">
+                Versión en la app: <strong>{APP_VERSION}</strong> · en GitHub:{" "}
+                <strong className={versionSynced === false ? "text-amber-600" : "text-green-600"}>
+                  {info.remoteVersion ?? "desconocida"}
+                </strong>
+              </p>
               {info.runNumber !== null && (
                 <p className="flex items-center gap-2 pt-1">
                   <PlayCircle className="h-5 w-5 text-muted-foreground" />
@@ -249,6 +297,19 @@ export function GitHubSyncStatus() {
                 </p>
               )}
             </div>
+
+            {/* Reintento de sincronización sin desconectar */}
+            <Button
+              onClick={retrySync}
+              size="lg"
+              variant="outline"
+              className="h-12 w-full text-base"
+              disabled={retrying || loading}
+            >
+              <RotateCw className={`mr-2 h-5 w-5 ${retrying ? "animate-spin" : ""}`} />
+              {retrying ? "Reintentando sincronización…" : "Reintentar sincronización y actualizar estado"}
+            </Button>
+
 
             {/* Forzar reconexión + monitoreo en vivo */}
             <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3 text-base">
