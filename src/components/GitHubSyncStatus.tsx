@@ -99,6 +99,35 @@ export function GitHubSyncStatus() {
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
   const baselineSha = useRef<string | null>(null);
   const [changed, setChanged] = useState(false);
+  const [dispatching, setDispatching] = useState<string | null>(null);
+
+  const dispatchWorkflow = async (target: "android" | "ios") => {
+    setDispatching(target);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("github-dispatch", {
+        body: { target },
+      });
+      if (fnError) {
+        const details =
+          fnError instanceof Error && "context" in fnError
+            ? await (fnError as { context: Response }).context.text().catch(() => fnError.message)
+            : fnError.message;
+        console.error("github-dispatch failed:", details);
+        toast.error("GitHub rechazó el disparo. Revisa que el repo esté sincronizado.");
+      } else if (data?.success) {
+        toast.success(
+          target === "android"
+            ? "Build de Android disparado en GitHub Actions 🚀"
+            : "Build de iOS disparado en GitHub Actions 🚀"
+        );
+        setTimeout(load, 5000);
+      }
+    } catch (e) {
+      console.error("github-dispatch error:", e);
+      toast.error("No se pudo contactar el servidor para disparar el build.");
+    }
+    setDispatching(null);
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
