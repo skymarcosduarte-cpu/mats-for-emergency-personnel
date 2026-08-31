@@ -42,7 +42,7 @@ const AppInfoPage: React.FC = () => {
         <link rel="canonical" href="https://mats-app.com/info" />
       </Helmet>
 
-      <BackToHomeButton />
+      <BackToHomeButton onClick={() => { window.location.href = '/'; }} />
 
       <h1 className="text-2xl font-extrabold">Información de la app</h1>
 
