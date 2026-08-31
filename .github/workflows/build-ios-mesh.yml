@@ -48,12 +48,16 @@ jobs:
 
           npx vite build
 
-          # Verificar (solo informativo) que el bundle lleva las últimas funciones de la malla
+          # Verificar que el bundle lleva las últimas funciones de la malla
           APP_VERSION=$(node -e "const s=require('fs').readFileSync('src/lib/versionCheck.ts','utf8');console.log(s.match(/APP_VERSION\s*=\s*'([^']+)'/)[1])")
           echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
           echo "Compilando MATS v$APP_VERSION"
-          grep -Rqs "MENSAJES MESH" dist/assets || echo "AVISO: no se detectó el buzón Mesh en el bundle"
-          grep -Rqs "MESH_HELLO" dist/assets || echo "AVISO: no se detectó MESH_HELLO en el bundle"
+          grep -Rqs "BUZÓN DE MENSAJES MESH" dist/assets || {
+            echo "Error: el buzón Mesh no está en el bundle compilado"; exit 1; }
+          grep -Rqs "MESH_HELLO" dist/assets || {
+            echo "Error: el descubrimiento MESH_HELLO no está en el bundle"; exit 1; }
+          test -f src/lib/meshPins.ts
+
 
           # Usar assets locales (app offline, sin servidor remoto)
           node -e "
