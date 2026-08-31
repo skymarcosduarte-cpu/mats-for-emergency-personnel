@@ -8,10 +8,9 @@ import type { VersionInfo, AppRelease } from '@/types';
 export const APP_VERSION = '2.9.1';
 // Número de build inyectado en tiempo de compilación (ver vite.config.ts).
 // Permite confirmar en el teléfono que se instaló exactamente esta compilación.
-export const BUILD_NUMBER: string =
-  (typeof __BUILD_NUMBER__ !== 'undefined' ? __BUILD_NUMBER__ : '') || 'dev';
-export const BUILD_TIME =
-  (typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : '') || new Date().toISOString();
+const injected = globalThis as unknown as { __BUILD_NUMBER__?: string; __BUILD_TIME__?: string };
+export const BUILD_NUMBER: string = injected.__BUILD_NUMBER__ || 'dev';
+export const BUILD_TIME: string = injected.__BUILD_TIME__ || new Date().toISOString();
 
 /**
  * Compare semantic versions
