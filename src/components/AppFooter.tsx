@@ -11,7 +11,10 @@ export const AppFooter = memo(forwardRef<HTMLElement, React.HTMLAttributes<HTMLE
         </p>
         {/* Powered by */}
         <p className="text-[10px] text-muted-foreground">
-          v{APP_VERSION} · Powered by{" "}
+          <a href="/info" className="text-primary hover:underline">
+            v{APP_VERSION}
+          </a>{" "}
+          · Powered by{" "}
           <a
             href="https://latamgrowthoperators.com"
             target="_blank"
