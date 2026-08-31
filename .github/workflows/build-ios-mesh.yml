@@ -93,9 +93,25 @@ jobs:
 
 
 
-          # Plugin de la malla + permisos Info.plist (no debe abortar el build)
+          # Plugin de la malla + permisos Info.plist (obligatorio para que Mesh funcione)
           sudo gem install xcodeproj --no-document || gem install xcodeproj --no-document || true
-          bash native-plugins/install-ios.sh || echo "AVISO: install-ios.sh falló, se continúa"
+          bash native-plugins/install-ios.sh
+
+          # Validar que el plugin BLE y los permisos quedaron en el proyecto iOS
+          test -s ios/App/App/MeshAdvertiserPlugin.swift
+          test -s ios/App/App/MeshAdvertiserPlugin.m
+          grep -q 'MeshAdvertiserPlugin.swift' ios/App/App.xcodeproj/project.pbxproj || {
+            echo "Error: MeshAdvertiserPlugin.swift no quedó añadido al target de Xcode"; exit 1; }
+          PLIST=ios/App/App/Info.plist
+          for key in NSBluetoothAlwaysUsageDescription NSBluetoothPeripheralUsageDescription NSLocationWhenInUseUsageDescription UIBackgroundModes; do
+            grep -q "<key>$key</key>" "$PLIST" || {
+              echo "Error: falta $key en Info.plist"; exit 1; }
+          done
+          for mode in bluetooth-central bluetooth-peripheral; do
+            grep -q "<string>$mode</string>" "$PLIST" || {
+              echo "Error: falta el background mode $mode en Info.plist"; exit 1; }
+          done
+
 
           cd ios/App
           if [ -f Podfile ]; then
