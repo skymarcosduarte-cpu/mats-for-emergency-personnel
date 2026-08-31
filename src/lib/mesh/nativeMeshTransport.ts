@@ -363,8 +363,10 @@ export class NativeMeshTransport implements MeshTransport {
       logMesh('hello-received', `Handshake con ${packet.origin.toString(16)}`);
       return;
     }
-    if (packet.type !== 'MESH_HELLO') logMesh('message-received', `${packet.type} de ${packet.origin.toString(16)} lat=${packet.lat ?? '-'} lng=${packet.lng ?? '-'}`);
-    if (false) return; // solo presencia: no se reenvía ni se muestra
+    logMesh(
+      'message-received',
+      `${packet.type} de ${packet.origin.toString(16)} lat=${packet.lat ?? '-'} lng=${packet.lng ?? '-'}`
+    );
 
     // Count duplicates even when already delivered: that is the suppression signal.
     const copies = (this.copies.get(packet.msgId) ?? 0) + 1;
