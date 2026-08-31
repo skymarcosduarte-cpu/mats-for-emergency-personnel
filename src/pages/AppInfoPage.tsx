@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
-import { APP_VERSION, BUILD_NUMBER, BUILD_TIME } from '@/lib/versionCheck';
+import { APP_VERSION, BUILD_NUMBER, BUILD_TIME, GIT_SHA, CI_RUN_ID, GITHUB_REPO } from '@/lib/versionCheck';
 import { getPlatform, isNative } from '@/lib/capacitor';
 import { isMeshAvailable, getMeshStatusMessage } from '@/lib/meshTransport';
 import {
@@ -24,10 +24,48 @@ const Row: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value
   </div>
 );
 
+type CiVerification =
+  | { status: 'checking' }
+  | { status: 'match'; remoteSha: string }
+  | { status: 'mismatch'; remoteSha: string }
+  | { status: 'unavailable' };
+
 const AppInfoPage: React.FC = () => {
   const [events, setEvents] = useState<MeshDiagEvent[]>([]);
+  const [ci, setCi] = useState<CiVerification>({ status: 'checking' });
 
   useEffect(() => subscribeMeshDiagnostics(setEvents), []);
+
+  // Verificación automática: compara el SHA compilado con el último commit de main en GitHub.
+  useEffect(() => {
+    if (!GIT_SHA) {
+      setCi({ status: 'unavailable' });
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `https://api.github.com/repos/${GITHUB_REPO}/commits?per_page=1`,
+          { headers: { Accept: 'application/vnd.github+json' } },
+        );
+        if (!res.ok) throw new Error(String(res.status));
+        const data = (await res.json()) as { sha?: string }[];
+        const remoteSha = data?.[0]?.sha || '';
+        if (cancelled) return;
+        setCi(
+          remoteSha && remoteSha === GIT_SHA
+            ? { status: 'match', remoteSha }
+            : { status: 'mismatch', remoteSha },
+        );
+      } catch {
+        if (!cancelled) setCi({ status: 'unavailable' });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const summary = meshHandshakeSummary();
 
