@@ -40,6 +40,9 @@ jobs:
 
       - name: Compilar la app web
         run: npx vite build
+        env:
+          GIT_SHA: ${{ github.sha }}
+          CI_RUN_ID: ${{ github.run_id }}
 
       - name: Verificar versión y funciones Mesh incluidas
         run: |
