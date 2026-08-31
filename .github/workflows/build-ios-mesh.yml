@@ -47,7 +47,7 @@ jobs:
           # Rollup/esbuild necesitan su binario nativo de macOS arm64
           npm install --no-save --no-audit --no-fund @rollup/rollup-darwin-arm64 || true
 
-          npx vite build
+          GIT_SHA="${{ github.sha }}" CI_RUN_ID="${{ github.run_id }}" npx vite build
 
           # Verificar que el bundle lleva las últimas funciones de la malla
           APP_VERSION=$(node -e "const s=require('fs').readFileSync('src/lib/versionCheck.ts','utf8');console.log(s.match(/APP_VERSION\s*=\s*'([^']+)'/)[1])")
