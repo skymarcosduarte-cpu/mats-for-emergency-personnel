@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, RefreshCw, AlertTriangle, GitCommitHorizontal, PlayCircle } from "lucide-react";
+import { CheckCircle2, RefreshCw, AlertTriangle, GitCommitHorizontal, PlayCircle, Rocket } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const GITHUB_REPO = "skymarcosduarte-cpu/safe-guard-link";
 const WORKFLOW_FILE = "build-android-mesh.yml";
@@ -97,6 +99,35 @@ export function GitHubSyncStatus() {
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
   const baselineSha = useRef<string | null>(null);
   const [changed, setChanged] = useState(false);
+  const [dispatching, setDispatching] = useState<string | null>(null);
+
+  const dispatchWorkflow = async (target: "android" | "ios") => {
+    setDispatching(target);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("github-dispatch", {
+        body: { target },
+      });
+      if (fnError) {
+        const details =
+          fnError instanceof Error && "context" in fnError
+            ? await (fnError as { context: Response }).context.text().catch(() => fnError.message)
+            : fnError.message;
+        console.error("github-dispatch failed:", details);
+        toast.error("GitHub rechazó el disparo. Revisa que el repo esté sincronizado.");
+      } else if (data?.success) {
+        toast.success(
+          target === "android"
+            ? "Build de Android disparado en GitHub Actions 🚀"
+            : "Build de iOS disparado en GitHub Actions 🚀"
+        );
+        setTimeout(load, 5000);
+      }
+    } catch (e) {
+      console.error("github-dispatch error:", e);
+      toast.error("No se pudo contactar el servidor para disparar el build.");
+    }
+    setDispatching(null);
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -257,6 +288,36 @@ export function GitHubSyncStatus() {
                   Detener vigilancia
                 </Button>
               )}
+            </div>
+
+            {/* Disparar compilación directamente desde la app */}
+            <div className="rounded-lg border-2 border-safe/40 bg-safe/5 p-3 text-base">
+              <p className="font-bold">Compilar versión nativa</p>
+              <p className="mt-1 text-muted-foreground">
+                Dispara el workflow de GitHub Actions sin salir de la app. Asegúrate primero de que
+                el repo esté sincronizado (tarjeta verde de arriba).
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button
+                  onClick={() => dispatchWorkflow("android")}
+                  size="lg"
+                  className="h-12 text-base"
+                  disabled={dispatching !== null || !ready}
+                >
+                  <Rocket className={`mr-2 h-5 w-5 ${dispatching === "android" ? "animate-pulse" : ""}`} />
+                  {dispatching === "android" ? "Disparando…" : "Build Android"}
+                </Button>
+                <Button
+                  onClick={() => dispatchWorkflow("ios")}
+                  size="lg"
+                  variant="secondary"
+                  className="h-12 text-base"
+                  disabled={dispatching !== null || !ready}
+                >
+                  <Rocket className={`mr-2 h-5 w-5 ${dispatching === "ios" ? "animate-pulse" : ""}`} />
+                  {dispatching === "ios" ? "Disparando…" : "Build iOS"}
+                </Button>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
