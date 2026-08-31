@@ -537,6 +537,10 @@ function extraPayload(envelope: MeshEnvelope): string | null {
   const keys = Object.keys(payload).filter((k) => k !== 'lat' && k !== 'lng');
   if (keys.length === 0) return null;
   const slim: Record<string, unknown> = { type: envelope.type, ts: envelope.timestamp };
+  // Las coordenadas viajan también en el JSON para que el mensaje de texto
+  // reensamblado se pueda ubicar en el mapa por sí solo.
+  if (typeof payload.lat === 'number') slim.lat = payload.lat;
+  if (typeof payload.lng === 'number') slim.lng = payload.lng;
   keys.forEach((k) => {
     slim[k] = payload[k];
   });

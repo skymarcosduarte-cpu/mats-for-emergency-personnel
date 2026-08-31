@@ -173,7 +173,11 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         // Sin conexión o sesión: el estado igual viaja por la malla
         if (mesh.active) {
           mesh.broadcast(
-            createMeshEnvelope(messageType, freshId, { lat: position.lat, lng: position.lng })
+            createMeshEnvelope(messageType, freshId, {
+              lat: position.lat,
+              lng: position.lng,
+              ...(note ? { message: note } : {}),
+            })
           );
           toast.warning('Sin conexión al servidor: estado enviado por Red Mesh', {
             description: error.message,
@@ -197,6 +201,7 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
           createMeshEnvelope(messageType, freshId, {
             lat: position.lat,
             lng: position.lng,
+            ...(note ? { message: note } : {}),
           })
         );
       }
