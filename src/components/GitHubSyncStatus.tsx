@@ -123,6 +123,8 @@ export function GitHubSyncStatus() {
   const baselineSha = useRef<string | null>(null);
   const [changed, setChanged] = useState(false);
   const [dispatching, setDispatching] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
+
 
   const dispatchWorkflow = async (target: "android" | "ios") => {
     setDispatching(target);
