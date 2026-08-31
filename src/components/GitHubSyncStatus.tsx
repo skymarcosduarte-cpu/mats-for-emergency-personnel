@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, RefreshCw, AlertTriangle, GitCommitHorizontal, PlayCircle } from "lucide-react";
+import { CheckCircle2, RefreshCw, AlertTriangle, GitCommitHorizontal, PlayCircle, Rocket } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const GITHUB_REPO = "skymarcosduarte-cpu/safe-guard-link";
 const WORKFLOW_FILE = "build-android-mesh.yml";
