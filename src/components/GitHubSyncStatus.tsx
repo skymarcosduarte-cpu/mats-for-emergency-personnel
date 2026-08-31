@@ -290,6 +290,36 @@ export function GitHubSyncStatus() {
               )}
             </div>
 
+            {/* Disparar compilación directamente desde la app */}
+            <div className="rounded-lg border-2 border-safe/40 bg-safe/5 p-3 text-base">
+              <p className="font-bold">Compilar versión nativa</p>
+              <p className="mt-1 text-muted-foreground">
+                Dispara el workflow de GitHub Actions sin salir de la app. Asegúrate primero de que
+                el repo esté sincronizado (tarjeta verde de arriba).
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button
+                  onClick={() => dispatchWorkflow("android")}
+                  size="lg"
+                  className="h-12 text-base"
+                  disabled={dispatching !== null || !ready}
+                >
+                  <Rocket className={`mr-2 h-5 w-5 ${dispatching === "android" ? "animate-pulse" : ""}`} />
+                  {dispatching === "android" ? "Disparando…" : "Build Android"}
+                </Button>
+                <Button
+                  onClick={() => dispatchWorkflow("ios")}
+                  size="lg"
+                  variant="secondary"
+                  className="h-12 text-base"
+                  disabled={dispatching !== null || !ready}
+                >
+                  <Rocket className={`mr-2 h-5 w-5 ${dispatching === "ios" ? "animate-pulse" : ""}`} />
+                  {dispatching === "ios" ? "Disparando…" : "Build iOS"}
+                </Button>
+              </div>
+            </div>
+
             <div className="flex flex-wrap gap-2">
               <Button asChild variant="secondary">
                 <a
