@@ -28,10 +28,11 @@ interface SyncInfo {
 
 async function fetchSyncInfo(): Promise<SyncInfo | null> {
   const headers = { Accept: "application/vnd.github+json" };
+  const bust = `_=${Date.now()}`;
 
   const commitsRes = await fetch(
-    `https://api.github.com/repos/${GITHUB_REPO}/commits?per_page=1`,
-    { headers }
+    `https://api.github.com/repos/${GITHUB_REPO}/commits?per_page=1&${bust}`,
+    { headers, cache: "no-store" }
   );
   if (!commitsRes.ok) return null;
   const commits = await commitsRes.json();
@@ -39,9 +40,25 @@ async function fetchSyncInfo(): Promise<SyncInfo | null> {
   if (!commit) return null;
 
   const markerRes = await fetch(
-    `https://api.github.com/repos/${GITHUB_REPO}/contents/${MARKER_PATH}?ref=${commit.sha}`,
-    { headers }
+    `https://api.github.com/repos/${GITHUB_REPO}/contents/${MARKER_PATH}?ref=${commit.sha}&${bust}`,
+    { headers, cache: "no-store" }
   );
+
+  // Versión declarada en el repo remoto
+  let remoteVersion: string | null = null;
+  try {
+    const raw = await fetch(
+      `https://raw.githubusercontent.com/${GITHUB_REPO}/${commit.sha}/${VERSION_PATH}?${bust}`,
+      { cache: "no-store" }
+    );
+    if (raw.ok) {
+      const text = await raw.text();
+      remoteVersion = text.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/)?.[1] ?? null;
+    }
+  } catch {
+    /* sin versión remota */
+  }
+
 
   let runSha: string | null = null;
   let runStatus: string | null = null;
