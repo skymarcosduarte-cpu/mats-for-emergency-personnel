@@ -90,7 +90,8 @@ async function fetchSyncInfo(): Promise<SyncInfo | null> {
     commitMessage: (commit.commit?.message ?? "").split("\n")[0],
     commitDate: commit.commit?.author?.date ?? commit.commit?.committer?.date ?? "",
     hasFix: markerRes.ok,
-    runSha,
+    remoteVersion,
+
     runStatus,
     runConclusion,
     runNumber,
