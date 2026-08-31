@@ -91,8 +91,9 @@ async function fetchSyncInfo(): Promise<SyncInfo | null> {
     commitDate: commit.commit?.author?.date ?? commit.commit?.committer?.date ?? "",
     hasFix: markerRes.ok,
     remoteVersion,
-
+    runSha,
     runStatus,
+
     runConclusion,
     runNumber,
     runUrl,
