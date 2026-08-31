@@ -168,6 +168,7 @@ jobs:
 
       - name: Validar configuración nativa
         run: |
+          set -euo pipefail
           MAIN=$(find android/app/src/main/java -name MainActivity.java | head -1)
           test -n "$MAIN"
           ONCREATE_COUNT=$(grep -c 'void onCreate' "$MAIN")
@@ -179,6 +180,22 @@ jobs:
           grep -q 'MeshAdvertiserPlugin.class' "$MAIN"
           grep -q 'MeshForegroundServicePlugin.class' "$MAIN"
           grep -q 'setTextZoom(100)' "$MAIN"
+
+          # Permisos y servicio de la malla en el manifiesto
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          for perm in BLUETOOTH_SCAN BLUETOOTH_ADVERTISE BLUETOOTH_CONNECT ACCESS_FINE_LOCATION FOREGROUND_SERVICE; do
+            grep -q "android.permission.$perm" "$MANIFEST" || {
+              echo "Error: falta el permiso $perm en AndroidManifest.xml"; exit 1; }
+          done
+          grep -q 'MeshForegroundService' "$MANIFEST" || {
+            echo "Error: falta el <service> de la malla en AndroidManifest.xml"; exit 1; }
+
+          # Clases nativas de la malla presentes en el proyecto
+          find android/app/src/main/java -name 'MeshAdvertiserPlugin.java' | grep -q . || {
+            echo "Error: no se copió MeshAdvertiserPlugin.java"; exit 1; }
+          find android/app/src/main/java -name 'MeshForegroundService*.java' | grep -q . || {
+            echo "Error: no se copiaron las clases del servicio de la malla"; exit 1; }
+
 
       - name: Ajustar memoria de Gradle
         run: |
