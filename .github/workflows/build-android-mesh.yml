@@ -257,3 +257,5 @@ jobs:
           prerelease: false
           make_latest: true
           token: ${{ secrets.GITHUB_TOKEN }}
+
+# sync-trigger 2026-08-31T00:50Z

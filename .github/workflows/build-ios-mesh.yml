@@ -195,3 +195,5 @@ jobs:
             exit 1
           fi
           echo "IPA generado correctamente."
+
+# sync-trigger 2026-08-31T00:50Z
