@@ -5,6 +5,7 @@ name: Build IPA con Red Mesh (iOS)
 #   Al terminar (~15 min) descarga el artefacto "MATS-mesh-ipa".
 #   Si falla, descarga "MATS-ios-build-log": contiene el registro COMPLETO.
 #   El IPA sale SIN FIRMAR: se instala con AltStore / Sideloadly.
+#   Última verificación de sync Lovable -> GitHub: 2026-08-31 (v2.9.1).
 
 on:
   workflow_dispatch:
