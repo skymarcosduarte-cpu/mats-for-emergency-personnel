@@ -1,26 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, RefreshCw, AlertTriangle, GitCommitHorizontal, PlayCircle, Rocket } from "lucide-react";
+import { CheckCircle2, RefreshCw, AlertTriangle, GitCommitHorizontal, PlayCircle, Rocket, RotateCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { APP_VERSION } from "@/lib/versionCheck";
 
 const GITHUB_REPO = "skymarcosduarte-cpu/safe-guard-link";
 const WORKFLOW_FILE = "build-android-mesh.yml";
 /** Archivo que solo existe en la versión corregida del proyecto. */
 const MARKER_PATH = "native-plugins/write-android-mainactivity.mjs";
+const VERSION_PATH = "src/lib/versionCheck.ts";
 
 interface SyncInfo {
   commitSha: string;
   commitMessage: string;
   commitDate: string;
   hasFix: boolean;
+  remoteVersion: string | null;
   runSha: string | null;
   runStatus: string | null;
   runConclusion: string | null;
   runNumber: number | null;
   runUrl: string | null;
 }
+
 
 async function fetchSyncInfo(): Promise<SyncInfo | null> {
   const headers = { Accept: "application/vnd.github+json" };
