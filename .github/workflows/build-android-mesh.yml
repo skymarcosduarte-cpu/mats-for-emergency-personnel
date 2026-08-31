@@ -4,6 +4,7 @@ name: Build APK con Red Mesh
 #   GitHub -> pestaña "Actions" -> "Build APK con Red Mesh" -> "Run workflow".
 #   Al terminar (~10 min) descarga el artefacto "MATS-mesh-apk" y ábrelo en el
 #   teléfono Android. No necesitas Android Studio ni SDK en tu computadora.
+#   Requiere que el repo esté sincronizado con la última versión de Lovable.
 
 on:
   workflow_dispatch:
