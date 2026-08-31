@@ -98,6 +98,68 @@ const AppInfoPage: React.FC = () => {
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-lg">Origen de la compilación (GitHub / CI)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Row
+            label="Commit SHA"
+            value={
+              GIT_SHA ? (
+                <span className="font-mono text-xs">{GIT_SHA.slice(0, 7)}</span>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )
+            }
+          />
+          <Row
+            label="Run de CI"
+            value={
+              CI_RUN_ID ? (
+                <a
+                  className="font-mono text-xs text-primary underline"
+                  href={`https://github.com/${GITHUB_REPO}/actions/runs/${CI_RUN_ID}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  #{CI_RUN_ID}
+                </a>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )
+            }
+          />
+          <Row
+            label="Verificación"
+            value={
+              ci.status === 'checking' ? (
+                <Badge variant="secondary">Verificando…</Badge>
+              ) : ci.status === 'match' ? (
+                <Badge>Coincide con main ✅</Badge>
+              ) : ci.status === 'mismatch' ? (
+                <Badge variant="destructive">
+                  Distinto de main ({ci.remoteSha.slice(0, 7)})
+                </Badge>
+              ) : (
+                <Badge variant="secondary">No verificable</Badge>
+              )
+            }
+          />
+          {GIT_SHA && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Commit completo: <span className="font-mono">{GIT_SHA}</span>
+            </p>
+          )}
+          {!GIT_SHA && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Esta build no trae el commit inyectado (compilación local o anterior al cambio).
+              Compila desde GitHub Actions para verificar el origen.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-lg">Red Mesh (Bluetooth)</CardTitle>
         </CardHeader>
         <CardContent>
