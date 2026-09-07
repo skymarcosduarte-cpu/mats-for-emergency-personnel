@@ -258,4 +258,4 @@ jobs:
           make_latest: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
-# sync-trigger 2026-08-31T00:50Z
+# sync-trigger 2026-09-07T00:55Z v2.9.3
