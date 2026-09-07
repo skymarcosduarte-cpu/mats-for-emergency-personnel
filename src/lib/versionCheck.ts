@@ -5,7 +5,7 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import type { VersionInfo, AppRelease } from '@/types';
 
 // Current app version (set at build time)
-export const APP_VERSION = '2.9.3';
+export const APP_VERSION = '2.9.4';
 // Número de build inyectado en tiempo de compilación (ver vite.config.ts).
 // Permite confirmar en el teléfono que se instaló exactamente esta compilación.
 // Estos identificadores globales son sustituidos textualmente por Vite `define`
@@ -30,7 +30,7 @@ export const BUILD_TIME: string = readInjected(() => __BUILD_TIME__) || new Date
 export const GIT_SHA: string = readInjected(() => __GIT_SHA__);
 export const CI_RUN_ID: string = readInjected(() => __CI_RUN_ID__);
 // Repositorio de GitHub usado para verificación automática de la compilación.
-export const GITHUB_REPO = 'skymarcosduarte-cpu/safe-guard-link';
+export const GITHUB_REPO = 'skymarcosduarte-cpu/safe-guard-link-43a63509';
 
 /**
  * Compare semantic versions
