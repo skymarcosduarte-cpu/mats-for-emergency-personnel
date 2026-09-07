@@ -79,7 +79,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useWebPushSubscription } from '@/hooks/useWebPushSubscription';
 import { useAlertSettings } from '@/hooks/useAlertSettings';
-import { playSubtleAlert, playUrgentAlert, playClave100Alert, stopClave100Alert, playSkyAlertNotification, playSkyAlertSevereAlert, stopSkyAlertAlert } from '@/lib/alertSound';
+import { playSubtleAlert, playUrgentAlert } from '@/lib/alertSound';
 import type { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 import { useUserDataExport } from '@/hooks/useUserDataExport';
