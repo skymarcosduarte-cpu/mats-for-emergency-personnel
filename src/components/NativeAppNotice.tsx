@@ -36,7 +36,7 @@ export function NativeAppNotice() {
     setDismissed(sessionStorage.getItem(SESSION_KEY) === "1");
   }, []);
 
-  if (mode === "native" || dismissed) return null;
+  if (mode === "native" || dismissed || onDownloadPage) return null;
 
   const isPwa = mode === "pwa";
 
