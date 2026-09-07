@@ -25,6 +25,8 @@ export function NativeAppNotice() {
   const [mode, setMode] = useState<RunMode>("native");
   const [dismissed, setDismissed] = useState(true);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const onDownloadPage = pathname === "/descargar" || pathname === "/download" || pathname === "/install";
 
   useEffect(() => {
     const m = detectRunMode();
