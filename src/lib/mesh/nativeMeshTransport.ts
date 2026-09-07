@@ -50,7 +50,7 @@ const TTL_BY_PRIORITY: Record<MeshPriority, number> = {
   0: 24 * 60 * 60 * 1000, // SOS / auxilio: un día completo de acarreo
   1: 12 * 60 * 60 * 1000, // pánico
   2: 6 * 60 * 60 * 1000, // necesito ayuda
-  3: 60 * 60 * 1000, // ubicación / estado
+  3: 24 * 60 * 60 * 1000, // ubicación / estado: se conserva 24 h
 };
 
 // Jitter por prioridad: un SOS sale casi de inmediato, la ubicación espera más
@@ -74,12 +74,12 @@ const SUPPRESS_AFTER_COPIES = 3;
 const MAX_ATTEMPTS = 12;
 
 // Duty cycles keep the radio (and the UI thread) mostly idle.
-const CYCLE_IDLE = { scanMs: 4000, pauseMs: 45000 };
+const CYCLE_IDLE = { scanMs: 6000, pauseMs: 12000 };
 const CYCLE_DISASTER = { scanMs: 8000, pauseMs: 10000 };
 // Modo descubrimiento: ciclo casi continuo para que dos teléfonos se vean en
 // segundos mientras el usuario tiene la pantalla de Red Mesh abierta.
 const CYCLE_DISCOVERY = { scanMs: 6000, pauseMs: 1500 };
-const DISCOVERY_WINDOW_MS = 5 * 60 * 1000;
+const DISCOVERY_WINDOW_MS = 30 * 60 * 1000;
 
 export class NativeMeshTransport implements MeshTransport {
   private active = false;
@@ -322,7 +322,9 @@ export class NativeMeshTransport implements MeshTransport {
         if (!data) return;
         void this.handleIncoming(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
       });
-      if (discovering || this.disaster) await this.announcePresence();
+      // Siempre anunciamos presencia: es la única forma de que dos teléfonos
+      // se detecten aunque nadie haya enviado una alerta todavía.
+      await this.announcePresence();
       await this.flushOutbox();
       // Jitter independiente evita que dos equipos con ciclos iniciados a la
       // vez vuelvan a sincronizarse después de una pausa.

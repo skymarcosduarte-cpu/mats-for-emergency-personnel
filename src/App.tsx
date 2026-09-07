@@ -14,6 +14,7 @@ import { HomeScreen } from '@/pages/HomeScreen';
 // Heavy screens are code-split so the home screen renders immediately,
 // even on slow connections. Chunks are warmed up during browser idle time.
 import { MESH_FOCUS_EVENT } from '@/lib/meshPins';
+import { MeshProvider } from '@/providers/MeshProvider';
 const loadMapScreen = () => import('@/pages/MapScreen');
 const loadTransitScreen = () => import('@/pages/TransitScreen');
 const loadAlertsScreen = () => import('@/pages/AlertsScreen');
@@ -971,7 +972,9 @@ const App = () => (
               <InternalMessagesProvider>
                 <UIIssueDetectorProvider>
                   <AppErrorBoundary>
-                    <AppContent />
+                    <MeshProvider>
+                      <AppContent />
+                    </MeshProvider>
                   </AppErrorBoundary>
                 </UIIssueDetectorProvider>
               </InternalMessagesProvider>
