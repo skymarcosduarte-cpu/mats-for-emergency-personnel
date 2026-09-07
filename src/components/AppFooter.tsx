@@ -16,12 +16,12 @@ export const AppFooter = memo(forwardRef<HTMLElement, React.HTMLAttributes<HTMLE
           </a>{" "}
           · Powered by{" "}
           <a
-            href="https://latamgrowthoperators.com"
+            href="https://marcosduarte.com"
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary hover:underline"
           >
-            Latam Growth Operators
+            marcosduarte.com
           </a>
         </p>
       </div>
