@@ -245,7 +245,7 @@ export function SkyAlertTab() {
         <Radio className="w-6 h-6 text-primary mt-0.5 flex-shrink-0" />
         <div className="flex-1 text-base">
           <p className="text-muted-foreground leading-relaxed">
-            Esta sección monitorea la cuenta oficial de <strong>SkyAlert</strong> en X. Para notificaciones en tiempo real, descarga la app oficial.
+            Esta sección monitorea vía "scrapping" las apps <strong>SkyAlert</strong> y <strong>SASSLA</strong> y complementa información de sismos con noticias recientes.
           </p>
         </div>
       </div>
