@@ -732,8 +732,16 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
           </div>
         </div>
 
+        {/* Mensajes recibidos por Bluetooth (Red Mesh) */}
+        {contextType === 'general' && meshInbox.length > 0 && (
+          <div className="px-3 pt-3">
+            <MeshInbox messages={meshInbox} onClear={clearMeshInbox} />
+          </div>
+        )}
+
         {/* Messages */}
         <ScrollArea className="flex-1 p-3" ref={scrollRef}>
+
           {isLoading ? (
             <div className="flex items-center justify-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
