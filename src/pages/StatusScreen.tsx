@@ -10,14 +10,13 @@ import { useAppState } from '@/hooks/useRealtime';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getMeshTransport, createMeshEnvelope, getMeshStatusMessage, isMeshAvailable } from '@/lib/meshTransport';
-import { useMeshNetwork } from '@/hooks/useMeshNetwork';
+import { useMesh } from '@/providers/MeshProvider';
 import { getFreshAuthUserId } from '@/lib/locationSync';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 
 import { BackToHomeButton } from '@/components/BackToHomeButton';
-import { MeshInbox, envelopeToInboxItem, type MeshInboxItem } from '@/components/MeshInbox';
-import { addMeshPin, clearMeshPins, focusMeshPin } from '@/lib/meshPins';
+import { MeshInbox } from '@/components/MeshInbox';
 import type { UserRole, StatusType, MeshEnvelope } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -42,86 +41,11 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
   const { disasterMode } = useAppState();
   const { user } = useAuth();
   const meshTransport = getMeshTransport();
-  const [meshInbox, setMeshInbox] = useState<MeshInboxItem[]>([]);
-  const handleMeshMessage = React.useCallback((envelope: MeshEnvelope) => {
-    const item = envelopeToInboxItem(envelope);
-    if (item.lat != null && item.lng != null) {
-      addMeshPin({
-        id: item.id,
-        type: item.type,
-        lat: item.lat,
-        lng: item.lng,
-        receivedAt: item.receivedAt,
-      });
-    }
-    let isNew = true;
-    setMeshInbox((prev) => {
-      if (prev.some((m) => m.id === item.id)) {
-        isNew = false;
-        return prev;
-      }
-      return [item, ...prev].slice(0, 50);
-    });
-
-    // Notificación en la app para mensajes relevantes
-    const RELEVANT: Record<string, { label: string; urgent: boolean }> = {
-      PANIC: { label: '🚨 Pánico recibido por Mesh', urgent: true },
-      STATUS_NEED_HELP: { label: '🆘 Alguien necesita ayuda (Mesh)', urgent: true },
-      HELP_14: { label: '🆘 Ayuda 14 recibida por Mesh', urgent: true },
-      STATUS_OK: { label: '✅ Estado "Estoy bien" recibido (Mesh)', urgent: false },
-      DRILL_TEST: { label: '🧪 Simulacro recibido por Mesh', urgent: false },
-    };
-    const info = RELEVANT[item.type];
-    if (!isNew || !info) return;
-
-    const hasCoords = item.lat != null && item.lng != null;
-    const options = {
-      description: item.note
-        ? item.note
-        : hasCoords
-          ? `Ubicación: ${item.lat?.toFixed(4)}, ${item.lng?.toFixed(4)}`
-          : 'Sin ubicación reportada',
-      duration: info.urgent ? 15000 : 6000,
-      ...(hasCoords
-        ? {
-            action: {
-              label: 'Ver en mapa',
-              onClick: () => {
-                if (item.lat == null || item.lng == null) return;
-                focusMeshPin({ id: item.id, type: item.type, lat: item.lat, lng: item.lng });
-              },
-            },
-          }
-        : {}),
-    };
-
-    if (info.urgent) {
-      toast.error(info.label, options);
-      try {
-        navigator.vibrate?.([200, 100, 200, 100, 400]);
-      } catch {
-        /* ignore */
-      }
-    } else {
-      toast.success(info.label, options);
-    }
-  }, []);
-
-
-  const mesh = useMeshNetwork({
-    disasterMode,
-    userId: user?.id,
-    discovery: true,
-    onMessage: handleMeshMessage,
-  });
+  const mesh = useMesh();
+  const meshInbox = mesh.inbox;
 
   // Handle status update
   const handleStatusUpdate = async (status: StatusType) => {
-    if (!position) {
-      toast.error('Se requiere ubicación GPS');
-      return;
-    }
-
     if (!user?.id) {
       toast.error('Debes iniciar sesión');
       return;
@@ -148,8 +72,8 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         user_id: freshId,
         status: status,
         message: note || null,
-        lat: position.lat,
-        lng: position.lng,
+        lat: position?.lat ?? null,
+        lng: position?.lng ?? null,
       };
 
       let { error } = await supabase.from('status_messages').insert(payload);
@@ -174,8 +98,7 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         if (mesh.active) {
           mesh.broadcast(
             createMeshEnvelope(messageType, freshId, {
-              lat: position.lat,
-              lng: position.lng,
+              ...(position ? { lat: position.lat, lng: position.lng } : {}),
               ...(note ? { message: note } : {}),
             })
           );
@@ -188,7 +111,7 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         return;
       }
 
-      console.log('Status saved:', status, position.lat, position.lng);
+      console.log('Status saved:', status, position?.lat, position?.lng);
       toast.success(
         status === 'OK'
           ? '✅ Estado "Estoy Bien" enviado a toda la comunidad'
@@ -199,8 +122,7 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
       if (mesh.active) {
         mesh.broadcast(
           createMeshEnvelope(messageType, freshId, {
-            lat: position.lat,
-            lng: position.lng,
+            ...(position ? { lat: position.lat, lng: position.lng } : {}),
             ...(note ? { message: note } : {}),
           })
         );
@@ -268,7 +190,7 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
       <div className="space-y-6 p-4">
         {/* Buzón de mensajes Mesh */}
         <section aria-label="Buzón de mensajes Mesh">
-          <MeshInbox messages={meshInbox} onClear={() => { setMeshInbox([]); clearMeshPins(); }} />
+          <MeshInbox messages={meshInbox} onClear={mesh.clearInbox} />
         </section>
 
         {/* Disaster Mode Banner */}
