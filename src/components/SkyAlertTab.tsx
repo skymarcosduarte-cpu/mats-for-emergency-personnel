@@ -297,7 +297,7 @@ export function SkyAlertTab() {
                   <Radio className="w-4 h-4 text-primary shrink-0" />
                   <p className="font-semibold text-sm leading-tight truncate">
                   {source === 'sassla'
-                    ? 'Noticias recientes de Sismos, Fuente; Google Noticias'
+                    ? 'Últimos posts de SASSLA y Noticias Recientes de sismos fuente: Google Noticias'
                     : `Últimos posts @${handle}`}
                   </p>
                 </div>
