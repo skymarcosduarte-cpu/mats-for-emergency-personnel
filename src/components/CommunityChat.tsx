@@ -6,6 +6,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { MeshInbox } from '@/components/MeshInbox';
+import { useMesh } from '@/providers/MeshProvider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -61,6 +63,7 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
   title = 'Chat Comunidad',
 }) => {
   const { user, profile } = useAuth();
+  const { inbox: meshInbox, clearInbox: clearMeshInbox } = useMesh();
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -732,8 +735,16 @@ export const CommunityChat: React.FC<CommunityChatProps> = ({
           </div>
         </div>
 
+        {/* Mensajes recibidos por Bluetooth (Red Mesh) */}
+        {contextType === 'general' && meshInbox.length > 0 && (
+          <div className="px-3 pt-3">
+            <MeshInbox messages={meshInbox} onClear={clearMeshInbox} />
+          </div>
+        )}
+
         {/* Messages */}
         <ScrollArea className="flex-1 p-3" ref={scrollRef}>
+
           {isLoading ? (
             <div className="flex items-center justify-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />

@@ -10,8 +10,8 @@ export interface MeshPin {
 }
 
 const STORAGE_KEY = 'mats-mesh-pins';
-const MAX_PINS = 50;
-const TTL_MS = 6 * 60 * 60 * 1000;
+const MAX_PINS = 100;
+const TTL_MS = 24 * 60 * 60 * 1000;
 
 export const MESH_PINS_EVENT = 'mats:mesh-pins-changed';
 export const MESH_FOCUS_EVENT = 'mats:mesh-pin-focus';
