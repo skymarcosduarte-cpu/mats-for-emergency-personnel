@@ -127,6 +127,9 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
             ...(note ? { message: note } : {}),
           })
         );
+        toast.info('📡 Mensaje puesto en la Red Mesh', {
+          description: 'Abajo puedes ver si ya salió por Bluetooth y si un teléfono cercano lo confirmó.',
+        });
       }
 
       setCurrentStatus(status);
