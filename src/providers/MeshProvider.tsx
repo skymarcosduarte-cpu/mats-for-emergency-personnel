@@ -138,7 +138,7 @@ export const MeshProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
   return (
-    <MeshContext.Provider value={{ ...mesh, inbox, clearInbox }}>
+    <MeshContext.Provider value={{ ...mesh, broadcast, inbox, clearInbox }}>
       {children}
     </MeshContext.Provider>
   );
