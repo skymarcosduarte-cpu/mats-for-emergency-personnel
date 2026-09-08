@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { MeshInbox } from '@/components/MeshInbox';
 import { MeshSendStatus } from '@/components/MeshSendStatus';
+import { MeshBridgeStatus } from '@/components/MeshBridgeStatus';
 import type { UserRole, StatusType, MeshEnvelope } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -201,6 +202,12 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         <section aria-label="Comprobante de envío Mesh">
           <MeshSendStatus />
         </section>
+
+        {/* Entrega verificada (puente por internet) */}
+        <section aria-label="Entrega de mensajes Mesh">
+          <MeshBridgeStatus />
+        </section>
+
 
         {/* Disaster Mode Banner */}
         {disasterMode && (

@@ -771,6 +771,75 @@ export type Database = {
           },
         ]
       }
+      mesh_relay: {
+        Row: {
+          created_at: string
+          expires_at: string
+          hops: number
+          id: string
+          lat: number | null
+          lng: number | null
+          msg_key: string
+          note: string | null
+          origin: string
+          sender_id: string
+          sent_at: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          hops?: number
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          msg_key: string
+          note?: string | null
+          origin: string
+          sender_id: string
+          sent_at?: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          hops?: number
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          msg_key?: string
+          note?: string | null
+          origin?: string
+          sender_id?: string
+          sent_at?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      mesh_relay_acks: {
+        Row: {
+          created_at: string
+          id: string
+          msg_key: string
+          user_id: string
+          via: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          msg_key: string
+          user_id: string
+          via?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          msg_key?: string
+          user_id?: string
+          via?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
