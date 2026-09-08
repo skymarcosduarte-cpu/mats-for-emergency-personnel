@@ -519,6 +519,8 @@ export class NativeMeshTransport implements MeshTransport {
   private async onSent(item: OutboxItem) {
     const attempts = item.attempts + 1;
     const isAck = item.key.startsWith('ack:');
+    const sentId = msgIdFromKey(item.key);
+    if (sentId != null) markMeshEmitted(sentId, attempts);
     if (isAck || attempts >= MAX_ATTEMPTS) {
       await removeFromOutbox(item.key);
       return;
@@ -534,6 +536,15 @@ export class NativeMeshTransport implements MeshTransport {
     }
     await enqueue({ ...item, attempts, nextAt: nextAttemptAt(attempts) });
   }
+}
+
+/** Extrae el msgId de una clave de la bandeja: `origin:msgId:sufijo`. */
+function msgIdFromKey(key: string): number | null {
+  if (key.startsWith('ack:') || key.startsWith('hello:')) return null;
+  const parts = key.split(':');
+  if (parts.length < 3) return null;
+  const id = Number(parts[1]);
+  return Number.isFinite(id) ? id : null;
 }
 
 function wait(ms: number) {
