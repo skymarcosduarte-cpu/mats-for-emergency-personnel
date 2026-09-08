@@ -64,8 +64,15 @@ export const MeshProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const isNew = addMeshInboxItem(item);
+
+    // Este teléfono actúa de puente: si llegó por Bluetooth y aquí sí hay
+    // señal, se reenvía por internet a las demás zonas.
+    const viaInternet = Boolean((envelope.payload as { viaInternet?: boolean } | null)?.viaInternet);
+    if (isNew && !viaInternet) void publishToBridge(envelope);
+
     const info = RELEVANT[item.type];
     if (!isNew || !info) return;
+
 
     const hasCoords = item.lat != null && item.lng != null;
     const options = {
