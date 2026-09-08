@@ -106,11 +106,36 @@ export const MeshProvider: React.FC<{ children: React.ReactNode }> = ({ children
     onMessage: handleMeshMessage,
   });
 
+  const meshBroadcast = mesh.broadcast;
+
+  // Puente por Internet: recibe mensajes de otras zonas, los muestra y los
+  // vuelve a emitir por Bluetooth aquí. Si no hay señal, la cola local espera.
+  useEffect(() => {
+    if (!user?.id) return;
+    const stop = startInternetBridge({
+      onMessage: handleMeshMessage,
+      rebroadcast: (envelope) => meshBroadcast(envelope),
+      getSelfId: () => user.id,
+    });
+    return stop;
+  }, [user?.id, handleMeshMessage, meshBroadcast]);
+
+  // Todo lo que sale por Bluetooth se copia también al puente (si hay señal),
+  // y si no la hay queda en cola hasta que la conexión regrese.
+  const broadcast = useCallback(
+    (envelope: MeshEnvelope) => {
+      meshBroadcast(envelope);
+      void publishToBridge(envelope);
+    },
+    [meshBroadcast]
+  );
+
   const clearInbox = useCallback(() => {
     clearMeshInbox();
     clearMeshPins();
     setInbox([]);
   }, []);
+
 
   return (
     <MeshContext.Provider value={{ ...mesh, inbox, clearInbox }}>
