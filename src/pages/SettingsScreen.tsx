@@ -20,7 +20,6 @@ import {
   BellOff,
   Volume2,
   VolumeX,
-  Radar,
   UserCog,
   Trash2,
   AlertTriangle,
@@ -39,7 +38,6 @@ import {
   Users,
   BookOpen,
   Radio,
-  Mic,
   MicOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,7 +45,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
 import {
   Dialog,
   DialogContent,
