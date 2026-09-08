@@ -386,6 +386,12 @@ export class NativeMeshTransport implements MeshTransport {
       `${packet.type} de ${packet.origin.toString(16)} lat=${packet.lat ?? '-'} lng=${packet.lng ?? '-'}`
     );
 
+    // Si oímos de vuelta un mensaje nuestro, la malla lo está repitiendo:
+    // es la prueba de que salió y otro teléfono lo tomó.
+    if (this.selfOrigin && packet.origin === this.selfOrigin) {
+      markMeshConfirmed(packet.msgId, 'eco');
+    }
+
     // Count duplicates even when already delivered: that is the suppression signal.
     const copies = (this.copies.get(packet.msgId) ?? 0) + 1;
     this.copies.set(packet.msgId, copies);
@@ -461,6 +467,7 @@ export class NativeMeshTransport implements MeshTransport {
     for (let i = 0; i < 32; i++) {
       if (ack.bitmap & (1 << i)) await removeFromOutbox(`${ack.origin}:${ack.msgId}:${i}`);
     }
+    if (ack.bitmap !== 0) markMeshConfirmed(ack.msgId, 'ack');
     if (ack.bitmap === fullBitmap(32) || ack.bitmap !== 0) await this.refreshPending();
   }
 
@@ -499,6 +506,8 @@ export class NativeMeshTransport implements MeshTransport {
           error instanceof Error
             ? `Emisión Bluetooth falló: ${error.message}`
             : 'Emisión Bluetooth falló (revisa el permiso Dispositivos cercanos).';
+        const failed = msgIdFromKey(item.key);
+        if (failed != null) markMeshFailed(failed, this.lastError ?? 'Emisión Bluetooth falló.');
         await this.backoff(item);
         break;
       }
