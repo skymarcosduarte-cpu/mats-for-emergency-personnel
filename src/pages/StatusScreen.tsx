@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { MeshInbox } from '@/components/MeshInbox';
+import { MeshSendStatus } from '@/components/MeshSendStatus';
 import type { UserRole, StatusType, MeshEnvelope } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -191,6 +192,11 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         {/* Buzón de mensajes Mesh */}
         <section aria-label="Buzón de mensajes Mesh">
           <MeshInbox messages={meshInbox} onClear={mesh.clearInbox} />
+        </section>
+
+        {/* Comprobante de envío por la malla */}
+        <section aria-label="Comprobante de envío Mesh">
+          <MeshSendStatus />
         </section>
 
         {/* Disaster Mode Banner */}
