@@ -9,6 +9,7 @@ import { useMeshNetwork } from '@/hooks/useMeshNetwork';
 import { useAppState } from '@/hooks/useRealtime';
 import { useAuth } from '@/hooks/useAuth';
 import { addMeshPin, focusMeshPin, clearMeshPins } from '@/lib/meshPins';
+import { publishToBridge, startInternetBridge } from '@/lib/mesh/internetBridge';
 import { addMeshInboxItem, clearMeshInbox, getMeshInbox, MESH_INBOX_EVENT } from '@/lib/meshInboxStore';
 import { envelopeToInboxItem, type MeshInboxItem } from '@/components/MeshInbox';
 import type { MeshEnvelope } from '@/types';
