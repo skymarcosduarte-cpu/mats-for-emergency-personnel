@@ -768,59 +768,36 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </CardContent>
         </Card>
 
-        {/* Tutorial Card */}
+        {/* Ayuda: tutorial + guía */}
         <Card className="bg-card border-border border-safe/30">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-safe/10 flex items-center justify-center">
-                  <GraduationCap className="w-5 h-5 text-safe" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Tutorial Completo</p>
-                  <p className="text-xs text-muted-foreground">
-                    Aprende a usar todas las funciones de la app
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowTutorial(true)}
-                className="border-safe/30 text-safe hover:bg-safe/10"
-              >
-                Ver Tutorial
-              </Button>
-            </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <GraduationCap className="w-5 h-5 text-safe" />
+              Ayuda para usar la app
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setShowTutorial(true)}
+              className="justify-start h-14 text-base border-safe/30 text-safe hover:bg-safe/10"
+            >
+              <GraduationCap className="w-5 h-5 mr-2" />
+              Ver tutorial
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setShowUserGuide(true)}
+              className="justify-start h-14 text-base border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <BookOpen className="w-5 h-5 mr-2" />
+              Guía paso a paso
+            </Button>
           </CardContent>
         </Card>
 
-        {/* User Guide Step by Step */}
-        <Card className="bg-card border-border border-primary/30">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <BookOpen className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Guía Paso a Paso</p>
-                  <p className="text-xs text-muted-foreground">
-                    Guía detallada con letras grandes de todas las funciones
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowUserGuide(true)}
-                className="border-primary/30 text-primary hover:bg-primary/10"
-              >
-                Ver Guía
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Admin Panel - Only for SOS_ACTIVO */}
         {role === 'SOS_ACTIVO' && (
@@ -893,111 +870,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </CardContent>
         </Card>
 
-        {/* Zello Integration Card */}
-        <Card className="bg-card border-border border-orange-500/30">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Radio className="w-5 h-5 text-orange-500" />
-              Integración Zello
-              <span className="ml-auto px-2 py-0.5 rounded-full text-xs font-bold bg-orange-500/20 text-orange-500 border border-orange-500/30">
-                EMERGENCIAS ARABA
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Conecta tu cuenta de Zello para que tu posición aparezca en el mapa cuando estés transmitiendo en el canal EMERGENCIAS ARABA.
-            </p>
 
-            {/* Username field */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-foreground">
-                <Radio className="w-4 h-4 text-orange-500" />
-                Tu usuario de Zello
-              </Label>
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
-                  <Input
-                    value={zelloUsername}
-                    onChange={(e) => setZelloUsername(e.target.value.replace(/[^a-zA-Z0-9_.-]/g, ''))}
-                    placeholder="tu_usuario_zello"
-                    className="pl-7"
-                    maxLength={50}
-                  />
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleSaveZelloUsername}
-                  disabled={savingZello}
-                  className="border-orange-500/30 text-orange-500 hover:bg-orange-500/10"
-                >
-                  {savingZello ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                </Button>
-              </div>
-              {profile?.zello_username && (
-                <p className="text-xs text-muted-foreground">
-                  Guardado: @{profile.zello_username}
-                </p>
-              )}
-            </div>
 
-            {/* Transmitting button */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-foreground">
-                <Mic className="w-4 h-4 text-orange-500" />
-                Estado de transmisión
-              </Label>
-              <Button
-                className={cn(
-                  "w-full gap-2 font-semibold transition-all",
-                  isTransmitting
-                    ? "bg-orange-500 hover:bg-orange-600 text-white border-0"
-                    : "border-orange-500/40 text-orange-500 hover:bg-orange-500/10"
-                )}
-                variant={isTransmitting ? "default" : "outline"}
-                onClick={handleToggleTransmitting}
-              >
-                {isTransmitting ? (
-                  <>
-                    <span className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-                    </span>
-                    Transmitiendo en Zello
-                    {transmitCountdown > 0 && (
-                      <span className="ml-auto text-xs opacity-80">
-                        {Math.floor(transmitCountdown / 60)}:{String(transmitCountdown % 60).padStart(2, '0')}
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <Mic className="w-4 h-4" />
-                    🎙️ Voy a transmitir en Zello
-                  </>
-                )}
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                {isTransmitting
-                  ? 'Tu posición se muestra en el mapa con un badge 🎙️ naranja animado'
-                  : 'Al activar, tu marcador en el mapa mostrará que estás activo en Zello por 15 min'}
-              </p>
-            </div>
-
-            {/* Open channel button */}
-            <a
-              href="https://on.zello.com/7lk8s2"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-md border border-orange-500/30 text-orange-500 hover:bg-orange-500/10 transition-colors text-sm font-medium no-underline"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Abrir canal EMERGENCIAS ARABA en Zello
-            </a>
-          </CardContent>
-        </Card>
 
         {/* Account Settings */}
         <Card className="bg-card border-border">
@@ -1768,107 +1642,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               />
               </div>
 
-              {/* Earthquake radius slider */}
-              <div className="space-y-3 p-3 rounded-lg bg-muted/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
-                    <Radar className="w-5 h-5 text-warning" />
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-foreground font-medium">
-                      Radio de detección
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Distancia para alertas sísmicas
-                    </p>
-                  </div>
-                  <span className="text-lg font-bold text-warning">
-                    {earthquakeRadiusKm} km
-                  </span>
-                </div>
-                <Slider
-                  value={[earthquakeRadiusKm]}
-                  onValueChange={(v) => setEarthquakeRadiusKm(v[0])}
-                  min={20}
-                  max={400}
-                  step={10}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground px-1">
-                  <span>20 km</span>
-                  <span>400 km</span>
-                </div>
-              </div>
 
-              {/* Arrival Detection Radius Slider */}
-              <div className="space-y-3 p-3 rounded-lg bg-muted/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-foreground font-medium">
-                      Radio de llegada (Tránsito Seguro)
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Distancia al destino para cerrar el viaje automáticamente
-                    </p>
-                  </div>
-                  <span className="text-lg font-bold text-primary">
-                    {arrivalRadiusMeters} m
-                  </span>
-                </div>
-                <Slider
-                  value={[arrivalRadiusMeters]}
-                  onValueChange={(v) => setArrivalRadiusMeters(v[0])}
-                  min={100}
-                  max={500}
-                  step={50}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground px-1">
-                  <span>100 m</span>
-                  <span>500 m</span>
-                </div>
-                <p className="text-xs text-muted-foreground italic">
-                  Un radio menor es más preciso; uno mayor detecta la llegada aunque el GPS tenga poca señal
-                </p>
-              </div>
 
-              {/* SSN National Alert Magnitude Slider */}
-              <div className="space-y-3 p-3 rounded-lg bg-muted/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                    <AlertTriangle className="w-5 h-5 text-destructive" />
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-foreground font-medium">
-                      Umbral alerta nacional SSN
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Magnitud mínima para alertas en todo México
-                    </p>
-                  </div>
-                  <span className="text-lg font-bold text-destructive">
-                    M{ssnNationalAlertMagnitude.toFixed(1)}
-                  </span>
-                </div>
-                <Slider
-                  value={[ssnNationalAlertMagnitude]}
-                  onValueChange={(v) => setSsnNationalAlertMagnitude(v[0])}
-                  min={5.0}
-                  max={8.0}
-                  step={0.5}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground px-1">
-                  <span>M5.0</span>
-                  <span>M8.0</span>
-                </div>
-                <p className="text-xs text-muted-foreground italic">
-                  Sismos del SSN iguales o mayores a esta magnitud alertarán a toda la comunidad sin importar la distancia
-                </p>
-              </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -1898,86 +1673,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 />
               </div>
 
-              {/* International Red Alerts Toggle */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center",
-                    internationalRedAlerts ? "bg-red-500/10" : "bg-muted"
-                  )}>
-                    {internationalRedAlerts ? (
-                      <Bell className="w-5 h-5 text-red-500" />
-                    ) : (
-                      <BellOff className="w-5 h-5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="international-red-alerts" className="text-foreground font-medium">
-                      Alertas rojas internacionales
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      GDACS, CONAGUA, NASA, ReliefWeb
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  id="international-red-alerts"
-                  checked={internationalRedAlerts}
-                  onCheckedChange={setInternationalRedAlerts}
-                />
-              </div>
 
-              {/* SkyAlert Sounds Toggle */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center",
-                    skyAlertSounds ? "bg-orange-500/10" : "bg-muted"
-                  )}>
-                    {skyAlertSounds ? (
-                      <Volume2 className="w-5 h-5 text-orange-500" />
-                    ) : (
-                      <VolumeX className="w-5 h-5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="skyalert-sounds" className="text-foreground font-medium">
-                      SkyAlert sísmico
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Sonido para alertas de SkyAlert
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  id="skyalert-sounds"
-                  checked={skyAlertSounds}
-                  onCheckedChange={setSkyAlertSounds}
-                />
-              </div>
 
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => playSubtleAlert()}
-                  className="flex-1"
-                  disabled={!helpRequestSounds}
-                >
-                  <Volume2 className="w-4 h-4 mr-2" />
-                  Sonido lejano
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => playUrgentAlert()}
-                  className="flex-1"
-                  disabled={!helpRequestSounds}
-                >
-                  <Volume2 className="w-4 h-4 mr-2" />
-                  Sonido cercano
-                </Button>
-              </div>
 
             </div>
           </CardContent>
