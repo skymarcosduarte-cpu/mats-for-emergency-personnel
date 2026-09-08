@@ -38,6 +38,12 @@ import {
 import { signFrame, verifyFrame } from './auth';
 import { getBackgroundMode, startBackground, stopBackground } from './background';
 import { logMesh } from './meshDiagnostics';
+import {
+  createMeshReceipt,
+  markMeshConfirmed,
+  markMeshEmitted,
+  markMeshFailed,
+} from './meshReceipts';
 
 // Optional native advertiser plugin (custom Capacitor plugin, see docs at bottom).
 interface MeshAdvertiserPlugin {
@@ -229,6 +235,16 @@ export class NativeMeshTransport implements MeshTransport {
     this.selfOrigin = packet.origin;
     await markSeen(packet.msgId);
     const priority = priorityOf(envelope);
+    const note = (envelope.payload as { message?: unknown } | null)?.message;
+    createMeshReceipt({
+      msgId: packet.msgId,
+      type: envelope.type,
+      note: typeof note === 'string' ? note : undefined,
+      neighbours: this.getPeerCount(),
+    });
+    if (!this.active) {
+      markMeshFailed(packet.msgId, 'La malla está apagada: enciéndela para que el mensaje salga.');
+    }
 
     // Rich payloads (text, notes) travel fragmented; plain coordinate alerts
     // fit in a single 21-byte advertisement.
