@@ -202,6 +202,12 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
           <MeshSendStatus />
         </section>
 
+        {/* Entrega verificada (puente por internet) */}
+        <section aria-label="Entrega de mensajes Mesh">
+          <MeshBridgeStatus />
+        </section>
+
+
         {/* Disaster Mode Banner */}
         {disasterMode && (
           <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 flex items-center gap-3">
