@@ -183,12 +183,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [showDrillScheduler, setShowDrillScheduler] = useState(false);
   const [showProfileEditDialog, setShowProfileEditDialog] = useState(false);
 
-  // Zello integration state
-  const [zelloUsername, setZelloUsername] = useState(profile?.zello_username || '');
-  const [savingZello, setSavingZello] = useState(false);
-  const [isTransmitting, setIsTransmitting] = useState(false);
-  const [transmittingUntil, setTransmittingUntil] = useState<Date | null>(null);
-  const [transmitCountdown, setTransmitCountdown] = useState(0);
+
+
 
   const handleRequestPermission = async () => {
     setRequestingPermission(true);
@@ -335,35 +331,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         emergency_medical_notes: profile.emergency_medical_notes || '',
       });
       setSelectedSpecialties(Array.isArray(profile.specialty) ? profile.specialty : []);
-      setZelloUsername(profile.zello_username || '');
-      // Check if currently transmitting
-      const zelloUntil = profile.zello_transmitting_until;
-      if (zelloUntil) {
-        const until = new Date(zelloUntil);
-        if (until > new Date()) {
-          setIsTransmitting(true);
-          setTransmittingUntil(until);
-        } else {
-          setIsTransmitting(false);
-          setTransmittingUntil(null);
-        }
-      }
     }
   }, [profile]);
 
-  // Countdown timer for Zello transmission
-  React.useEffect(() => {
-    if (!isTransmitting || !transmittingUntil) return;
-    const interval = setInterval(() => {
-      const remaining = Math.max(0, Math.floor((transmittingUntil.getTime() - Date.now()) / 1000));
-      setTransmitCountdown(remaining);
-      if (remaining === 0) {
-        setIsTransmitting(false);
-        setTransmittingUntil(null);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isTransmitting, transmittingUntil]);
+
 
   // If user arrived via password recovery link, open password dialog automatically
   useEffect(() => {
@@ -637,56 +608,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     }
   };
 
-  // Zello: save username
-  const handleSaveZelloUsername = async () => {
-    setSavingZello(true);
-    try {
-      const trimmed = zelloUsername.trim();
-      await updateProfile({ zello_username: trimmed || null });
-      toast.success(trimmed ? `Usuario Zello guardado: @${trimmed}` : 'Usuario Zello eliminado');
-    } catch {
-      toast.error('Error al guardar usuario Zello');
-    } finally {
-      setSavingZello(false);
-    }
-  };
 
-  // Zello: toggle transmitting state (15 min)
-  const handleToggleTransmitting = async () => {
-    if (!user) return;
-    if (isTransmitting) {
-      // Stop transmitting
-      try {
-        await supabase
-          .from('profiles')
-          .update({ zello_transmitting_until: null })
-          .eq('id', user.id);
-        setIsTransmitting(false);
-        setTransmittingUntil(null);
-        setTransmitCountdown(0);
-        toast.success('Transmisión Zello desactivada');
-      } catch {
-        toast.error('Error al desactivar');
-      }
-    } else {
-      // Start transmitting for 15 minutes
-      const until = new Date(Date.now() + 15 * 60 * 1000);
-      try {
-        await supabase
-          .from('profiles')
-          .update({ zello_transmitting_until: until.toISOString() })
-          .eq('id', user.id);
-        setIsTransmitting(true);
-        setTransmittingUntil(until);
-        setTransmitCountdown(15 * 60);
-        toast.success('¡Transmitiendo en Zello! Tu posición aparece en el mapa por 15 min', {
-          duration: 5000,
-        });
-      } catch {
-        toast.error('Error al activar transmisión');
-      }
-    }
-  };
+
 
   // Handle logout
   const handleLogout = async () => {
