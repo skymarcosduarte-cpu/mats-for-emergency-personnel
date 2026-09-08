@@ -38,6 +38,12 @@ import {
 import { signFrame, verifyFrame } from './auth';
 import { getBackgroundMode, startBackground, stopBackground } from './background';
 import { logMesh } from './meshDiagnostics';
+import {
+  createMeshReceipt,
+  markMeshConfirmed,
+  markMeshEmitted,
+  markMeshFailed,
+} from './meshReceipts';
 
 // Optional native advertiser plugin (custom Capacitor plugin, see docs at bottom).
 interface MeshAdvertiserPlugin {
@@ -229,6 +235,16 @@ export class NativeMeshTransport implements MeshTransport {
     this.selfOrigin = packet.origin;
     await markSeen(packet.msgId);
     const priority = priorityOf(envelope);
+    const note = (envelope.payload as { message?: unknown } | null)?.message;
+    createMeshReceipt({
+      msgId: packet.msgId,
+      type: envelope.type,
+      note: typeof note === 'string' ? note : undefined,
+      neighbours: this.getPeerCount(),
+    });
+    if (!this.active) {
+      markMeshFailed(packet.msgId, 'La malla está apagada: enciéndela para que el mensaje salga.');
+    }
 
     // Rich payloads (text, notes) travel fragmented; plain coordinate alerts
     // fit in a single 21-byte advertisement.
@@ -370,6 +386,12 @@ export class NativeMeshTransport implements MeshTransport {
       `${packet.type} de ${packet.origin.toString(16)} lat=${packet.lat ?? '-'} lng=${packet.lng ?? '-'}`
     );
 
+    // Si oímos de vuelta un mensaje nuestro, la malla lo está repitiendo:
+    // es la prueba de que salió y otro teléfono lo tomó.
+    if (this.selfOrigin && packet.origin === this.selfOrigin) {
+      markMeshConfirmed(packet.msgId, 'eco');
+    }
+
     // Count duplicates even when already delivered: that is the suppression signal.
     const copies = (this.copies.get(packet.msgId) ?? 0) + 1;
     this.copies.set(packet.msgId, copies);
@@ -445,6 +467,7 @@ export class NativeMeshTransport implements MeshTransport {
     for (let i = 0; i < 32; i++) {
       if (ack.bitmap & (1 << i)) await removeFromOutbox(`${ack.origin}:${ack.msgId}:${i}`);
     }
+    if (ack.bitmap !== 0) markMeshConfirmed(ack.msgId, 'ack');
     if (ack.bitmap === fullBitmap(32) || ack.bitmap !== 0) await this.refreshPending();
   }
 
@@ -483,6 +506,8 @@ export class NativeMeshTransport implements MeshTransport {
           error instanceof Error
             ? `Emisión Bluetooth falló: ${error.message}`
             : 'Emisión Bluetooth falló (revisa el permiso Dispositivos cercanos).';
+        const failed = msgIdFromKey(item.key);
+        if (failed != null) markMeshFailed(failed, this.lastError ?? 'Emisión Bluetooth falló.');
         await this.backoff(item);
         break;
       }
@@ -494,6 +519,8 @@ export class NativeMeshTransport implements MeshTransport {
   private async onSent(item: OutboxItem) {
     const attempts = item.attempts + 1;
     const isAck = item.key.startsWith('ack:');
+    const sentId = msgIdFromKey(item.key);
+    if (sentId != null) markMeshEmitted(sentId, attempts);
     if (isAck || attempts >= MAX_ATTEMPTS) {
       await removeFromOutbox(item.key);
       return;
@@ -509,6 +536,15 @@ export class NativeMeshTransport implements MeshTransport {
     }
     await enqueue({ ...item, attempts, nextAt: nextAttemptAt(attempts) });
   }
+}
+
+/** Extrae el msgId de una clave de la bandeja: `origin:msgId:sufijo`. */
+function msgIdFromKey(key: string): number | null {
+  if (key.startsWith('ack:') || key.startsWith('hello:')) return null;
+  const parts = key.split(':');
+  if (parts.length < 3) return null;
+  const id = Number(parts[1]);
+  return Number.isFinite(id) ? id : null;
 }
 
 function wait(ms: number) {
