@@ -12,6 +12,13 @@ on:
   push:
     tags:
       - 'ipa-*'
+      - 'v*'
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+
 
 jobs:
   build:
@@ -173,6 +180,20 @@ jobs:
           path: ios-artifact/MATS-mesh-unsigned.ipa
           retention-days: 30
           if-no-files-found: warn
+
+      - name: Crear Release público con IPA
+        if: hashFiles('ios-artifact/MATS-mesh-unsigned.ipa') != ''
+        continue-on-error: true
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('ios-{0}', github.run_number) }}
+          name: MATS ${{ env.APP_VERSION }} Red Mesh IPA #${{ github.run_number }}
+          body: |
+            IPA sin firmar con Red Mesh activada (instalar con AltStore / Sideloadly).
+          files: ios-artifact/MATS-mesh-unsigned.ipa
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
 
       - name: Resumen de errores
         if: always()
