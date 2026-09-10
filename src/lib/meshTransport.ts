@@ -8,8 +8,13 @@ export interface MeshTransport {
   isActive(): boolean;
   start(): Promise<void>;
   stop(): void;
-  broadcast(envelope: MeshEnvelope): void;
+  broadcast(envelope: MeshEnvelope, options?: MeshBroadcastOptions): void;
   onMessage(callback: (envelope: MeshEnvelope) => void): () => void;
+}
+
+/** relay: el mensaje es de otra persona y sólo se está repitiendo */
+export interface MeshBroadcastOptions {
+  relay?: boolean;
 }
 
 // Check if BLE is available (always false in web)

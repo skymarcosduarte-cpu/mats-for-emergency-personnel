@@ -101,13 +101,24 @@ export function packetToEnvelope(packet: MeshPacket): MeshEnvelope {
   };
 }
 
+/**
+ * Origen de 32 bits de un remitente. Los ids que ya vienen de la malla
+ * ("mesh:abcd") se reusan tal cual: así un mensaje repetido por internet
+ * conserva su remitente original y no se duplica en el buzón.
+ */
+export function originFromSenderId(senderId: string): number {
+  const match = /^mesh:([0-9a-f]{1,8})$/i.exec(senderId);
+  if (match) return parseInt(match[1], 16) >>> 0;
+  return hashId(senderId);
+}
+
 export function envelopeToPacket(envelope: MeshEnvelope, ttl = MESH_DEFAULT_TTL): MeshPacket {
   const payload = (envelope.payload ?? {}) as { lat?: number; lng?: number };
   return {
     type: envelope.type,
     msgId: (Math.random() * 0xffffffff) >>> 0,
     ttl,
-    origin: hashId(envelope.sender_id),
+    origin: originFromSenderId(envelope.sender_id),
     lat: typeof payload.lat === 'number' ? payload.lat : null,
     lng: typeof payload.lng === 'number' ? payload.lng : null,
     timestamp: envelope.timestamp || Date.now(),
