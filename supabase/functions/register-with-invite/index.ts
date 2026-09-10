@@ -323,7 +323,10 @@ serve(async (req) => {
 
     // Step 2: Check if email already exists BEFORE consuming invite
     console.log(`[${requestId}] Checking if email already exists...`);
-    const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers();
+    const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
     
     if (!listError && existingUsers?.users) {
       const emailExists = existingUsers.users.some(
@@ -372,14 +375,25 @@ serve(async (req) => {
 
     // Step 4: Create the user using Admin API (auto-confirms email)
     console.log(`[${requestId}] Calling supabase.auth.admin.createUser...`);
-    const { data: authData, error: createError } = await supabase.auth.admin.createUser({
-      email: emailTrimmed,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        invite_code: normalizedCode,
-      }
-    });
+    // El cliente puede LANZAR el error (AuthApiError) en lugar de devolverlo:
+    // lo capturamos para responder siempre con un mensaje claro, no un 500.
+    let authData: { user?: { id: string; email?: string } | null } | null = null;
+    let createError: { message?: string; code?: string; status?: number } | null = null;
+    try {
+      const result = await supabase.auth.admin.createUser({
+        email: emailTrimmed,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          invite_code: normalizedCode,
+        }
+      });
+      authData = result.data;
+      createError = result.error ?? null;
+    } catch (thrown) {
+      const err = thrown as { message?: string; code?: string; status?: number };
+      createError = { message: err?.message ?? String(thrown), code: err?.code, status: err?.status };
+    }
 
     if (createError) {
       console.error(`[${requestId}] USER_CREATE_ERROR:`, {
@@ -387,16 +401,9 @@ serve(async (req) => {
         code: createError.code,
         status: createError.status,
       });
-      
-      // Rollback: decrement invite used_count since user wasn't created
+
+      // Rollback: el usuario no se creó, devolvemos el uso del código
       console.log(`[${requestId}] Rolling back invite code usage...`);
-      await supabase
-        .from('invites')
-        .update({ used_count: invite.used_count + 1 - 1 })
-        .eq('code', normalizedCode);
-      // Alternative: decrement via raw update
-      await supabase.rpc('use_invite_code', { invite_code: '__noop__' }).catch(() => {});
-      // Direct decrement
       const { error: rollbackErr } = await supabase
         .from('invites')
         .update({ used_count: invite.used_count })
