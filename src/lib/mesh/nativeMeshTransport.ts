@@ -226,23 +226,28 @@ export class NativeMeshTransport implements MeshTransport {
     this.advertiser?.stop().catch(() => undefined);
   }
 
-  broadcast(envelope: MeshEnvelope): void {
-    void this.broadcastAsync(envelope);
+  broadcast(envelope: MeshEnvelope, options?: { relay?: boolean }): void {
+    void this.broadcastAsync(envelope, options);
   }
 
-  private async broadcastAsync(envelope: MeshEnvelope) {
+  private async broadcastAsync(envelope: MeshEnvelope, options?: { relay?: boolean }) {
+    const relay = Boolean(options?.relay);
     const packet = envelopeToPacket(envelope);
-    this.selfOrigin = packet.origin;
+    // Sólo los mensajes propios definen la identidad del teléfono: al repetir
+    // mensajes de otros no debemos adoptar su origen ni crear comprobante.
+    if (!relay) this.selfOrigin = packet.origin;
     await markSeen(packet.msgId);
     const priority = priorityOf(envelope);
     const note = (envelope.payload as { message?: unknown } | null)?.message;
-    createMeshReceipt({
-      msgId: packet.msgId,
-      type: envelope.type,
-      note: typeof note === 'string' ? note : undefined,
-      neighbours: this.getPeerCount(),
-    });
-    if (!this.active) {
+    if (!relay) {
+      createMeshReceipt({
+        msgId: packet.msgId,
+        type: envelope.type,
+        note: typeof note === 'string' ? note : undefined,
+        neighbours: this.getPeerCount(),
+      });
+    }
+    if (!this.active && !relay) {
       markMeshFailed(packet.msgId, 'La malla está apagada: enciéndela para que el mensaje salga.');
     }
 
