@@ -163,7 +163,7 @@ export async function publishToBridge(
   };
 
   const entry: BridgeSent = { msgKey, type: envelope.type, note, queuedAt: Date.now(), deliveries: 0 };
-  upsertSent(entry);
+  if (own) upsertSent(entry);
   alreadySeen(msgKey); // no reprocesar el eco propio
 
   const item: QueueItem = { ...entry, payload };
