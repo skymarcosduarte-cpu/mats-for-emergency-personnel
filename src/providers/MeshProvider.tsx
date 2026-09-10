@@ -25,7 +25,7 @@ interface MeshContextValue {
   rejected: number;
   lastError: string | null;
   toggle: (value: boolean) => void;
-  broadcast: (envelope: MeshEnvelope) => void;
+  broadcast: (envelope: MeshEnvelope, options?: { relay?: boolean }) => void;
   inbox: MeshInboxItem[];
   clearInbox: () => void;
 }
@@ -68,7 +68,7 @@ export const MeshProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Este teléfono actúa de puente: si llegó por Bluetooth y aquí sí hay
     // señal, se reenvía por internet a las demás zonas.
     const viaInternet = Boolean((envelope.payload as { viaInternet?: boolean } | null)?.viaInternet);
-    if (isNew && !viaInternet) void publishToBridge(envelope);
+    if (isNew && !viaInternet) void publishToBridge(envelope, { own: false });
 
     const info = RELEVANT[item.type];
     if (!isNew || !info) return;
@@ -122,7 +122,8 @@ export const MeshProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user?.id) return;
     const stop = startInternetBridge({
       onMessage: handleMeshMessage,
-      rebroadcast: (envelope) => meshBroadcast(envelope),
+      // relay: es el mensaje de otra persona, no cambia nuestra identidad
+      rebroadcast: (envelope) => meshBroadcast(envelope, { relay: true }),
       getSelfId: () => user.id,
     });
     return stop;
@@ -131,9 +132,9 @@ export const MeshProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Todo lo que sale por Bluetooth se copia también al puente (si hay señal),
   // y si no la hay queda en cola hasta que la conexión regrese.
   const broadcast = useCallback(
-    (envelope: MeshEnvelope) => {
-      meshBroadcast(envelope);
-      void publishToBridge(envelope);
+    (envelope: MeshEnvelope, options?: { relay?: boolean }) => {
+      meshBroadcast(envelope, options);
+      void publishToBridge(envelope, { own: !options?.relay });
     },
     [meshBroadcast]
   );
