@@ -446,7 +446,8 @@ serve(async (req) => {
       );
     }
 
-    if (!authData.user) {
+    const createdUser = authData?.user;
+    if (!createdUser) {
       console.error(`[${requestId}] USER_CREATE_NO_USER: User creation returned no user object`);
       await logAttempt({
         email_hash: emailHash,
