@@ -133,8 +133,16 @@ export function rowToEnvelope(row: BridgeRow): MeshEnvelope {
 
 // ------------------------------------------------------------ publicación
 
-/** Copia el mensaje al servidor (o lo deja en cola si no hay internet). */
-export async function publishToBridge(envelope: MeshEnvelope): Promise<void> {
+/**
+ * Copia el mensaje al servidor (o lo deja en cola si no hay internet).
+ * `own: false` sirve para repetir mensajes de otras personas sin que aparezcan
+ * en la tarjeta "Entrega de tus mensajes".
+ */
+export async function publishToBridge(
+  envelope: MeshEnvelope,
+  options: { own?: boolean } = {}
+): Promise<void> {
+  const own = options.own !== false;
   const payloadObj = (envelope.payload ?? {}) as Record<string, unknown>;
   const note = typeof payloadObj.message === 'string' ? payloadObj.message : undefined;
   const msgKey = bridgeKey(envelope);
@@ -155,7 +163,7 @@ export async function publishToBridge(envelope: MeshEnvelope): Promise<void> {
   };
 
   const entry: BridgeSent = { msgKey, type: envelope.type, note, queuedAt: Date.now(), deliveries: 0 };
-  upsertSent(entry);
+  if (own) upsertSent(entry);
   alreadySeen(msgKey); // no reprocesar el eco propio
 
   const item: QueueItem = { ...entry, payload };

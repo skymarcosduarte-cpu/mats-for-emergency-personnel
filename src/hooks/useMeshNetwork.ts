@@ -98,6 +98,11 @@ export function useMeshNetwork(
     setEnabled(value);
   }, []);
 
+  // Identidad estable: evita que el puente por internet se reinicie en cada render
+  const broadcast = useCallback((envelope: MeshEnvelope, options?: { relay?: boolean }) => {
+    transportRef.current?.broadcast(envelope, options);
+  }, []);
+
   return {
     available: isMeshAvailable(),
     statusMessage: getMeshStatusMessage(),
@@ -109,6 +114,6 @@ export function useMeshNetwork(
     rejected,
     lastError,
     toggle,
-    broadcast: (envelope: MeshEnvelope) => transportRef.current?.broadcast(envelope),
+    broadcast,
   };
 }
