@@ -86,16 +86,8 @@ export default function SharedTripPage() {
         setLocation(locationData);
       }
 
-      // Fetch route history
-      const { data: historyData } = await supabase
-        .from('trip_position_history')
-        .select('lat, lng')
-        .eq('trip_id', tripData.id)
-        .order('recorded_at', { ascending: true });
-
-      if (historyData) {
-        setRouteHistory(historyData.map(p => [p.lat, p.lng]));
-      }
+      // El recorrido viene junto con el viaje desde la función segura
+      setRouteHistory((fnPayload?.positions ?? []).map((p) => [p.lat, p.lng]));
 
       setLoading(false);
     } catch (err) {
