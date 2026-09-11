@@ -18,7 +18,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-const GITHUB_REPO = "skymarcosduarte-cpu/safe-guard-link";
+const GITHUB_REPO = "skymarcosduarte-cpu/safe-guard-link-43a63509";
 const APK_FALLBACK_URL = `https://github.com/${GITHUB_REPO}/releases/latest/download/MATS-RedMesh.apk`;
 const CACHE_KEY = "mats-apk-check-v1";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutos
