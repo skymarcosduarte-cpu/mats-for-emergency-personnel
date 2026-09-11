@@ -53,7 +53,7 @@ export default function UserGuidePage() {
       const html2pdf = (await import('html2pdf.js')).default;
       
       const options = {
-        margin: [15, 15, 15, 15],
+        margin: [15, 15, 15, 15] as [number, number, number, number],
         filename: `MATS_Guia_Usuario_v${APP_VERSION}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 

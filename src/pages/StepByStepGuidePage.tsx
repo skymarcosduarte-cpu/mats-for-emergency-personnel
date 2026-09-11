@@ -31,7 +31,7 @@ export default function StepByStepGuidePage() {
     try {
       const html2pdf = (await import('html2pdf.js')).default;
       const options = {
-        margin: [12, 12, 12, 12],
+        margin: [12, 12, 12, 12] as [number, number, number, number],
         filename: `MATS_Guia_Paso_a_Paso_v${APP_VERSION}.pdf`,
         image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
