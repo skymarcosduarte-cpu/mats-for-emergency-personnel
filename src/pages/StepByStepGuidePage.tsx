@@ -33,7 +33,7 @@ export default function StepByStepGuidePage() {
       const options = {
         margin: [12, 12, 12, 12] as [number, number, number, number],
         filename: `MATS_Guia_Paso_a_Paso_v${APP_VERSION}.pdf`,
-        image: { type: 'jpeg', quality: 0.95 },
+        image: { type: 'jpeg' as const, quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
