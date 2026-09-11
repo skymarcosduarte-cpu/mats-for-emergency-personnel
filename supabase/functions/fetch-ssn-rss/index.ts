@@ -85,13 +85,23 @@ serve(async (req) => {
 
   try {
     const xml = await fetchSSNRss();
+    lastGood = { xml, ts: Date.now() };
 
-    return new Response(JSON.stringify({ success: true, xml }), {
+    return new Response(JSON.stringify({ success: true, xml, stale: false }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.warn('[fetch-ssn-rss] All attempts failed:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
+
+    // Serve the last good feed if it is still recent enough.
+    if (lastGood && Date.now() - lastGood.ts < CACHE_TTL_MS) {
+      console.log('[fetch-ssn-rss] Serving cached feed from', new Date(lastGood.ts).toISOString());
+      return new Response(
+        JSON.stringify({ success: true, xml: lastGood.xml, stale: true, cachedAt: lastGood.ts }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
     // Return 200 so the client can fall back to USGS silently instead of
     // surfacing an invoke error for an upstream outage we cannot control.
     return new Response(JSON.stringify({ success: false, error: message }), {
