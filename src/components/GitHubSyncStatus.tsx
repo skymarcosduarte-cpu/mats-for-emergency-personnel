@@ -8,9 +8,6 @@ import { APP_VERSION } from "@/lib/versionCheck";
 
 const GITHUB_REPO = "skymarcosduarte-cpu/safe-guard-link-43a63509";
 const WORKFLOW_FILE = "build-android-mesh.yml";
-/** Archivo que solo existe en la versión corregida del proyecto. */
-const MARKER_PATH = "native-plugins/write-android-mainactivity.mjs";
-const VERSION_PATH = "src/lib/versionCheck.ts";
 
 interface SyncInfo {
   commitSha: string;
@@ -192,7 +189,7 @@ export function GitHubSyncStatus() {
         {error && !info && (
           <div className="flex items-start gap-2 rounded-lg border-2 border-destructive/40 bg-destructive/10 p-3 text-base">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
-            <p>No se pudo consultar GitHub. Revisa que el repositorio sea público e inténtalo de nuevo.</p>
+            <p>No se pudo consultar GitHub. Espera unos segundos y toca el botón de actualizar.</p>
           </div>
         )}
 
