@@ -196,7 +196,7 @@ export default function DownloadAppPage() {
                   <p className="font-bold">Descarga no disponible por ahora</p>
                 </div>
                 <p className="mt-2">
-                  El archivo APK aún no se ha publicado o el repositorio es privado.
+                  El archivo APK aún no se ha publicado en el repositorio.
                   Esto suele resolverse en unos minutos tras ejecutar el build en GitHub Actions.
                 </p>
                 <div className="mt-3 flex flex-col gap-2">
