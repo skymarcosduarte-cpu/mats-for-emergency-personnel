@@ -55,7 +55,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    return new Response(JSON.stringify({ trip }), {
+    // El recorrido ya no es legible públicamente en la base de datos:
+    // se entrega aquí sólo a quien tiene el enlace válido del viaje.
+    let positions: { lat: number; lng: number }[] = [];
+    if (trip?.id) {
+      const { data: history, error: historyError } = await supabase
+        .from("trip_position_history")
+        .select("lat, lng, recorded_at")
+        .eq("trip_id", trip.id)
+        .order("recorded_at", { ascending: true });
+
+      if (historyError) {
+        console.error("[get-shared-trip] history error:", historyError);
+      } else {
+        positions = (history ?? []).map((p: { lat: number; lng: number }) => ({
+          lat: p.lat,
+          lng: p.lng,
+        }));
+      }
+    }
+
+    return new Response(JSON.stringify({ trip, positions }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
