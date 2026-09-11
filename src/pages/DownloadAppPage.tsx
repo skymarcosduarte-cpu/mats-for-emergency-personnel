@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MatsLogo } from "@/components/MatsLogo";
 import { GitHubSyncStatus } from "@/components/GitHubSyncStatus";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Download,
   Smartphone,
@@ -42,50 +43,23 @@ function detectPlatform(): Platform {
 }
 
 /**
- * Verifica la disponibilidad del APK en dos pasos:
- * 1) API de GitHub (/releases/latest) — entrega la URL real del asset y metadatos.
- *    Si el repo es privado o no hay release, responde 404 y caemos al paso 2.
- * 2) HEAD directo a la URL de descrega (releases/latest/download/*.apk) — no
- *    consume cuota de la API y confirma si el archivo redirige a un 200.
- * El resultado se cachea en sessionStorage 10 min para no agotar el límite de
- * 60 peticiones/hora por IP de la API no autenticada.
+ * Verifica la disponibilidad del APK a través de la función de servidor
+ * `github-repo-status`: el repositorio es privado y la API pública de
+ * GitHub no puede verlo, así que la consulta autenticada se hace del lado
+ * del servidor con la conexión de GitHub del proyecto.
  */
 async function checkApkAvailability(): Promise<{ status: ApkStatus; url: string }> {
-  // 1) API de GitHub
   try {
-    const apiRes = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
-      { headers: { Accept: "application/vnd.github+json" } }
-    );
-    if (apiRes.ok) {
-      const data = await apiRes.json();
-      const asset = (data?.assets ?? []).find((a: { name?: string }) =>
-        a?.name?.toLowerCase().endsWith(".apk")
-      );
-      if (asset?.browser_download_url) {
-        return { status: "ok", url: asset.browser_download_url };
-      }
-      // El release existe pero sin asset .apk
-      return { status: "unavailable", url: APK_FALLBACK_URL };
-    }
-    // 404 = repo privado o sin releases → caer al HEAD de respaldo
-  } catch {
-    // error de red → caer al HEAD de respaldo
-  }
-
-  // 2) HEAD directo al enlace de descarga (respaldo, sin límite de API)
-  try {
-    const headRes = await fetch(APK_FALLBACK_URL, {
-      method: "HEAD",
-      redirect: "follow",
+    const { data, error } = await supabase.functions.invoke("github-repo-status", {
+      body: {},
     });
-    if (headRes.ok) {
-      return { status: "ok", url: APK_FALLBACK_URL };
+    if (!error && data?.ok && data?.apk?.url) {
+      return { status: "ok", url: data.apk.url };
     }
-  } catch {
-    // ignorar y reportar no disponible
+    if (error) console.error("github-repo-status error:", error);
+  } catch (e) {
+    console.error("github-repo-status fetch error:", e);
   }
-
   return { status: "unavailable", url: APK_FALLBACK_URL };
 }
 
@@ -222,7 +196,7 @@ export default function DownloadAppPage() {
                   <p className="font-bold">Descarga no disponible por ahora</p>
                 </div>
                 <p className="mt-2">
-                  El archivo APK aún no se ha publicado o el repositorio es privado.
+                  El archivo APK aún no se ha publicado en el repositorio.
                   Esto suele resolverse en unos minutos tras ejecutar el build en GitHub Actions.
                 </p>
                 <div className="mt-3 flex flex-col gap-2">
