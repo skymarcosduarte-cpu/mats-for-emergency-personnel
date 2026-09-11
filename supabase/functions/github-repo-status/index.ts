@@ -10,8 +10,13 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
  */
 
 const GATEWAY_URL = 'https://connector-gateway.lovable.dev/github';
-const GITHUB_REPO = 'skymarcosduarte-cpu/safe-guard-link-43a63509';
-const BRANCH = 'newversion';
+// Repos candidatos: primero el privado conectado a Lovable; si el token no
+// lo alcanza, se usa el público (donde están los builds y releases previos).
+const REPO_CANDIDATES = [
+  'skymarcosduarte-cpu/safe-guard-link-43a63509',
+  'skymarcosduarte-cpu/safe-guard-link',
+];
+const BRANCH_CANDIDATES = ['newversion', 'mesh', 'main'];
 const WORKFLOW_FILE = 'build-android-mesh.yml';
 const MARKER_PATH = 'native-plugins/write-android-mainactivity.mjs';
 const VERSION_PATH = 'src/lib/versionCheck.ts';
