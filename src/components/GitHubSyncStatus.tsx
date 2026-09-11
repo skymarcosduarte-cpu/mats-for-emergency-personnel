@@ -26,77 +26,34 @@ interface SyncInfo {
 }
 
 
+/**
+ * Consulta el estado del repo a través de la función de servidor
+ * `github-repo-status` (el repo es privado: la API pública no lo ve).
+ * Respeta la misma forma de datos que antes.
+ */
 async function fetchSyncInfo(): Promise<SyncInfo | null> {
-  const headers = { Accept: "application/vnd.github+json" };
-  const bust = `_=${Date.now()}`;
-
-  const commitsRes = await fetch(
-    `https://api.github.com/repos/${GITHUB_REPO}/commits?per_page=1&${bust}`,
-    { headers, cache: "no-store" }
-  );
-  if (!commitsRes.ok) return null;
-  const commits = await commitsRes.json();
-  const commit = commits?.[0];
-  if (!commit) return null;
-
-  const markerRes = await fetch(
-    `https://api.github.com/repos/${GITHUB_REPO}/contents/${MARKER_PATH}?ref=${commit.sha}&${bust}`,
-    { headers, cache: "no-store" }
-  );
-
-  // Versión declarada en el repo remoto
-  let remoteVersion: string | null = null;
-  try {
-    const raw = await fetch(
-      `https://raw.githubusercontent.com/${GITHUB_REPO}/${commit.sha}/${VERSION_PATH}?${bust}`,
-      { cache: "no-store" }
-    );
-    if (raw.ok) {
-      const text = await raw.text();
-      remoteVersion = text.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/)?.[1] ?? null;
-    }
-  } catch {
-    /* sin versión remota */
+  const { data, error } = await supabase.functions.invoke("github-repo-status", {
+    body: {},
+  });
+  if (error) {
+    console.error("github-repo-status error:", error);
+    return null;
   }
-
-
-  let runSha: string | null = null;
-  let runStatus: string | null = null;
-  let runConclusion: string | null = null;
-  let runNumber: number | null = null;
-  let runUrl: string | null = null;
-  try {
-    const runsRes = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=1`,
-      { headers }
-    );
-    if (runsRes.ok) {
-      const runs = await runsRes.json();
-      const run = runs?.workflow_runs?.[0];
-      if (run) {
-        runSha = run.head_sha ?? null;
-        runStatus = run.status ?? null;
-        runConclusion = run.conclusion ?? null;
-        runNumber = run.run_number ?? null;
-        runUrl = run.html_url ?? null;
-      }
-    }
-  } catch {
-    /* sin datos de workflow */
+  if (!data?.ok) {
+    console.error("github-repo-status not ok:", data);
+    return null;
   }
-
   return {
-    commitSha: commit.sha,
-    commitMessage: (commit.commit?.message ?? "").split("\n")[0],
-    commitDate: commit.commit?.author?.date ?? commit.commit?.committer?.date ?? "",
-    hasFix: markerRes.ok,
-    remoteVersion,
-    runSha,
-    runStatus,
-
-    runConclusion,
-    runNumber,
-    runUrl,
+    commitSha: data.commit?.sha ?? "",
+    commitMessage: data.commit?.message ?? "",
+    commitDate: data.commit?.date ?? "",
+    hasFix: Boolean(data.hasFix),
+    remoteVersion: data.remoteVersion ?? null,
+    runSha: data.run?.sha ?? null,
+    runStatus: data.run?.status ?? null,
+    runConclusion: data.run?.conclusion ?? null,
+    runNumber: data.run?.number ?? null,
+    runUrl: data.run?.url ?? null,
   };
 }
 

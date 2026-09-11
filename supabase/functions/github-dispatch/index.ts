@@ -1,7 +1,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 const GATEWAY_URL = 'https://connector-gateway.lovable.dev/github';
-const GITHUB_REPO = 'skymarcosduarte-cpu/safe-guard-link';
+const GITHUB_REPO = 'skymarcosduarte-cpu/safe-guard-link-43a63509';
 
 const ALLOWED_WORKFLOWS: Record<string, string> = {
   android: 'build-android-mesh.yml',
@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
             'X-Connection-Api-Key': GITHUB_API_KEY,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ ref: 'main' }),
+          body: JSON.stringify({ ref: 'newversion' }),
         },
       );
 
