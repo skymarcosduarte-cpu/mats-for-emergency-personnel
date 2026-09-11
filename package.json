@@ -112,5 +112,19 @@
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "brace-expansion": "^1.1.18",
+    "@isaacs/brace-expansion": "^5.0.1",
+    "tar": "^7.5.21",
+    "@xmldom/xmldom": "^0.8.15",
+    "minimatch@9": "9.0.7",
+    "glob@10": "10.5.0",
+    "fflate": "^0.8.3",
+    "ajv@6": "6.14.0",
+    "rollup@4.24.0": "4.62.2",
+    "browserslist": "^4.28.7",
+    "picomatch@4.0.3": "4.0.7",
+    "fast-uri": "^3.1.6"
   }
 }
