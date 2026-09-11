@@ -55,12 +55,25 @@ Deno.serve(async (req) => {
       return { ok: true as const, status: res.status, data: await res.json() };
     };
 
-    // 1) Último commit de la rama
-    const commits = await gh(`repos/${GITHUB_REPO}/commits?sha=${BRANCH}&per_page=1`);
-    if (!commits.ok || !Array.isArray(commits.data) || !commits.data[0]) {
-      return json({ ok: false, error: 'repo_unreachable', status: commits.status }, 200);
+    // 1) Localizar un repo alcanzable y su último commit
+    let GITHUB_REPO: string | null = null;
+    let BRANCH: string | null = null;
+    let commit: Record<string, unknown> | null = null;
+    for (const repo of REPO_CANDIDATES) {
+      for (const branch of BRANCH_CANDIDATES) {
+        const commits = await gh(`repos/${repo}/commits?sha=${branch}&per_page=1`);
+        if (commits.ok && Array.isArray(commits.data) && commits.data[0]) {
+          GITHUB_REPO = repo;
+          BRANCH = branch;
+          commit = commits.data[0];
+          break;
+        }
+      }
+      if (commit) break;
     }
-    const commit = commits.data[0];
+    if (!GITHUB_REPO || !commit) {
+      return json({ ok: false, error: 'repo_unreachable', status: 404 }, 200);
+    }
 
     // 2) Marcador de fix
     const marker = await gh(
