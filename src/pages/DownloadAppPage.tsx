@@ -55,7 +55,8 @@ async function checkApkAvailability(): Promise<{ status: ApkStatus; url: string 
     const { data, error } = await supabase.functions.invoke("github-repo-status", {
       body: {},
     });
-    if (!error && data?.ok && data?.apk?.url) {
+    // Solo se ofrece la descarga si el archivo es accesible sin credenciales.
+    if (!error && data?.ok && data?.apk?.url && data.apk.public !== false) {
       return { status: "ok", url: data.apk.url };
     }
     if (error) console.error("github-repo-status error:", error);
