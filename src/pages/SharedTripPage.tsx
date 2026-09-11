@@ -62,7 +62,10 @@ export default function SharedTripPage() {
         { body: { token: shareToken } },
       );
 
-      const tripData = (fnData as { trip?: any } | null)?.trip ?? null;
+      const fnPayload = fnData as
+        | { trip?: any; positions?: { lat: number; lng: number }[] }
+        | null;
+      const tripData = fnPayload?.trip ?? null;
       if (tripError || !tripData) {
         setError('Viaje no encontrado o ya finalizó');
         setLoading(false);
