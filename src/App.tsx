@@ -41,7 +41,7 @@ const StepByStepGuidePage = lazy(() => import('@/pages/StepByStepGuidePage'));
 const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 const AppInfoPage = lazy(() => import('@/pages/AppInfoPage'));
 import { InstallPrompt } from '@/components/InstallPrompt';
-import { NativeAppNotice } from '@/components/NativeAppNotice';
+
 import { UpdatePrompt, UpdateIndicator } from '@/components/UpdatePrompt';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { ScreenSkeleton, type SkeletonVariant } from '@/components/ScreenSkeletons';
@@ -983,7 +983,7 @@ const App = () => (
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </Suspense>
-          <NativeAppNotice />
+          
         </BrowserRouter>
         <Toaster />
         <Sonner />
