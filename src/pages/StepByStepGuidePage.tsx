@@ -35,8 +35,8 @@ export default function StepByStepGuidePage() {
         filename: `MATS_Guia_Paso_a_Paso_v${APP_VERSION}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] as const },
       };
       await html2pdf().set(options).from(contentRef.current).save();
       toast.success('PDF descargado correctamente');

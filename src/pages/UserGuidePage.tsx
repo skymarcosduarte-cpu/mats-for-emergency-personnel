@@ -63,11 +63,11 @@ export default function UserGuidePage() {
           backgroundColor: '#ffffff'
         },
         jsPDF: { 
-          unit: 'mm', 
-          format: 'a4', 
-          orientation: 'portrait' 
+          unit: 'mm' as const, 
+          format: 'a4' as const, 
+          orientation: 'portrait' as const 
         },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] as const }
       };
 
       await html2pdf().set(options).from(contentRef.current).save();
