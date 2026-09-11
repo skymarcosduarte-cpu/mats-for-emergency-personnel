@@ -5,19 +5,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Direct SSN URLs (https only; the http variant hit the same refused connection)
+// Direct SSN URLs. The HTTPS endpoint currently fails its TLS handshake, while
+// plain HTTP responds normally, so HTTP is tried first.
 const SSN_URLS = [
+  'http://www.ssn.unam.mx/rss/ultimos-sismos.xml',
   'https://www.ssn.unam.mx/rss/ultimos-sismos.xml',
 ];
 
-// Proxy fallbacks (SSN refuses connections from datacenter IPs).
+// Proxy fallbacks (in case direct access is refused from datacenter IPs).
 // corsproxy.io legacy keyless URLs now return 403, so it was removed.
 const PROXY_TEMPLATES = [
   (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
   (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  (url: string) => `https://api.cors.lol/?url=${encodeURIComponent(url)}`,
 ];
 
-const TIMEOUT_MS = 8000;
+const TIMEOUT_MS = 15000;
+
+// Last good feed kept in memory so a transient upstream outage still returns
+// usable (slightly stale) data instead of nothing.
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora
+let lastGood: { xml: string; ts: number } | null = null;
 
 async function tryFetch(url: string, label: string): Promise<string | null> {
   try {
