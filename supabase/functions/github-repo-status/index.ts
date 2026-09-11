@@ -110,20 +110,44 @@ Deno.serve(async (req) => {
       };
     }
 
-    // 5) Última release con APK
-    let apk: { url: string; tag: string; name: string } | null = null;
-    const release = await gh(`repos/${GITHUB_REPO}/releases/latest`);
-    if (release.ok && Array.isArray(release.data?.assets)) {
+    // 5) Última release con APK. El asset de un repo privado NO se puede
+    // descargar desde el navegador (sin credenciales devuelve 404), así que
+    // se revisan todos los repos candidatos y se comprueba de forma anónima
+    // que el archivo sea realmente descargable.
+    const isPubliclyDownloadable = async (url: string) => {
+      try {
+        const res = await fetch(url, {
+          method: 'GET',
+          headers: { Range: 'bytes=0-0' },
+          redirect: 'follow',
+          signal: AbortSignal.timeout(10000),
+        });
+        await res.body?.cancel();
+        return res.ok || res.status === 206;
+      } catch (e) {
+        console.error('APK public check failed:', e instanceof Error ? e.message : e);
+        return false;
+      }
+    };
+
+    let apk: { url: string; tag: string; name: string; repo: string; public: boolean } | null = null;
+    for (const repo of REPO_CANDIDATES) {
+      const release = await gh(`repos/${repo}/releases/latest`);
+      if (!release.ok || !Array.isArray(release.data?.assets)) continue;
       const asset = release.data.assets.find((a: { name?: string }) =>
         a?.name?.toLowerCase().endsWith('.apk'),
       );
-      if (asset?.browser_download_url) {
-        apk = {
-          url: asset.browser_download_url,
-          tag: release.data.tag_name ?? '',
-          name: asset.name,
-        };
-      }
+      if (!asset?.browser_download_url) continue;
+
+      const candidate = {
+        url: asset.browser_download_url as string,
+        tag: release.data.tag_name ?? '',
+        name: asset.name as string,
+        repo,
+        public: await isPubliclyDownloadable(asset.browser_download_url),
+      };
+      if (!apk || (candidate.public && !apk.public)) apk = candidate;
+      if (candidate.public) break;
     }
 
     return json({
