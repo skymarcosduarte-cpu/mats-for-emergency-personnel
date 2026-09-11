@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { APP_VERSION } from "@/lib/versionCheck";
 
-const GITHUB_REPO = "skymarcosduarte-cpu/safe-guard-link-43a63509";
+const GITHUB_REPO = "skymarcosduarte-cpu/safe-guard-link";
 const WORKFLOW_FILE = "build-android-mesh.yml";
 /** Archivo que solo existe en la versión corregida del proyecto. */
 const MARKER_PATH = "native-plugins/write-android-mainactivity.mjs";
