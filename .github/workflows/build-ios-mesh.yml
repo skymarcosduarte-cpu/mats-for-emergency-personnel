@@ -217,4 +217,4 @@ jobs:
           fi
           echo "IPA generado correctamente."
 
-# sync-trigger 2026-09-11T02:40Z v2.9.5 force-sync
+# sync-trigger 2026-09-11T02:56Z v2.9.5 force-sync
