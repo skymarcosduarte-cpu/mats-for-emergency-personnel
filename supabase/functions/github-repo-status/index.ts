@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     // 1) Localizar un repo alcanzable y su último commit
     let GITHUB_REPO: string | null = null;
     let BRANCH: string | null = null;
-    let commit: Record<string, unknown> | null = null;
+    let commit: any = null;
     for (const repo of REPO_CANDIDATES) {
       for (const branch of BRANCH_CANDIDATES) {
         const commits = await gh(`repos/${repo}/commits?sha=${branch}&per_page=1`);
