@@ -19,12 +19,12 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-// Repositorio público: sus releases sí se pueden descargar sin credenciales.
-// (El repo privado conectado a Lovable devuelve 404 en el navegador.)
-const GITHUB_PUBLIC_REPO = "skymarcosduarte-cpu/safe-guard-link";
-const APK_FALLBACK_URL = `https://github.com/${GITHUB_PUBLIC_REPO}/releases/latest/download/MATS-RedMesh.apk`;
-const CACHE_KEY = "mats-apk-check-v1";
+// No se usa ninguna URL fija de descarga: un enlace tipo
+// `releases/latest/download/MATS-RedMesh.apk` puede resolver a un build viejo.
+// La URL siempre viene del asset de la release más reciente verificada en el servidor.
+const CACHE_KEY = "mats-apk-check-v2";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutos
+
 
 type Platform = "android" | "ios" | "desktop";
 type ApkStatus = "checking" | "ok" | "unavailable";
