@@ -20,6 +20,10 @@ const BRANCH_CANDIDATES = ['newversion', 'mesh', 'main'];
 const WORKFLOW_FILE = 'build-android-mesh.yml';
 const MARKER_PATH = 'native-plugins/write-android-mainactivity.mjs';
 const VERSION_PATH = 'src/lib/versionCheck.ts';
+// Versión mínima aceptable de un APK publicado: cualquier asset anterior
+// (o sin versión en el nombre) se ignora para no ofrecer nunca la 2.9.0.
+const MIN_APK_VERSION = 2 * 1e6 + 9 * 1e3 + 5; // 2.9.5
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
