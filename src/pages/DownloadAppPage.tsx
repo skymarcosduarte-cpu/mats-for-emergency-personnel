@@ -19,19 +19,19 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-// Repositorio público: sus releases sí se pueden descargar sin credenciales.
-// (El repo privado conectado a Lovable devuelve 404 en el navegador.)
-const GITHUB_PUBLIC_REPO = "skymarcosduarte-cpu/safe-guard-link";
-const APK_FALLBACK_URL = `https://github.com/${GITHUB_PUBLIC_REPO}/releases/latest/download/MATS-RedMesh.apk`;
-const CACHE_KEY = "mats-apk-check-v1";
+// No se usa ninguna URL fija de descarga: un enlace tipo
+// `releases/latest/download/MATS-RedMesh.apk` puede resolver a un build viejo.
+// La URL siempre viene del asset de la release más reciente verificada en el servidor.
+const CACHE_KEY = "mats-apk-check-v2";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutos
+
 
 type Platform = "android" | "ios" | "desktop";
 type ApkStatus = "checking" | "ok" | "unavailable";
 
 interface CachedResult {
   status: ApkStatus;
-  url: string;
+  url: string | null;
   ts: number;
 }
 
@@ -50,20 +50,20 @@ function detectPlatform(): Platform {
  * GitHub no puede verlo, así que la consulta autenticada se hace del lado
  * del servidor con la conexión de GitHub del proyecto.
  */
-async function checkApkAvailability(): Promise<{ status: ApkStatus; url: string }> {
+async function checkApkAvailability(): Promise<{ status: ApkStatus; url: string | null; version?: string }> {
   try {
     const { data, error } = await supabase.functions.invoke("github-repo-status", {
       body: {},
     });
     // Solo se ofrece la descarga si el archivo es accesible sin credenciales.
     if (!error && data?.ok && data?.apk?.url && data.apk.public !== false) {
-      return { status: "ok", url: data.apk.url };
+      return { status: "ok", url: data.apk.url, version: data.apk.name };
     }
     if (error) console.error("github-repo-status error:", error);
   } catch (e) {
     console.error("github-repo-status fetch error:", e);
   }
-  return { status: "unavailable", url: APK_FALLBACK_URL };
+  return { status: "unavailable", url: null };
 }
 
 function readCache(): CachedResult | null {
@@ -78,7 +78,7 @@ function readCache(): CachedResult | null {
   }
 }
 
-function writeCache(result: { status: ApkStatus; url: string }) {
+function writeCache(result: { status: ApkStatus; url: string | null }) {
   try {
     const entry: CachedResult = { ...result, ts: Date.now() };
     sessionStorage.setItem(CACHE_KEY, JSON.stringify(entry));
@@ -90,7 +90,7 @@ function writeCache(result: { status: ApkStatus; url: string }) {
 export default function DownloadAppPage() {
   const [platform, setPlatform] = useState<Platform>("desktop");
   const [qr, setQr] = useState<string | null>(null);
-  const [apkUrl, setApkUrl] = useState<string>(APK_FALLBACK_URL);
+  const [apkUrl, setApkUrl] = useState<string | null>(null);
   const [apkStatus, setApkStatus] = useState<ApkStatus>("checking");
   const [isChecking, setIsChecking] = useState(false);
 
@@ -223,9 +223,9 @@ export default function DownloadAppPage() {
                 asChild
                 size="lg"
                 className="h-14 w-full text-lg"
-                disabled={apkStatus === "checking"}
+                disabled={apkStatus === "checking" || !apkUrl}
               >
-                <a href={apkUrl}>
+                <a href={apkUrl ?? "#"}>
                   <Download className="mr-2 h-6 w-6" />
                   {apkStatus === "checking" ? "Verificando descarga..." : "Descargar app para Android"}
                 </a>

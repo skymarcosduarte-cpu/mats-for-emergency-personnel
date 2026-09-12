@@ -20,6 +20,10 @@ const BRANCH_CANDIDATES = ['newversion', 'mesh', 'main'];
 const WORKFLOW_FILE = 'build-android-mesh.yml';
 const MARKER_PATH = 'native-plugins/write-android-mainactivity.mjs';
 const VERSION_PATH = 'src/lib/versionCheck.ts';
+// Versión mínima aceptable de un APK publicado: cualquier asset anterior
+// (o sin versión en el nombre) se ignora para no ofrecer nunca la 2.9.0.
+const MIN_APK_VERSION = 2 * 1e6 + 9 * 1e3 + 5; // 2.9.5
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -130,25 +134,63 @@ Deno.serve(async (req) => {
       }
     };
 
-    let apk: { url: string; tag: string; name: string; repo: string; public: boolean } | null = null;
-    for (const repo of REPO_CANDIDATES) {
-      const release = await gh(`repos/${repo}/releases/latest`);
-      if (!release.ok || !Array.isArray(release.data?.assets)) continue;
-      const asset = release.data.assets.find((a: { name?: string }) =>
-        a?.name?.toLowerCase().endsWith('.apk'),
-      );
-      if (!asset?.browser_download_url) continue;
+    // Versión declarada en el nombre del asset (MATS-RedMesh-v2.9.5-...apk)
+    const assetVersion = (name: string) => {
+      const m = name.match(/v?(\d+)\.(\d+)\.(\d+)/);
+      return m ? Number(m[1]) * 1e6 + Number(m[2]) * 1e3 + Number(m[3]) : -1;
+    };
 
-      const candidate = {
-        url: asset.browser_download_url as string,
-        tag: release.data.tag_name ?? '',
-        name: asset.name as string,
-        repo,
-        public: await isPubliclyDownloadable(asset.browser_download_url),
-      };
-      if (!apk || (candidate.public && !apk.public)) apk = candidate;
-      if (candidate.public) break;
+    type Apk = {
+      url: string; tag: string; name: string; repo: string;
+      public: boolean; publishedAt: string; version: number;
+    };
+
+    let apk: Apk | null = null;
+    for (const repo of REPO_CANDIDATES) {
+      // Todas las releases (no solo "latest"): se elige la más reciente por
+      // versión del asset y, en empate, por fecha de publicación.
+      const releases = await gh(`repos/${repo}/releases?per_page=30`);
+      if (!releases.ok || !Array.isArray(releases.data)) continue;
+
+      const candidates: Omit<Apk, 'public'>[] = [];
+      for (const rel of releases.data) {
+        if (rel?.draft) continue;
+        const assets = Array.isArray(rel.assets) ? rel.assets : [];
+        for (const a of assets) {
+          const name = String(a?.name ?? '');
+          if (!name.toLowerCase().endsWith('.apk') || !a?.browser_download_url) continue;
+          const version = assetVersion(name);
+          // Se descartan los APK sin versión en el nombre (builds antiguos como
+          // "MATS-RedMesh.apk", que contienen 2.9.0) y los anteriores al mínimo.
+          if (version < MIN_APK_VERSION) continue;
+          candidates.push({
+            url: a.browser_download_url as string,
+            tag: rel.tag_name ?? '',
+            name,
+            repo,
+            publishedAt: rel.published_at ?? rel.created_at ?? '',
+            version,
+          });
+        }
+      }
+
+
+      candidates.sort((a, b) =>
+        b.version - a.version ||
+        new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+      );
+
+      for (const c of candidates) {
+        const isPublic = await isPubliclyDownloadable(c.url);
+        const candidate: Apk = { ...c, public: isPublic };
+        if (!apk || (isPublic && !apk.public) || (isPublic === apk.public && c.version > apk.version)) {
+          apk = candidate;
+        }
+        if (isPublic) break;
+      }
+      if (apk?.public) break;
     }
+
 
     return json({
       ok: true,
