@@ -8,6 +8,11 @@ name: Build APK con Red Mesh
 
 on:
   workflow_dispatch:
+    inputs:
+      expected_version:
+        description: 'Versión que debe contener el APK (evita compilar código antiguo)'
+        required: true
+        default: '2.9.5'
   push:
     tags:
       - 'apk-*'
@@ -51,7 +56,14 @@ jobs:
           set -euo pipefail
           APP_VERSION=$(node -e "const s=require('fs').readFileSync('src/lib/versionCheck.ts','utf8');console.log(s.match(/APP_VERSION\s*=\s*'([^']+)'/)[1])")
           echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
           echo "Compilando MATS v$APP_VERSION"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "$APP_VERSION" != "${{ inputs.expected_version }}" ]; then
+            echo "ERROR: la rama seleccionada contiene MATS v$APP_VERSION, pero solicitaste v${{ inputs.expected_version }}."
+            echo "No se generará otro APK antiguo. Sincroniza la rama correcta antes de compilar."
+            exit 1
+          fi
           grep -Rqs "BUZÓN DE MENSAJES MESH" dist/assets || {
             echo "Error: el buzón Mesh no está en el bundle compilado"; exit 1; }
           grep -Rqs "MESH_HELLO" dist/assets || {
@@ -228,14 +240,26 @@ jobs:
 
       - name: Renombrar APK
         run: |
+          set -euo pipefail
           mkdir -p release
-          cp android/app/build/outputs/apk/debug/*.apk release/MATS-RedMesh.apk
+          APK_NAME="MATS-RedMesh-v${APP_VERSION}-build${{ github.run_number }}-${SHORT_SHA}.apk"
+          cp android/app/build/outputs/apk/debug/*.apk "release/$APK_NAME"
+          echo "APK_NAME=$APK_NAME" >> "$GITHUB_ENV"
+
+          # Verifica la versión grabada dentro del APK, no solo la del código fuente.
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          test -n "$AAPT"
+          "$AAPT" dump badging "release/$APK_NAME" | tee release/apk-info.txt
+          "$AAPT" dump badging "release/$APK_NAME" | grep -q "versionName='${APP_VERSION}'" || {
+            echo "ERROR: el APK no contiene versionName=${APP_VERSION}"; exit 1; }
 
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: MATS-mesh-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: MATS-RedMesh-v${{ env.APP_VERSION }}-build${{ github.run_number }}-${{ env.SHORT_SHA }}
+          path: |
+            release/${{ env.APK_NAME }}
+            release/apk-info.txt
           retention-days: 30
           if-no-files-found: error
 
@@ -255,7 +279,7 @@ jobs:
             2. Ábrelo en tu Android (acepta "instalar apps desconocidas")
             3. Si Google Play Protect lo bloquea, toca "Instalar de todos modos"
             4. Abre la app → Red Mesh → activa el interruptor
-          files: release/MATS-RedMesh.apk
+          files: release/${{ env.APK_NAME }}
           prerelease: false
           make_latest: true
           token: ${{ secrets.GITHUB_TOKEN }}
