@@ -155,16 +155,21 @@ Deno.serve(async (req) => {
         for (const a of assets) {
           const name = String(a?.name ?? '');
           if (!name.toLowerCase().endsWith('.apk') || !a?.browser_download_url) continue;
+          const version = assetVersion(name);
+          // Se descartan los APK sin versión en el nombre (builds antiguos como
+          // "MATS-RedMesh.apk", que contienen 2.9.0) y los anteriores al mínimo.
+          if (version < MIN_APK_VERSION) continue;
           candidates.push({
             url: a.browser_download_url as string,
             tag: rel.tag_name ?? '',
             name,
             repo,
             publishedAt: rel.published_at ?? rel.created_at ?? '',
-            version: assetVersion(name),
+            version,
           });
         }
       }
+
 
       candidates.sort((a, b) =>
         b.version - a.version ||
