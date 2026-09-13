@@ -258,7 +258,7 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
     let audioUrl: string | null = null;
 
     if (imageFile) {
-      const fileName = `clave100/${user?.id}/${Date.now()}_image.jpg`;
+      const fileName = `${user?.id}/clave100/${Date.now()}_image.jpg`;
       const { data, error } = await supabase.storage
         .from('reports_media')
         .upload(fileName, imageFile, { contentType: imageFile.type });
@@ -273,7 +273,7 @@ export const Clave100Dialog: React.FC<Clave100DialogProps> = ({ isOpen, onClose 
     }
 
     if (audioBlob) {
-      const fileName = `clave100/${user?.id}/${Date.now()}_audio.webm`;
+      const fileName = `${user?.id}/clave100/${Date.now()}_audio.webm`;
       const { data, error } = await supabase.storage
         .from('reports_media')
         .upload(fileName, audioBlob, { contentType: 'audio/webm' });

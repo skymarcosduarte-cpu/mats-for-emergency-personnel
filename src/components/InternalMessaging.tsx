@@ -680,7 +680,7 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
       else if (mimeType.includes('wav')) ext = 'wav';
       
       // Upload to Supabase storage
-      const fileName = `voice_messages/${user.id}/${Date.now()}.${ext}`;
+      const fileName = `${user.id}/voice_messages/${Date.now()}.${ext}`;
       
       const { error: uploadError } = await supabase.storage
         .from('reports_media')

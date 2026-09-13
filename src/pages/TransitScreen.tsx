@@ -640,7 +640,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         try {
           const photo = vehiclePhoto[0];
           const fileName = `vehicle_${user.id}_${Date.now()}_${photo.name || 'photo.jpg'}`;
-          const filePath = `transit-photos/${fileName}`;
+          const filePath = `${user.id}/transit-photos/${fileName}`;
 
           const { error: uploadError } = await supabase.storage
             .from('reports_media')
@@ -668,7 +668,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         try {
           const photo = boardingPassPhoto[0];
           const fileName = `boarding_${user.id}_${Date.now()}_${photo.name || 'boarding.jpg'}`;
-          const filePath = `transit-photos/${fileName}`;
+          const filePath = `${user.id}/transit-photos/${fileName}`;
 
           const { error: uploadError } = await supabase.storage
             .from('reports_media')
@@ -855,7 +855,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
       if (reportImages.length > 0 && reportData) {
         for (const image of reportImages) {
           const fileName = `report_${reportData.id}_${Date.now()}_${image.name}`;
-          const filePath = `road-reports/${fileName}`;
+          const filePath = `${user.id}/road-reports/${fileName}`;
           
           const { error: uploadError } = await supabase.storage
             .from('reports_media')
@@ -881,7 +881,7 @@ export const TransitScreen: React.FC<TransitScreenProps> = ({
         const mimeType = reportAudio.blob.type || 'audio/webm';
         const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
         const fileName = `report_${reportData.id}_${Date.now()}.${ext}`;
-        const filePath = `road-reports/${fileName}`;
+        const filePath = `${user.id}/road-reports/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('reports_media')

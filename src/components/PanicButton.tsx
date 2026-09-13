@@ -481,10 +481,15 @@ export const PanicButton: React.FC<PanicButtonProps> = ({
   // Upload audio to storage
   const uploadAudio = async (blob: Blob, panicEventId: string): Promise<string | null> => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.warn('[PanicButton] No authenticated user for audio upload');
+        return null;
+      }
       const mimeType = blob.type || 'audio/webm';
       const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
       const fileName = `panic_${panicEventId}_${Date.now()}.${ext}`;
-      const filePath = `panic-audio/${fileName}`;
+      const filePath = `${user.id}/panic-audio/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('reports_media')
