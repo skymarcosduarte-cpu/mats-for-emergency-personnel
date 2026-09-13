@@ -328,7 +328,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
 
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('reports_media')
-          .upload(`audio/${audioFileName}`, help14Audio.blob, {
+          .upload(`${user.id}/audio/${audioFileName}`, help14Audio.blob, {
             contentType: mimeType,
             upsert: false,
           });
@@ -367,7 +367,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       if (help14Images.length > 0 && newRequest) {
         for (let i = 0; i < help14Images.length; i++) {
           const image = help14Images[i];
-          const imagePath = `images/${newRequest.id}/${i}-${Date.now()}.jpg`;
+          const imagePath = `${user.id}/images/${newRequest.id}/${i}-${Date.now()}.jpg`;
           
           await supabase.storage
             .from('reports_media')
