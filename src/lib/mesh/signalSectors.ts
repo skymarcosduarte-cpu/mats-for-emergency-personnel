@@ -68,6 +68,20 @@ export class SectorGrid {
     };
   }
 
+  /** Rectángulo geográfico de una celda (para dibujarla en el mapa) */
+  private boundsFor(row: number, col: number): SectorBounds {
+    const origin = this.origin ?? { lat: 0, lng: 0 };
+    const latStep = SECTOR_SIZE_M / 111320;
+    const lngStep =
+      SECTOR_SIZE_M / (111320 * Math.max(0.1, Math.cos((origin.lat * Math.PI) / 180)));
+    return {
+      north: origin.lat - row * latStep,
+      south: origin.lat - (row + 1) * latStep,
+      west: origin.lng + col * lngStep,
+      east: origin.lng + (col + 1) * lngStep,
+    };
+  }
+
   record(params: {
     lat: number;
     lng: number;
@@ -81,6 +95,7 @@ export class SectorGrid {
     const cell: SectorCell = prev ?? {
       row,
       col,
+      bounds: this.boundsFor(row, col),
       label: labelFor(row, col),
       bestRssi: params.rssi,
       devices: new Set<string>(),
