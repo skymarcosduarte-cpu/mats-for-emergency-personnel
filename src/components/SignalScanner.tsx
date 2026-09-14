@@ -205,6 +205,11 @@ export const SignalScanner: React.FC = () => {
                       {signal.isMats && (
                         <Badge className="ml-2 bg-primary text-primary-foreground">M.A.T.S.</Badge>
                       )}
+                      {signal.sustained && (
+                        <Badge className="ml-2 bg-destructive text-destructive-foreground">
+                          <Clock className="w-3 h-3 mr-1" /> SOSTENIDA
+                        </Badge>
+                      )}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       ≈ {signal.distanceM} m · {signal.rssi} dBm · {signal.hits} lecturas
