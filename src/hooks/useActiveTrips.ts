@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { rpcWithAuthRetry } from '@/lib/rpcWithAuthRetry';
 import { calculateDistance } from '@/hooks/useLocation';
 import { getCachedCommunityTrips, cacheCommunityTrips } from '@/lib/offlineDataCache';
 import { applyPositionEstimation, type EstimatedPosition, type PositionHistoryPoint } from '@/hooks/usePositionEstimation';

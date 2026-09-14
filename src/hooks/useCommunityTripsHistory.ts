@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { rpcWithAuthRetry } from '@/lib/rpcWithAuthRetry';
 
 export interface CommunityTripHistory {
   id: string;
