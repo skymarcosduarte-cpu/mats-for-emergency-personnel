@@ -38,10 +38,10 @@ export function getSectorOverlay(): SectorOverlayCell[] {
 
 export function publishSectorOverlay(snapshot: SectorSnapshot): void {
   const { cells, hot } = snapshot;
-  if (cells.length === 0) {
-    clearSectorOverlay();
-    return;
-  }
+  // Un snapshot vacío NO borra lo guardado: al reabrir el detector la
+  // cuadrícula en memoria empieza vacía pero el mapa guardado (6 h) debe
+  // sobrevivir. El borrado sólo ocurre con clearSectorOverlay() explícito.
+  if (cells.length === 0) return;
   const maxScore = Math.max(...cells.map((c) => SectorGrid.score(c)), 1);
   const payload: SectorOverlay = {
     updatedAt: Date.now(),
