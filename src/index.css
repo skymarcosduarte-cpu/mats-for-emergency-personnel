@@ -52,6 +52,10 @@
     --panic-glow: 15 100% 55%;
     --safe: 142 80% 40%;
     --safe-glow: 142 90% 45%;
+    /* Rosa mexicano: módulo Detector de Señales */
+    --rosa-mexicano: 328 100% 45%;
+    --rosa-mexicano-glow: 328 100% 55%;
+    --rosa-mexicano-foreground: 0 0% 100%;
     --warning: 45 100% 50%;
     --warning-glow: 45 100% 55%;
     --help-14: 0 95% 50%;
