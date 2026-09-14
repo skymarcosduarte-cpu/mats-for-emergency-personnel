@@ -211,6 +211,12 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
           <MeshBridgeStatus />
         </section>
 
+        {/* Detector / Buscador de señales Bluetooth cercanas */}
+        <section aria-label="Detector de señales">
+          <SignalScanner />
+        </section>
+
+
 
         {/* Disaster Mode Banner */}
         {disasterMode && (
