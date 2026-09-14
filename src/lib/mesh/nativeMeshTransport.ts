@@ -38,6 +38,7 @@ import {
 import { signFrame, verifyFrame } from './auth';
 import { getBackgroundMode, startBackground, stopBackground } from './background';
 import { logMesh } from './meshDiagnostics';
+import { bleScanBus } from './bleScanBus';
 import {
   createMeshReceipt,
   markMeshConfirmed,
@@ -222,6 +223,7 @@ export class NativeMeshTransport implements MeshTransport {
     void stopBackground();
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+    void bleScanBus.release('mesh');
     this.ble?.stopLEScan().catch(() => undefined);
     this.advertiser?.stop().catch(() => undefined);
   }
@@ -338,7 +340,9 @@ export class NativeMeshTransport implements MeshTransport {
       // Escuchar primero y emitir mientras el escáner está activo. Antes ambos
       // teléfonos emitían, esperaban y luego escuchaban en ciclos iguales, por
       // lo que podían alternarse para siempre sin oírse entre sí.
-      await this.ble.requestLEScan({ allowDuplicates: true }, (result) => {
+      // El escaneo pasa por el bus compartido para no pelear con el
+      // Detector de Señales: un solo escaneo físico, varios escuchas.
+      await bleScanBus.acquire('mesh', (result) => {
         const data = result.manufacturerData?.[String(MESH_MANUFACTURER_ID)];
         if (!data) return;
         void this.handleIncoming(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
@@ -350,7 +354,7 @@ export class NativeMeshTransport implements MeshTransport {
       // Jitter independiente evita que dos equipos con ciclos iniciados a la
       // vez vuelvan a sincronizarse después de una pausa.
       await wait(cycle.scanMs + Math.floor(Math.random() * 1200));
-      await this.ble.stopLEScan();
+      await bleScanBus.release('mesh');
       if (this.advertiser) this.lastError = null;
     } catch (error) {
       console.warn('[mesh] ciclo de escaneo falló:', error);

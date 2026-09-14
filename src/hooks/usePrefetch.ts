@@ -3,6 +3,7 @@
 
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { rpcWithAuthRetry } from '@/lib/rpcWithAuthRetry';
 import { 
   cacheUserLocations, 
   cacheCommunityTrips,
@@ -42,7 +43,7 @@ export function usePrefetch(userId: string | undefined, refreshTrigger?: Date | 
             .from('user_locations_with_roles')
             .select('*'),
           // Active community trips (via safe RPC that excludes sensitive columns)
-          supabase.rpc('get_community_trips'),
+          rpcWithAuthRetry<any[]>('get_community_trips'),
         ]);
 
         // Cache locations

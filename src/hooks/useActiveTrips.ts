@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { rpcWithAuthRetry } from '@/lib/rpcWithAuthRetry';
 import { calculateDistance } from '@/hooks/useLocation';
 import { getCachedCommunityTrips, cacheCommunityTrips } from '@/lib/offlineDataCache';
 import { applyPositionEstimation, type EstimatedPosition, type PositionHistoryPoint } from '@/hooks/usePositionEstimation';
@@ -129,8 +130,7 @@ export function useActiveTrips() {
       // excludes sensitive columns (boarding_pass_url, vehicle_photo_url,
       // share_token) so any authenticated user can see the community feed
       // without exposing private data.
-      const { data: rpcData, error: tripsError } = await supabase
-        .rpc('get_community_trips');
+      const { data: rpcData, error: tripsError } = await rpcWithAuthRetry<any[]>('get_community_trips');
 
       if (tripsError) throw tripsError;
 
