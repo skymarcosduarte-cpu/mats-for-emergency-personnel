@@ -592,7 +592,7 @@ export class NativeMeshTransport implements MeshTransport {
 
 /** Extrae el msgId de una clave de la bandeja: `origin:msgId:sufijo`. */
 function msgIdFromKey(key: string): number | null {
-  if (key.startsWith('ack:') || key.startsWith('hello:')) return null;
+  if (key.startsWith('ack:') || key.startsWith('hello:') || key.startsWith('frag:')) return null;
   const parts = key.split(':');
   if (parts.length < 3) return null;
   const id = Number(parts[1]);
