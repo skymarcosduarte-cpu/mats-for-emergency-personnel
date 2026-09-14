@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import 'leaflet/dist/leaflet.css';
 import { getMeshPins, MESH_PINS_EVENT, MESH_FOCUS_EVENT, consumePendingMeshFocus, type MeshPin } from '@/lib/meshPins';
+import { getSectorOverlay, SIGNAL_SECTORS_EVENT, sectorColor, type SectorOverlayCell } from '@/lib/mesh/signalSectorOverlay';
 
 // Sanitize user content for safe HTML rendering
 const sanitize = (text: string | null | undefined): string => {
