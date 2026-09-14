@@ -34,6 +34,8 @@ export interface DetectedSignal {
   lastSeen: number;
   /** Número de anuncios oídos: más muestras = detección más confiable */
   hits: number;
+  /** Presencia sostenida en el tiempo: indicio fuerte, no un transeúnte */
+  sustained: boolean;
 }
 
 export type SignalStrength = 'inmediato' | 'muy-cerca' | 'cerca' | 'lejano';
