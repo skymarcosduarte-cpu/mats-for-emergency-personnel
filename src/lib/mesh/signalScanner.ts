@@ -10,6 +10,12 @@
 // - iOS restringe el escaneo en segundo plano; funciona con la app abierta.
 
 import { MESH_MANUFACTURER_ID } from './protocol';
+import { SectorGrid, type SectorSnapshot } from './signalSectors';
+
+/** Un indicio se considera "sostenido" (probable persona bajo escombros) cuando
+ *  se oye repetidamente durante al menos este tiempo. Descarta transeúntes. */
+export const SUSTAINED_MS = 25 * 1000;
+export const SUSTAINED_HITS = 6;
 
 export interface DetectedSignal {
   /** Identificador del dispositivo (aleatorio/rotativo en la mayoría de equipos) */
