@@ -154,9 +154,9 @@ class SignalScanner {
         /* isEnabled no disponible en algunas plataformas */
       }
 
-      await BleClient.requestLEScan({ allowDuplicates: true }, (result) =>
-        this.handleResult(result as unknown as ScanResultLike),
-      );
+      // Escaneo a través del bus compartido: si la Red Mesh está escuchando,
+      // ambos reciben los anuncios sin pisarse el escáner.
+      await bleScanBus.acquire('detector', (result) => this.handleResult(result));
 
       this.scanning = true;
       this.lastError = null;
@@ -183,7 +183,7 @@ class SignalScanner {
     }
     this.scanning = false;
     try {
-      await this.ble?.stopLEScan();
+      await bleScanBus.release('detector');
     } catch {
       /* ya estaba detenido */
     }
