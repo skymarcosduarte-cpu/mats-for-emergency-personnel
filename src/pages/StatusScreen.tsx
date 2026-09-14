@@ -19,6 +19,8 @@ import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { MeshInbox } from '@/components/MeshInbox';
 import { MeshSendStatus } from '@/components/MeshSendStatus';
 import { MeshBridgeStatus } from '@/components/MeshBridgeStatus';
+import { SignalScanner } from '@/components/SignalScanner';
+
 import type { UserRole, StatusType, MeshEnvelope } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
