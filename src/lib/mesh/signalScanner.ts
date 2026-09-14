@@ -82,6 +82,17 @@ class SignalScanner {
   private listeners = new Set<Listener>();
   private sweep: ReturnType<typeof setInterval> | null = null;
   private lastError: string | null = null;
+  private grid = new SectorGrid();
+  private position: { lat: number; lng: number } | null = null;
+
+  /** El componente alimenta la ubicación GPS actual para el mapa de sectores */
+  setPosition(position: { lat: number; lng: number } | null): void {
+    this.position = position;
+  }
+
+  getSectors(): SectorSnapshot {
+    return this.grid.snapshot();
+  }
 
   isNative(): boolean {
     const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
