@@ -105,6 +105,18 @@ SECTIONS.push({
   iconBg: 'home-section-icon-mesh',
 });
 
+// Detector de Señales: feature más de la cuadrícula (abajo a la derecha),
+// navega a Red Mesh donde vive el módulo.
+SECTIONS.push({
+  id: 'status',
+  nav: 'status',
+  label: 'Detector de Señales',
+  icon: <Radar className="w-10 h-10" strokeWidth={2.5} />,
+  description: 'Busca celulares encendidos entre escombros',
+  gradient: 'home-section-detector',
+  iconBg: 'home-section-icon-detector',
+});
+
 // Types for emergency alerts
 interface EmergencyAlert {
   id: string;
@@ -520,27 +532,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
             <ChevronRight className="w-6 h-6 text-muted-foreground" />
           </div>
         </button>
-
-        {/* Detector de Señales (rosa mexicano) */}
-        <motion.button
-          onClick={() => onNavigate('status')}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
-          className="w-full rounded-2xl p-5 text-left bg-rosa text-rosa-foreground border-2 border-rosa shadow-lg"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-rosa-foreground/20 flex items-center justify-center shrink-0">
-              <Radar className="w-8 h-8" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-xl font-bold leading-tight">Detector de Señales</h3>
-              <p className="text-sm opacity-90 leading-snug">
-                Busca celulares encendidos entre escombros para orientar la búsqueda.
-              </p>
-            </div>
-            <ChevronRight className="w-6 h-6 shrink-0" />
-          </div>
-        </motion.button>
 
         {/* Sections Grid */}
         <div className="space-y-4">
