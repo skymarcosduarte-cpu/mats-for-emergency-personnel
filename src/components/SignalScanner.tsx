@@ -56,7 +56,10 @@ export const SignalScanner: React.FC = () => {
   useEffect(() => {
     const unsubscribe = signalScanner.subscribe((next) => {
       setSignals(next);
-      setSectors(signalScanner.getSectors());
+      const snapshot = signalScanner.getSectors();
+      setSectors(snapshot);
+      // Publica la cuadrícula para dibujarla sobre el mapa en vivo
+      publishSectorOverlay(snapshot);
       setScanning(signalScanner.isScanning());
       setError(signalScanner.getLastError());
     });
