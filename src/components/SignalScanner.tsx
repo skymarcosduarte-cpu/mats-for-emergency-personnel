@@ -154,6 +154,22 @@ export const SignalScanner: React.FC = () => {
             <p className="text-sm text-muted-foreground">
               {SIGNAL_LABELS[classifySignal(strongest.rssi)]}
             </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              {signals.length} dispositivo{signals.length === 1 ? '' : 's'} en escucha ·{' '}
+              {sustainedCount} con presencia sostenida
+            </p>
+          </div>
+        )}
+
+        <SignalSectorMap snapshot={sectors} />
+
+        {scanning && !position && (
+          <div className="flex gap-2 p-3 rounded-lg bg-muted text-xs text-muted-foreground">
+            <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>
+              Activa el GPS para armar el mapa de sectores: camina despacio por la zona y las
+              celdas se irán coloreando según los indicios.
+            </span>
           </div>
         )}
 
