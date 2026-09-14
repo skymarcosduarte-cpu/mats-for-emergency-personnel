@@ -454,6 +454,13 @@ export class NativeMeshTransport implements MeshTransport {
       2
     );
 
+    // Store-and-forward de los fragmentos: los mensajes con texto viajan en
+    // fragmentos y antes NO se retransmitían, así que sólo llegaban al vecino
+    // directo (un salto). Ahora cada nodo los reemite una sola vez, de modo
+    // que el mensaje salta de teléfono en teléfono como el paquete compacto.
+    await this.relayFragment(frame, bytes);
+
+
     if (!complete) return;
     if (await markSeen(frame.msgId ^ 0x5f5f5f5f)) return; // separate namespace for reassembled payloads
     try {
