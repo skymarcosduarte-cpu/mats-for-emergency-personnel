@@ -49,18 +49,26 @@ export const SignalScanner: React.FC = () => {
   const [scanning, setScanning] = useState(signalScanner.isScanning());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(signalScanner.getLastError());
+  const [sectors, setSectors] = useState<SectorSnapshot>(signalScanner.getSectors());
   const { position } = useLocation();
 
   useEffect(() => {
     const unsubscribe = signalScanner.subscribe((next) => {
       setSignals(next);
+      setSectors(signalScanner.getSectors());
       setScanning(signalScanner.isScanning());
       setError(signalScanner.getLastError());
     });
     return unsubscribe;
   }, []);
 
+  // Alimenta la posición GPS para que cada lectura caiga en su sector
+  useEffect(() => {
+    signalScanner.setPosition(position ? { lat: position.lat, lng: position.lng } : null);
+  }, [position]);
+
   const strongest = useMemo(() => signals[0] ?? null, [signals]);
+  const sustainedCount = useMemo(() => signals.filter((s) => s.sustained).length, [signals]);
 
   const handleToggle = async () => {
     setBusy(true);
