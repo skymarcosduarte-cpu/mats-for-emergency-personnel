@@ -198,6 +198,9 @@ class SignalScanner {
     const isMats = Boolean(result.manufacturerData?.[String(MESH_MANUFACTURER_ID)]);
     const now = Date.now();
     const prev = this.signals.get(id);
+    const firstSeen = prev?.firstSeen ?? now;
+    const hits = (prev?.hits ?? 0) + 1;
+    const sustained = hits >= SUSTAINED_HITS && now - firstSeen >= SUSTAINED_MS;
 
     this.signals.set(id, {
       id,
@@ -206,10 +209,21 @@ class SignalScanner {
       bestRssi: prev ? Math.max(prev.bestRssi, rssi) : rssi,
       distanceM: estimateDistance(rssi),
       isMats: isMats || Boolean(prev?.isMats),
-      firstSeen: prev?.firstSeen ?? now,
+      firstSeen,
       lastSeen: now,
-      hits: (prev?.hits ?? 0) + 1,
+      hits,
+      sustained,
     });
+
+    if (this.position) {
+      this.grid.record({
+        lat: this.position.lat,
+        lng: this.position.lng,
+        rssi,
+        deviceId: id,
+        sustained,
+      });
+    }
   }
 
   private emit() {
