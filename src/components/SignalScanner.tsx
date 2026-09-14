@@ -2,7 +2,20 @@
 // para apoyo en zonas de derrumbe. Pensado para rescatistas.
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Radar, Loader2, Play, Square, MapPin, Trash2, Smartphone, Info } from 'lucide-react';
+import {
+  Radar,
+  Loader2,
+  Play,
+  Square,
+  MapPin,
+  Trash2,
+  Smartphone,
+  Info,
+  AlertTriangle,
+  Clock,
+} from 'lucide-react';
+import { SignalSectorMap } from '@/components/SignalSectorMap';
+import type { SectorSnapshot } from '@/lib/mesh/signalSectors';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
