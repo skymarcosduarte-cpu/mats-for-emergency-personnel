@@ -35,6 +35,7 @@ interface HomeScreenProps {
 
 interface SectionItem {
   id: TabId;
+  nav?: TabId;
   label: string;
   icon: React.ReactNode;
   description: string;
@@ -541,8 +542,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
           <div className="grid grid-cols-2 gap-4">
             {SECTIONS.map((section, index) => (
               <motion.button
-                key={section.id}
-                onClick={() => onNavigate(section.id)}
+                key={`${section.id}-${index}`}
+                onClick={() => onNavigate(section.nav ?? section.id)}
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ 

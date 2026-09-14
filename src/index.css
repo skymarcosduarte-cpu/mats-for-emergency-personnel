@@ -554,6 +554,13 @@
   .home-section-icon-mesh {
     @apply bg-white text-[hsl(270,80%,45%)];
   }
+  /* Detector de Señales: Rosa Mexicano */
+  .home-section-detector {
+    @apply bg-rosa border-rosa-glow/60 hover:brightness-110;
+  }
+  .home-section-icon-detector {
+    @apply bg-white text-rosa;
+  }
 
   /* Internal section button styles - for subsections */
   .subsection-card-avisos {
