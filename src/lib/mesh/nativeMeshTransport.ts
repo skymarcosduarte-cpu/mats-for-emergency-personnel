@@ -476,10 +476,45 @@ export class NativeMeshTransport implements MeshTransport {
     }
   }
 
+  /**
+   * Reemite una sola vez cada fragmento ajeno (dedupe por origen+mensaje+índice)
+   * para que los mensajes con texto avancen varios saltos sin generar tormentas.
+   */
+  private async relayFragment(frame: { origin: number; msgId: number; index: number }, bytes: Uint8Array) {
+    if (this.selfOrigin && frame.origin === this.selfOrigin) return;
+    const key = `frag:${frame.origin}:${frame.msgId}:${frame.index}`;
+    if (this.relayedFrags.has(key)) return;
+    if (!this.allowRelayFrom(frame.origin)) return;
+    if (this.relayedFrags.size > 600) this.relayedFrags.clear();
+    this.relayedFrags.add(key);
+    const now = Date.now();
+    const signed = await signFrame(bytes);
+    await enqueue({
+      key,
+      dataHex: bytesToHex(signed),
+      priority: 2,
+      // pocas repeticiones por salto: suficiente para alcanzar al siguiente
+      // vecino sin saturar la radio
+      attempts: MAX_ATTEMPTS - 4,
+      nextAt: now + Math.floor(Math.random() * 1200),
+      createdAt: now,
+      expiresAt: now + TTL_BY_PRIORITY[2],
+    });
+    await this.refreshPending();
+  }
+
   private async handleAck(bytes: Uint8Array) {
     const ack = decodeAck(bytes);
     if (!ack) return;
-    if (this.selfOrigin && ack.origin !== this.selfOrigin) return;
+    // ACK de un mensaje ajeno: el siguiente salto ya lo recibió, dejamos de
+    // reemitir los fragmentos que estábamos acarreando por él.
+    if (this.selfOrigin && ack.origin !== this.selfOrigin) {
+      for (let i = 0; i < 32; i++) {
+        if (ack.bitmap & (1 << i)) await removeFromOutbox(`frag:${ack.origin}:${ack.msgId}:${i}`);
+      }
+      if (ack.bitmap !== 0) await this.refreshPending();
+      return;
+    }
     for (let i = 0; i < 32; i++) {
       if (ack.bitmap & (1 << i)) await removeFromOutbox(`${ack.origin}:${ack.msgId}:${i}`);
     }
