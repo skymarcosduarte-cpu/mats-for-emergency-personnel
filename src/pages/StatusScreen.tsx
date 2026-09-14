@@ -94,22 +94,19 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
 
       const messageType = status === 'OK' ? 'STATUS_OK' : 'STATUS_NEED_HELP';
 
+      // El mensaje SIEMPRE se pone en la malla (Bluetooth si está activo y,
+      // además, por internet para los usuarios de otras zonas).
+      const meshPayload = {
+        ...(position ? { lat: position.lat, lng: position.lng } : {}),
+        ...(note ? { message: note } : {}),
+      };
+
       if (error) {
         console.error('Error saving status:', error);
-        // Sin conexión o sesión: el estado igual viaja por la malla
-        if (mesh.active) {
-          mesh.broadcast(
-            createMeshEnvelope(messageType, freshId, {
-              ...(position ? { lat: position.lat, lng: position.lng } : {}),
-              ...(note ? { message: note } : {}),
-            })
-          );
-          toast.warning('Sin conexión al servidor: estado enviado por Red Mesh', {
-            description: error.message,
-          });
-        } else {
-          toast.error('Error al guardar estado', { description: error.message });
-        }
+        mesh.broadcast(createMeshEnvelope(messageType, freshId, meshPayload));
+        toast.warning('Sin conexión al servidor: estado enviado por Red Mesh', {
+          description: error.message,
+        });
         return;
       }
 
@@ -120,18 +117,13 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
           : '🆘 Alerta de ayuda enviada a toda la comunidad'
       );
 
-      // La malla siempre replica el estado (haya o no modo desastre)
-      if (mesh.active) {
-        mesh.broadcast(
-          createMeshEnvelope(messageType, freshId, {
-            ...(position ? { lat: position.lat, lng: position.lng } : {}),
-            ...(note ? { message: note } : {}),
-          })
-        );
-        toast.info('📡 Mensaje puesto en la Red Mesh', {
-          description: 'Abajo puedes ver si ya salió por Bluetooth y si un teléfono cercano lo confirmó.',
-        });
-      }
+      mesh.broadcast(createMeshEnvelope(messageType, freshId, meshPayload));
+      toast.info('📡 Mensaje puesto en la Red Mesh', {
+        description: mesh.active
+          ? 'Abajo puedes ver si ya salió por Bluetooth y si un teléfono cercano lo confirmó.'
+          : 'Se entregará a los usuarios de M.A.T.S. por internet y por Bluetooth cuando haya vecinos.',
+      });
+
 
       setCurrentStatus(status);
       setStatusNote('');

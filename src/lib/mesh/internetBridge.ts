@@ -236,6 +236,11 @@ export function startInternetBridge(options: {
 }): () => void {
   if (started) return () => undefined;
   started = true;
+  if (retryTimer) {
+    clearInterval(retryTimer);
+    retryTimer = null;
+  }
+
 
   const handleRow = (row: BridgeRow) => {
     const selfId = options.getSelfId?.();
