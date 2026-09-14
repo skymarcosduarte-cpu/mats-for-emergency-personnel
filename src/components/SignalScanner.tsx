@@ -238,7 +238,15 @@ export const SignalScanner: React.FC = () => {
         </div>
 
         {(signals.length > 0 || sectors.cells.length > 0) && (
-          <Button variant="ghost" size="sm" onClick={() => signalScanner.clear()} className="w-full">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              signalScanner.clear();
+              clearSectorOverlay();
+            }}
+            className="w-full"
+          >
             <Trash2 className="w-4 h-4 mr-2" /> Limpiar lista y sectores
           </Button>
         )}
