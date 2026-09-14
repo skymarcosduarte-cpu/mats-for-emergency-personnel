@@ -99,6 +99,7 @@ export class NativeMeshTransport implements MeshTransport {
   private peers = new Map<number, number>();
   private reassembler = new Reassembler();
   private copies = new Map<number, number>();
+  private relayedFrags = new Set<string>();
   private relaysByNeighbour = new Map<number, { count: number; windowStart: number }>();
   private rejected = 0;
   private pendingCount = 0;
@@ -454,6 +455,13 @@ export class NativeMeshTransport implements MeshTransport {
       2
     );
 
+    // Store-and-forward de los fragmentos: los mensajes con texto viajan en
+    // fragmentos y antes NO se retransmitían, así que sólo llegaban al vecino
+    // directo (un salto). Ahora cada nodo los reemite una sola vez, de modo
+    // que el mensaje salta de teléfono en teléfono como el paquete compacto.
+    await this.relayFragment(frame, bytes);
+
+
     if (!complete) return;
     if (await markSeen(frame.msgId ^ 0x5f5f5f5f)) return; // separate namespace for reassembled payloads
     try {
@@ -469,10 +477,45 @@ export class NativeMeshTransport implements MeshTransport {
     }
   }
 
+  /**
+   * Reemite una sola vez cada fragmento ajeno (dedupe por origen+mensaje+índice)
+   * para que los mensajes con texto avancen varios saltos sin generar tormentas.
+   */
+  private async relayFragment(frame: { origin: number; msgId: number; index: number }, bytes: Uint8Array) {
+    if (this.selfOrigin && frame.origin === this.selfOrigin) return;
+    const key = `frag:${frame.origin}:${frame.msgId}:${frame.index}`;
+    if (this.relayedFrags.has(key)) return;
+    if (!this.allowRelayFrom(frame.origin)) return;
+    if (this.relayedFrags.size > 600) this.relayedFrags.clear();
+    this.relayedFrags.add(key);
+    const now = Date.now();
+    const signed = await signFrame(bytes);
+    await enqueue({
+      key,
+      dataHex: bytesToHex(signed),
+      priority: 2,
+      // pocas repeticiones por salto: suficiente para alcanzar al siguiente
+      // vecino sin saturar la radio
+      attempts: MAX_ATTEMPTS - 4,
+      nextAt: now + Math.floor(Math.random() * 1200),
+      createdAt: now,
+      expiresAt: now + TTL_BY_PRIORITY[2],
+    });
+    await this.refreshPending();
+  }
+
   private async handleAck(bytes: Uint8Array) {
     const ack = decodeAck(bytes);
     if (!ack) return;
-    if (this.selfOrigin && ack.origin !== this.selfOrigin) return;
+    // ACK de un mensaje ajeno: el siguiente salto ya lo recibió, dejamos de
+    // reemitir los fragmentos que estábamos acarreando por él.
+    if (this.selfOrigin && ack.origin !== this.selfOrigin) {
+      for (let i = 0; i < 32; i++) {
+        if (ack.bitmap & (1 << i)) await removeFromOutbox(`frag:${ack.origin}:${ack.msgId}:${i}`);
+      }
+      if (ack.bitmap !== 0) await this.refreshPending();
+      return;
+    }
     for (let i = 0; i < 32; i++) {
       if (ack.bitmap & (1 << i)) await removeFromOutbox(`${ack.origin}:${ack.msgId}:${i}`);
     }
@@ -549,7 +592,7 @@ export class NativeMeshTransport implements MeshTransport {
 
 /** Extrae el msgId de una clave de la bandeja: `origin:msgId:sufijo`. */
 function msgIdFromKey(key: string): number | null {
-  if (key.startsWith('ack:') || key.startsWith('hello:')) return null;
+  if (key.startsWith('ack:') || key.startsWith('hello:') || key.startsWith('frag:')) return null;
   const parts = key.split(':');
   if (parts.length < 3) return null;
   const id = Number(parts[1]);
