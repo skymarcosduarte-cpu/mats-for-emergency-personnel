@@ -62,8 +62,19 @@ export const StatusScreen: React.FC<StatusScreenProps> = ({
         const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
         freshId = refreshed.session?.user?.id ?? null;
         if (!freshId) {
+          // Aun sin sesión, el mensaje de emergencia debe salir por la malla
+          // (Bluetooth local); solo el servidor queda fuera de alcance.
+          const fallbackNote = statusNote.trim().slice(0, 280);
+          mesh.broadcast(
+            createMeshEnvelope(status === 'OK' ? 'STATUS_OK' : 'STATUS_NEED_HELP', user.id, {
+              ...(position ? { lat: position.lat, lng: position.lng } : {}),
+              ...(fallbackNote ? { message: fallbackNote } : {}),
+            })
+          );
           toast.error('Tu sesión venció', {
-            description: refreshError?.message ?? 'Vuelve a iniciar sesión para guardar tu estado.',
+            description:
+              (refreshError?.message ?? 'Vuelve a iniciar sesión para guardar tu estado.') +
+              ' El mensaje se envió por Red Mesh (Bluetooth).',
           });
           return;
         }
