@@ -15,7 +15,8 @@ import {
   Navigation,
   X,
   MapPinned,
-  Radio
+  Radio,
+  Radar
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
