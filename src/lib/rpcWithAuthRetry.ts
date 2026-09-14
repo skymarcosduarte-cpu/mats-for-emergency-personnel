@@ -4,6 +4,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+type RpcName = Parameters<typeof supabase.rpc>[0];
+
 interface RpcErrorLike {
   code?: string;
   message?: string;
@@ -18,7 +20,7 @@ function isAuthOrPermissionError(error: RpcErrorLike | null): boolean {
 }
 
 export async function rpcWithAuthRetry<T = unknown>(
-  fn: string,
+  fn: RpcName,
 ): Promise<{ data: T | null; error: RpcErrorLike | null }> {
   // getSession renueva el token automáticamente si está por vencer
   await supabase.auth.getSession().catch(() => undefined);
