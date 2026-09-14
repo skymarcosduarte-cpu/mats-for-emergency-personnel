@@ -124,6 +124,7 @@ class SignalScanner {
 
   clear(): void {
     this.signals.clear();
+    this.grid.reset();
     this.emit();
   }
 
