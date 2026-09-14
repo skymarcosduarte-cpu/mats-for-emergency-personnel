@@ -22,6 +22,7 @@ const loadCommunityScreen = () => import('@/pages/CommunityScreen');
 const loadResourcesScreen = () => import('@/pages/ResourcesScreen');
 const loadSettingsScreen = () => import('@/pages/SettingsScreen');
 const loadStatusScreen = () => import('@/pages/StatusScreen');
+const loadSignalDetectorScreen = () => import('@/pages/SignalDetectorScreen');
 const loadMarketScreen = () => import('@/pages/MarketScreen');
 
 const MapScreen = lazy(() => loadMapScreen().then(m => ({ default: m.MapScreen })));
@@ -31,6 +32,7 @@ const CommunityScreen = lazy(() => loadCommunityScreen().then(m => ({ default: m
 const ResourcesScreen = lazy(loadResourcesScreen);
 const SettingsScreen = lazy(() => loadSettingsScreen().then(m => ({ default: m.SettingsScreen })));
 const StatusScreen = lazy(() => loadStatusScreen().then(m => ({ default: m.StatusScreen })));
+const SignalDetectorScreen = lazy(() => loadSignalDetectorScreen().then(m => ({ default: m.SignalDetectorScreen })));
 const MarketScreen = lazy(() => loadMarketScreen().then(m => ({ default: m.MarketScreen })));
 
 const InstallPage = lazy(() => import('@/pages/InstallPage'));
@@ -133,6 +135,7 @@ function useIdleChunkPrefetch() {
       loadResourcesScreen,
       loadSettingsScreen,
       loadStatusScreen,
+      loadSignalDetectorScreen,
       loadMarketScreen,
     ];
     let cancelled = false;
@@ -692,6 +695,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
       community: <CommunityScreen userRole={userRole} onGoHome={handleGoHome} />,
       resources: <ResourcesScreen onGoHome={() => { setResourcesInitialView(undefined); handleGoHome(); }} initialSubView={resourcesInitialView} />,
       status: <StatusScreen userRole={userRole} onGoHome={handleGoHome} />,
+      detector: <SignalDetectorScreen onGoHome={handleGoHome} />,
       settings: <SettingsScreen onLogout={handleLogout} onGoHome={handleGoHome} />,
     };
 

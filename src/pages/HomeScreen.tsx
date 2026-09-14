@@ -106,11 +106,10 @@ SECTIONS.push({
   iconBg: 'home-section-icon-mesh',
 });
 
-// Detector de Señales: feature más de la cuadrícula (abajo a la derecha),
-// navega a Red Mesh donde vive el módulo.
+// Detector de Señales: sección propia (abajo a la derecha de la cuadrícula).
 SECTIONS.push({
-  id: 'status',
-  nav: 'status',
+  id: 'detector',
+  nav: 'detector',
   label: 'Detector de Señales',
   icon: <Radar className="w-10 h-10" strokeWidth={2.5} />,
   description: 'Busca celulares encendidos entre escombros',

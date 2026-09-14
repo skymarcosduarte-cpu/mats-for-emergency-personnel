@@ -14,7 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useUpdateAvailable } from '@/hooks/useUpdateCheck';
 
-export type TabId = 'home' | 'map' | 'transit' | 'alerts' | 'community' | 'resources' | 'status' | 'settings';
+export type TabId = 'home' | 'map' | 'transit' | 'alerts' | 'community' | 'resources' | 'status' | 'detector' | 'settings';
 
 interface NavItem {
   id: TabId;
