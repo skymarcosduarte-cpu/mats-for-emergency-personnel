@@ -5,9 +5,18 @@
 
 export const SECTOR_SIZE_M = 15;
 
+export interface SectorBounds {
+  south: number;
+  north: number;
+  west: number;
+  east: number;
+}
+
 export interface SectorCell {
   row: number;
   col: number;
+  /** Rectángulo geográfico de la celda, para dibujarla en el mapa */
+  bounds: SectorBounds;
   /** Etiqueta legible tipo A1, B3… */
   label: string;
   /** Mejor intensidad registrada en la celda */
