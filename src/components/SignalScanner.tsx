@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { SignalSectorMap } from '@/components/SignalSectorMap';
 import type { SectorSnapshot } from '@/lib/mesh/signalSectors';
+import { publishSectorOverlay, clearSectorOverlay } from '@/lib/mesh/signalSectorOverlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
