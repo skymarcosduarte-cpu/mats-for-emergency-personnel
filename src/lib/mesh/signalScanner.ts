@@ -10,6 +10,12 @@
 // - iOS restringe el escaneo en segundo plano; funciona con la app abierta.
 
 import { MESH_MANUFACTURER_ID } from './protocol';
+import { SectorGrid, type SectorSnapshot } from './signalSectors';
+
+/** Un indicio se considera "sostenido" (probable persona bajo escombros) cuando
+ *  se oye repetidamente durante al menos este tiempo. Descarta transeúntes. */
+export const SUSTAINED_MS = 25 * 1000;
+export const SUSTAINED_HITS = 6;
 
 export interface DetectedSignal {
   /** Identificador del dispositivo (aleatorio/rotativo en la mayoría de equipos) */
@@ -28,6 +34,8 @@ export interface DetectedSignal {
   lastSeen: number;
   /** Número de anuncios oídos: más muestras = detección más confiable */
   hits: number;
+  /** Presencia sostenida en el tiempo: indicio fuerte, no un transeúnte */
+  sustained: boolean;
 }
 
 export type SignalStrength = 'inmediato' | 'muy-cerca' | 'cerca' | 'lejano';
@@ -74,6 +82,17 @@ class SignalScanner {
   private listeners = new Set<Listener>();
   private sweep: ReturnType<typeof setInterval> | null = null;
   private lastError: string | null = null;
+  private grid = new SectorGrid();
+  private position: { lat: number; lng: number } | null = null;
+
+  /** El componente alimenta la ubicación GPS actual para el mapa de sectores */
+  setPosition(position: { lat: number; lng: number } | null): void {
+    this.position = position;
+  }
+
+  getSectors(): SectorSnapshot {
+    return this.grid.snapshot();
+  }
 
   isNative(): boolean {
     const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
@@ -105,6 +124,7 @@ class SignalScanner {
 
   clear(): void {
     this.signals.clear();
+    this.grid.reset();
     this.emit();
   }
 
@@ -178,6 +198,9 @@ class SignalScanner {
     const isMats = Boolean(result.manufacturerData?.[String(MESH_MANUFACTURER_ID)]);
     const now = Date.now();
     const prev = this.signals.get(id);
+    const firstSeen = prev?.firstSeen ?? now;
+    const hits = (prev?.hits ?? 0) + 1;
+    const sustained = hits >= SUSTAINED_HITS && now - firstSeen >= SUSTAINED_MS;
 
     this.signals.set(id, {
       id,
@@ -186,10 +209,21 @@ class SignalScanner {
       bestRssi: prev ? Math.max(prev.bestRssi, rssi) : rssi,
       distanceM: estimateDistance(rssi),
       isMats: isMats || Boolean(prev?.isMats),
-      firstSeen: prev?.firstSeen ?? now,
+      firstSeen,
       lastSeen: now,
-      hits: (prev?.hits ?? 0) + 1,
+      hits,
+      sustained,
     });
+
+    if (this.position) {
+      this.grid.record({
+        lat: this.position.lat,
+        lng: this.position.lng,
+        rssi,
+        deviceId: id,
+        sustained,
+      });
+    }
   }
 
   private emit() {

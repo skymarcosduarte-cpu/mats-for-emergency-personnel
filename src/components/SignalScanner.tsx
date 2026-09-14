@@ -2,7 +2,20 @@
 // para apoyo en zonas de derrumbe. Pensado para rescatistas.
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Radar, Loader2, Play, Square, MapPin, Trash2, Smartphone, Info } from 'lucide-react';
+import {
+  Radar,
+  Loader2,
+  Play,
+  Square,
+  MapPin,
+  Trash2,
+  Smartphone,
+  Info,
+  AlertTriangle,
+  Clock,
+} from 'lucide-react';
+import { SignalSectorMap } from '@/components/SignalSectorMap';
+import type { SectorSnapshot } from '@/lib/mesh/signalSectors';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,18 +49,26 @@ export const SignalScanner: React.FC = () => {
   const [scanning, setScanning] = useState(signalScanner.isScanning());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(signalScanner.getLastError());
+  const [sectors, setSectors] = useState<SectorSnapshot>(signalScanner.getSectors());
   const { position } = useLocation();
 
   useEffect(() => {
     const unsubscribe = signalScanner.subscribe((next) => {
       setSignals(next);
+      setSectors(signalScanner.getSectors());
       setScanning(signalScanner.isScanning());
       setError(signalScanner.getLastError());
     });
     return unsubscribe;
   }, []);
 
+  // Alimenta la posición GPS para que cada lectura caiga en su sector
+  useEffect(() => {
+    signalScanner.setPosition(position ? { lat: position.lat, lng: position.lng } : null);
+  }, [position]);
+
   const strongest = useMemo(() => signals[0] ?? null, [signals]);
+  const sustainedCount = useMemo(() => signals.filter((s) => s.sustained).length, [signals]);
 
   const handleToggle = async () => {
     setBusy(true);
@@ -133,6 +154,22 @@ export const SignalScanner: React.FC = () => {
             <p className="text-sm text-muted-foreground">
               {SIGNAL_LABELS[classifySignal(strongest.rssi)]}
             </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              {signals.length} dispositivo{signals.length === 1 ? '' : 's'} en escucha ·{' '}
+              {sustainedCount} con presencia sostenida
+            </p>
+          </div>
+        )}
+
+        <SignalSectorMap snapshot={sectors} />
+
+        {scanning && !position && (
+          <div className="flex gap-2 p-3 rounded-lg bg-muted text-xs text-muted-foreground">
+            <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>
+              Activa el GPS para armar el mapa de sectores: camina despacio por la zona y las
+              celdas se irán coloreando según los indicios.
+            </span>
           </div>
         )}
 
@@ -168,6 +205,11 @@ export const SignalScanner: React.FC = () => {
                       {signal.isMats && (
                         <Badge className="ml-2 bg-primary text-primary-foreground">M.A.T.S.</Badge>
                       )}
+                      {signal.sustained && (
+                        <Badge className="ml-2 bg-destructive text-destructive-foreground">
+                          <Clock className="w-3 h-3 mr-1" /> SOSTENIDA
+                        </Badge>
+                      )}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       ≈ {signal.distanceM} m · {signal.rssi} dBm · {signal.hits} lecturas
@@ -191,17 +233,26 @@ export const SignalScanner: React.FC = () => {
           )}
         </div>
 
-        {signals.length > 0 && (
+        {(signals.length > 0 || sectors.cells.length > 0) && (
           <Button variant="ghost" size="sm" onClick={() => signalScanner.clear()} className="w-full">
-            <Trash2 className="w-4 h-4 mr-2" /> Limpiar lista
+            <Trash2 className="w-4 h-4 mr-2" /> Limpiar lista y sectores
           </Button>
         )}
+
+        <div className="flex gap-2 p-3 rounded-lg border-2 border-destructive/40 bg-destructive/5 text-xs font-semibold text-foreground">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-destructive" />
+          <span>
+            No sustituye perros ni geófonos: sólo orienta la búsqueda. La confirmación siempre
+            se hace con señales de vida.
+          </span>
+        </div>
 
         <div className="flex gap-2 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
           <Smartphone className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             La distancia es una estimación: el concreto y el metal debilitan la señal.
-            Úsala como guía de "más caliente / más frío", no como medida exacta.
+            Úsala como guía de "más caliente / más frío", no como medida exacta. Un dispositivo
+            equivale a una posible persona (estimación).
           </span>
         </div>
       </CardContent>
