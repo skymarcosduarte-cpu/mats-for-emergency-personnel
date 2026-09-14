@@ -99,6 +99,7 @@ export class NativeMeshTransport implements MeshTransport {
   private peers = new Map<number, number>();
   private reassembler = new Reassembler();
   private copies = new Map<number, number>();
+  private relayedFrags = new Set<string>();
   private relaysByNeighbour = new Map<number, { count: number; windowStart: number }>();
   private rejected = 0;
   private pendingCount = 0;
