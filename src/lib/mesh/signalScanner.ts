@@ -11,6 +11,7 @@
 
 import { MESH_MANUFACTURER_ID } from './protocol';
 import { SectorGrid, type SectorSnapshot } from './signalSectors';
+import { bleScanBus } from './bleScanBus';
 
 /** Un indicio se considera "sostenido" (probable persona bajo escombros) cuando
  *  se oye repetidamente durante al menos este tiempo. Descarta transeúntes. */

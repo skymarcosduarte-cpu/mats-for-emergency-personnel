@@ -66,6 +66,13 @@ export const SignalScanner: React.FC = () => {
     return unsubscribe;
   }, []);
 
+  // Al salir de la pantalla se detiene el escaneo para no pelear con la Red Mesh
+  useEffect(() => {
+    return () => {
+      if (signalScanner.isScanning()) void signalScanner.stop();
+    };
+  }, []);
+
   // Alimenta la posición GPS para que cada lectura caiga en su sector
   useEffect(() => {
     signalScanner.setPosition(position ? { lat: position.lat, lng: position.lng } : null);

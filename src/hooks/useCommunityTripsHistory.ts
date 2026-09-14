@@ -50,8 +50,7 @@ export function useCommunityTripsHistory() {
 
       // Fetch community trips (active + last 24h completed/cancelled) via
       // a SECURITY DEFINER RPC that returns only safe columns.
-      const { data: rpcData, error: rpcError } = await supabase
-        .rpc('get_community_trips');
+      const { data: rpcData, error: rpcError } = await rpcWithAuthRetry<any[]>('get_community_trips');
 
       if (rpcError) throw rpcError;
 

@@ -129,8 +129,7 @@ export function useActiveTrips() {
       // excludes sensitive columns (boarding_pass_url, vehicle_photo_url,
       // share_token) so any authenticated user can see the community feed
       // without exposing private data.
-      const { data: rpcData, error: tripsError } = await supabase
-        .rpc('get_community_trips');
+      const { data: rpcData, error: tripsError } = await rpcWithAuthRetry<any[]>('get_community_trips');
 
       if (tripsError) throw tripsError;
 
