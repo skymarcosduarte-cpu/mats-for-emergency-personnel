@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import 'leaflet/dist/leaflet.css';
 import { getMeshPins, MESH_PINS_EVENT, MESH_FOCUS_EVENT, consumePendingMeshFocus, type MeshPin } from '@/lib/meshPins';
+import { getSectorOverlay, SIGNAL_SECTORS_EVENT, sectorColor, type SectorOverlayCell } from '@/lib/mesh/signalSectorOverlay';
 
 // Sanitize user content for safe HTML rendering
 const sanitize = (text: string | null | undefined): string => {
@@ -2598,6 +2599,57 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       }
     });
   }, [activeTrips, locations, mapReady]);
+
+  // ===== Cuadrícula de sectores del Detector de Señales (A1–C3…) =====
+  const [signalSectors, setSignalSectors] = useState<SectorOverlayCell[]>(() => getSectorOverlay());
+  const sectorLayerRef = useRef<L.LayerGroup | null>(null);
+
+  useEffect(() => {
+    const refresh = () => setSignalSectors(getSectorOverlay());
+    window.addEventListener(SIGNAL_SECTORS_EVENT, refresh);
+    const timer = setInterval(refresh, 4000);
+    return () => {
+      window.removeEventListener(SIGNAL_SECTORS_EVENT, refresh);
+      clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !mapReady) return;
+
+    if (!sectorLayerRef.current) {
+      sectorLayerRef.current = L.layerGroup().addTo(map);
+    }
+    const layer = sectorLayerRef.current;
+    layer.clearLayers();
+
+    signalSectors.forEach((cell) => {
+      const color = sectorColor(cell.ratio);
+      const rect = L.rectangle(
+        [
+          [cell.bounds.south, cell.bounds.west],
+          [cell.bounds.north, cell.bounds.east],
+        ],
+        {
+          color: cell.isHot ? '#ffffff' : color,
+          weight: cell.isHot ? 3 : 1,
+          fillColor: color,
+          fillOpacity: 0.25 + cell.ratio * 0.4,
+          interactive: true,
+        },
+      );
+      rect.bindTooltip(
+        `<b>Sector ${cell.label}</b><br/>${cell.devices} dispositivo(s)<br/>${cell.sustained} sostenido(s)<br/>${cell.bestRssi} dBm${cell.isHot ? '<br/><b>Vector de interés</b>' : ''}`,
+        { direction: 'top', sticky: true },
+      );
+      rect.addTo(layer);
+    });
+
+    return () => {
+      layer.clearLayers();
+    };
+  }, [signalSectors, mapReady]);
 
   // ===== Pines de mensajes Mesh (Bluetooth) =====
   const [meshPins, setMeshPins] = useState<MeshPin[]>(() => getMeshPins());

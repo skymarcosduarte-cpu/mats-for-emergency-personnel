@@ -77,6 +77,11 @@ export default {
         mats: {
           green: "hsl(var(--mats-green))",
         },
+        rosa: {
+          DEFAULT: "hsl(var(--rosa-mexicano))",
+          glow: "hsl(var(--rosa-mexicano-glow))",
+          foreground: "hsl(var(--rosa-mexicano-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

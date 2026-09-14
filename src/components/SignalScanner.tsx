@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { SignalSectorMap } from '@/components/SignalSectorMap';
 import type { SectorSnapshot } from '@/lib/mesh/signalSectors';
+import { publishSectorOverlay, clearSectorOverlay } from '@/lib/mesh/signalSectorOverlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -55,7 +56,10 @@ export const SignalScanner: React.FC = () => {
   useEffect(() => {
     const unsubscribe = signalScanner.subscribe((next) => {
       setSignals(next);
-      setSectors(signalScanner.getSectors());
+      const snapshot = signalScanner.getSectors();
+      setSectors(snapshot);
+      // Publica la cuadrícula para dibujarla sobre el mapa en vivo
+      publishSectorOverlay(snapshot);
       setScanning(signalScanner.isScanning());
       setError(signalScanner.getLastError());
     });
@@ -234,7 +238,15 @@ export const SignalScanner: React.FC = () => {
         </div>
 
         {(signals.length > 0 || sectors.cells.length > 0) && (
-          <Button variant="ghost" size="sm" onClick={() => signalScanner.clear()} className="w-full">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              signalScanner.clear();
+              clearSectorOverlay();
+            }}
+            className="w-full"
+          >
             <Trash2 className="w-4 h-4 mr-2" /> Limpiar lista y sectores
           </Button>
         )}
