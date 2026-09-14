@@ -233,17 +233,26 @@ export const SignalScanner: React.FC = () => {
           )}
         </div>
 
-        {signals.length > 0 && (
+        {(signals.length > 0 || sectors.cells.length > 0) && (
           <Button variant="ghost" size="sm" onClick={() => signalScanner.clear()} className="w-full">
-            <Trash2 className="w-4 h-4 mr-2" /> Limpiar lista
+            <Trash2 className="w-4 h-4 mr-2" /> Limpiar lista y sectores
           </Button>
         )}
+
+        <div className="flex gap-2 p-3 rounded-lg border-2 border-destructive/40 bg-destructive/5 text-xs font-semibold text-foreground">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-destructive" />
+          <span>
+            No sustituye perros ni geófonos: sólo orienta la búsqueda. La confirmación siempre
+            se hace con señales de vida.
+          </span>
+        </div>
 
         <div className="flex gap-2 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
           <Smartphone className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             La distancia es una estimación: el concreto y el metal debilitan la señal.
-            Úsala como guía de "más caliente / más frío", no como medida exacta.
+            Úsala como guía de "más caliente / más frío", no como medida exacta. Un dispositivo
+            equivale a una posible persona (estimación).
           </span>
         </div>
       </CardContent>
