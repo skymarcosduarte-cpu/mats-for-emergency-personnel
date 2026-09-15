@@ -12,7 +12,7 @@ on:
       expected_version:
         description: 'Versión que debe contener el APK (evita compilar código antiguo)'
         required: true
-        default: '2.9.5'
+        default: '2.9.7'
   push:
     tags:
       - 'apk-*'
@@ -284,4 +284,4 @@ jobs:
           make_latest: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
-# sync-trigger 2026-09-11T02:56Z v2.9.5 force-sync
+# sync-trigger 2026-09-15T00:19Z v2.9.7 force-sync
