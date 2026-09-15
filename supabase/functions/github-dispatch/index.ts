@@ -39,26 +39,35 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Prefer the user's fine-grained PAT (reaches the private repo directly).
+    // Prefer the user's fine-grained PAT (reaches the private repo directly);
+    // fall back to the connector gateway for public repos.
     const PAT = Deno.env.get('GITHUB_FINE_GRAINED_PERSONAL_ACCESS_TOKEN');
-    const usePat = Boolean(PAT(speed up later));
-    const PAT_VALUE = PAT ?? '';
+    const usePat = typeof PAT === 'string' && PAT.length > 0;
 
+    const results: Array<{ workflow: string; ok: boolean; status: number }> = [];
 
     for (const workflow of workflows) {
-      const response = await fetch(
-        `${GATEWAY_URL}/repos/${GITHUB_REPO}/actions/workflows/${workflow}/dispatches`,
-        {
-          method: 'POST',
-          headers: {
-            Accept: 'application/vnd.github+json',
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            'X-Connection-Api-Key': GITHUB_API_KEY,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ref: 'newversion' }),
-        },
-      );
+      const url = usePat
+        ? `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${workflow}/dispatches`
+        : `${GATEWAY_URL}/repos/${GITHUB_REPO}/actions/workflows/${workflow}/dispatches`;
+
+      const headers: Record<string, string> = {
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      };
+      if (usePat) {
+        headers.Authorization = `Bearer ${PAT}`;
+      } else {
+        headers.Authorization = `Bearer ${LOVABLE_API_KEY}`;
+        headers['X-Connection-Api-Key'] = GITHUB_API_KEY;
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ ref: 'newversion' }),
+      });
 
       if (!response.ok) {
         const errorBody = await response.text();
