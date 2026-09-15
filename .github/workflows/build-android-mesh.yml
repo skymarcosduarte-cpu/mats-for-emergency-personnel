@@ -37,7 +37,18 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      # packages: '' evita que la acción ejecute `sdkmanager tools`, paquete
+      # retirado del SDK que hacía fallar el build en 26 s.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+
+      - name: Instalar componentes del SDK de Android
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
 
       - name: Instalar dependencias
         run: |
