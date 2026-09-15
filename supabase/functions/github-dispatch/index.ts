@@ -16,8 +16,6 @@ Deno.serve(async (req) => {
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
-    const GITHUB_API_KEY = Deno.env.get('GITHUB_API_KEY');
-    if (!GITHUB_API_KEY) throw new Error('GITHUB_API_KEY is not configured');
 
     // Require an authenticated user
     const authHeader = req.headers.get('Authorization');
