@@ -90,7 +90,7 @@ SECTIONS.push({
   iconBg: 'home-section-icon-mesh',
 });
 
-// Detector de Señales: sección propia (abajo a la derecha de la cuadrícula).
+// Detector de Señales: sección propia.
 SECTIONS.push({
   id: 'detector',
   nav: 'detector',
@@ -100,6 +100,26 @@ SECTIONS.push({
   gradient: 'home-section-detector',
   iconBg: 'home-section-icon-detector',
 });
+
+// Comunidad y Ajustes: última fila de la cuadrícula.
+SECTIONS.push(
+  {
+    id: 'community',
+    label: 'Comunidad',
+    icon: <Users className="w-10 h-10" strokeWidth={2.5} />,
+    description: 'AviSOS, Noticias, Marketplace, Galería y Bolsa de Trabajo',
+    gradient: 'home-section-community',
+    iconBg: 'home-section-icon-community',
+  },
+  {
+    id: 'settings',
+    label: 'Ajustes',
+    icon: <Settings className="w-10 h-10" strokeWidth={2.5} />,
+    description: 'Configuración y perfil',
+    gradient: 'home-section-settings',
+    iconBg: 'home-section-icon-settings',
+  },
+);
 
 // Types for emergency alerts
 interface EmergencyAlert {
