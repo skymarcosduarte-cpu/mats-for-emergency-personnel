@@ -295,4 +295,4 @@ jobs:
           make_latest: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
-# sync-trigger 2026-09-15T00:19Z v2.9.7 force-sync
+# sync-trigger 2026-09-15T01:45Z v2.9.7 fix-setup-android
