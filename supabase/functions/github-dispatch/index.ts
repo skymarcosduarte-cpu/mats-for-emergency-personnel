@@ -39,7 +39,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    const results: Array<{ workflow: string; ok: boolean; status: number }> = [];
+    // Prefer the user's fine-grained PAT (reaches the private repo directly).
+    const PAT = Deno.env.get('GITHUB_FINE_GRAINED_PERSONAL_ACCESS_TOKEN');
+    const usePat = Boolean(PAT(speed up later));
+    const PAT_VALUE = PAT ?? '';
+
 
     for (const workflow of workflows) {
       const response = await fetch(
