@@ -43,7 +43,7 @@ interface SectionItem {
   iconBg: string;
 }
 
-// New order: Left column (Sismos, Recursos, Comunidad) | Right column (Mapa, Tránsito, Ajustes)
+// Comunidad y Ajustes van hasta abajo de la cuadrícula.
 const SECTIONS: SectionItem[] = [
   { 
     id: 'alerts', 
@@ -76,22 +76,6 @@ const SECTIONS: SectionItem[] = [
     description: 'Registrar y monitorear viajes',
     gradient: 'home-section-transit',
     iconBg: 'home-section-icon-transit'
-  },
-  { 
-    id: 'community', 
-    label: 'Comunidad', 
-    icon: <Users className="w-10 h-10" strokeWidth={2.5} />,
-    description: 'AviSOS, Noticias, Marketplace, Galería y Bolsa de Trabajo',
-    gradient: 'home-section-community',
-    iconBg: 'home-section-icon-community'
-  },
-  { 
-    id: 'settings', 
-    label: 'Ajustes', 
-    icon: <Settings className="w-10 h-10" strokeWidth={2.5} />,
-    description: 'Configuración y perfil',
-    gradient: 'home-section-settings',
-    iconBg: 'home-section-icon-settings'
   },
 ];
 
