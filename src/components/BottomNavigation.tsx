@@ -44,10 +44,6 @@ const StarOfLifeIcon: React.FC<{ className?: string }> = ({ className }) => (
 const NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'Inicio', icon: <Home className="w-4 h-4" /> },
   { id: 'map', label: 'Mapa', icon: <Map className="w-4 h-4" /> },
-  { id: 'alerts', label: 'Sismos', icon: <Activity className="w-4 h-4" /> },
-  { id: 'transit', label: 'Tránsito', icon: <Car className="w-4 h-4" /> },
-  { id: 'resources', label: 'RecurSOS', icon: <ShieldAlert className="w-4 h-4" /> },
-  { id: 'community', label: 'Social', icon: <Users className="w-4 h-4" /> },
   { id: 'settings', label: 'Ajustes', icon: <Settings className="w-4 h-4" /> },
 ];
 
