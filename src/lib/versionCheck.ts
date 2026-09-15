@@ -5,7 +5,7 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import type { VersionInfo, AppRelease } from '@/types';
 
 // Current app version (set at build time)
-export const APP_VERSION = '2.9.6';
+export const APP_VERSION = '2.9.7';
 // Número de build inyectado en tiempo de compilación (ver vite.config.ts).
 // Permite confirmar en el teléfono que se instaló exactamente esta compilación.
 // Estos identificadores globales son sustituidos textualmente por Vite `define`
