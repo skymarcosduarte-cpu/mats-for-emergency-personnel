@@ -57,6 +57,8 @@ Deno.serve(async (req) => {
       if (usePat) {
         headers.Authorization = `Bearer ${PAT}`;
       } else {
+        const GITHUB_API_KEY = Deno.env.get('GITHUB_API_KEY');
+        if (!GITHUB_API_KEY) throw new Error('GITHUB_API_KEY is not configured');
         headers.Authorization = `Bearer ${LOVABLE_API_KEY}`;
         headers['X-Connection-Api-Key'] = GITHUB_API_KEY;
       }
