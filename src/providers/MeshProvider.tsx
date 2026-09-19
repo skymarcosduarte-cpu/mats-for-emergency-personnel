@@ -10,6 +10,7 @@ import { useAppState } from '@/hooks/useRealtime';
 import { useAuth } from '@/hooks/useAuth';
 import { addMeshPin, focusMeshPin, clearMeshPins } from '@/lib/meshPins';
 import { publishToBridge, startInternetBridge } from '@/lib/mesh/internetBridge';
+import { meshtastic } from '@/lib/mesh/meshtastic';
 import { addMeshInboxItem, clearMeshInbox, getMeshInbox, MESH_INBOX_EVENT } from '@/lib/meshInboxStore';
 import { envelopeToInboxItem, type MeshInboxItem } from '@/components/MeshInbox';
 import type { MeshEnvelope } from '@/types';
@@ -129,11 +130,24 @@ export const MeshProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return stop;
   }, [user?.id, handleMeshMessage, meshBroadcast]);
 
+  // Repetidores Meshtastic: lo que llega por LoRa entra al mismo buzón y se
+  // vuelve a emitir por Bluetooth e internet como cualquier otro aviso.
+  useEffect(() => {
+    meshtastic.setSupported(mesh.available);
+    return meshtastic.onMessage((envelope) => {
+      handleMeshMessage(envelope);
+      meshBroadcast(envelope, { relay: true });
+      void publishToBridge(envelope, { own: false });
+    });
+  }, [mesh.available, handleMeshMessage, meshBroadcast]);
+
   // Todo lo que sale por Bluetooth se copia también al puente (si hay señal),
   // y si no la hay queda en cola hasta que la conexión regrese.
   const broadcast = useCallback(
     (envelope: MeshEnvelope, options?: { relay?: boolean }) => {
       meshBroadcast(envelope, options);
+      // Repetidores Meshtastic (ESP32/LoRa): alcance de kilómetros sin red
+      void meshtastic.send(envelope);
       void publishToBridge(envelope, { own: !options?.relay });
     },
     [meshBroadcast]
