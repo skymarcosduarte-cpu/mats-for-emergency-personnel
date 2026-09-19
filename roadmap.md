@@ -13,7 +13,7 @@
 
 # RecurSOS y categorías de personal
 
-- [ ] Restaurar Monitoreo de Noticias dentro de RecurSOS.
-- [ ] Cambiar la descripción de Sismos a “Últimos Sismos y Monitoreo”.
-- [ ] Sustituir las etiquetas SOS y EX-SOS por “Rescatista Activo” y “Ex-Rescatista” en registro y Ajustes.
+- [x] Restaurar Monitoreo de Noticias dentro de RecurSOS.
+- [x] Cambiar la descripción de Sismos a “Últimos Sismos y Monitoreo”.
+- [x] Sustituir las etiquetas SOS y EX-SOS por “Rescatista Activo” y “Ex-Rescatista” en registro y Ajustes.
 - [ ] Verificar los accesos y textos actualizados.

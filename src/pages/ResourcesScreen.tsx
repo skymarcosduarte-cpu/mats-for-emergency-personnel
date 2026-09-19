@@ -46,7 +46,7 @@ export default function ResourcesScreen({ onGoHome, initialSubView }: ResourcesS
       id: 'monitoring',
       label: 'Monitoreo de Noticias',
       description: 'Canales de noticias nacionales e internacionales en vivo',
-      icon: <Tv className="w-8 h-8 text-white" strokeWidth={2.5} />,
+      icon: <Tv className="w-8 h-8 text-primary-foreground" strokeWidth={2.5} />,
       iconBg: 'bg-primary',
       borderColor: 'border-primary/40',
       onClick: () => setSubView('monitoring'),
