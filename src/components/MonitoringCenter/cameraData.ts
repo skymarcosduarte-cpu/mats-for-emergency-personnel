@@ -177,29 +177,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     embedUrl: `https://www.youtube.com/embed/Qr61waJ6AZg${YT_PARAMS}`,
     region: 'noticias',
   },
-  {
-    id: 'yt-telemundo-live',
-    name: 'Telemundo Noticias en vivo',
-    city: 'Miami',
-    country: 'EE.UU.',
-    description: 'Telemundo Noticias en vivo',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/9CHbF8k-W7I${YT_PARAMS}`,
-    region: 'noticias',
-  },
-  // ═══════════════════════════════════════
-  // Latinoamérica
-  // ═══════════════════════════════════════
-  {
-    id: 'telesur-live',
-    name: 'TELESUR',
-    city: 'Latinoamérica',
-    country: 'Internacional',
-    description: 'Señal en vivo de teleSUR 24/7',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/live_stream${YT_PARAMS.replace('?', '?channel=UCZSdNK_ZmMQcLTz-obKr-Dw&')}`,
-    region: 'latam',
-  },
   // ═══════════════════════════════════════
   // Norteamérica (aeropuertos)
   // ═══════════════════════════════════════
