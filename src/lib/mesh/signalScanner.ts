@@ -85,6 +85,8 @@ class SignalScanner {
   private lastError: string | null = null;
   private grid = new SectorGrid();
   private position: { lat: number; lng: number } | null = null;
+  /** Pasada de barrido en curso: permite comparar Paso 1 vs Paso 2 */
+  private pass = 1;
 
   /** El componente alimenta la ubicación GPS actual para el mapa de sectores */
   setPosition(position: { lat: number; lng: number } | null): void {
