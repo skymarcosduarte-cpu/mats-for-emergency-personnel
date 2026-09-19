@@ -13,7 +13,11 @@ import {
   Info,
   AlertTriangle,
   Clock,
+  Volume2,
+  VolumeX,
+  CheckCircle2,
 } from 'lucide-react';
+import { signalGuide } from '@/lib/mesh/signalGuide';
 import { SignalSectorMap } from '@/components/SignalSectorMap';
 import type { SectorSnapshot } from '@/lib/mesh/signalSectors';
 import { publishSectorOverlay, clearSectorOverlay } from '@/lib/mesh/signalSectorOverlay';
