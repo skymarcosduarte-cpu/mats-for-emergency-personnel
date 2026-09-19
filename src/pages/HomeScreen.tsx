@@ -107,7 +107,7 @@ SECTIONS.push(
     id: 'community',
     label: 'Comunidad',
     icon: <Users className="w-10 h-10" strokeWidth={2.5} />,
-    description: 'AviSOS, Noticias, Marketplace, Galería y Bolsa de Trabajo',
+    description: 'AviSOS, Noticias y Marketplace',
     gradient: 'home-section-community',
     iconBg: 'home-section-icon-community',
   },

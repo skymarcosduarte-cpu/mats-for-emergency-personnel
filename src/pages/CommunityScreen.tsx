@@ -4,13 +4,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingCart, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play, Pencil, Camera, Briefcase
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingCart, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play, Pencil
 } from 'lucide-react';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
-import { MemoryGallery } from '@/components/MemoryGallery';
 import { MarketScreen } from '@/pages/MarketScreen';
-import { JobBoardScreen } from '@/components/JobBoardScreen';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { UserRole } from '@/types';
@@ -133,7 +131,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   
   // Landing view state - shows big buttons before entering a subsection
   const [showLanding, setShowLanding] = useState(true);
-  const [activeSection, setActiveSection] = useState<'tablero' | 'noticias' | 'market' | 'galeria' | 'jobs'>('tablero');
+  const [activeSection, setActiveSection] = useState<'tablero' | 'noticias' | 'market'>('tablero');
   
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CommunityEvent | null>(null);
@@ -536,7 +534,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   };
 
   // Handler to enter a specific section from landing
-  const handleEnterSection = (section: 'tablero' | 'noticias' | 'market' | 'galeria' | 'jobs') => {
+  const handleEnterSection = (section: 'tablero' | 'noticias' | 'market') => {
     setActiveSection(section);
     setShowLanding(false);
   };
@@ -547,21 +545,9 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
       case 'tablero': return 'AviSOS';
       case 'noticias': return 'Últimas Noticias';
       case 'market': return 'Marketplace';
-      case 'galeria': return 'Galería del Recuerdo';
-      case 'jobs': return 'Bolsa de Trabajo';
       default: return 'Comunidad';
     }
   };
-
-  // Render Memory Gallery as its own full screen
-  if (activeSection === 'galeria' && !showLanding) {
-    return <MemoryGallery onBack={() => setShowLanding(true)} />;
-  }
-
-  // Render Job Board as its own full screen
-  if (activeSection === 'jobs' && !showLanding) {
-    return <JobBoardScreen onBack={() => setShowLanding(true)} />;
-  }
 
   // Landing view with large buttons
   if (showLanding) {
@@ -651,83 +637,6 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
             </div>
             <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
           </button>
-
-          {/* Galería del Recuerdo Button */}
-          <button
-            onClick={() => handleEnterSection('galeria')}
-            className={cn(
-              "w-full flex items-center gap-4 p-5 rounded-2xl",
-              "bg-card border-2 shadow-sm",
-              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
-              "transition-all duration-200 animate-fade-in",
-              "subsection-card-galeria"
-            )}
-            style={{ animationDelay: '150ms' }}
-          >
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-galeria">
-              <Camera className="w-10 h-10" strokeWidth={2.5} />
-            </div>
-            <div className="flex-1 text-left min-w-0">
-              <h3 className="font-bold text-foreground text-xl">Galería del Recuerdo</h3>
-              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
-                Comparte fotos nostálgicas de la comunidad
-              </p>
-            </div>
-            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
-          </button>
-
-          {/* Bolsa de Trabajo Button */}
-          <button
-            onClick={() => handleEnterSection('jobs')}
-            className={cn(
-              "w-full flex items-center gap-4 p-5 rounded-2xl",
-              "bg-card border-2 shadow-sm",
-              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
-              "transition-all duration-200 animate-fade-in",
-              "subsection-card-jobs"
-            )}
-            style={{ animationDelay: '200ms' }}
-          >
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-jobs">
-              <Briefcase className="w-10 h-10" strokeWidth={2.5} />
-            </div>
-            <div className="flex-1 text-left min-w-0">
-              <h3 className="font-bold text-foreground text-xl">Bolsa de Trabajo</h3>
-              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
-                Publica tu CV o encuentra oportunidades laborales
-              </p>
-            </div>
-            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
-          </button>
-
-          {/* Zello Canal Button */}
-          <a
-            href="https://on.zello.com/7lk8s2"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              "w-full flex items-center gap-4 p-5 rounded-2xl",
-              "bg-card border-2 shadow-sm border-orange-500/40",
-              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
-              "transition-all duration-200 animate-fade-in",
-              "no-underline"
-            )}
-            style={{ animationDelay: '250ms' }}
-          >
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm bg-orange-500/10 border border-orange-500/30">
-              <span className="text-4xl">🎙️</span>
-            </div>
-            <div className="flex-1 text-left min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-foreground text-xl">Zello</h3>
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-orange-500/20 text-orange-500 border border-orange-500/30">EN VIVO</span>
-              </div>
-              <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed">
-                Canal EMERGENCIAS ARABA — radio por internet
-              </p>
-            </div>
-            <ExternalLink className="w-7 h-7 text-orange-500/60 shrink-0" />
-          </a>
         </div>
 
         {/* Dialogs still need to be rendered */}
