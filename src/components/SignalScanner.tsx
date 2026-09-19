@@ -55,6 +55,9 @@ export const SignalScanner: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(signalScanner.getLastError());
   const [sectors, setSectors] = useState<SectorSnapshot>(signalScanner.getSectors());
+  const [guideOn, setGuideOn] = useState(signalGuide.isEnabled());
+  const [pass, setPass] = useState(signalScanner.getPass());
+  const [confirmed, setConfirmed] = useState<{ label: string; devices: number }[]>([]);
   const { position } = useLocation();
 
   useEffect(() => {
