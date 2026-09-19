@@ -20,7 +20,7 @@ const PROXY_TEMPLATES = [
   (url: string) => `https://api.cors.lol/?url=${encodeURIComponent(url)}`,
 ];
 
-const TIMEOUT_MS = 15000;
+const TIMEOUT_MS = 7000;
 
 // Last good feed kept in memory so a transient upstream outage still returns
 // usable (slightly stale) data instead of nothing.
@@ -59,23 +59,34 @@ async function tryFetch(url: string, label: string): Promise<string | null> {
   }
 }
 
+// Todas las rutas (directas y por proxy) se intentan EN PARALELO y se toma la
+// primera que responda: el presupuesto total de tiempo es TIMEOUT_MS, no la
+// suma de 8 intentos secuenciales (~2 minutos antes).
 async function fetchSSNRss(): Promise<string> {
-  // 1) Try direct URLs first
-  for (const url of SSN_URLS) {
-    const result = await tryFetch(url, `direct ${url}`);
-    if (result) return result;
-  }
+  const attempts: Array<Promise<string>> = [];
 
-  // 2) Try via proxy services
-  for (const proxyFn of PROXY_TEMPLATES) {
-    for (const url of SSN_URLS) {
-      const proxyUrl = proxyFn(url);
-      const result = await tryFetch(proxyUrl, `proxy for ${url}`);
-      if (result) return result;
+  for (const url of SSN_URLS) {
+    attempts.push(
+      tryFetch(url, `direct ${url}`).then((r) => {
+        if (!r) throw new Error('no data');
+        return r;
+      }),
+    );
+    for (const proxyFn of PROXY_TEMPLATES) {
+      attempts.push(
+        tryFetch(proxyFn(url), `proxy for ${url}`).then((r) => {
+          if (!r) throw new Error('no data');
+          return r;
+        }),
+      );
     }
   }
 
-  throw new Error('SSN RSS unavailable from all sources');
+  try {
+    return await Promise.any(attempts);
+  } catch {
+    throw new Error('SSN RSS unavailable from all sources');
+  }
 }
 
 serve(async (req) => {
