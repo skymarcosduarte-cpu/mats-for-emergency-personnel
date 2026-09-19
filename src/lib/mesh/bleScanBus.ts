@@ -65,12 +65,30 @@ class BleScanBus {
   /** Da de baja al interesado; detiene el escaneo físico cuando nadie escucha */
   async release(ownerId: string): Promise<void> {
     this.listeners.delete(ownerId);
-    if (this.listeners.size > 0 || !this.running) return;
+    if (this.listeners.size > 0) return;
     this.running = false;
     try {
       await this.ble?.stopLEScan();
     } catch {
       /* ya estaba detenido */
+    }
+  }
+
+  /** Reinicia el escaneo físico conservando los interesados actuales */
+  async restart(): Promise<void> {
+    if (this.listeners.size === 0) return;
+    const ble = await this.ensureClient();
+    this.running = false;
+    this.starting = null;
+    try {
+      await ble.stopLEScan();
+    } catch {
+      /* ya estaba detenido */
+    }
+    const owners = Array.from(this.listeners.entries());
+    this.listeners.clear();
+    for (const [id, fn] of owners) {
+      await this.acquire(id, fn);
     }
   }
 

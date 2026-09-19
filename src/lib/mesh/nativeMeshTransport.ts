@@ -224,8 +224,9 @@ export class NativeMeshTransport implements MeshTransport {
     void stopBackground();
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+    // El bus detiene el escaneo físico sólo si nadie más lo usa (p. ej. el
+    // Detector de Señales). No llamar stopLEScan directamente aquí.
     void bleScanBus.release('mesh');
-    this.ble?.stopLEScan().catch(() => undefined);
     this.advertiser?.stop().catch(() => undefined);
   }
 
