@@ -545,8 +545,6 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
       case 'tablero': return 'AviSOS';
       case 'noticias': return 'Últimas Noticias';
       case 'market': return 'Marketplace';
-      case 'galeria': return 'Galería del Recuerdo';
-      case 'jobs': return 'Bolsa de Trabajo';
       default: return 'Comunidad';
     }
   };
