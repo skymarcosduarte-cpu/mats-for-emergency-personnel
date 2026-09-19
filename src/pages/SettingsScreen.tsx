@@ -731,7 +731,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   <div>
                     <p className="font-medium text-foreground">Panel de Administración</p>
                     <p className="text-xs text-muted-foreground">
-                      Ver usuarios registrados y códigos de invitación
+                      Ver usuarios registrados
                     </p>
                   </div>
                 </div>
@@ -1707,7 +1707,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <div className="text-left">
                 <p className="font-medium">SOS ACTIVO</p>
                 <p className="text-xs text-muted-foreground">
-                  Acceso completo: invitaciones, marketplace, responder alertas
+                  Acceso completo: marketplace, responder alertas
                 </p>
               </div>
               {changingRole && role !== 'SOS_ACTIVO' && (

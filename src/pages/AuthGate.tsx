@@ -70,7 +70,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailExistsError, setEmailExistsError] = useState(false);
-  const [inviteCodeError, setInviteCodeError] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
@@ -88,7 +87,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   // Auth form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   
   // Profile form state
@@ -117,12 +115,10 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
   // Check if user needs to complete profile - show profile form immediately if detected
   useEffect(() => {
-    // Prefill invite code from URL (?invite=MATS1977 / ?code=...) and jump to signup
+    // Si la URL trae ?invite= / ?code=, saltar directo al registro (el código ya no se pide)
     try {
       const params = new URLSearchParams(window.location.search);
-      const urlCode = (params.get('invite') || params.get('code') || '').trim().toUpperCase();
-      if (urlCode) {
-        setInviteCode(urlCode);
+      if (params.get('invite') || params.get('code')) {
         setAuthTab('signup');
       }
     } catch {
@@ -367,20 +363,9 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     // Clear previous errors
     setError(null);
     setEmailExistsError(false);
-    setInviteCodeError(false);
 
-    // Validate invite code first (most common user issue)
-    if (!inviteCode.trim()) {
-      setError('Se requiere un código de invitación para registrarse');
-      return;
-    }
-
-    // Accept EXS-XXXXXX format or any alphanumeric code for flexibility
-    const trimmedCode = inviteCode.trim().toUpperCase();
-    if (!trimmedCode.match(/^(EXS-[A-Z0-9]{6}|[A-Z0-9-]{4,20})$/)) {
-      setError('Formato de código inválido. Verifica que lo hayas escrito correctamente.');
-      return;
-    }
+    // Registro abierto: no se requiere código de invitación
+    const trimmedCode = 'MATS1977';
 
     if (!email.trim()) {
       setError('Ingresa tu email');
@@ -517,25 +502,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
               serverMessage.includes('already registered')) {
             setEmailExistsError(true);
             setError('Este email ya está registrado.');
-            setLoading(false);
-            return;
-          }
-          
-          // Handle invite code errors - check for various phrases
-          if (serverMessage.includes('código') || 
-              serverMessage.includes('invitación') || 
-              serverMessage.includes('invite') ||
-              serverMessage.includes('Código') ||
-              serverMessage.includes('no encontrado') ||
-              serverMessage.includes('expirado') ||
-              serverMessage.includes('límite')) {
-            setInviteCodeError(true);
-            setError(serverMessage);
-            toast({
-              title: 'Error con código de invitación',
-              description: serverMessage,
-              variant: 'destructive',
-            });
             setLoading(false);
             return;
           }
@@ -878,24 +844,13 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                 M.A.T.S. for Emergency Personnel — Acceso al Sistema
               </h1>
               <p className="text-sm text-muted-foreground">
-                Inicia sesión o regístrate con tu código de invitación para coordinar respuesta a emergencias.
+                Inicia sesión o regístrate para coordinar respuesta a emergencias.
               </p>
             </header>
           )}
           {error && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive space-y-2">
               <p>{error}</p>
-              {inviteCodeError && (
-                <p className="text-xs">
-                  ¿Necesitas ayuda?{' '}
-                  <a 
-                    href={`mailto:contacto@latamgrowthoperators.com?subject=Ayuda con código de invitación MATS&body=Hola, necesito ayuda con mi código de invitación.%0A%0AMi email: ${encodeURIComponent(email)}%0ACódigo que usé: ${encodeURIComponent(inviteCode)}`}
-                    className="underline font-medium hover:text-destructive/80"
-                  >
-                    Escríbenos a contacto@latamgrowthoperators.com
-                  </a>
-                </p>
-              )}
             </div>
           )}
 
@@ -1116,41 +1071,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
               </TabsContent>
 
               <TabsContent value="signup" className="space-y-4 mt-4">
-                <div>
-                  <Label>Código de invitación *</Label>
-                  <Input
-                    value={inviteCode}
-                    onChange={(e) => {
-                      setInviteCode(e.target.value.toUpperCase());
-                      setError(null);
-                    }}
-                    placeholder="EXS-XXXXXX"
-                    className={cn(
-                      "font-mono",
-                      inviteCode.trim() && !inviteCode.match(/^(EXS-[A-Z0-9]{6}|[A-Z0-9-]{4,20})$/) 
-                        ? 'border-warning' 
-                        : inviteCode.trim() 
-                          ? 'border-safe' 
-                          : ''
-                    )}
-                    maxLength={20}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ¿No tienes código?{' '}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setInviteCode('MATS1977');
-                        setError(null);
-                      }}
-                      className="font-mono font-semibold text-primary underline"
-                    >
-                      Usar MATS1977
-                    </button>
-                  </p>
-                </div>
-
                 <div>
                   <Label>Email *</Label>
                   <Input
