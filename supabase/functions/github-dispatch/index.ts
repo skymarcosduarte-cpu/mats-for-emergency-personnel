@@ -1,7 +1,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 const GATEWAY_URL = 'https://connector-gateway.lovable.dev/github';
-const GITHUB_REPO = 'skymarcosduarte-cpu/safe-guard-link-43a63509';
+const GITHUB_REPO = 'skymarcosduarte-cpu/MATS-Emergency-Personnel';
 
 const ALLOWED_WORKFLOWS: Record<string, string> = {
   android: 'build-android-mesh.yml',
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
       const response = await fetch(url, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ ref: 'newversion' }),
+        body: JSON.stringify({ ref: 'main', inputs: { expected_version: '2.9.9' } }),
       });
 
       if (!response.ok) {

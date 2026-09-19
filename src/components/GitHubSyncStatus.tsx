@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { APP_VERSION } from "@/lib/versionCheck";
 
-const GITHUB_REPO = "skymarcosduarte-cpu/safe-guard-link-43a63509";
+const GITHUB_REPO = "skymarcosduarte-cpu/MATS-Emergency-Personnel";
 const WORKFLOW_FILE = "build-android-mesh.yml";
 
 interface SyncInfo {

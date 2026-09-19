@@ -1,6 +1,6 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-const GITHUB_REPO = 'skymarcosduarte-cpu/safe-guard-link-43a63509';
+const GITHUB_REPO = 'skymarcosduarte-cpu/MATS-Emergency-Personnel';
 const WORKFLOW_FILE = 'build-android-mesh.yml';
 
 Deno.serve(async (req) => {
