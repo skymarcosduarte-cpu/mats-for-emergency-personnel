@@ -235,19 +235,9 @@ export const GUIDE_PAGES: GuidePageData[] = [
         ],
       },
       {
-        heading: 'Apps de Alertamiento Sísmico (antes SkyAlert)',
-        paragraphs: [
-          'Esta subsección cambió de nombre y ahora reúne los avisos públicos de SASSLA y SkyAlert.',
-          'Se muestran automáticamente los 6 posts más recientes de cada cuenta, sin que tengas que hacer clic.',
-          'Si las fuentes están saturadas, la app usa un respaldo de noticias para seguir informándote, y puedes actualizar manualmente.',
-        ],
-        tip: 'Estas son fuentes informativas complementarias; no sustituyen a tu app oficial de alertamiento.',
-      },
-      {
         heading: 'Monitor de Sismos Globales 24/7',
         paragraphs: [
           'Dentro de la sección de Sismos encontrarás un monitor en vivo de sismos globales, con streaming las 24 horas del día.',
-          'También está disponible el monitor "Raspberry Shake", que muestra la actividad sísmica mundial en tiempo real desde una red de sensores distribuidos globalmente.',
         ],
         tip: 'Estos monitores te permiten ver la actividad sísmica mundial sin salir de la app.',
       },

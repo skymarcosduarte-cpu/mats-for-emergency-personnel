@@ -223,22 +223,6 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
           </div>
         ),
       },
-      {
-        title: '📡 Apps de Alertamiento Sísmico',
-        content: (
-          <div className="space-y-4">
-            <p>
-              La subsección "SkyAlert" ahora se llama <strong>Apps de Alertamiento Sísmico</strong>.
-            </p>
-            <div className="bg-muted rounded-lg p-3 text-xs space-y-1">
-              <p>• Muestra automáticamente los <strong>6 avisos más recientes</strong> de SASSLA y SkyAlert.</p>
-              <p>• Ya no necesitas hacer clic: se cargan solos y puedes actualizar manualmente.</p>
-              <p>• Si las fuentes se saturan, se usa un respaldo de noticias.</p>
-            </div>
-          </div>
-        ),
-        tip: 'Es información complementaria; no sustituye a tu app oficial de alertamiento',
-      },
     ],
   },
   {

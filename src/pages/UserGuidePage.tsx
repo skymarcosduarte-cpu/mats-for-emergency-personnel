@@ -392,13 +392,6 @@ export default function UserGuidePage() {
                 </p>
               </div>
               
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">⚡ Apps de Alertamiento Sísmico</h4>
-                <p className="text-sm text-gray-600">
-                  Avisos públicos recientes de SASSLA y SkyAlert (6 posts por fuente), con respaldo de noticias.
-                </p>
-
-              </div>
               
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-2">🌀 NHC / GDACS</h4>
@@ -413,10 +406,6 @@ export default function UserGuidePage() {
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
                 <span><strong className="text-gray-900">Sismos:</strong> Lista de sismos recientes con magnitud y distancia</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Apps de Alertamiento Sísmico:</strong> Últimos 6 avisos de SASSLA y SkyAlert, cargados automáticamente y con actualización manual</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
