@@ -116,6 +116,20 @@ function alreadySeen(msgKey: string): boolean {
   return known;
 }
 
+/**
+ * Obtiene primero la sesión guardada en el teléfono. A diferencia de getUser(),
+ * getSession() no necesita Internet, así que permite encolar el mensaje con el
+ * dueño correcto y publicarlo cuando regrese la conexión.
+ */
+async function getAuthenticatedUserId(): Promise<string | undefined> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const sessionUserId = sessionData.session?.user.id;
+  if (sessionUserId) return sessionUserId;
+
+  const { data: userData } = await supabase.auth.getUser();
+  return userData.user?.id;
+}
+
 // ------------------------------------------------------------ utilidades
 
 export function bridgeKey(envelope: MeshEnvelope): string {
@@ -147,8 +161,7 @@ export async function publishToBridge(
   const note = typeof payloadObj.message === 'string' ? payloadObj.message : undefined;
   const msgKey = bridgeKey(envelope);
 
-  const { data: auth } = await supabase.auth.getUser();
-  const senderId = auth?.user?.id;
+  const senderId = await getAuthenticatedUserId();
   if (!senderId) return; // sin sesión no se puede publicar
 
   const payload: BridgeRow = {
@@ -203,8 +216,7 @@ let started = false;
 let retryTimer: ReturnType<typeof setInterval> | null = null;
 
 async function ackMessage(msgKey: string) {
-  const { data: auth } = await supabase.auth.getUser();
-  const userId = auth?.user?.id;
+  const userId = await getAuthenticatedUserId();
   if (!userId) return;
   await supabase.from('mesh_relay_acks').insert({ msg_key: msgKey, user_id: userId, via: 'internet' });
 }
