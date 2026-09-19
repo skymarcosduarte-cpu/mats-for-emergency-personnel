@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   snapshot: SectorSnapshot;
+  /** Sector donde está el rescatista ahora mismo (se marca "TÚ") */
+  userCell?: { row: number; col: number; label: string } | null;
 }
 
 function heatClass(ratio: number): string {
@@ -19,11 +21,19 @@ function heatClass(ratio: number): string {
   return 'bg-muted text-muted-foreground';
 }
 
-export const SignalSectorMap: React.FC<Props> = ({ snapshot }) => {
-  const { cells, rows, cols, hot } = snapshot;
-  if (cells.length === 0) return null;
+export const SignalSectorMap: React.FC<Props> = ({ snapshot, userCell }) => {
+  const { cells, hot } = snapshot;
+  // La cuadrícula se amplía si el rescatista caminó fuera de las celdas con
+  // indicios, para que siempre vea en qué sector está parado.
+  const rows = userCell
+    ? [...new Set([...snapshot.rows, userCell.row])].sort((a, b) => a - b)
+    : snapshot.rows;
+  const cols = userCell
+    ? [...new Set([...snapshot.cols, userCell.col])].sort((a, b) => a - b)
+    : snapshot.cols;
+  if (cells.length === 0 && !userCell) return null;
 
-  const maxScore = Math.max(...cells.map((c) => SectorGrid.score(c)));
+  const maxScore = Math.max(...cells.map((c) => SectorGrid.score(c)), 0);
   const byKey = new Map(cells.map((c) => [`${c.row}:${c.col}`, c]));
 
   return (
@@ -48,19 +58,26 @@ export const SignalSectorMap: React.FC<Props> = ({ snapshot }) => {
             const cell = byKey.get(`${row}:${col}`);
             const ratio = cell && maxScore > 0 ? SectorGrid.score(cell) / maxScore : 0;
             const isHot = Boolean(cell && hot && cell.row === hot.row && cell.col === hot.col);
+            const isUser = Boolean(userCell && userCell.row === row && userCell.col === col);
             return (
               <div
                 key={`${row}:${col}`}
                 className={cn(
-                  'aspect-square rounded-md flex flex-col items-center justify-center text-xs font-bold',
+                  'relative aspect-square rounded-md flex flex-col items-center justify-center text-xs font-bold',
                   heatClass(ratio),
                   isHot && 'ring-4 ring-primary ring-offset-1 ring-offset-background',
+                  isUser && 'outline outline-4 outline-offset-2 outline-foreground',
                 )}
               >
-                <span>{cell ? cell.label : ''}</span>
+                <span>{cell ? cell.label : isUser ? userCell?.label : ''}</span>
                 {cell && (
                   <span className="text-[10px] font-semibold opacity-90">
                     {cell.devices.size} disp.
+                  </span>
+                )}
+                {isUser && (
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-foreground text-background text-[10px] font-black tracking-wide shadow">
+                    TÚ
                   </span>
                 )}
               </div>

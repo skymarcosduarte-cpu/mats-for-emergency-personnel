@@ -80,6 +80,11 @@ export const SignalScanner: React.FC = () => {
 
   const strongest = useMemo(() => signals[0] ?? null, [signals]);
   const sustainedCount = useMemo(() => signals.filter((s) => s.sustained).length, [signals]);
+  // Sector de la cuadrícula donde está el rescatista ahora (marca "TÚ")
+  const userCell = useMemo(
+    () => (position ? signalScanner.locateSector(position.lat, position.lng) : null),
+    [position],
+  );
 
   const handleToggle = async () => {
     setBusy(true);
@@ -172,7 +177,7 @@ export const SignalScanner: React.FC = () => {
           </div>
         )}
 
-        <SignalSectorMap snapshot={sectors} />
+        <SignalSectorMap snapshot={sectors} userCell={userCell} />
 
         {scanning && !position && (
           <div className="flex gap-2 p-3 rounded-lg bg-muted text-xs text-muted-foreground">

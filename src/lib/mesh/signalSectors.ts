@@ -68,6 +68,14 @@ export class SectorGrid {
     };
   }
 
+  /** Sector en el que está el rescatista ahora (sin registrar indicios).
+   *  Si la cuadrícula aún no tiene origen, la primera posición GPS lo fija,
+   *  para que el "TÚ" aparezca aunque todavía no haya detecciones. */
+  locate(lat: number, lng: number): { row: number; col: number; label: string } {
+    const { row, col } = this.cellIndex(lat, lng);
+    return { row, col, label: labelFor(row, col) };
+  }
+
   /** Rectángulo geográfico de una celda (para dibujarla en el mapa) */
   private boundsFor(row: number, col: number): SectorBounds {
     const origin = this.origin ?? { lat: 0, lng: 0 };
