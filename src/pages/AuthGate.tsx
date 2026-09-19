@@ -70,7 +70,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailExistsError, setEmailExistsError] = useState(false);
-  const [inviteCodeError, setInviteCodeError] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
@@ -88,7 +87,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   // Auth form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   
   // Profile form state
@@ -117,12 +115,10 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
   // Check if user needs to complete profile - show profile form immediately if detected
   useEffect(() => {
-    // Prefill invite code from URL (?invite=MATS1977 / ?code=...) and jump to signup
+    // Si la URL trae ?invite= / ?code=, saltar directo al registro (el código ya no se pide)
     try {
       const params = new URLSearchParams(window.location.search);
-      const urlCode = (params.get('invite') || params.get('code') || '').trim().toUpperCase();
-      if (urlCode) {
-        setInviteCode(urlCode);
+      if (params.get('invite') || params.get('code')) {
         setAuthTab('signup');
       }
     } catch {
@@ -367,7 +363,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     // Clear previous errors
     setError(null);
     setEmailExistsError(false);
-    setInviteCodeError(false);
 
     // Registro abierto: no se requiere código de invitación
     const trimmedCode = 'MATS1977';
