@@ -96,7 +96,7 @@ class SignalScanner {
   }
 
   /** Sector actual del usuario dentro de la cuadrícula (para marcar "TÚ") */
-  locateSector(lat: number, lng: number): { row: number; col: number; label: string } | null {
+  locateSector(lat: number, lng: number): { row: number; col: number; label: string } {
     return this.grid.locate(lat, lng);
   }
 

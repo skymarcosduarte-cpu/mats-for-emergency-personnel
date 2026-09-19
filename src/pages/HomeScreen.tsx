@@ -96,7 +96,7 @@ SECTIONS.push({
   nav: 'detector',
   label: 'Detector de Señales',
   icon: <Radar className="w-10 h-10" strokeWidth={2.5} />,
-  description: 'Busca celulares encendidos entre escombros',
+  description: 'Encuentra dispositivos activos en zonas de desastre',
   gradient: 'home-section-detector',
   iconBg: 'home-section-icon-detector',
 });
