@@ -1,7 +1,5 @@
-# Tareas
+# Guías activas
 
-- [x] Actualizar la app a la versión 2.9.8.
-- [ ] Verificar la conexión renovada de GitHub.
-- [ ] Crear el repositorio privado `MATS-Emergency-Personnel` en GitHub.
-- [ ] Sincronizar el código de esta nueva app al repositorio.
-- [ ] Ejecutar la compilación Android 2.9.8 y confirmar dónde descargar el APK.
+- [ ] Revisar la guía paso a paso y eliminar funciones retiradas.
+- [ ] Revisar el tutorial y dejar solo las seis secciones activas.
+- [ ] Verificar que no aparezcan Tránsito, Comunidad, Zello ni Centro de Monitoreo.
