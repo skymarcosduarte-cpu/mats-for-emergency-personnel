@@ -30,7 +30,7 @@ export const BUILD_TIME: string = readInjected(() => __BUILD_TIME__) || new Date
 export const GIT_SHA: string = readInjected(() => __GIT_SHA__);
 export const CI_RUN_ID: string = readInjected(() => __CI_RUN_ID__);
 // Repositorio de GitHub usado para verificación automática de la compilación.
-export const GITHUB_REPO = 'skymarcosduarte-cpu/MATS-Emergency-Personnel';
+export const GITHUB_REPO = 'skymarcosduarte-cpu/mats-for-emergency-personnel';
 
 /**
  * Compare semantic versions

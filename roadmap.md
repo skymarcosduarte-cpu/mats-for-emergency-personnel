@@ -7,5 +7,5 @@
 # APK 2.9.9
 
 - [x] Actualizar la aplicación y el proceso de compilación a la versión 2.9.9.
-- [ ] Crear el repositorio privado MATS-Emergency-Personnel (bloqueado por permisos de GitHub).
+- [x] Identificar el repositorio mats-for-emergency-personnel y su rama newversion.
 - [ ] Sincronizar el código y ejecutar la compilación del APK 2.9.9.
