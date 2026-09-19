@@ -1,39 +1,12 @@
-// M.A.T.S. User Guide - Printable/PDF documentation (Print-optimized with white background)
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Shield, 
-  Map, 
-  Activity, 
-  Car, 
-  Users, 
-  BookOpen, 
-  Settings, 
-  Bell, 
-  AlertTriangle,
-  Navigation,
-  Phone,
-  Wifi,
-  Heart,
-  Zap,
-  Radio,
-  Camera,
-  Mic,
-  Clock,
-  MapPin,
-  Route,
-  Eye,
-  Share2,
-  Download,
-  Printer,
-  ArrowUp,
-  Loader2
-} from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { ArrowUp, Download, Loader2, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatsLogo } from '@/components/MatsLogo';
 import { APP_VERSION } from '@/lib/versionCheck';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Helmet } from 'react-helmet-async';
+import { GUIDE_PAGES } from '@/components/UserGuideStepByStep';
 
 export default function UserGuidePage() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -41,36 +14,19 @@ export default function UserGuidePage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const handleDownloadPdf = async () => {
     if (!contentRef.current) return;
-    
     setIsGeneratingPdf(true);
     try {
       const html2pdf = (await import('html2pdf.js')).default;
-      
-      const options = {
+      await html2pdf().set({
         margin: [15, 15, 15, 15] as [number, number, number, number],
         filename: `MATS_Guia_Usuario_v${APP_VERSION}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { 
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff'
-        },
-        jsPDF: { 
-          unit: 'mm' as const, 
-          format: 'a4' as const, 
-          orientation: 'portrait' as const 
-        },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] as const }
-      };
-
-      await html2pdf().set(options).from(contentRef.current).save();
+        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] as const },
+      }).from(contentRef.current).save();
       toast.success('PDF descargado correctamente');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -80,977 +36,88 @@ export default function UserGuidePage() {
     }
   };
 
-  const scrollToTop = () => {
-    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
-    const handleScroll = () => {
-      setShowScrollTop(container.scrollTop > 300);
-    };
-
+    const handleScroll = () => setShowScrollTop(container.scrollTop > 300);
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <div ref={containerRef} className="min-h-screen h-screen bg-white overflow-y-auto">
+    <div ref={containerRef} className="min-h-screen h-screen bg-background overflow-y-auto">
       <Helmet>
-        <title>Guía del Usuario — M.A.T.S. for Emergency Personnel / M.A.T.S.</title>
-        <meta name="description" content="Guía completa del usuario M.A.T.S.: mapa en tiempo real, alertas sísmicas, seguimiento de viajes, comunidad y funciones de emergencia." />
-        <link rel="canonical" href="https://mats-app.com/guia" />
-        <meta property="og:title" content="Guía del Usuario — M.A.T.S. for Emergency Personnel / M.A.T.S." />
-        <meta property="og:url" content="https://mats-app.com/guia" />
-        <meta property="og:description" content="Manual completo de M.A.T.S. — Monitoreo Activo de Tránsito y Seguridad." />
-        <script type="application/ld+json">{JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Article",
-          "headline": "M.A.T.S. — Guía del Usuario",
-          "description": "Manual completo del Sistema de Respuesta a Emergencias M.A.T.S.",
-          "url": "https://mats-app.com/guia"
-        })}</script>
+        <title>Guía del Usuario — M.A.T.S. for Emergency Personnel</title>
+        <meta name="description" content="Guía de las funciones activas de M.A.T.S.: Sismos, Mapa, RecurSOS, Red Mesh, Detector de Señales y Ajustes." />
+        <meta property="og:title" content="Guía del Usuario — M.A.T.S. for Emergency Personnel" />
+        <meta property="og:description" content="Manual actualizado de las seis secciones operativas de M.A.T.S." />
       </Helmet>
-      {/* Action Buttons - Hidden when printing */}
+
       <div className="fixed top-4 right-4 z-50 print:hidden flex gap-2 flex-wrap justify-end">
-        <Button 
-          onClick={handleDownloadPdf} 
-          className="shadow-lg bg-orange-500 hover:bg-orange-600 text-white"
-          disabled={isGeneratingPdf}
-        >
-          {isGeneratingPdf ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Download className="w-4 h-4 mr-2" />
-          )}
+        <Button onClick={handleDownloadPdf} disabled={isGeneratingPdf}>
+          {isGeneratingPdf ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
           {isGeneratingPdf ? 'Generando...' : 'Descargar PDF'}
         </Button>
-        <Button onClick={handlePrint} variant="outline" className="shadow-lg bg-white border-2 border-gray-400 text-gray-800 hover:bg-gray-100 hover:border-gray-500">
-          <Printer className="w-4 h-4 mr-2" />
-          Imprimir
+        <Button onClick={() => window.print()} variant="outline">
+          <Printer className="w-4 h-4 mr-2" /> Imprimir
         </Button>
-        <Button variant="outline" onClick={() => window.history.back()} className="shadow-lg bg-white border-2 border-gray-400 text-gray-800 hover:bg-gray-100 hover:border-gray-500">
-          Volver
-        </Button>
+        <Button variant="outline" onClick={() => window.history.back()}>Volver</Button>
       </div>
 
-      {/* Document Content - White background for print optimization */}
-      <div ref={contentRef} className="max-w-4xl mx-auto p-8 print:p-4 print:max-w-none bg-white">
-        
-        {/* Cover Page */}
-        <header className="text-center mb-16 print:mb-8 page-break-after">
-          <div className="flex justify-center mb-6">
-            <MatsLogo size={96} />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            M.A.T.S. — Guía del Usuario
-          </h1>
-          <h2 className="text-2xl text-orange-600 mb-2 font-medium">
-            Monitoreo Activo de Tránsito y Seguridad
-          </h2>
-          <p className="text-lg text-gray-700 font-medium mb-8">
-            Comunidad EX SOS
-          </p>
-          <div className="inline-block bg-gray-100 border border-gray-200 rounded-lg px-6 py-4">
-            <p className="text-base text-gray-700 font-medium">Guía del Usuario</p>
-            <p className="text-sm text-gray-800 font-semibold mt-1">Versión {APP_VERSION}</p>
-          </div>
+      <main ref={contentRef} className="max-w-4xl mx-auto p-8 print:p-4 bg-background text-foreground">
+        <header className="text-center mb-12 page-break-after">
+          <div className="flex justify-center mb-6"><MatsLogo size={96} /></div>
+          <h1 className="text-4xl font-bold mb-3">M.A.T.S. for Emergency Personnel</h1>
+          <p className="text-2xl text-primary font-semibold">Guía del Usuario</p>
+          <p className="text-base text-muted-foreground mt-2">Versión {APP_VERSION}</p>
         </header>
 
-        {/* Table of Contents */}
-        <section className="mb-12 print:mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-orange-500" />
-            Contenido
-          </h2>
-          <nav className="space-y-2 text-gray-800">
-            <div className="flex justify-between border-b border-gray-200 pb-1">
-              <span>1. Introducción</span>
-              <span className="text-muted-foreground">1</span>
-            </div>
-            <div className="flex justify-between border-b border-gray-200 pb-1">
-              <span>2. Mapa en Tiempo Real</span>
-              <span className="text-muted-foreground">2</span>
-            </div>
-            <div className="flex justify-between border-b border-gray-200 pb-1">
-              <span>3. Alertas Sísmicas y Naturales</span>
-              <span className="text-muted-foreground">3</span>
-            </div>
-            <div className="flex justify-between border-b border-gray-200 pb-1">
-              <span>4. Tránsito y Viajes</span>
-              <span className="text-muted-foreground">4</span>
-            </div>
-            <div className="flex justify-between border-b border-gray-200 pb-1">
-              <span>5. Comunidad</span>
-              <span className="text-muted-foreground">5</span>
-            </div>
-            <div className="flex justify-between border-b border-gray-200 pb-1">
-              <span>6. RecurSOS - Recursos</span>
-              <span className="text-muted-foreground">6</span>
-            </div>
-            <div className="flex justify-between border-b border-gray-200 pb-1">
-              <span>7. Configuración y Perfil</span>
-              <span className="text-muted-foreground">7</span>
-            </div>
-            <div className="flex justify-between border-b border-gray-200 pb-1">
-              <span>8. Funciones de Emergencia</span>
-              <span className="text-muted-foreground">8</span>
-            </div>
-          </nav>
-        </section>
+        <nav className="mb-12 border-y border-border py-6">
+          <h2 className="text-2xl font-bold mb-4">Contenido</h2>
+          <ol className="grid gap-2 sm:grid-cols-2">
+            {GUIDE_PAGES.map((page, index) => (
+              <li key={page.title} className="text-foreground">{index + 1}. {page.title}</li>
+            ))}
+          </ol>
+        </nav>
 
-        {/* Section 1: Introduction */}
-        <section className="mb-12 print:mb-8 page-break-before">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Shield className="w-6 h-6 text-orange-500" />
-            1. Introducción
-          </h2>
-          <div className="prose prose-slate max-w-none">
-            <p className="text-gray-700 leading-relaxed mb-4">
-              <strong className="text-gray-900">M.A.T.S.</strong> (Monitoreo Activo de Tránsito y Seguridad) es una plataforma 
-              integral de seguridad comunitaria diseñada para la respuesta ante desastres y ayuda mutua. 
-              Desarrollada por la <strong className="text-gray-900">Comunidad EX SOS</strong>, esta aplicación proporciona herramientas 
-              de coordinación en tiempo real, alertas sísmicas, seguimiento de viajes y comunicación comunitaria.
-            </p>
-            
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Roles de Usuario</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Familiar:</strong> Usuario estándar con acceso a todas las funciones básicas</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Rescatista:</strong> Personal capacitado que puede responder a emergencias</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">SOS Activo:</strong> Miembro activo con capacidades administrativas</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">EX SOS:</strong> Miembro veterano con privilegios extendidos</span>
-              </li>
-            </ul>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Requisitos</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Navegador web moderno (Chrome, Safari, Firefox)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Permiso de ubicación GPS (recomendado)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Permiso de notificaciones (para alertas en tiempo real)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Conexión a internet</span>
-              </li>
-            </ul>
-          </div>
-        </section>
-
-        {/* Section 2: Real-time Map */}
-        <section className="mb-12 print:mb-8 page-break-before">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Map className="w-6 h-6 text-orange-500" />
-            2. Mapa en Tiempo Real
-          </h2>
-          <div className="prose prose-slate max-w-none">
-            <p className="text-gray-700 leading-relaxed mb-4">
-              El mapa interactivo es el corazón de M.A.T.S., mostrando la ubicación de todos los 
-              miembros de la comunidad que comparten su ubicación, así como eventos y alertas activas.
-            </p>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Funcionalidades</h3>
-            
-            <div className="grid gap-4 md:grid-cols-2 print:grid-cols-2">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  <Users className="w-4 h-4 text-orange-500" />
-                  Ubicación de Miembros
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Visualiza la ubicación en tiempo real de los miembros de la comunidad con iconos 
-                  diferenciados según su rol y especialidad.
-                </p>
+        {GUIDE_PAGES.map((page, pageIndex) => (
+          <section key={page.title} className="mb-12 page-break-before">
+            <div className="flex items-center gap-4 mb-6 pb-4 border-b-2 border-primary/30">
+              <div className={cn('w-16 h-16 rounded-lg bg-muted flex items-center justify-center shrink-0', page.accentColor)}>
+                {page.icon}
               </div>
-              
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  <Navigation className="w-4 h-4 text-orange-500" />
-                  Viajeros Activos
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Muestra los viajes en curso con velocidad actual, destino y ETA estimado.
-                </p>
-              </div>
-              
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-500" />
-                  Reportes de Carretera
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Visualiza reportes comunitarios de bloqueos, accidentes, manifestaciones y otros incidentes.
-                </p>
-              </div>
-              
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  <Radio className="w-4 h-4 text-orange-500" />
-                  Filtro por Especialidad
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Filtra el mapa para mostrar solo miembros con habilidades específicas 
-                  (paramédicos, bomberos, radioaficionados, etc.).
-                </p>
+              <div>
+                <p className="text-sm font-bold text-primary uppercase">Sección {pageIndex + 1}</p>
+                <h2 className="text-2xl font-bold">{page.title}</h2>
               </div>
             </div>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Mapa unificado</h3>
-            <p className="text-gray-700 leading-relaxed mb-4">
-              La antigua vista <strong>En Vivo</strong> se integró al <strong>Mapa de Comunidad</strong>: ahora existe un
-              solo mapa con todas las funciones. Muestra a los miembros (apodo y nombre completo), alertas SOS,
-              rescatistas en camino con ruta y ETA, viajes activos, reportes de carretera vigentes, puntos de calor de
-              NASA FIRMS y capas de clima. Las capas inestables fueron retiradas para mejorar el rendimiento.
-            </p>
-            <div className="grid gap-4 md:grid-cols-2 print:grid-cols-2">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  🌧️ Radar de Lluvia
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Capa de precipitación en tiempo real proporcionada por RainViewer. Se actualiza automáticamente 
-                  cada 5 minutos mostrando lluvias, tormentas y precipitaciones sobre el territorio.
-                </p>
+            {page.sections.map((section, sectionIndex) => (
+              <div key={sectionIndex} className="mb-6 space-y-3">
+                {section.heading && <h3 className="text-xl font-bold">{section.heading}</h3>}
+                {section.paragraphs.map((paragraph, paragraphIndex) => (
+                  <p key={paragraphIndex} className="text-lg leading-relaxed text-muted-foreground">{paragraph}</p>
+                ))}
+                {section.tip && <p className="border-l-4 border-primary bg-primary/10 p-4"><strong>Consejo:</strong> {section.tip}</p>}
+                {section.warning && <p className="border-l-4 border-destructive bg-destructive/10 p-4"><strong>Importante:</strong> {section.warning}</p>}
               </div>
+            ))}
+          </section>
+        ))}
 
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  ⚠️ Alertas SMN/CONAGUA
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Avisos oficiales del Servicio Meteorológico Nacional de México incluyendo ciclones tropicales, 
-                  frentes fríos, lluvias intensas y otros fenómenos meteorológicos.
-                </p>
-              </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  🌀 Ciclones Tropicales (NHC)
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Monitoreo de huracanes y tormentas tropicales del Atlántico y Pacífico con trayectoria, 
-                  categoría y distancia estimada.
-                </p>
-              </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  🔥 Incendios Activos (NASA FIRMS)
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Puntos de calor detectados por satélite en las últimas 24 horas, con nivel de confianza 
-                  y distancia al usuario.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 3: Seismic Alerts */}
-        <section className="mb-12 print:mb-8 page-break-before">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Activity className="w-6 h-6 text-orange-500" />
-            3. Alertas Sísmicas y Naturales
-          </h2>
-          <div className="prose prose-slate max-w-none">
-            <p className="text-gray-700 leading-relaxed mb-4">
-              M.A.T.S. integra múltiples fuentes de datos sísmicos y de desastres naturales 
-              para proporcionar alertas tempranas y monitoreo continuo.
-            </p>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Fuentes de Datos</h3>
-            <div className="grid gap-4 md:grid-cols-2 print:grid-cols-2">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">🇲🇽 SSN (México)</h4>
-                <p className="text-sm text-gray-600">
-                  Servicio Sismológico Nacional - sismos detectados en territorio mexicano.
-                </p>
-              </div>
-              
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">🌍 USGS (Global)</h4>
-                <p className="text-sm text-gray-600">
-                  United States Geological Survey - sismos a nivel mundial.
-                </p>
-              </div>
-              
-              
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">🌀 NHC / GDACS</h4>
-                <p className="text-sm text-gray-600">
-                  Huracanes, ciclones tropicales y alertas internacionales.
-                </p>
-              </div>
-            </div>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Pestañas Disponibles</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Sismos:</strong> Lista de sismos recientes con magnitud y distancia</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">México:</strong> Ciclones tropicales y puntos de calor (incendios)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Internacional:</strong> Alertas GDACS y AEMET</span>
-              </li>
-            </ul>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Check-in "Todo Bien"</h3>
-            <p className="text-gray-700">
-              Después de un sismo significativo, puedes reportar que estás bien con el botón 
-              "Todo bien" para que la comunidad sepa tu estado.
-            </p>
-          </div>
-        </section>
-
-        {/* Section 4: Transit */}
-        <section className="mb-12 print:mb-8 page-break-before">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Car className="w-6 h-6 text-orange-500" />
-            4. Tránsito y Viajes
-          </h2>
-          <div className="prose prose-slate max-w-none">
-            <p className="text-gray-700 leading-relaxed mb-4">
-              El módulo de Tránsito te permite registrar viajes, compartir tu ubicación en tiempo real, 
-              y reportar incidentes en carretera para la comunidad.
-            </p>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Iniciar un Viaje</h3>
-            <ol className="space-y-2 text-gray-700 list-decimal list-inside">
-              <li>Selecciona el tipo de viaje (Carretera, Vuelo, Taxi, etc.)</li>
-              <li>Ingresa el origen y destino con el buscador mejorado o tocando el punto exacto en el mapa</li>
-              <li>Configura la hora estimada de llegada (ETA)</li>
-              <li>Opcionalmente, agrega foto del vehículo y placas</li>
-              <li>Para vuelos: <strong>aerolínea y número de vuelo son obligatorios</strong>; la matrícula de la aeronave es opcional</li>
-            </ol>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Durante el Viaje</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Tu ubicación se actualiza automáticamente en el mapa</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>El ETA se recalcula basado en tu velocidad actual</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Se registra el historial de tu ruta</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Puedes compartir un enlace de seguimiento con familiares y avisar por WhatsApp</span>
-              </li>
-            </ul>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Detección Automática de Llegada</h3>
-            <p className="text-gray-700 leading-relaxed mb-4">
-              Si olvidas cerrar tu viaje, la app lo detecta por GPS: al entrar en el radio de tu destino marca el viaje
-              como <strong>llegada</strong> y notifica a la comunidad. Puedes ajustar la sensibilidad del radio entre
-              <strong> 100 y 500 metros</strong> en <strong>Ajustes → Alertas</strong>.
-            </p>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">📶 Red Mesh Bluetooth (sin internet)</h3>
-            <p className="text-gray-700 leading-relaxed mb-4">
-              La Red Mesh permite que la app siga comunicándose cuando no hay internet ni señal celular. Los
-              dispositivos cercanos retransmiten los mensajes por Bluetooth formando una malla; las alertas SOS tienen
-              prioridad y viajan firmadas y verificadas criptográficamente. Se activa desde el botón morado
-              <strong> Red Mesh</strong> en la pantalla de Inicio y su alcance completo requiere la app instalada como
-              aplicación nativa (Android/iOS).
-            </p>
-
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Reportes de Carretera</h3>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <p className="text-sm text-gray-600 mb-2">Tipos de reportes disponibles:</p>
-              <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
-                <span>🚧 Bloqueo</span>
-                <span>🚨 Accidente</span>
-                <span>✊ Manifestación</span>
-                <span>⚠️ Peligro</span>
-                <span>🔧 Tramo en reparación</span>
-                <span>🚛 Tráfico pesado</span>
-                <span>🛑 Tráfico detenido</span>
-                <span>🌫️ Neblina</span>
-                <span>❄️ Granizo/Nieve</span>
-                <span>⛔ Caseta cerrada</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 5: Community */}
-        <section className="mb-12 print:mb-8 page-break-before">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Users className="w-6 h-6 text-orange-500" />
-            5. Comunidad
-          </h2>
-          <div className="prose prose-slate max-w-none">
-            <p className="text-gray-700 leading-relaxed mb-4">
-              La sección de Comunidad es el espacio social de M.A.T.S., donde puedes compartir 
-              eventos, ver noticias y conectar con otros miembros.
-            </p>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Pestañas</h3>
-            
-            <div className="space-y-4">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  🆘 AviSOS (Tablero)
-                </h4>
-                <p className="text-sm text-gray-600 mb-2">
-                  Publicaciones y avisos de la comunidad incluyendo:
-                </p>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>🎂 Cumpleaños de miembros</li>
-                  <li>📅 Eventos comunitarios</li>
-                  <li>💍 Aniversarios</li>
-                  <li>🕯️ Decesos y condolencias</li>
-                  <li>📰 Noticias relevantes</li>
-                  <li>💡 Recomendaciones</li>
-                  <li>🎥 Videos de emergencia (grabación en vivo)</li>
-                </ul>
-              </div>
-
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  <Zap className="w-4 h-4 text-orange-500" />
-                  Noticias (Breaking News)
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Noticias de emergencia en tiempo real de fuentes mexicanas. Mantente informado 
-                  sobre eventos importantes y situaciones de emergencia.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  🛒 Marketplace
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Compra, venta e intercambio de artículos entre miembros de la comunidad. 
-                  Publica tus productos con fotos, descripción y precio.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  <Camera className="w-4 h-4 text-orange-500" />
-                  Galería del Recuerdo
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Espacio para compartir fotos y videos de momentos especiales de la comunidad. 
-                  Guarda memorias de eventos, reuniones y celebraciones con comentarios y reacciones.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  💼 Bolsa de Trabajo
-                </h4>
-                <p className="text-sm text-gray-600 mb-2">
-                  Red de oportunidades laborales exclusiva para miembros de la comunidad.
-                </p>
-                <div className="bg-white border border-gray-100 rounded p-3 mt-2">
-                  <p className="text-xs font-medium text-gray-700 mb-2">Puedes publicar:</p>
-                  <ul className="text-xs text-gray-600 space-y-1">
-                    <li>• <strong>Si buscas empleo:</strong> Tu perfil profesional con experiencia y habilidades</li>
-                    <li>• <strong>Si ofreces trabajo:</strong> Vacantes y oportunidades laborales</li>
-                  </ul>
-                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Incluye:</p>
-                  <ul className="text-xs text-gray-600 space-y-1">
-                    <li>📄 Currículum Vitae (PDF o Word, máx. 10MB)</li>
-                    <li>🔗 Enlace a perfil de LinkedIn</li>
-                    <li>🎯 Título profesional y experiencia</li>
-                    <li>📋 Posición buscada u ofrecida</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2 mb-2">
-                  <Car className="w-4 h-4 text-orange-500" />
-                  Viajeros Activos
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Lista de viajes activos de la comunidad. Puedes ver la ubicación en tiempo real 
-                  de cualquier viajero y su ruta recorrida.
-                </p>
-              </div>
-            </div>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Mensajería Interna</h3>
-            <p className="text-gray-700">
-              Puedes enviar mensajes directos a otros miembros de la comunidad, incluyendo 
-              texto, imágenes y notas de voz.
-            </p>
-          </div>
-        </section>
-
-        {/* Section 6: Resources */}
-        <section className="mb-12 print:mb-8 page-break-before">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-orange-500" />
-            6. RecurSOS - Recursos
-          </h2>
-          <div className="prose prose-slate max-w-none">
-            <p className="text-gray-700 leading-relaxed mb-4">
-              RecurSOS es la sección central de recursos de emergencia de M.A.T.S., accesible desde el menú principal.
-              Incluye el <strong className="text-gray-900">Directorio de Protección Civil y Cruz Roja Internacional</strong> y las
-              <strong className="text-gray-900"> Guías de Emergencia</strong> con protocolos y acciones rápidas.
-            </p>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">📞 Directorio PC y Cruz Roja Internacional</h3>
-            <p className="text-gray-700 mb-4">
-              Directorio completo de <strong className="text-gray-900">Protección Civil y la Cruz Roja</strong> de 12 países,
-              con teléfonos, ubicaciones y servicios por país.
-            </p>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-              <h4 className="font-medium text-gray-900 mb-2">Funciones del Directorio:</h4>
-              <ul className="space-y-1 text-sm text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-500">•</span>
-                  <span>Búsqueda por país, ciudad o proximidad GPS</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-500">•</span>
-                  <span>Marcado rápido (tap para llamar) y navegación GPS</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-500">•</span>
-                  <span>Expansión en línea para ver detalles de cada país (bandera, banner, divisiones)</span>
-                </li>
-              </ul>
-            </div>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 print:bg-green-50">
-              <p className="text-green-800 text-sm flex items-start gap-2">
-                <span className="text-green-600 font-bold">📥</span>
-                <span><strong>Disponible sin conexión:</strong> El directorio se descarga automáticamente en tu dispositivo 
-                y se almacena en caché para que siempre esté disponible, incluso sin internet.</span>
-              </p>
-            </div>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">📚 Guías de Emergencias</h3>
-            <p className="text-gray-700 mb-4">
-              Colección de <strong className="text-gray-900">tarjetas informativas con protocolos y acciones rápidas</strong> para 
-              usar en caso de emergencia.
-            </p>
-            
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 print:bg-amber-50">
-              <p className="text-amber-800 text-sm flex items-start gap-2">
-                <span className="text-amber-600 font-bold">⚠️</span>
-                <span><strong>Importante:</strong> Las guías NO sustituyen la capacitación formal ni la certificación profesional. 
-                Son herramientas de referencia rápida para situaciones de emergencia.</span>
-              </p>
-            </div>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Categorías Disponibles</h3>
-            <div className="grid gap-2 md:grid-cols-3 print:grid-cols-3 text-sm">
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>🩹</span><span>Primeros Auxilios</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>🚨</span><span>Evacuación</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>🛡️</span><span>Seguridad</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>🏠</span><span>Preparación</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>📞</span><span>Comunicación</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>⚠️</span><span>Amenazas</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>🏥</span><span>Salud Pública</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>🧠</span><span>Salud Mental</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>🚑</span><span>Trauma</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>⚕️</span><span>Médico</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>🏕️</span><span>Refugio</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>🏷️</span><span>Triage</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>👶</span><span>Protección Vulnerable</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>🆘</span><span>Violencia/Crisis</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <span>🦺</span><span>Seguridad Operativa</span>
-              </div>
-            </div>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Funcionalidades de Búsqueda</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Búsqueda por texto y voz:</strong> Útil cuando tienes las manos ocupadas en una emergencia</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Filtros por categoría, audiencia y nivel:</strong> Encuentra rápidamente lo que necesitas</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Favoritos:</strong> Guarda las tarjetas más importantes para acceso instantáneo</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Historial de recursos vistos:</strong> Accede rápidamente a tarjetas consultadas recientemente</span>
-              </li>
-            </ul>
-          </div>
-        </section>
-
-        {/* Section 7: Settings */}
-        <section className="mb-12 print:mb-8 page-break-before">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Settings className="w-6 h-6 text-orange-500" />
-            7. Configuración y Perfil
-          </h2>
-          <div className="prose prose-slate max-w-none">
-            
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Perfil de Usuario</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Nombre completo y apodo:</strong> Cómo te identificas en la comunidad</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Especialidades:</strong> Habilidades que puedes ofrecer en emergencias</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Información médica:</strong> Tipo de sangre, alergias, medicamentos (opcional)</span>
-              </li>
-            </ul>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Privacidad</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Compartir ubicación:</strong> Activar/desactivar el compartir tu ubicación</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Mostrar nombre en mapa:</strong> Si tu nombre aparece junto a tu marcador</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span><strong className="text-gray-900">Compartir info médica:</strong> Disponibilidad de tu información médica en emergencias</span>
-              </li>
-            </ul>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Notificaciones</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Alertas sísmicas (SkyAlert, SSN, USGS)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Alertas de ciclones e incendios</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Mensajes de la comunidad</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Alertas Clave 100</span>
-              </li>
-            </ul>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Contactos de Emergencia</h3>
-            <p className="text-gray-700">
-              Puedes registrar contactos de emergencia que serán notificados automáticamente 
-              cuando uses el botón de pánico o cuando un viaje se retrase.
-            </p>
-          </div>
-        </section>
-
-        {/* Section 8: Emergency Functions */}
-        <section className="mb-12 print:mb-8 page-break-before">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <AlertTriangle className="w-6 h-6 text-red-600" />
-            8. Funciones de Emergencia
-          </h2>
-          <div className="prose prose-slate max-w-none">
-            
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-gray-900 font-medium">
-                ⚠️ Estas funciones están diseñadas para situaciones reales de emergencia.
-                Úsalas responsablemente.
-              </p>
-            </div>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Botón de Pánico</h3>
-            <p className="text-gray-700 mb-4">
-              El botón de pánico envía una alerta inmediata a los rescatistas cercanos con:
-            </p>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-red-600">•</span>
-                <span>Tu ubicación GPS exacta</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-red-600">•</span>
-                <span>Mensaje de texto o nota de voz (opcional)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-red-600">•</span>
-                <span>Foto de la situación (opcional)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-red-600">•</span>
-                <span>Tu información médica (si está compartida)</span>
-              </li>
-            </ul>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Ayuda 14 (Daños por Sismo)</h3>
-            <p className="text-gray-700">
-              Función especializada para reportar daños después de un sismo. Permite documentar 
-              la situación con fotos y notas de voz para una respuesta coordinada.
-            </p>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Clave 100</h3>
-            <p className="text-gray-700 mb-4">
-              Sistema de comunicación prioritaria para situaciones críticas. Incluye:
-            </p>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Check-in masivo de la comunidad</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Chat de emergencia grupal</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Simulacros programados</span>
-              </li>
-            </ul>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">🎥 Grabación de Emergencia en Vivo</h3>
-            <p className="text-gray-700 mb-4">
-              El botón de cámara con <strong>glow rojo</strong> en el header permite grabar video en vivo durante emergencias.
-              <em className="block text-sm text-gray-600 mt-1">Nota: El ícono es pequeño A PROPÓSITO para grabar discretamente.</em>
-            </p>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-              <h4 className="font-medium text-gray-900 mb-2">Características:</h4>
-              <ul className="space-y-1 text-sm text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-red-600">•</span>
-                  <span>Clips de 15 segundos automáticos (máximo 5 minutos = 20 clips)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-600">•</span>
-                  <span>Se publica automáticamente en el chat comunitario</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-600">•</span>
-                  <span>Se notifica a tus contactos de emergencia</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-600">•</span>
-                  <span>Incluye tu ubicación GPS en cada mensaje</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-600">•</span>
-                  <span>Videos disponibles por 7 días como evidencia</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-600">•</span>
-                  <span>SOLO tú puedes borrar tus propios videos</span>
-                </li>
-              </ul>
-            </div>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h4 className="font-medium text-red-800 mb-2">⚠️ ADVERTENCIAS IMPORTANTES</h4>
-              <ul className="space-y-1 text-sm text-red-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-red-600">•</span>
-                  <span>Solo usar para emergencias reales o sospecha de peligro</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-600">•</span>
-                  <span><strong>El mal uso causará BAJA INMEDIATA de la red</strong></span>
-                </li>
-              </ul>
-            </div>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">Respuesta a Emergencias</h3>
-            <p className="text-gray-700">
-              Cuando alguien activa una emergencia, los rescatistas cercanos reciben una notificación 
-              y pueden indicar que van en camino. El sistema muestra:
-            </p>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Quién está respondiendo</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Tiempo estimado de llegada</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span>Ruta del rescatista en tiempo real</span>
-              </li>
-            </ul>
-
-            <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">📧 Guardia Virtual 24/7</h3>
-            <p className="text-gray-700 mb-4">
-              Toda alerta SOS, solicitud de ayuda o activación de emergencia también genera una 
-              <strong className="text-gray-900"> notificación por correo electrónico</strong> a una lista de distribución 
-              de miembros activos de la comunidad, asegurando que siempre haya alguien al pendiente.
-            </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 print:bg-blue-50">
-              <p className="text-blue-800 text-sm flex items-start gap-2">
-                <span className="text-blue-600 font-bold">📨</span>
-                <span>La lista de distribución incluye rescatistas y coordinadores que reciben notificaciones 
-                automáticas tanto de alertas de pánico como de solicitudes de ayuda.</span>
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* QR Code Download Section */}
-        <section className="mt-16 pt-8 border-t border-gray-200 page-break-before">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-2">
-              <Download className="w-6 h-6 text-orange-500" />
-              Descarga la Aplicación
-            </h2>
-            <p className="text-gray-700 mb-6">
-              Escanea el código QR con tu teléfono para instalar M.A.T.S.
-            </p>
-            <div className="flex flex-col items-center gap-4">
-              <div className="bg-white p-4 border-2 border-gray-300 rounded-xl shadow-sm">
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://mats-app.com/install&bgcolor=ffffff&color=000000`}
-                  alt="QR Code para descargar M.A.T.S."
-                  className="w-48 h-48"
-                />
-              </div>
-              <a 
-                href="https://mats-app.com/install" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium text-lg underline underline-offset-2"
-              >
-                https://mats-app.com/install
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="mt-12 pt-8 border-t border-gray-200 text-center">
-          <div className="flex justify-center mb-4">
-            <MatsLogo size={48} />
-          </div>
-          <p className="text-base text-orange-600 font-medium">
-            M.A.T.S. - Monitoreo Activo de Tránsito y Seguridad
-          </p>
-          <p className="text-sm text-gray-700 mt-1">
-            Comunidad EX SOS • Versión {APP_VERSION}
-          </p>
-          <p className="text-sm text-muted-foreground mt-4">
-            Este documento fue generado desde la aplicación M.A.T.S.
-          </p>
+        <footer className="text-center py-8 border-t border-border">
+          <div className="flex justify-center"><MatsLogo size={48} /></div>
+          <p className="text-sm text-muted-foreground mt-3">M.A.T.S. for Emergency Personnel · v{APP_VERSION}</p>
         </footer>
-      </div>
+      </main>
 
-      {/* Print Styles - Optimized for white background printing */}
-      <style>{`
-        @media print {
-          body {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            background: white !important;
-          }
-          
-          * {
-            background-color: transparent !important;
-          }
-          
-          .bg-gray-50, .bg-gray-100 {
-            background-color: #f9fafb !important;
-          }
-          
-          .page-break-before {
-            page-break-before: always;
-          }
-          
-          .page-break-after {
-            page-break-after: always;
-          }
-          
-          @page {
-            margin: 1.5cm;
-            size: A4;
-          }
-          
-          h1, h2, h3, h4, strong {
-            color: #111827 !important;
-          }
-          
-          p, li, span {
-            color: #374151 !important;
-          }
-        }
-      `}</style>
-
-      {/* Scroll to Top Button */}
       <Button
-        onClick={scrollToTop}
-        className={cn(
-          "fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 p-0 shadow-lg transition-all duration-300 print:hidden bg-orange-500 hover:bg-orange-600",
-          showScrollTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
-        )}
+        onClick={() => containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+        className={cn('fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 p-0 shadow-lg transition-all print:hidden', showScrollTop ? 'opacity-100' : 'opacity-0 pointer-events-none')}
         size="icon"
         aria-label="Volver al inicio"
       >
-        <ArrowUp className="w-5 h-5 text-white" />
+        <ArrowUp className="w-5 h-5" />
       </Button>
     </div>
   );
