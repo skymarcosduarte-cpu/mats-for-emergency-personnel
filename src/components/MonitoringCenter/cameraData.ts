@@ -129,10 +129,10 @@ export const DEFAULT_CAMERAS: Camera[] = [
   // ═══════════════════════════════════════
   {
     id: 'yt-nplus-live',
-    name: 'N+ Streaming en vivo',
+    name: 'N+ Foro Noticias en vivo',
     city: 'CDMX',
     country: 'México',
-    description: 'Noticias N+ en vivo',
+    description: 'N+ Foro Noticias en vivo 24/7',
     sourceType: 'youtube',
     embedUrl: `https://www.youtube.com/embed/p2AzyIEuFak${YT_PARAMS}`,
     region: 'noticias',
