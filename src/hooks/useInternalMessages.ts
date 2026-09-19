@@ -4,6 +4,14 @@ import { useAuth } from './useAuth';
 import { playMessageNotification, triggerMessageVibration, playClave100Alert } from '@/lib/alertSound';
 import { triggerClave100Notification } from './useClave100Notification';
 import { toast } from 'sonner';
+import {
+  flushInternalMessagesQueue,
+  getPendingInternalMessages,
+  queueInternalMessage,
+  INTERNAL_QUEUE_EVENT,
+  type PendingInternalMessage,
+} from '@/lib/internalMessagesQueue';
+
 
 export interface InternalMessage {
   id: string;
@@ -15,7 +23,10 @@ export interface InternalMessage {
   audio_url: string | null;
   audio_duration_ms: number | null;
   image_url: string | null;
+  /** true = guardado en el teléfono, aún sin enviar por falta de conexión */
+  pending?: boolean;
 }
+
 
 export interface Conversation {
   user_id: string;
