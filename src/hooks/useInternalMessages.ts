@@ -421,7 +421,99 @@ export const useInternalMessagesStore = () => {
     }
   }, [user?.id, queueBurstNotification]);
 
-  // Send a message with optimistic update
+  // Aviso al destinatario (notificación en la app + push en segundo plano)
+  const notifyReceiver = useCallback(
+    async (receiverId: string, displayMessage: string, senderId: string) => {
+      try {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('nickname, full_name')
+          .eq('id', senderId)
+          .single();
+
+        const senderName = profileData?.nickname || profileData?.full_name || 'Usuario';
+
+        const notificationChannel = supabase.channel(`user-notifications:${receiverId}`);
+        await notificationChannel.send({
+          type: 'broadcast',
+          event: 'new_message',
+          payload: { senderName, messagePreview: displayMessage.substring(0, 100), senderId }
+        });
+        supabase.removeChannel(notificationChannel);
+
+        const isClave100 = displayMessage.includes('🚨 CLAVE 100') || displayMessage.includes('CLAVE 100 - EMERGENCIA');
+        await supabase.functions.invoke('send-message-push', {
+          body: {
+            receiverId,
+            senderName,
+            messagePreview: displayMessage.substring(0, 100),
+            senderId,
+            alertType: isClave100 ? 'PANIC' : 'MESSAGE'
+          }
+        });
+      } catch (e) {
+        console.warn('[InternalMessages] Push notification failed:', e);
+      }
+    },
+    []
+  );
+
+  const insertMessage = useCallback(
+    async (payload: {
+      senderId: string;
+      receiverId: string;
+      message: string;
+      audioUrl: string | null;
+      audioDurationMs: number | null;
+      imageUrl: string | null;
+    }): Promise<InternalMessage> => {
+      const { data, error } = await supabase
+        .from('internal_messages')
+        .insert({
+          sender_id: payload.senderId,
+          receiver_id: payload.receiverId,
+          message: payload.message,
+          audio_url: payload.audioUrl,
+          audio_duration_ms: payload.audioDurationMs,
+          image_url: payload.imageUrl
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as InternalMessage;
+    },
+    []
+  );
+
+  const pendingToMessage = (item: PendingInternalMessage): InternalMessage => ({
+    id: item.id,
+    sender_id: item.senderId,
+    receiver_id: item.receiverId,
+    message: item.message,
+    read: false,
+    created_at: new Date(item.queuedAt).toISOString(),
+    audio_url: item.audioUrl,
+    audio_duration_ms: item.audioDurationMs,
+    image_url: item.imageUrl,
+    pending: true,
+  });
+
+  const bumpConversation = (receiverId: string, displayMessage: string, at: string) => {
+    setConversations(prev => {
+      const existing = prev.find(c => c.user_id === receiverId);
+      if (!existing) return prev;
+      return prev
+        .map(c =>
+          c.user_id === receiverId
+            ? { ...c, last_message: displayMessage, last_message_at: at }
+            : c
+        )
+        .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+    });
+  };
+
+  // Send a message with optimistic update (y guardado local si no hay red)
   const sendMessage = async (
     receiverId: string, 
     message: string,
@@ -438,6 +530,26 @@ export const useInternalMessagesStore = () => {
       else if (imageUrl) displayMessage = '📷 Imagen';
     }
 
+    const payload = {
+      senderId: user.id,
+      receiverId,
+      message: displayMessage,
+      audioUrl: audioUrl || null,
+      audioDurationMs: audioDurationMs || null,
+      imageUrl: imageUrl || null,
+    };
+
+    const holdOffline = () => {
+      const entry = queueInternalMessage(payload);
+      const held = pendingToMessage(entry);
+      setMessages(prev => [...prev.filter(m => m.id !== optimisticId), held]);
+      bumpConversation(receiverId, displayMessage, held.created_at);
+      toast.info('Sin conexión', {
+        description: 'El mensaje quedó guardado y se enviará solo cuando vuelva la señal.',
+      });
+      return true;
+    };
+
     // Create optimistic message
     const optimisticId = `temp-${Date.now()}`;
     const optimisticMessage: InternalMessage = {
@@ -452,90 +564,91 @@ export const useInternalMessagesStore = () => {
       image_url: imageUrl || null
     };
 
+    // Sin red: guardar en el teléfono y salir
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      return holdOffline();
+    }
+
     // Optimistically add message to state
     setMessages(prev => [...prev, optimisticMessage]);
 
     try {
-      const { data, error } = await supabase
-        .from('internal_messages')
-        .insert({
-          sender_id: user.id,
-          receiver_id: receiverId,
-          message: displayMessage,
-          audio_url: audioUrl || null,
-          audio_duration_ms: audioDurationMs || null,
-          image_url: imageUrl || null
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await insertMessage(payload);
 
       // Replace optimistic message with real one
       setMessages(prev => prev.map(m => 
         m.id === optimisticId ? data : m
       ));
 
-      // Update conversations optimistically
-      setConversations(prev => {
-        const existing = prev.find(c => c.user_id === receiverId);
-        if (existing) {
-          return prev.map(c => 
-            c.user_id === receiverId 
-              ? { ...c, last_message: displayMessage, last_message_at: data.created_at }
-              : c
-          ).sort((a, b) => 
-            new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
-          );
-        }
-        return prev;
-      });
+      bumpConversation(receiverId, displayMessage, data.created_at);
 
-      // Send push notification via edge function (fire and forget) 
-      setTimeout(async () => {
-        try {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('nickname, full_name')
-            .eq('id', user.id)
-            .single();
-          
-          const senderName = profileData?.nickname || profileData?.full_name || 'Usuario';
-          
-          // First, send broadcast for in-app notification
-          const notificationChannel = supabase.channel(`user-notifications:${receiverId}`);
-          await notificationChannel.send({
-            type: 'broadcast',
-            event: 'new_message',
-            payload: { senderName, messagePreview: displayMessage.substring(0, 100), senderId: user.id }
-          });
-          supabase.removeChannel(notificationChannel);
-          
-          // Then, send real Web Push via edge function (for background delivery)
-          const isClave100 = displayMessage.includes('🚨 CLAVE 100') || displayMessage.includes('CLAVE 100 - EMERGENCIA');
-          await supabase.functions.invoke('send-message-push', {
-            body: {
-              receiverId,
-              senderName,
-              messagePreview: displayMessage.substring(0, 100),
-              senderId: user.id,
-              alertType: isClave100 ? 'PANIC' : 'MESSAGE'
-            }
-          });
-        } catch (e) {
-          // Ignore errors for background notification
-          console.warn('[InternalMessages] Push notification failed:', e);
-        }
-      }, 0);
+      // Aviso al destinatario (fire and forget)
+      setTimeout(() => void notifyReceiver(receiverId, displayMessage, user.id), 0);
 
       return true;
     } catch (err) {
       console.error('Error sending message:', err);
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(m => m.id !== optimisticId));
-      return false;
+      // Falló el envío: se conserva en el teléfono y se reintenta solo
+      return holdOffline();
     }
   };
+
+  // Reenvía automáticamente lo que quedó guardado sin conexión
+  const flushPendingMessages = useCallback(async () => {
+    if (!user?.id) return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+
+    const sent = await flushInternalMessagesQueue(user.id, async (item) => {
+      try {
+        const data = await insertMessage({
+          senderId: item.senderId,
+          receiverId: item.receiverId,
+          message: item.message,
+          audioUrl: item.audioUrl,
+          audioDurationMs: item.audioDurationMs,
+          imageUrl: item.imageUrl,
+        });
+        setMessages(prev => prev.map(m => (m.id === item.id ? data : m)));
+        setTimeout(() => void notifyReceiver(item.receiverId, item.message, item.senderId), 0);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+
+    if (sent > 0) {
+      toast.success(
+        sent === 1 ? 'Se envió 1 mensaje guardado sin conexión' : `Se enviaron ${sent} mensajes guardados sin conexión`
+      );
+    }
+  }, [user?.id, insertMessage, notifyReceiver]);
+
+  // Muestra los pendientes guardados y reintenta al recuperar la señal
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const pending = getPendingInternalMessages().filter(i => i.senderId === user.id);
+    if (pending.length) {
+      setMessages(prev => {
+        const known = new Set(prev.map(m => m.id));
+        return [...prev, ...pending.filter(p => !known.has(p.id)).map(pendingToMessage)];
+      });
+    }
+
+    void flushPendingMessages();
+
+    const onOnline = () => void flushPendingMessages();
+    window.addEventListener('online', onOnline);
+    const timer = setInterval(() => {
+      if (navigator.onLine) void flushPendingMessages();
+    }, 20000);
+
+    return () => {
+      window.removeEventListener('online', onOnline);
+      clearInterval(timer);
+    };
+  }, [user?.id, flushPendingMessages]);
+
 
   // Delete own message with optimistic update
   const deleteMessage = async (messageId: string): Promise<boolean> => {
