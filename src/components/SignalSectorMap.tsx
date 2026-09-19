@@ -23,15 +23,20 @@ function heatClass(ratio: number): string {
 
 export const SignalSectorMap: React.FC<Props> = ({ snapshot, userCell }) => {
   const { cells, hot } = snapshot;
+  const visited = snapshot.visited ?? [];
+  const visitedOrder = new Map(visited.map((key, index) => [key, index + 1]));
   // La cuadrícula se amplía si el rescatista caminó fuera de las celdas con
-  // indicios, para que siempre vea en qué sector está parado.
-  const rows = userCell
-    ? [...new Set([...snapshot.rows, userCell.row])].sort((a, b) => a - b)
-    : snapshot.rows;
-  const cols = userCell
-    ? [...new Set([...snapshot.cols, userCell.col])].sort((a, b) => a - b)
-    : snapshot.cols;
-  if (cells.length === 0 && !userCell) return null;
+  // indicios (o dejó recorrido ahí), para que siempre vea dónde está parado
+  // y qué zonas ya barrió.
+  const extraRows = visited.map((key) => Number(key.split(':')[0]));
+  const extraCols = visited.map((key) => Number(key.split(':')[1]));
+  const rows = [
+    ...new Set([...snapshot.rows, ...extraRows, ...(userCell ? [userCell.row] : [])]),
+  ].sort((a, b) => a - b);
+  const cols = [
+    ...new Set([...snapshot.cols, ...extraCols, ...(userCell ? [userCell.col] : [])]),
+  ].sort((a, b) => a - b);
+  if (cells.length === 0 && !userCell && visited.length === 0) return null;
 
   const maxScore = Math.max(...cells.map((c) => SectorGrid.score(c)), 0);
   const byKey = new Map(cells.map((c) => [`${c.row}:${c.col}`, c]));
