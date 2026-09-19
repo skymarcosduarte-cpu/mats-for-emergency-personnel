@@ -68,6 +68,14 @@ export class SectorGrid {
     };
   }
 
+  /** Sector en el que está el rescatista ahora (sin registrar indicios).
+   *  Devuelve null si aún no hay origen (nadie ha caminado con GPS). */
+  locate(lat: number, lng: number): { row: number; col: number; label: string } | null {
+    if (!this.origin) return null;
+    const { row, col } = this.cellIndex(lat, lng);
+    return { row, col, label: labelFor(row, col) };
+  }
+
   /** Rectángulo geográfico de una celda (para dibujarla en el mapa) */
   private boundsFor(row: number, col: number): SectorBounds {
     const origin = this.origin ?? { lat: 0, lng: 0 };

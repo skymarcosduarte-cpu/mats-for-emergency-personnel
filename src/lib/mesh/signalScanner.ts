@@ -95,6 +95,11 @@ class SignalScanner {
     return this.grid.snapshot();
   }
 
+  /** Sector actual del usuario dentro de la cuadrícula (para marcar "TÚ") */
+  locateSector(lat: number, lng: number): { row: number; col: number; label: string } | null {
+    return this.grid.locate(lat, lng);
+  }
+
   isNative(): boolean {
     const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
     return Boolean(cap?.isNativePlatform?.());
