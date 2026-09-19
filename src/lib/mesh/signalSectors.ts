@@ -51,14 +51,17 @@ function labelFor(row: number, col: number): string {
 export class SectorGrid {
   private origin: { lat: number; lng: number } | null = null;
   private cells = new Map<string, SectorCell>();
+  /** Recorrido: celdas por las que ya pasó el rescatista, en orden de paso */
+  private visited: string[] = [];
 
   reset(): void {
     this.origin = null;
     this.cells.clear();
+    this.visited = [];
   }
 
   hasData(): boolean {
-    return this.cells.size > 0;
+    return this.cells.size > 0 || this.visited.length > 0;
   }
 
   private cellIndex(lat: number, lng: number): { row: number; col: number } {
@@ -78,6 +81,20 @@ export class SectorGrid {
   locate(lat: number, lng: number): { row: number; col: number; label: string } {
     const { row, col } = this.cellIndex(lat, lng);
     return { row, col, label: labelFor(row, col) };
+  }
+
+  /** Marca el sector como recorrido (historial de barrido) */
+  visit(lat: number, lng: number): void {
+    const { row, col } = this.cellIndex(lat, lng);
+    const key = `${row}:${col}`;
+    if (this.visited[this.visited.length - 1] === key) return;
+    this.visited = this.visited.filter((k) => k !== key);
+    this.visited.push(key);
+    if (this.visited.length > 400) this.visited.shift();
+  }
+
+  getVisited(): string[] {
+    return [...this.visited];
   }
 
   /** Rectángulo geográfico de una celda (para dibujarla en el mapa) */
@@ -100,6 +117,7 @@ export class SectorGrid {
     rssi: number;
     deviceId: string;
     sustained: boolean;
+    pass?: number;
   }): void {
     const { row, col } = this.cellIndex(params.lat, params.lng);
     const key = `${row}:${col}`;
@@ -116,10 +134,15 @@ export class SectorGrid {
       lat: params.lat,
       lng: params.lng,
       updatedAt: Date.now(),
+      passes: new Map<number, Set<string>>(),
     };
     cell.bestRssi = Math.max(cell.bestRssi, params.rssi);
     cell.devices.add(params.deviceId);
     if (params.sustained) cell.sustained.add(params.deviceId);
+    const pass = params.pass ?? 1;
+    const passSet = cell.passes.get(pass) ?? new Set<string>();
+    passSet.add(params.deviceId);
+    cell.passes.set(pass, passSet);
     cell.samples += 1;
     cell.lat = params.lat;
     cell.lng = params.lng;
@@ -133,9 +156,21 @@ export class SectorGrid {
     return cell.sustained.size * 2 + cell.devices.size + strength * 2;
   }
 
+  /** Dispositivos confirmados: oídos en dos pasadas distintas en el mismo
+   *  sector. Descarta falsos positivos (rescatistas que iban caminando). */
+  static confirmed(cell: SectorCell): string[] {
+    const passes = Array.from(cell.passes.entries()).sort((a, b) => a[0] - b[0]);
+    if (passes.length < 2) return [];
+    const [, first] = passes[0];
+    const rest = passes.slice(1);
+    return Array.from(first).filter((id) => rest.some(([, set]) => set.has(id)));
+  }
+
   snapshot(): SectorSnapshot {
     const cells = Array.from(this.cells.values());
-    if (cells.length === 0) return { cells, rows: [], cols: [], hot: null };
+    const visited = [...this.visited];
+    if (cells.length === 0)
+      return { cells, rows: [], cols: [], hot: null, visited };
     const rowsRange = cells.map((c) => c.row);
     const colsRange = cells.map((c) => c.col);
     const rows: number[] = [];
@@ -146,7 +181,7 @@ export class SectorGrid {
       (best, cell) => (best && SectorGrid.score(best) >= SectorGrid.score(cell) ? best : cell),
       null as SectorCell | null,
     );
-    return { cells, rows, cols, hot };
+    return { cells, rows, cols, hot, visited };
   }
 
   cellAt(row: number, col: number): SectorCell | undefined {
