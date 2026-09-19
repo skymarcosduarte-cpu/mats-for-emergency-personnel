@@ -991,6 +991,28 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label>Tipo de rescatista *</Label>
+                <div className="grid grid-cols-1 gap-3">
+                  <Button
+                    type="button"
+                    variant={profileForm.role === 'SOS_ACTIVO' ? 'default' : 'outline'}
+                    className="h-auto min-h-14 justify-start text-base"
+                    onClick={() => setProfileForm({ ...profileForm, role: 'SOS_ACTIVO' })}
+                  >
+                    Rescatista Activo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={profileForm.role === 'EX_SOS' ? 'default' : 'outline'}
+                    className="h-auto min-h-14 justify-start text-base"
+                    onClick={() => setProfileForm({ ...profileForm, role: 'EX_SOS' })}
+                  >
+                    Ex-Rescatista
+                  </Button>
+                </div>
+              </div>
+
               <p className="text-sm text-muted-foreground bg-muted/50 border border-border rounded-lg p-3">
                 Con tu nombre es suficiente para empezar. Más adelante, en Ajustes,
                 puedes agregar tu teléfono, tu apodo, tus especialidades y los recursos

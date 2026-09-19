@@ -649,7 +649,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     ? 'bg-primary/20 text-primary'
                     : 'bg-muted text-muted-foreground'
                 )}>
-                  {role === 'SOS_ACTIVO' ? 'SOS Activo' : role === 'EX_SOS' ? 'EX-SOS' : 'Familiar'}
+                  {role === 'SOS_ACTIVO' ? 'Rescatista Activo' : role === 'EX_SOS' ? 'Ex-Rescatista' : 'Familiar'}
                 </span>
               </div>
               <Button
@@ -818,9 +818,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   <p className="font-medium text-foreground">Tipo de usuario</p>
                   <p className="text-xs text-muted-foreground">
                     {role === 'SOS_ACTIVO' 
-                      ? 'Acceso completo a todas las funciones' 
+                      ? 'Rescatista activo con acceso completo' 
                       : role === 'EX_SOS'
-                      ? 'Acceso completo como ex-paramédico'
+                      ? 'Ex-rescatista con acceso completo'
                       : 'Acceso limitado a funciones básicas'}
                   </p>
                 </div>
@@ -1690,7 +1690,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               Cambiar Tipo de Usuario
             </DialogTitle>
             <DialogDescription>
-              Selecciona tu nuevo rol en la comunidad.
+              Selecciona tu categoría de rescatista.
             </DialogDescription>
           </DialogHeader>
 
@@ -1705,9 +1705,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <Shield className="w-5 h-5 text-mats-green" />
               </div>
               <div className="text-left">
-                <p className="font-medium">SOS ACTIVO</p>
+                <p className="font-medium">Rescatista Activo</p>
                 <p className="text-xs text-muted-foreground">
-                  Acceso completo: marketplace, responder alertas
+                  Personal de rescate actualmente en servicio
                 </p>
               </div>
               {changingRole && role !== 'SOS_ACTIVO' && (
@@ -1725,9 +1725,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <Shield className="w-5 h-5 text-primary" />
               </div>
               <div className="text-left">
-                <p className="font-medium">EX-SOS</p>
+                <p className="font-medium">Ex-Rescatista</p>
                 <p className="text-xs text-muted-foreground">
-                  Acceso completo como ex-paramédico
+                  Personal con experiencia previa en rescate
                 </p>
               </div>
               {changingRole && role !== 'EX_SOS' && (

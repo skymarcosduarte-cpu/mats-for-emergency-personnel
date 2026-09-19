@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Phone } from 'lucide-react';
+import { BookOpen, Phone, Tv } from 'lucide-react';
 import { SectionLanding, SectionLandingItem } from '@/components/SectionLanding';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import EmergencyGuidesScreen from '@/components/EmergencyGuidesScreen';
 import EmergencyDirectory from '@/components/EmergencyDirectory';
+import MonitoringCenter from '@/components/MonitoringCenter';
 
-type SubView = 'landing' | 'guides' | 'directory';
+type SubView = 'landing' | 'guides' | 'directory' | 'monitoring';
 
 interface ResourcesScreenProps {
   onGoHome?: () => void;
@@ -41,7 +42,20 @@ export default function ResourcesScreen({ onGoHome, initialSubView }: ResourcesS
       borderColor: 'border-[hsl(25,100%,50%)]/40',
       onClick: () => setSubView('guides'),
     },
+    {
+      id: 'monitoring',
+      label: 'Monitoreo de Noticias',
+      description: 'Canales de noticias nacionales e internacionales en vivo',
+      icon: <Tv className="w-8 h-8 text-white" strokeWidth={2.5} />,
+      iconBg: 'bg-primary',
+      borderColor: 'border-primary/40',
+      onClick: () => setSubView('monitoring'),
+    },
   ];
+
+  if (subView === 'monitoring') {
+    return <MonitoringCenter onBack={() => setSubView('landing')} />;
+  }
 
   if (subView === 'guides') {
     return (
