@@ -1,4 +1,4 @@
-// Onboarding Tutorial Component for COMUNIDAD EX SOS
+// Tutorial inicial de M.A.T.S. for Emergency Personnel
 // Shows key features to new users after registration
 
 import React, { useState } from 'react';
@@ -9,9 +9,12 @@ import {
   ChevronRight, 
   ChevronLeft,
   Check,
-  AlertTriangle,
   Radio,
-  Heart
+  Heart,
+  Activity,
+  HeartPulse,
+  Radar,
+  Settings
 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,38 +33,52 @@ interface OnboardingStep {
 export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     icon: <Heart className="w-12 h-12" />,
-    title: '¡Bienvenido a la Comunidad!',
-    description: 'M.A.T.S. es tu red de apoyo y seguridad. Conecta con rescatistas, recibe alertas y mantente seguro junto a tu comunidad.',
-    tip: 'Esta app funciona mejor instalada en tu teléfono',
+    title: 'M.A.T.S. for Emergency Personnel',
+    description: 'Maximum Aid Tracking Service reúne herramientas para personal de protección civil y cuerpos de emergencia.',
+    tip: 'La barra inferior ofrece acceso rápido a Inicio, Mapa y Ajustes',
     color: 'text-primary',
   },
   {
-    icon: <AlertTriangle className="w-12 h-12" />,
-    title: 'Botón de Pánico SOS',
-    description: 'En caso de emergencia, presiona el botón SOS en la esquina superior. Envía tu ubicación exacta a rescatistas cercanos y tus contactos de emergencia.',
-    tip: 'Configura tus contactos de emergencia en Configuración',
-    color: 'text-panic',
+    icon: <Activity className="w-12 h-12" />,
+    title: 'Sismos',
+    description: 'Consulta los últimos sismos registrados, revisa su magnitud y distancia, e informa tu estado después de un evento.',
+    tip: 'Activa las notificaciones sísmicas en Ajustes',
+    color: 'text-warning',
   },
   {
     icon: <MapPin className="w-12 h-12" />,
-    title: 'Mapa en Tiempo Real',
-    description: 'Un solo mapa con todo: miembros de la comunidad con su nombre, viajes activos, alertas SOS, incendios NASA FIRMS y clima.',
-    tip: 'Mantén tu ubicación activa para que otros puedan encontrarte',
+    title: 'Mapa',
+    description: 'Consulta tu ubicación, personal activo, emergencias y capas de riesgo disponibles en un solo mapa.',
+    tip: 'Activa el GPS y decide en Ajustes cuándo compartir tu ubicación',
     color: 'text-primary',
+  },
+  {
+    icon: <HeartPulse className="w-12 h-12" />,
+    title: 'RecurSOS',
+    description: 'Consulta el Directorio de Protección Civil y Cruz Roja, además de guías prácticas de emergencia.',
+    tip: 'El directorio permanece disponible sin conexión',
+    color: 'text-panic',
   },
   {
     icon: <Radio className="w-12 h-12" />,
-    title: 'Red Mesh Bluetooth',
-    description: 'Si no hay internet ni señal celular, la Red Mesh conecta tu teléfono con otros cercanos por Bluetooth para enviar y retransmitir alertas SOS.',
-    tip: 'Actívala desde el botón morado "Red Mesh" en Inicio',
+    title: 'Red Mesh',
+    description: 'Envía avisos vía Mesh sin wifi ni red telefónica, usando solo Bluetooth disponible entre teléfonos cercanos.',
+    tip: 'Mantén Bluetooth encendido para enviar y retransmitir mensajes',
     color: 'text-primary',
   },
   {
-    icon: <Bell className="w-12 h-12" />,
-    title: 'Alertas Sísmicas',
-    description: 'Recibe alertas de sismos automáticamente. Reporta "Todo bien" o pide ayuda con "14".',
-    tip: 'Cada aviso se puede cerrar con la ✕ después de leerlo',
-    color: 'text-warning',
+    icon: <Radar className="w-12 h-12" />,
+    title: 'Detector de Señales',
+    description: 'Busca dispositivos Bluetooth activos y registra indicios por sectores mientras recorres una zona de desastre.',
+    tip: 'Activa GPS, usa la guía sonora y completa dos pasadas',
+    color: 'text-primary',
+  },
+  {
+    icon: <Settings className="w-12 h-12" />,
+    title: 'Ajustes',
+    description: 'Actualiza tu perfil, especialidad y datos de contacto; controla ubicación, notificaciones y versión de la app.',
+    tip: 'Revisa tus permisos antes de iniciar una operación',
+    color: 'text-muted-foreground',
   },
 ];
 
