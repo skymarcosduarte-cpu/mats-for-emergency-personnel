@@ -12,7 +12,7 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 const GATEWAY_URL = 'https://connector-gateway.lovable.dev/github';
 // Repositorio privado de la aplicación para personal de emergencias.
 const REPO_CANDIDATES = [
-  'skymarcosduarte-cpu/MATS-Emergency-Personnel',
+  'skymarcosduarte-cpu/mats-for-emergency-personnel',
 ];
 const BRANCH_CANDIDATES = ['newversion', 'mesh', 'main'];
 const WORKFLOW_FILE = 'build-android-mesh.yml';
