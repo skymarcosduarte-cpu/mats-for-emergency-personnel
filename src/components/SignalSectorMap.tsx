@@ -21,11 +21,19 @@ function heatClass(ratio: number): string {
   return 'bg-muted text-muted-foreground';
 }
 
-export const SignalSectorMap: React.FC<Props> = ({ snapshot }) => {
-  const { cells, rows, cols, hot } = snapshot;
-  if (cells.length === 0) return null;
+export const SignalSectorMap: React.FC<Props> = ({ snapshot, userCell }) => {
+  const { cells, hot } = snapshot;
+  // La cuadrícula se amplía si el rescatista caminó fuera de las celdas con
+  // indicios, para que siempre vea en qué sector está parado.
+  const rows = userCell
+    ? [...new Set([...snapshot.rows, userCell.row])].sort((a, b) => a - b)
+    : snapshot.rows;
+  const cols = userCell
+    ? [...new Set([...snapshot.cols, userCell.col])].sort((a, b) => a - b)
+    : snapshot.cols;
+  if (cells.length === 0 && !userCell) return null;
 
-  const maxScore = Math.max(...cells.map((c) => SectorGrid.score(c)));
+  const maxScore = Math.max(...cells.map((c) => SectorGrid.score(c)), 0);
   const byKey = new Map(cells.map((c) => [`${c.row}:${c.col}`, c]));
 
   return (
