@@ -6,7 +6,7 @@ import confetti from 'canvas-confetti';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { diagLog } from '@/lib/diagnosticLogger';
-import { AlertTriangle, MapPin, Bell, ChevronRight, ChevronLeft, Check, Heart, Shield, X, Radio, Phone, BookOpen, Radar, Settings } from 'lucide-react';
+import { MapPin, Bell, ChevronRight, ChevronLeft, Check, Heart, Shield, X, Radio, Phone, BookOpen, Radar, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatsLogo } from '@/components/MatsLogo';
 import { cn } from '@/lib/utils';
