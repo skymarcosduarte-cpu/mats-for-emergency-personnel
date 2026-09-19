@@ -12,7 +12,7 @@ on:
       expected_version:
         description: 'Versión que debe contener el APK (evita compilar código antiguo)'
         required: true
-        default: '2.9.8'
+        default: '2.9.9'
   push:
     tags:
       - 'apk-*'
@@ -295,4 +295,4 @@ jobs:
           make_latest: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
-# Nueva app: M.A.T.S. for Emergency Personnel v2.9.8
+# Nueva app: M.A.T.S. for Emergency Personnel v2.9.9

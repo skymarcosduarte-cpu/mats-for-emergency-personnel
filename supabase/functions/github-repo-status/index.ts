@@ -10,11 +10,9 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
  */
 
 const GATEWAY_URL = 'https://connector-gateway.lovable.dev/github';
-// Repos candidatos: primero el privado conectado a Lovable; si el token no
-// lo alcanza, se usa el público (donde están los builds y releases previos).
+// Repositorio privado de la aplicación para personal de emergencias.
 const REPO_CANDIDATES = [
-  'skymarcosduarte-cpu/safe-guard-link-43a63509',
-  'skymarcosduarte-cpu/safe-guard-link',
+  'skymarcosduarte-cpu/MATS-Emergency-Personnel',
 ];
 const BRANCH_CANDIDATES = ['newversion', 'mesh', 'main'];
 const WORKFLOW_FILE = 'build-android-mesh.yml';
