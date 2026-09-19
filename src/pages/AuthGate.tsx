@@ -1,5 +1,4 @@
-// Auth Gate Screen for COMUNIDAD EX SOS
-// Email/Password Auth + Invite Code + Profile Setup
+// M.A.T.S. authentication and profile setup
 
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Loader2, Eye, EyeOff, UserPlus, LogIn, Mail } from 'lucide-react';
@@ -80,7 +79,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
   const [showRecoverySuggestion, setShowRecoverySuggestion] = useState(false);
   
   // Magic Link state
-  const [loginMethod, setLoginMethod] = useState<'magic-link' | 'password'>('magic-link');
+  const [loginMethod, setLoginMethod] = useState<'magic-link' | 'password'>('password');
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   
@@ -113,19 +112,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
   const { signUp, signIn, createProfile, user, isProfileComplete, needsProfileCompletion, refetchProfile, loading: authLoading } = useAuth();
 
-  // Check if user needs to complete profile - show profile form immediately if detected
-  useEffect(() => {
-    // Si la URL trae ?invite= / ?code=, saltar directo al registro (el código ya no se pide)
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('invite') || params.get('code')) {
-        setAuthTab('signup');
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
   useEffect(() => {
     if (needsProfileCompletion) {
       console.log('[AuthGate] User needs profile completion - redirecting to profile form');
@@ -157,6 +143,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
   const emailError = getEmailError(email);
   const forgotPasswordEmailError = getEmailError(forgotPasswordEmail);
+
+  const normalizeUsername = (value: string) =>
+    value.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '');
+
+  const usernameToEmail = (value: string) => `${normalizeUsername(value)}@mats.app`;
 
   const normalizePassword = (value: string) => {
     const trimmed = value.trim();
@@ -218,12 +209,16 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     setError(null);
 
     if (!email.trim()) {
-      setError('Ingresa tu email');
+      setError('Ingresa tu nombre de usuario');
       return;
     }
 
-    if (!isValidEmail(email)) {
-      setError('Formato de email inválido');
+    const loginIdentifier = email.includes('@')
+      ? email.trim().toLowerCase()
+      : usernameToEmail(email);
+
+    if (!email.includes('@') && normalizeUsername(email).length < 3) {
+      setError('El nombre de usuario debe tener al menos 3 caracteres');
       return;
     }
 
@@ -266,12 +261,16 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     setError(null);
 
     if (!email.trim()) {
-      setError('Ingresa tu email');
+      setError('Ingresa tu nombre de usuario');
       return;
     }
 
-    if (!isValidEmail(email)) {
-      setError('Formato de email inválido');
+    const loginIdentifier = email.includes('@')
+      ? email.trim().toLowerCase()
+      : usernameToEmail(email);
+
+    if (!email.includes('@') && normalizeUsername(email).length < 3) {
+      setError('El nombre de usuario debe tener al menos 3 caracteres');
       return;
     }
 
@@ -295,7 +294,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
     try {
       const { error: signInError } = await signIn(
-        email.trim().toLowerCase(),
+        loginIdentifier,
         sanitizedPassword,
         rememberMe
       );
@@ -312,7 +311,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
             errorTitle = '¿Usaste el enlace del correo?';
             setShowRecoverySuggestion(true);
           } else {
-            errorMessage = 'Email o contraseña incorrectos. Verifica tus datos.';
+            errorMessage = 'Usuario o contraseña incorrectos. Verifica tus datos.';
             errorTitle = 'Credenciales inválidas';
 
             // Track failed attempts for credential errors
@@ -358,22 +357,24 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     }
   };
 
-  // Handle signup - 100% server-side registration with improved error handling
+  // Open registration using a synthetic email derived from the username.
   const handleSignup = async () => {
-    // Clear previous errors
     setError(null);
     setEmailExistsError(false);
 
-    // Registro abierto: no se requiere código de invitación
-    const trimmedCode = 'MATS1977';
-
-    if (!email.trim()) {
-      setError('Ingresa tu email');
+    const normalizedUsername = normalizeUsername(email);
+    if (!normalizedUsername) {
+      setError('Ingresa un nombre de usuario');
       return;
     }
 
-    if (!isValidEmail(email)) {
-      setError('Formato de email inválido (ej: usuario@dominio.com)');
+    if (normalizedUsername.length < 3) {
+      setError('El nombre de usuario debe tener al menos 3 caracteres');
+      return;
+    }
+
+    if (normalizedUsername !== email.trim().toLowerCase()) {
+      setError('Usa solo letras, números, punto, guion o guion bajo');
       return;
     }
 
@@ -399,251 +400,35 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     }
 
     setLoading(true);
-    const signupStartTime = Date.now();
-    const signupId = crypto.randomUUID().slice(0, 8);
-    
-    console.log(`[AuthGate][${signupId}] ========== STARTING SIGNUP ==========`);
-    console.log(`[AuthGate][${signupId}] Email: ${email.trim().substring(0, 3)}***@${email.split('@')[1] || 'unknown'}`);
-    console.log(`[AuthGate][${signupId}] Invite code: ${trimmedCode}`);
-    console.log(`[AuthGate][${signupId}] Password length: ${sanitizedPassword.length}`);
-    console.log(`[AuthGate][${signupId}] User agent: ${navigator.userAgent.substring(0, 100)}`);
+    try {
+      const syntheticEmail = usernameToEmail(normalizedUsername);
+      const { error: signUpError } = await signUp(syntheticEmail, sanitizedPassword);
 
-    // Retry logic for transient network errors
-    const maxRetries = 2;
-    let lastError: Error | null = null;
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        if (attempt > 0) {
-          console.log(`[AuthGate][${signupId}] Retry attempt ${attempt}/${maxRetries}`);
-          toast({
-            title: 'Reintentando...',
-            description: `Intento ${attempt + 1} de ${maxRetries + 1}`,
-          });
-          // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-        }
-
-        // Create abort controller for timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-          console.log(`[AuthGate][${signupId}] Request timeout after 30s`);
-          controller.abort();
-        }, 30000); // 30 second timeout
-
-        // Call server-side registration endpoint
-        console.log(`[AuthGate][${signupId}] Calling register-with-invite function...`);
-        const requestStartTime = Date.now();
-        
-        const response = await supabase.functions.invoke('register-with-invite', {
-          body: {
-            email: email.trim().toLowerCase(),
-            password: sanitizedPassword,
-            inviteCode: trimmedCode,
-          }
-        });
-
-        const requestDuration = Date.now() - requestStartTime;
-        clearTimeout(timeoutId);
-        
-        console.log(`[AuthGate][${signupId}] Function response received in ${requestDuration}ms`);
-        console.log(`[AuthGate][${signupId}] Response has error: ${!!response.error}`);
-        console.log(`[AuthGate][${signupId}] Response has data: ${!!response.data}`);
-        if (response.data) {
-          console.log(`[AuthGate][${signupId}] Response data:`, JSON.stringify(response.data).substring(0, 200));
-        }
-        if (response.error) {
-          console.log(`[AuthGate][${signupId}] Response error:`, JSON.stringify(response.error).substring(0, 500));
-        }
-
-        // Check for errors - supabase.functions.invoke wraps non-2xx responses in response.error
-        // But the actual JSON body might be in response.error.context or we need to parse it
-        if (response.error) {
-          console.error('[AuthGate] Function error:', response.error);
-          lastError = response.error;
-          
-          // The error message from supabase functions.invoke for 4xx responses
-          // is typically the raw error or context contains the parsed body
-          let serverMessage = '';
-          
-          // Try to extract the actual error message from the response
-          // supabase.functions.invoke for non-2xx puts parsed JSON in error.context
-          try {
-            if (response.error.context) {
-              // context might be a Response object - try to read it
-              if (response.error.context instanceof Response) {
-                const body = await response.error.context.json().catch(() => null);
-                serverMessage = body?.error || '';
-              } else if (response.error.context?.error) {
-                serverMessage = response.error.context.error;
-              } else if (typeof response.error.context === 'string') {
-                const parsed = JSON.parse(response.error.context);
-                serverMessage = parsed.error || '';
-              }
-            }
-          } catch {
-            // fallback
-          }
-          
-          // If still no message, try data (some versions put it there)
-          if (!serverMessage && response.data?.error) {
-            serverMessage = response.data.error;
-          }
-          
-          if (!serverMessage && response.error.message) {
-            serverMessage = response.error.message;
-          }
-          
-          console.log('[AuthGate] Extracted server message:', serverMessage);
-          
-          // Handle specific server errors that should not be retried
-          if (serverMessage.includes('email ya está registrado') || 
-              serverMessage.includes('ya registrado') ||
-              serverMessage.includes('already registered')) {
-            setEmailExistsError(true);
-            setError('Este email ya está registrado.');
-            setLoading(false);
-            return;
-          }
-          
-          // If we got a meaningful server message, show it
-          if (serverMessage && !serverMessage.includes('FunctionsHttpError') && serverMessage.length < 200) {
-            setError(serverMessage);
-            toast({
-              title: 'Error de registro',
-              description: serverMessage,
-              variant: 'destructive',
-            });
-            setLoading(false);
-            return;
-          }
-          
-          // Only retry on network/timeout errors
-          const rawErrorMsg = response.error.message || '';
-          if (rawErrorMsg.includes('network') || 
-              rawErrorMsg.includes('timeout') ||
-              rawErrorMsg.includes('fetch') ||
-              rawErrorMsg.includes('Failed to fetch') ||
-              rawErrorMsg.includes('aborted')) {
-            if (attempt < maxRetries) {
-              console.log('[AuthGate] Network error, will retry...');
-              continue;
-            }
-          }
-          
-          // Non-retryable error - show generic connection error
-          const connectionError = 'Error de conexión. Verifica tu internet e intenta de nuevo.';
-          setError(connectionError);
-          toast({
-            title: 'Error de conexión',
-            description: connectionError,
-            variant: 'destructive',
-          });
-          setLoading(false);
-          return;
-        }
-
-        const result = response.data;
-        console.log('[AuthGate] Function result:', result);
-
-        // Server returned an error in the body (for 400 responses that still return JSON)
-        if (!result || !result.success) {
-          const errorMsg = result?.error || 'Error desconocido al crear cuenta';
-          console.log('[AuthGate] Server error:', errorMsg);
-          
-          // Check for email exists error in response body
-          if (errorMsg.includes('email ya está registrado') || 
-              errorMsg.includes('ya registrado') ||
-              errorMsg.includes('already registered')) {
-            setEmailExistsError(true);
-            setError('Este email ya está registrado.');
-            setLoading(false);
-            return;
-          }
-          
-          // Show the specific error message from the server
-          setError(errorMsg);
-          toast({
-            title: 'Error de registro',
-            description: errorMsg,
-            variant: 'destructive',
-          });
-          setLoading(false);
-          return;
-        }
-
-        // Success! Now sign in the user
-        console.log('[AuthGate] User created successfully, signing in...');
-        toast({
-          title: '¡Cuenta creada!',
-          description: 'Iniciando sesión...',
-        });
-        
-        const { error: signInError } = await signIn(
-          email.trim().toLowerCase(), 
-          sanitizedPassword, 
-          rememberMe
-        );
-        
-        if (signInError) {
-          // User was created but sign-in failed - retry once after a short delay
-          console.log('[AuthGate] Sign-in after registration failed, retrying...', signInError);
-          await new Promise(r => setTimeout(r, 1500));
-          
-          const { error: retryError } = await signIn(
-            email.trim().toLowerCase(),
-            sanitizedPassword,
-            rememberMe
-          );
-          
-          if (retryError) {
-            console.log('[AuthGate] Sign-in retry also failed:', retryError);
-            toast({
-              title: '¡Cuenta creada!',
-              description: 'Tu cuenta fue creada. Inicia sesión con tus credenciales.',
-            });
-            setAuthTab('login');
-            setLoginMethod('password');
-            // IMPORTANT: Do NOT clear the password - keep it so user can just click "Iniciar Sesión"
-          }
+      if (signUpError) {
+        const alreadyExists = signUpError.message.includes('already registered') ||
+          signUpError.message.includes('already been registered') ||
+          signUpError.message.includes('User already registered');
+        if (alreadyExists) {
+          setEmailExistsError(true);
+          setError('Este nombre de usuario ya está registrado.');
         } else {
-          // Sign-in succeeded, show success toast
-          console.log('[AuthGate] Sign-in successful!');
-          toast({
-            title: '¡Bienvenido/a!',
-            description: 'Tu cuenta ha sido creada exitosamente.',
-          });
+          setError(signUpError.message || 'No se pudo crear la cuenta. Intenta de nuevo.');
         }
-        // If sign-in succeeded, the auth state listener will handle navigation
-        
-        setLoading(false);
-        return; // Exit retry loop on success
-        
-      } catch (err) {
-        console.error('[AuthGate] Unexpected signup error:', err);
-        lastError = err as Error;
-        
-        // Check if it's an abort error (timeout)
-        if (err instanceof Error && err.name === 'AbortError') {
-          console.log('[AuthGate] Request was aborted (timeout)');
-          if (attempt < maxRetries) continue;
-        }
-        
-        // Only retry on unexpected errors that might be transient
-        if (attempt < maxRetries) continue;
+        return;
       }
-    }
 
-    // All retries failed
-    console.error('[AuthGate] All signup attempts failed:', lastError);
-    const finalError = 'No pudimos conectar con el servidor. Por favor verifica tu conexión a internet y vuelve a intentar.';
-    setError(finalError);
-    toast({
-      title: 'Error de conexión',
-      description: 'Verifica tu internet e intenta de nuevo.',
-      variant: 'destructive',
-    });
-    setLoading(false);
+      setProfileForm(current => ({
+        ...current,
+        fullName: current.fullName || normalizedUsername,
+        nickname: normalizedUsername,
+      }));
+      toast({ title: '¡Cuenta creada!', description: 'Completa tus datos para continuar.' });
+    } catch (err) {
+      console.error('[AuthGate] Signup error:', err);
+      setError('Error de conexión. Verifica tu internet e intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Translate common database errors to Spanish
@@ -907,25 +692,21 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                 ) : (
                   <>
                     <div>
-                      <Label>Email</Label>
+                      <Label>Nombre de usuario</Label>
                       <Input
-                        type="email"
+                        type="text"
                         value={email}
                         onChange={(e) => {
                           setEmail(e.target.value);
                           setError(null);
                         }}
-                        placeholder="tu@email.com"
-                        className={emailError ? 'border-destructive' : ''}
-                        autoComplete="email"
+                        placeholder="Tu usuario"
+                        autoComplete="username"
                       />
-                      {emailError && (
-                        <p className="text-xs text-destructive mt-1">{emailError}</p>
-                      )}
                     </div>
 
-                    {/* Magic Link Method (Default) */}
-                    {loginMethod === 'magic-link' && (
+                    {/* Magic links remain unavailable for username-only accounts. */}
+                    {false && loginMethod === 'magic-link' && (
                       <>
                         <Button 
                           onClick={handleMagicLink} 
@@ -1039,14 +820,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                           ¿Olvidaste tu contraseña?
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => setLoginMethod('magic-link')}
-                          className="w-full text-center text-sm text-primary hover:underline transition-colors"
-                        >
-                          ← Volver a enlace por correo
-                        </button>
-
                         {showRecoverySuggestion && (
                           <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg space-y-2">
                             <p className="text-sm text-warning-foreground">
@@ -1072,22 +845,19 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
 
               <TabsContent value="signup" className="space-y-4 mt-4">
                 <div>
-                  <Label>Email *</Label>
+                  <Label>Nombre de usuario *</Label>
                   <Input
-                    type="email"
+                    type="text"
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
                       setError(null);
                       setEmailExistsError(false);
                     }}
-                    placeholder="tu@email.com"
-                    className={emailError ? 'border-destructive' : ''}
-                    autoComplete="email"
+                    placeholder="Tu usuario"
+                    autoComplete="username"
                   />
-                  {emailError && (
-                    <p className="text-xs text-destructive mt-1">{emailError}</p>
-                  )}
+                  <p className="text-xs text-muted-foreground mt-1">Usa letras, números, punto, guion o guion bajo.</p>
                 </div>
 
                 <div>
@@ -1136,7 +906,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
                 {emailExistsError && (
                   <div className="p-4 rounded-lg bg-warning/10 border border-warning space-y-3">
                     <p className="text-sm text-warning font-medium">
-                      ⚠️ Este email ya está registrado
+                      ⚠️ Este nombre de usuario ya está registrado
                     </p>
                     <div className="flex flex-col gap-2">
                       <Button 
