@@ -16,9 +16,7 @@ import { HomeScreen } from '@/pages/HomeScreen';
 import { MESH_FOCUS_EVENT } from '@/lib/meshPins';
 import { MeshProvider } from '@/providers/MeshProvider';
 const loadMapScreen = () => import('@/pages/MapScreen');
-const loadTransitScreen = () => import('@/pages/TransitScreen');
 const loadAlertsScreen = () => import('@/pages/AlertsScreen');
-const loadCommunityScreen = () => import('@/pages/CommunityScreen');
 const loadResourcesScreen = () => import('@/pages/ResourcesScreen');
 const loadSettingsScreen = () => import('@/pages/SettingsScreen');
 const loadStatusScreen = () => import('@/pages/StatusScreen');
@@ -26,9 +24,7 @@ const loadSignalDetectorScreen = () => import('@/pages/SignalDetectorScreen');
 const loadMarketScreen = () => import('@/pages/MarketScreen');
 
 const MapScreen = lazy(() => loadMapScreen().then(m => ({ default: m.MapScreen })));
-const TransitScreen = lazy(() => loadTransitScreen().then(m => ({ default: m.TransitScreen })));
 const AlertsScreen = lazy(() => loadAlertsScreen().then(m => ({ default: m.AlertsScreen })));
-const CommunityScreen = lazy(() => loadCommunityScreen().then(m => ({ default: m.CommunityScreen })));
 const ResourcesScreen = lazy(loadResourcesScreen);
 const SettingsScreen = lazy(() => loadSettingsScreen().then(m => ({ default: m.SettingsScreen })));
 const StatusScreen = lazy(() => loadStatusScreen().then(m => ({ default: m.StatusScreen })));
@@ -53,12 +49,10 @@ import { EmergencyAlertOverlay } from '@/components/EmergencyAlertOverlay';
 import { ActiveAlertBanner } from '@/components/ActiveAlertBanner';
 import { QuakeDamageBanner } from '@/components/QuakeDamageBanner';
 import { ResponderComingOverlay } from '@/components/ResponderComingOverlay';
-import { TripSafetyCheckDialog } from '@/components/TripSafetyCheckDialog';
 import { ResponderTrackingMap } from '@/components/ResponderTrackingMap';
 import { InternalMessaging } from '@/components/InternalMessaging';
 import { UnreadMessagesBanner } from '@/components/UnreadMessagesBanner';
 import { Clave100Overlay } from '@/components/Clave100Overlay';
-import { TravelerLocationDialog } from '@/components/TravelerLocationDialog';
 import { DrillAlertBanner } from '@/components/DrillAlertBanner';
 import { CommunityChat } from '@/components/CommunityChat';
 
@@ -84,10 +78,6 @@ import { useMyPanicResponders } from '@/hooks/useMyPanicResponders';
 import { useTestMode } from '@/hooks/useTestMode';
 import { useBackgroundSync } from '@/hooks/useBackgroundSync';
 import { useAutoUpdate } from '@/hooks/useAutoUpdate';
-import { useOverdueTrips } from '@/hooks/useOverdueTrips';
-import { useDelayedTripChecker } from '@/hooks/useDelayedTripChecker';
-import { useInactiveDelayedTripsAlert } from '@/hooks/useInactiveDelayedTripsAlert';
-import { useAutoArrivalDetection } from '@/hooks/useAutoArrivalDetection';
 import { useEmergencyNotification } from '@/hooks/useEmergencyNotification';
 import { useInternalMessages } from '@/hooks/useInternalMessages';
 import { InternalMessagesProvider } from '@/providers/InternalMessagesProvider';
@@ -130,8 +120,6 @@ function useIdleChunkPrefetch() {
     const loaders = [
       loadMapScreen,
       loadAlertsScreen,
-      loadTransitScreen,
-      loadCommunityScreen,
       loadResourcesScreen,
       loadSettingsScreen,
       loadStatusScreen,
@@ -368,28 +356,6 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     }
     return null;
   }, [allMyResponders]);
-  
-  // Monitor for overdue trips (30+ minutes past ETA) - client side with dialog
-  const { 
-    overdueTrip, 
-    isUpdating: isUpdatingTrip,
-    confirmSafe: confirmTripSafe,
-    confirmArrived: confirmTripArrived,
-    extendEta,
-    dismissDialog: dismissTripDialog,
-  } = useOverdueTrips();
-  
-  // Check for delayed trips and send push notifications - calls edge function
-  useDelayedTripChecker();
-  
-  // Alert when delayed travelers haven't updated location in 30+ minutes (excludes flights)
-  const { 
-    pendingInactiveTrip, 
-    dismissInactiveTrip 
-  } = useInactiveDelayedTripsAlert();
-  
-  // Auto-detect arrival at destination via GPS and mark trip as completed
-  useAutoArrivalDetection();
   
   // Emergency contact notification
   const { notifyEmergencyContacts } = useEmergencyNotification();
@@ -690,9 +656,7 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
     const screens: Record<string, React.ReactNode> = {
       home: <HomeScreen onNavigate={setActiveTab} />,
       map: <MapScreen className="h-[calc(100dvh-120px-env(safe-area-inset-bottom,0px))]" respondersToMyAlerts={respondersToMyAlerts} onNavigateToSettings={() => setActiveTab('settings')} activeDrillId={activeDrillId} onOpenDrillChat={(drillId) => { setCommunityChatContext({ type: 'drill', id: drillId, title: '🔔 Chat Clave 100' }); setCommunityChatOpen(true); }} onGoHome={handleGoHome} />,
-      transit: <TransitScreen userRole={userRole} onOpenMessaging={handleOpenMessaging} onGoHome={handleGoHome} />,
       alerts: <AlertsScreen userRole={userRole} onGoHome={handleGoHome} />,
-      community: <CommunityScreen userRole={userRole} onGoHome={handleGoHome} />,
       resources: <ResourcesScreen onGoHome={() => { setResourcesInitialView(undefined); handleGoHome(); }} initialSubView={resourcesInitialView} />,
       status: <StatusScreen userRole={userRole} onGoHome={handleGoHome} />,
       detector: <SignalDetectorScreen onGoHome={handleGoHome} />,
@@ -823,16 +787,6 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
         onDismiss={dismissPrompt}
       />
 
-      {/* Trip Safety Check Dialog - shown when trip is 30+ min overdue */}
-      <TripSafetyCheckDialog
-        trip={overdueTrip}
-        onConfirmSafe={confirmTripSafe}
-        onConfirmArrived={confirmTripArrived}
-        onExtendEta={extendEta}
-        onDismiss={dismissTripDialog}
-        isUpdating={isUpdatingTrip}
-      />
-
       {/* Prominent Emergency Alert Overlay for community alerts */}
       <EmergencyAlertOverlay
         alert={latestEmergencyAlert}
@@ -890,19 +844,6 @@ function AuthenticatedApp({ activeTab, setActiveTab, userRole, handleLogout }: {
           onClose={() => setMessagingOpen(false)}
           initialUserId={messagingUserId}
           initialUserName={messagingUserName}
-        />
-      )}
-      
-      {/* Inactive Delayed Trip Location Dialog */}
-      {pendingInactiveTrip && (
-        <TravelerLocationDialog
-          isOpen={!!pendingInactiveTrip}
-          onClose={dismissInactiveTrip}
-          userId={pendingInactiveTrip.userId}
-          onSendMessage={() => {
-            handleOpenMessaging(pendingInactiveTrip.userId, pendingInactiveTrip.nickname);
-            dismissInactiveTrip();
-          }}
         />
       )}
       
