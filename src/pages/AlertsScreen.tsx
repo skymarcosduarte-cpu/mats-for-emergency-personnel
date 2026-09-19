@@ -497,7 +497,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             )}
             <h1 className="text-3xl font-bold text-foreground">Sismos</h1>
           </div>
-          <p className="text-base text-muted-foreground">Alertas sísmicas y fenómenos naturales</p>
+          <p className="text-base text-muted-foreground">Últimos sismos registrados</p>
         </div>
 
         {/* Large Button Cards */}
