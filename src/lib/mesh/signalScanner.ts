@@ -89,6 +89,28 @@ class SignalScanner {
   /** El componente alimenta la ubicación GPS actual para el mapa de sectores */
   setPosition(position: { lat: number; lng: number } | null): void {
     this.position = position;
+    // Historial de recorrido: deja marcado el sector por el que se caminó,
+    // aunque no se haya oído ninguna señal ahí.
+    if (position && this.scanning) this.grid.visit(position.lat, position.lng);
+  }
+
+  /** Pasada actual del barrido (1, 2…) para comparar dos recorridos */
+  getPass(): number {
+    return this.pass;
+  }
+
+  setPass(pass: number): void {
+    this.pass = Math.max(1, Math.round(pass));
+    this.emit();
+  }
+
+  /** Dispositivos confirmados en dos pasadas distintas dentro del mismo sector */
+  getConfirmedBySector(): { label: string; devices: number }[] {
+    return this.grid
+      .snapshot()
+      .cells.map((cell) => ({ label: cell.label, devices: SectorGrid.confirmed(cell).length }))
+      .filter((entry) => entry.devices > 0)
+      .sort((a, b) => b.devices - a.devices);
   }
 
   getSectors(): SectorSnapshot {
