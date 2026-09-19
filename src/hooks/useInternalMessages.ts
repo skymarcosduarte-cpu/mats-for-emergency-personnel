@@ -265,7 +265,24 @@ export const useInternalMessagesStore = () => {
           )
         : [];
 
-      setMessages(messagesData);
+      // Conserva los mensajes guardados sin conexión, que aún no están en el servidor
+      const stillPending = getPendingInternalMessages()
+        .filter((i) => i.senderId === user.id)
+        .map((i) => ({
+          id: i.id,
+          sender_id: i.senderId,
+          receiver_id: i.receiverId,
+          message: i.message,
+          read: false,
+          created_at: new Date(i.queuedAt).toISOString(),
+          audio_url: i.audioUrl,
+          audio_duration_ms: i.audioDurationMs,
+          image_url: i.imageUrl,
+          pending: true,
+        })) as InternalMessage[];
+
+      setMessages([...messagesData, ...stillPending]);
+
 
       // Calculate unread count
       const unread = messagesData.filter((m) => m.receiver_id === user.id && !m.read).length;
