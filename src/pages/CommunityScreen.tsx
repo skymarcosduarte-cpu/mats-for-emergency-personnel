@@ -131,7 +131,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   
   // Landing view state - shows big buttons before entering a subsection
   const [showLanding, setShowLanding] = useState(true);
-  const [activeSection, setActiveSection] = useState<'tablero' | 'noticias' | 'market' | 'galeria' | 'jobs'>('tablero');
+  const [activeSection, setActiveSection] = useState<'tablero' | 'noticias' | 'market'>('tablero');
   
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CommunityEvent | null>(null);
