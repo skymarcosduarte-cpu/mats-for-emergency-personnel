@@ -1,1 +1,0 @@
-UPDATE transit_trips SET status = 'ARRIVED', arrived_at = now() WHERE id = 'faae5adf-d065-4b08-ada6-3430dd17dde9' AND status = 'ACTIVE';

@@ -1,1 +1,0 @@
-UPDATE invites SET used_count = used_count - 2 WHERE code = 'MATS1977';
