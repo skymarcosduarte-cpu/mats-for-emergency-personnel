@@ -261,12 +261,16 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
     setError(null);
 
     if (!email.trim()) {
-      setError('Ingresa tu email');
+      setError('Ingresa tu nombre de usuario');
       return;
     }
 
-    if (!isValidEmail(email)) {
-      setError('Formato de email inválido');
+    const loginIdentifier = email.includes('@')
+      ? email.trim().toLowerCase()
+      : usernameToEmail(email);
+
+    if (!email.includes('@') && normalizeUsername(email).length < 3) {
+      setError('El nombre de usuario debe tener al menos 3 caracteres');
       return;
     }
 
