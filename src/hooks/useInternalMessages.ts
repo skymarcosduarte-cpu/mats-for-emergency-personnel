@@ -1167,6 +1167,21 @@ export const useInternalMessagesStore = () => {
 
   // Expose realtime status for debugging indicator
   const [realtimeStatus, setRealtimeStatus] = useState<string>('INIT');
+
+  // Cuántos mensajes están guardados en el teléfono esperando señal
+  const [pendingCount, setPendingCount] = useState<number>(() =>
+    getPendingInternalMessages().length
+  );
+  useEffect(() => {
+    const refresh = () =>
+      setPendingCount(
+        getPendingInternalMessages().filter((i) => !user?.id || i.senderId === user.id).length
+      );
+    refresh();
+    window.addEventListener(INTERNAL_QUEUE_EVENT, refresh);
+    return () => window.removeEventListener(INTERNAL_QUEUE_EVENT, refresh);
+  }, [user?.id]);
+
   
   // Sync internal ref to exposed state
   useEffect(() => {
@@ -1179,6 +1194,8 @@ export const useInternalMessagesStore = () => {
   }, [realtimeStatus]);
 
   return {
+    pendingCount,
+
     messages,
     conversations,
     loading,
