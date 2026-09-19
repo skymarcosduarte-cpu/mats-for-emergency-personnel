@@ -58,19 +58,26 @@ export const SignalSectorMap: React.FC<Props> = ({ snapshot, userCell }) => {
             const cell = byKey.get(`${row}:${col}`);
             const ratio = cell && maxScore > 0 ? SectorGrid.score(cell) / maxScore : 0;
             const isHot = Boolean(cell && hot && cell.row === hot.row && cell.col === hot.col);
+            const isUser = Boolean(userCell && userCell.row === row && userCell.col === col);
             return (
               <div
                 key={`${row}:${col}`}
                 className={cn(
-                  'aspect-square rounded-md flex flex-col items-center justify-center text-xs font-bold',
+                  'relative aspect-square rounded-md flex flex-col items-center justify-center text-xs font-bold',
                   heatClass(ratio),
                   isHot && 'ring-4 ring-primary ring-offset-1 ring-offset-background',
+                  isUser && 'outline outline-4 outline-offset-2 outline-foreground',
                 )}
               >
-                <span>{cell ? cell.label : ''}</span>
+                <span>{cell ? cell.label : isUser ? userCell?.label : ''}</span>
                 {cell && (
                   <span className="text-[10px] font-semibold opacity-90">
                     {cell.devices.size} disp.
+                  </span>
+                )}
+                {isUser && (
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-foreground text-background text-[10px] font-black tracking-wide shadow">
+                    TÚ
                   </span>
                 )}
               </div>
