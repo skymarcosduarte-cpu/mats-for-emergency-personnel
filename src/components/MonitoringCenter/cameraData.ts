@@ -129,10 +129,10 @@ export const DEFAULT_CAMERAS: Camera[] = [
   // ═══════════════════════════════════════
   {
     id: 'yt-nplus-live',
-    name: 'N+ Streaming en vivo',
+    name: 'N+ Foro Noticias en vivo',
     city: 'CDMX',
     country: 'México',
-    description: 'Noticias N+ en vivo',
+    description: 'N+ Foro Noticias en vivo 24/7',
     sourceType: 'youtube',
     embedUrl: `https://www.youtube.com/embed/p2AzyIEuFak${YT_PARAMS}`,
     region: 'noticias',
@@ -145,16 +145,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     description: 'Milenio Noticias en vivo',
     sourceType: 'youtube',
     embedUrl: `https://www.youtube.com/embed/tQ941SU5UR0${YT_PARAMS}`,
-    region: 'noticias',
-  },
-  {
-    id: 'yt-sky-news-live',
-    name: 'SKY News',
-    city: 'Londres',
-    country: 'Reino Unido',
-    description: 'SKY News en vivo',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/YDvsBbKfLPA${YT_PARAMS}`,
     region: 'noticias',
   },
   {
@@ -186,29 +176,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     sourceType: 'youtube',
     embedUrl: `https://www.youtube.com/embed/Qr61waJ6AZg${YT_PARAMS}`,
     region: 'noticias',
-  },
-  {
-    id: 'yt-telemundo-live',
-    name: 'Telemundo Noticias en vivo',
-    city: 'Miami',
-    country: 'EE.UU.',
-    description: 'Telemundo Noticias en vivo',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/9CHbF8k-W7I${YT_PARAMS}`,
-    region: 'noticias',
-  },
-  // ═══════════════════════════════════════
-  // Latinoamérica
-  // ═══════════════════════════════════════
-  {
-    id: 'telesur-live',
-    name: 'TELESUR',
-    city: 'Latinoamérica',
-    country: 'Internacional',
-    description: 'Señal en vivo de teleSUR 24/7',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/live_stream${YT_PARAMS.replace('?', '?channel=UCZSdNK_ZmMQcLTz-obKr-Dw&')}`,
-    region: 'latam',
   },
   // ═══════════════════════════════════════
   // Norteamérica (aeropuertos)
@@ -242,8 +209,8 @@ export const DEFAULT_CAMERAS: Camera[] = [
 export const DEFAULT_INITIAL_CAMERA_IDS = [
   'yt-nplus-live',
   'yt-cnn-es-live',
-  'yt-sky-news-live',
-  'telesur-live',
+  'yt-euronews-es',
+  'yt-al-jazeera-live',
 ];
 
 export const LAYOUT_OPTIONS: LayoutOption[] = [
@@ -262,7 +229,6 @@ export function getCellCount(layout: string): number {
 export const REGION_LABELS: Record<string, string> = {
   noticias: '📺 Noticias en Vivo',
   mexico: '🇲🇽 México',
-  latam: '🌎 Latinoamérica',
   northamerica: '🇺🇸 Norteamérica',
   europe: '🇪🇺 Europa',
   asia_mideast: '🌏 Asia y Medio Oriente',
