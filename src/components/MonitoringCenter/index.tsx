@@ -71,7 +71,7 @@ const MonitoringCenter: React.FC<MonitoringCenterProps> = ({ onBack }) => {
         <div className="flex items-center gap-1.5 mr-auto">
           <span className="w-2 h-2 rounded-full bg-[#00ff88] animate-pulse" />
           <h1 className="font-mono text-xs sm:text-sm font-bold text-[#00ff88] uppercase tracking-widest">
-            Centro de Monitoreo
+            Monitoreo de Noticias
           </h1>
         </div>
 

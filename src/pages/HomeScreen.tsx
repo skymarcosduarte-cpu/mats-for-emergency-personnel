@@ -46,7 +46,7 @@ const SECTIONS: SectionItem[] = [
     id: 'alerts', 
     label: 'Sismos', 
     icon: <Activity className="w-10 h-10" strokeWidth={2.5} />,
-    description: 'Alertas sísmicas y reportes',
+    description: 'Últimos Sismos y Monitoreo',
     gradient: 'home-section-alerts',
     iconBg: 'home-section-icon-alerts'
   },

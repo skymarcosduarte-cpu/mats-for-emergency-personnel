@@ -10,3 +10,10 @@
 - [x] Identificar el repositorio mats-for-emergency-personnel y su rama newversion.
 - [x] Actualizar el token de GitHub con acceso de escritura a Contents y Actions.
 - [x] Sincronizar el código y ejecutar la compilación del APK 2.9.9.
+
+# RecurSOS y categorías de personal
+
+- [x] Restaurar Monitoreo de Noticias dentro de RecurSOS.
+- [x] Cambiar la descripción de Sismos a “Últimos Sismos y Monitoreo”.
+- [x] Sustituir las etiquetas SOS y EX-SOS por “Rescatista Activo” y “Ex-Rescatista” en registro y Ajustes.
+- [x] Verificar los accesos y textos actualizados.
