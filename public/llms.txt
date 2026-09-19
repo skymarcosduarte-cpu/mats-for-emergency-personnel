@@ -1,4 +1,4 @@
-# COMUNIDAD SOS — M.A.T.S.
+# M.A.T.S. for Emergency Personnel — M.A.T.S.
 
 > Plataforma comunitaria de respuesta a emergencias (Monitoreo Activo de Tránsito y Seguridad): alertas sísmicas en tiempo real, seguimiento de viajes, mapa en vivo y coordinación de ayuda mutua.
 

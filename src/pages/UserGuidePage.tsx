@@ -99,10 +99,10 @@ export default function UserGuidePage() {
   return (
     <div ref={containerRef} className="min-h-screen h-screen bg-white overflow-y-auto">
       <Helmet>
-        <title>Guía del Usuario — COMUNIDAD SOS / M.A.T.S.</title>
+        <title>Guía del Usuario — M.A.T.S. for Emergency Personnel / M.A.T.S.</title>
         <meta name="description" content="Guía completa del usuario M.A.T.S.: mapa en tiempo real, alertas sísmicas, seguimiento de viajes, comunidad y funciones de emergencia." />
         <link rel="canonical" href="https://mats-app.com/guia" />
-        <meta property="og:title" content="Guía del Usuario — COMUNIDAD SOS / M.A.T.S." />
+        <meta property="og:title" content="Guía del Usuario — M.A.T.S. for Emergency Personnel / M.A.T.S." />
         <meta property="og:url" content="https://mats-app.com/guia" />
         <meta property="og:description" content="Manual completo de M.A.T.S. — Monitoreo Activo de Tránsito y Seguridad." />
         <script type="application/ld+json">{JSON.stringify({

@@ -875,7 +875,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           {step === 'auth' && (
             <header className="text-center space-y-1">
               <h1 className="text-2xl font-bold text-foreground">
-                COMUNIDAD SOS — Acceso al Sistema
+                M.A.T.S. for Emergency Personnel — Acceso al Sistema
               </h1>
               <p className="text-sm text-muted-foreground">
                 Inicia sesión o regístrate con tu código de invitación para coordinar respuesta a emergencias.

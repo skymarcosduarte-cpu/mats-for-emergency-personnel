@@ -196,10 +196,10 @@ export default function SharedTripPage() {
       </header>
       <Helmet>
         <meta name="robots" content="noindex, follow" />
-        <title>Seguimiento de Viaje — COMUNIDAD SOS</title>
+        <title>Seguimiento de Viaje — M.A.T.S. for Emergency Personnel</title>
         <meta name="description" content={`Sigue en tiempo real el viaje ${trip.origin} → ${trip.destination} con M.A.T.S. — ETA, ruta y ubicación actualizada.`} />
         <link rel="canonical" href={`https://mats-app.com/trip/${shareToken}`} />
-        <meta property="og:title" content="Seguimiento de Viaje — COMUNIDAD SOS" />
+        <meta property="og:title" content="Seguimiento de Viaje — M.A.T.S. for Emergency Personnel" />
         <meta property="og:url" content={`https://mats-app.com/trip/${shareToken}`} />
         <meta property="og:description" content={`Viaje en curso ${trip.origin} → ${trip.destination} compartido vía M.A.T.S.`} />
       </Helmet>

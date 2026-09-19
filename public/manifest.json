@@ -1,7 +1,7 @@
 {
-  "name": "COMUNIDAD SOS",
-  "short_name": "SOS",
-  "description": "Sistema de Respuesta a Emergencias M.A.T.S.",
+  "name": "M.A.T.S. for Emergency Personnel",
+  "short_name": "M.A.T.S.",
+  "description": "Maximum Aid Tracking Service — respuesta a emergencias para personal de protección civil",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",

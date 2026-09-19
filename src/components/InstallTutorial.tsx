@@ -83,7 +83,7 @@ export const InstallTutorial: React.FC<InstallTutorialProps> = ({ onClose }) => 
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
-            Accede más rápido a <strong>COMUNIDAD SOS</strong> desde tu pantalla de inicio.
+            Accede más rápido a <strong>M.A.T.S. for Emergency Personnel</strong> desde tu pantalla de inicio.
           </p>
           
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">

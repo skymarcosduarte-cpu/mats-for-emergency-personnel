@@ -1,4 +1,4 @@
-// Panic Button FAB Component for COMUNIDAD SOS
+// Panic Button FAB Component for M.A.T.S. for Emergency Personnel
 // With voice recording, additional context, and remote location support
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';

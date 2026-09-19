@@ -1654,7 +1654,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <div className="border-t border-border pt-4">
               <div className="flex items-center justify-center gap-2 text-mats-green">
                 <MatsLogo size={24} />
-                <span className="font-bold">COMUNIDAD SOS</span>
+                <span className="font-bold">M.A.T.S. for Emergency Personnel</span>
               </div>
               <p className="text-xs text-center text-muted-foreground mt-2">
                 M.A.T.S. - Sistema de Respuesta a Emergencias
@@ -2105,7 +2105,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   Propósito de la Plataforma
                 </h3>
                 <p className="text-muted-foreground">
-                  Comunidad SOS es una plataforma de apoyo voluntario para emergencias.
+                  M.A.T.S. for Emergency Personnel es una plataforma de apoyo voluntario para emergencias.
                   Su objetivo es facilitar la comunicación y coordinación entre miembros de la
                   comunidad durante situaciones de emergencia, sismos y desastres naturales.
                 </p>
@@ -2153,7 +2153,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   Deslinde de Responsabilidad
                 </h3>
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                  La plataforma Comunidad SOS y sus creadores no se hacen responsables por:
+                  La plataforma M.A.T.S. for Emergency Personnel y sus creadores no se hacen responsables por:
                 </p>
                 <ul className="list-disc list-inside text-muted-foreground text-xs space-y-1 ml-2 mt-2">
                   <li>El mal uso de la información compartida por terceros</li>
