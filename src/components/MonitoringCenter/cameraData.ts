@@ -209,8 +209,8 @@ export const DEFAULT_CAMERAS: Camera[] = [
 export const DEFAULT_INITIAL_CAMERA_IDS = [
   'yt-nplus-live',
   'yt-cnn-es-live',
-  'yt-sky-news-live',
-  'telesur-live',
+  'yt-euronews-es',
+  'yt-al-jazeera-live',
 ];
 
 export const LAYOUT_OPTIONS: LayoutOption[] = [
