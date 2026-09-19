@@ -104,6 +104,12 @@ export const SignalSectorMap: React.FC<Props> = ({ snapshot, userCell }) => {
         )}
       </div>
 
+      <p className="text-[11px] text-muted-foreground">
+        El número pequeño es tu recorrido (orden en que pasaste por el sector); los cuadros con
+        borde punteado ya los barriste sin encontrar señal. ✓ = dispositivo oído en dos pasadas
+        distintas (indicio confirmado).
+      </p>
+
       {hot && (
         <div className="flex gap-2 items-start p-3 rounded-lg border-2 border-primary bg-primary/5">
           <Crosshair className="w-5 h-5 text-primary shrink-0 mt-0.5" />
