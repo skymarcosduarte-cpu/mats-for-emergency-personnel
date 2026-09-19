@@ -53,7 +53,6 @@ import { MyAlertsHistory } from '@/components/MyAlertsHistory';
 import { QuakeCheckinMap } from '@/components/QuakeCheckinMap';
 // CycloneMap imported on-demand if needed
 import { SeismicWaveMap } from '@/components/SeismicWaveMap';
-import { SkyAlertTab } from '@/components/SkyAlertTab';
 import { useActiveTrips, ActiveTrip } from '@/hooks/useActiveTrips';
 import { useRecentQuakeCheckins } from '@/hooks/useRecentQuakeCheckins';
 import { useQuakeCheckinCounts } from '@/hooks/useQuakeCheckinCounts';
@@ -94,7 +93,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
 }) => {
   // Landing view state - shows big buttons before entering tabs
   const [showLanding, setShowLanding] = useState(true);
-  const [initialTab, setInitialTab] = useState<'skyalert' | 'earthquakes' | 'otros'>('skyalert');
+  const [initialTab, setInitialTab] = useState<'earthquakes' | 'otros'>('earthquakes');
   
   const [selectedQuake, setSelectedQuake] = useState<EarthquakeWithDistance | null>(null);
   const [showQuakeDetailDialog, setShowQuakeDetailDialog] = useState(false);
@@ -119,7 +118,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   const [messagingUserName, setMessagingUserName] = useState<string | null>(null);
   
   // Handler to enter a specific tab from landing
-  const handleEnterTab = (tab: 'skyalert' | 'earthquakes' | 'otros') => {
+  const handleEnterTab = (tab: 'earthquakes' | 'otros') => {
     setInitialTab(tab);
     setShowLanding(false);
   };
@@ -503,30 +502,6 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
 
         {/* Large Button Cards */}
         <div className="px-4 space-y-4">
-          {/* SkyAlert Button */}
-          <button
-            onClick={() => handleEnterTab('skyalert')}
-            className={cn(
-              "w-full flex items-center gap-4 p-5 rounded-2xl",
-              "bg-card border-2 shadow-sm",
-              "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
-              "transition-all duration-200 animate-fade-in",
-              "subsection-card-skyalert"
-            )}
-            style={{ animationDelay: '0ms' }}
-          >
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 subsection-icon-skyalert">
-              <Radio className="w-10 h-10" strokeWidth={2.5} />
-            </div>
-            <div className="flex-1 text-left min-w-0">
-              <h3 className="font-bold text-foreground text-xl">Apps de Alertamiento Sísmico</h3>
-              <p className="text-base text-muted-foreground line-clamp-3 leading-relaxed">
-                Alertas tomadas de las cuentas oficiales de SkyAlert y SASSLA en X. No sustituyen a las apps oficiales en tiempo real.
-              </p>
-            </div>
-            <ChevronRight className="w-7 h-7 text-muted-foreground/60 shrink-0" />
-          </button>
-
           {/* Sismos Recientes Button */}
           <button
             onClick={() => handleEnterTab('earthquakes')}
@@ -607,28 +582,6 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
             </div>
           </div>
 
-          {/* Raspberry Shake */}
-          <a
-            href="https://stationview.raspberryshake.org/#/?lat=15.02955&lon=148.91310&zoom=2.348"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              "w-full flex items-center gap-4 p-5 rounded-2xl",
-              "bg-card border-2 border-emerald-500/40 shadow-sm",
-              "hover:border-emerald-400/60 active:scale-[0.98] transition-all",
-              "animate-fade-in"
-            )}
-            style={{ animationDelay: '200ms' }}
-          >
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
-              <Activity className="w-6 h-6 text-emerald-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-base font-bold text-foreground">Raspberry Shake</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">Mira la tierra como se mueve 🌍</p>
-            </div>
-            <ExternalLink className="w-6 h-6 text-emerald-500/70 shrink-0" />
-          </a>
         </div>
       </div>
     );
@@ -637,7 +590,6 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   // Get section title based on current tab
   const getSectionTitle = () => {
     switch (initialTab) {
-      case 'skyalert': return 'Apps de Alertamiento Sísmico';
       case 'earthquakes': return 'Sismos Recientes';
       case 'otros': return 'Otros Fenómenos';
       default: return 'Sismos';
@@ -694,11 +646,6 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
 
       {/* Content based on selected section - NO TABS */}
       <div className="p-4">
-        {/* SkyAlert Section */}
-        {initialTab === 'skyalert' && (
-          <SkyAlertTab />
-        )}
-
         {/* Earthquakes Section */}
         {initialTab === 'earthquakes' && (
           <div className="space-y-3">
