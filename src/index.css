@@ -593,12 +593,6 @@
   .subsection-icon-jobs {
     @apply bg-[hsl(220,80%,50%)] text-white;
   }
-  .subsection-card-skyalert {
-    @apply border-primary hover:bg-primary/5;
-  }
-  .subsection-icon-skyalert {
-    @apply bg-primary text-white;
-  }
   .subsection-card-sismos {
     @apply border-[hsl(25,100%,50%)] hover:bg-[hsl(25,100%,97%)];
   }

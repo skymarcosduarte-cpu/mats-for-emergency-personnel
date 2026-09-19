@@ -61,7 +61,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     icon: <Bell className="w-12 h-12" />,
     title: 'Alertas Sísmicas',
-    description: 'Recibe alertas de sismos automáticamente y consulta los avisos recientes de SASSLA y SkyAlert en "Apps de Alertamiento Sísmico". Reporta "Todo bien" o pide ayuda con "14".',
+    description: 'Recibe alertas de sismos automáticamente. Reporta "Todo bien" o pide ayuda con "14".',
     tip: 'Cada aviso se puede cerrar con la ✕ después de leerlo',
     color: 'text-warning',
   },
