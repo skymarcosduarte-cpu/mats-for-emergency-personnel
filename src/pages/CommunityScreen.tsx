@@ -534,7 +534,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
   };
 
   // Handler to enter a specific section from landing
-  const handleEnterSection = (section: 'tablero' | 'noticias' | 'market' | 'galeria' | 'jobs') => {
+  const handleEnterSection = (section: 'tablero' | 'noticias' | 'market') => {
     setActiveSection(section);
     setShowLanding(false);
   };
