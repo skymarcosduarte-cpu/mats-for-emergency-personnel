@@ -94,7 +94,7 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
                 Propósito de la Plataforma
               </h3>
               <p className="text-muted-foreground">
-                Comunidad SOS es una plataforma de apoyo voluntario para emergencias.
+                M.A.T.S. for Emergency Personnel es una plataforma de apoyo voluntario para emergencias.
                 Su objetivo es facilitar la comunicación y coordinación entre miembros de la
                 comunidad durante situaciones de emergencia, sismos y desastres naturales.
               </p>
@@ -142,7 +142,7 @@ export const PrivacyConsentDialog: React.FC<PrivacyConsentDialogProps> = ({
                 Deslinde de Responsabilidad
               </h3>
               <p className="text-muted-foreground text-xs leading-relaxed">
-                La plataforma Comunidad SOS y sus creadores no se hacen responsables por:
+                La plataforma M.A.T.S. for Emergency Personnel y sus creadores no se hacen responsables por:
               </p>
               <ul className="list-disc list-inside text-muted-foreground text-xs space-y-1 ml-2 mt-2">
                 <li>El mal uso de la información compartida por terceros</li>

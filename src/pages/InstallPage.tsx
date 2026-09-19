@@ -130,7 +130,7 @@ export default function InstallPage() {
           </div>
           <h2 className="text-3xl font-bold">¡Ya está instalada!</h2>
           <p className="text-muted-foreground text-lg">
-            La aplicación COMUNIDAD SOS ya está instalada en tu dispositivo. Puedes cerrar esta ventana.
+            La aplicación M.A.T.S. for Emergency Personnel ya está instalada en tu dispositivo. Puedes cerrar esta ventana.
           </p>
           <Link to="/">
             <Button size="lg" className="mt-4">
@@ -146,12 +146,12 @@ export default function InstallPage() {
   return (
     <div className="fixed inset-0 bg-gradient-to-b from-background to-muted/30 overflow-y-auto">
       <Helmet>
-        <title>Instalar COMUNIDAD SOS en tu teléfono | M.A.T.S.</title>
-        <meta name="description" content="Instala la app COMUNIDAD SOS (M.A.T.S.) en Android, iPhone o PC en menos de un minuto: alertas sísmicas, botón SOS y seguimiento de viajes sin tienda de apps." />
+        <title>Instalar M.A.T.S. for Emergency Personnel en tu teléfono | M.A.T.S.</title>
+        <meta name="description" content="Instala la app M.A.T.S. for Emergency Personnel (M.A.T.S.) en Android, iPhone o PC en menos de un minuto: alertas sísmicas, botón SOS y seguimiento de viajes sin tienda de apps." />
         <link rel="canonical" href="https://mats-app.com/install" />
-        <meta property="og:title" content="Instalar COMUNIDAD SOS en tu teléfono | M.A.T.S." />
+        <meta property="og:title" content="Instalar M.A.T.S. for Emergency Personnel en tu teléfono | M.A.T.S." />
         <meta property="og:url" content="https://mats-app.com/install" />
-        <meta property="og:description" content="Guía rápida para instalar la app de emergencias COMUNIDAD SOS en Android, iPhone o escritorio." />
+        <meta property="og:description" content="Guía rápida para instalar la app de emergencias M.A.T.S. for Emergency Personnel en Android, iPhone o escritorio." />
       </Helmet>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
@@ -180,7 +180,7 @@ export default function InstallPage() {
             Instala la App
           </h1>
           <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            Accede más rápido a COMUNIDAD SOS desde tu pantalla de inicio
+            Accede más rápido a M.A.T.S. for Emergency Personnel desde tu pantalla de inicio
           </p>
           
           {/* Platform Detection Badge */}
@@ -622,7 +622,7 @@ export default function InstallPage() {
                       <InstallStep 
                         number={2}
                         title='Haz clic en "Instalar"'
-                        description="O abre el menú (⋮) y selecciona 'Instalar COMUNIDAD SOS...'"
+                        description="O abre el menú (⋮) y selecciona 'Instalar M.A.T.S. for Emergency Personnel...'"
                       />
                       <InstallStep 
                         number={3}

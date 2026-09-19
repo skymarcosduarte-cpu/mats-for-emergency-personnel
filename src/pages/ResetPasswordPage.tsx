@@ -98,8 +98,8 @@ const ResetPasswordPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <Helmet>
-        <title>Restablecer contraseña | COMUNIDAD SOS</title>
-        <meta name="description" content="Crea una nueva contraseña para tu cuenta de COMUNIDAD SOS (M.A.T.S.)." />
+        <title>Restablecer contraseña | M.A.T.S. for Emergency Personnel</title>
+        <meta name="description" content="Crea una nueva contraseña para tu cuenta de M.A.T.S. for Emergency Personnel (M.A.T.S.)." />
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <div className="w-full max-w-sm space-y-6">

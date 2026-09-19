@@ -1,4 +1,4 @@
-// Earthquake History Hook for COMUNIDAD SOS
+// Earthquake History Hook for M.A.T.S. for Emergency Personnel
 // Fetches and caches earthquake data from USGS and SSN (Mexico) with distance calculations
 // SSN earthquakes above user-configured threshold trigger alerts to all community members regardless of distance
 

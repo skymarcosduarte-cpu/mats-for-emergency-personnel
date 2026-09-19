@@ -154,10 +154,10 @@ export default function DownloadAppPage() {
   return (
     <div className="min-h-[100dvh] bg-background pb-[env(safe-area-inset-bottom)]">
       <Helmet>
-        <title>Descargar la app Android de COMUNIDAD SOS (Red Mesh)</title>
-        <meta name="description" content="Descarga el APK oficial de COMUNIDAD SOS para Android con Red Mesh Bluetooth: comunicación de emergencia sin internet, alertas sísmicas y botón SOS." />
+        <title>Descargar la app Android de M.A.T.S. for Emergency Personnel (Red Mesh)</title>
+        <meta name="description" content="Descarga el APK oficial de M.A.T.S. for Emergency Personnel para Android con Red Mesh Bluetooth: comunicación de emergencia sin internet, alertas sísmicas y botón SOS." />
         <link rel="canonical" href="https://mats-app.com/descargar" />
-        <meta property="og:title" content="Descargar la app Android de COMUNIDAD SOS (Red Mesh)" />
+        <meta property="og:title" content="Descargar la app Android de M.A.T.S. for Emergency Personnel (Red Mesh)" />
         <meta property="og:url" content="https://mats-app.com/descargar" />
         <meta property="og:description" content="APK oficial para Android con Red Mesh Bluetooth, alertas sísmicas y botón SOS." />
       </Helmet>

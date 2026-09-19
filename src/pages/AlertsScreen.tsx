@@ -1,4 +1,4 @@
-// Alerts Screen for COMUNIDAD SOS
+// Alerts Screen for M.A.T.S. for Emergency Personnel
 // USGS + SSN Mexico earthquakes + "Todo bien" quick report + "14" help + notifications + my alerts history
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';

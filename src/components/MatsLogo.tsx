@@ -37,7 +37,7 @@ export const MatsLogo = memo(forwardRef<HTMLDivElement, MatsLogoProps>(({
             M.A.T.S.
           </span>
           <span className="text-[10px] sm:text-xs text-muted-foreground truncate">
-            COMUNIDAD SOS
+            for Emergency Personnel
           </span>
         </div>
       )}

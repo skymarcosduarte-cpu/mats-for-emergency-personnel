@@ -1,4 +1,4 @@
-// My Alerts History Component for COMUNIDAD SOS
+// My Alerts History Component for M.A.T.S. for Emergency Personnel
 // Shows user's created help requests with status and details
 
 import React, { useState, useEffect } from 'react';
