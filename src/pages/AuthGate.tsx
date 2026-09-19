@@ -511,25 +511,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
             return;
           }
           
-          // Handle invite code errors - check for various phrases
-          if (serverMessage.includes('código') || 
-              serverMessage.includes('invitación') || 
-              serverMessage.includes('invite') ||
-              serverMessage.includes('Código') ||
-              serverMessage.includes('no encontrado') ||
-              serverMessage.includes('expirado') ||
-              serverMessage.includes('límite')) {
-            setInviteCodeError(true);
-            setError(serverMessage);
-            toast({
-              title: 'Error con código de invitación',
-              description: serverMessage,
-              variant: 'destructive',
-            });
-            setLoading(false);
-            return;
-          }
-          
           // If we got a meaningful server message, show it
           if (serverMessage && !serverMessage.includes('FunctionsHttpError') && serverMessage.length < 200) {
             setError(serverMessage);
@@ -875,17 +856,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthComplete }) => {
           {error && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive space-y-2">
               <p>{error}</p>
-              {inviteCodeError && (
-                <p className="text-xs">
-                  ¿Necesitas ayuda?{' '}
-                  <a 
-                    href={`mailto:contacto@latamgrowthoperators.com?subject=Ayuda con código de invitación MATS&body=Hola, necesito ayuda con mi código de invitación.%0A%0AMi email: ${encodeURIComponent(email)}%0ACódigo que usé: ${encodeURIComponent(inviteCode)}`}
-                    className="underline font-medium hover:text-destructive/80"
-                  >
-                    Escríbenos a contacto@latamgrowthoperators.com
-                  </a>
-                </p>
-              )}
             </div>
           )}
 
