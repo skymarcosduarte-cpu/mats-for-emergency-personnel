@@ -261,6 +261,7 @@ class SignalScanner {
         rssi,
         deviceId: id,
         sustained,
+        pass: this.pass,
       });
     }
   }
