@@ -157,7 +157,16 @@ class SignalScanner {
 
       // Escaneo a través del bus compartido: si la Red Mesh está escuchando,
       // ambos reciben los anuncios sin pisarse el escáner.
+      // Escaneo a través del bus compartido: si la Red Mesh está escuchando,
+      // ambos reciben los anuncios sin pisarse el escáner.
+      const busYaActivo = bleScanBus.isRunning();
       await bleScanBus.acquire('detector', (result) => this.handleResult(result));
+      // Si el escaneo ya estaba marcado como activo (por ejemplo la Red Mesh lo
+      // apagó por su cuenta), lo reiniciamos para garantizar que sí recibimos
+      // anuncios en lugar de quedarnos en una pantalla vacía.
+      if (busYaActivo) {
+        await bleScanBus.restart();
+      }
 
       this.scanning = true;
       this.lastError = null;
