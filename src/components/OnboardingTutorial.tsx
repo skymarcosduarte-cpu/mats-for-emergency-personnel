@@ -65,21 +65,6 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     tip: 'Cada aviso se puede cerrar con la ✕ después de leerlo',
     color: 'text-warning',
   },
-  {
-    icon: <Car className="w-12 h-12" />,
-    title: 'Tránsito Seguro',
-    description: 'Registra tus viajes por carretera o avión. Si olvidas cerrarlo, la app detecta tu llegada por GPS y lo cierra sola.',
-    tip: 'Ajusta el radio de llegada (100–500 m) en Ajustes → Alertas',
-    color: 'text-accent',
-  },
-
-  {
-    icon: <Users className="w-12 h-12" />,
-    title: 'Tu Comunidad',
-    description: 'Participa en eventos, celebra cumpleaños de miembros y mantente conectado. Juntos somos más fuertes.',
-    tip: '¡Ya eres parte de la familia!',
-    color: 'text-safe',
-  },
 ];
 
 interface OnboardingTutorialProps {
