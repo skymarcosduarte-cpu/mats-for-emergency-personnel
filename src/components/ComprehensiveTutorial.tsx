@@ -446,12 +446,6 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
               </ul>
             </div>
             
-            {/* Community exclusivity note */}
-            <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-center">
-              <Lock className="w-5 h-5 text-warning mx-auto mb-1" />
-              <p className="text-xs font-medium text-warning">Comunidad cerrada - Solo por invitación</p>
-            </div>
-            
             {/* Disclaimer */}
             <div className="bg-muted/50 border border-border rounded-lg p-3">
               <p className="text-[10px] text-muted-foreground leading-relaxed">

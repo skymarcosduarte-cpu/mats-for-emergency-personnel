@@ -54,7 +54,6 @@ interface FloatingHelpButtonProps {
 const FEEDBACK_CATEGORIES = [
   { value: 'problema', label: 'Reportar un problema' },
   { value: 'sugerencia', label: 'Sugerencia de mejora' },
-  { value: 'invitacion', label: 'Solicitar invitación' },
   { value: 'otro', label: 'Otro' },
 ];
 
@@ -387,7 +386,7 @@ export const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({ classNam
           <DialogHeader>
             <DialogTitle>Enviar Feedback</DialogTitle>
             <DialogDescription>
-              Reporta problemas, sugerencias o solicita una invitación.
+              Reporta problemas o envía sugerencias.
             </DialogDescription>
           </DialogHeader>
           

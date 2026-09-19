@@ -627,33 +627,7 @@ export const GUIDE_PAGES: GuidePageData[] = [
     ],
   },
 
-  // ── 18. COMUNIDAD CERRADA ──
-  {
-    icon: <Lock className="w-14 h-14" />,
-    title: 'Comunidad por Invitación',
-    accentColor: 'text-warning',
-    sections: [
-      {
-        paragraphs: [
-          'M.A.T.S. es una comunidad cerrada. Solo puedes unirte si alguien que ya es miembro te invita.',
-        ],
-      },
-      {
-        heading: '¿Cómo invito a alguien?',
-        paragraphs: [
-          '1. Ve a Ajustes.',
-          '2. Presiona "Generar Código de Invitación".',
-          '3. Se creará un código único y un código QR.',
-          '4. Comparte el código o el QR con la persona que quieras invitar.',
-          '5. Esa persona podrá registrarse usando tu código.',
-        ],
-        tip: 'Solo invita a personas de confianza. La seguridad de la comunidad depende de todos.',
-        warning: 'Los códigos de invitación tienen un número limitado de usos. Cada código solo puede ser usado un cierto número de veces.',
-      },
-    ],
-  },
-
-  // ── 19. ¡LISTO! ──
+  // ── 18. ¡LISTO! ──
   {
     icon: <CheckCircle className="w-14 h-14" />,
     title: '¡Ya conoces M.A.T.S.!',
