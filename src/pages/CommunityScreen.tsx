@@ -4,13 +4,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Cake, Heart, MessageSquarePlus, Loader2, RefreshCw, 
-  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingCart, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play, Pencil, Camera, Briefcase
+  Clock, User, AlertTriangle, Megaphone, Trash2, Bell, Check, ShoppingCart, Car, Plane, MapPin, Navigation, Map, Route, Share2, Copy, ExternalLink, ImagePlus, X, Send, Gift, MessageCircle, ZoomIn, ChevronLeft, ChevronRight, Newspaper, ArrowLeft, Clipboard, Link, Video, Play, Pencil
 } from 'lucide-react';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import { ImageGalleryViewer } from '@/components/ImageGalleryViewer';
-import { MemoryGallery } from '@/components/MemoryGallery';
 import { MarketScreen } from '@/pages/MarketScreen';
-import { JobBoardScreen } from '@/components/JobBoardScreen';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { UserRole } from '@/types';
