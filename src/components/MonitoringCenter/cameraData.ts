@@ -148,16 +148,6 @@ export const DEFAULT_CAMERAS: Camera[] = [
     region: 'noticias',
   },
   {
-    id: 'yt-sky-news-live',
-    name: 'SKY News',
-    city: 'Londres',
-    country: 'Reino Unido',
-    description: 'SKY News en vivo',
-    sourceType: 'youtube',
-    embedUrl: `https://www.youtube.com/embed/YDvsBbKfLPA${YT_PARAMS}`,
-    region: 'noticias',
-  },
-  {
     id: 'yt-al-jazeera-live',
     name: 'Al Jazeera English',
     city: 'Doha',
