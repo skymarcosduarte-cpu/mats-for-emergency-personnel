@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   snapshot: SectorSnapshot;
+  /** Sector donde está el rescatista ahora mismo (se marca "TÚ") */
+  userCell?: { row: number; col: number; label: string } | null;
 }
 
 function heatClass(ratio: number): string {
