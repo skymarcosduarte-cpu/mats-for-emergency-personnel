@@ -229,7 +229,6 @@ export function getCellCount(layout: string): number {
 export const REGION_LABELS: Record<string, string> = {
   noticias: '📺 Noticias en Vivo',
   mexico: '🇲🇽 México',
-  latam: '🌎 Latinoamérica',
   northamerica: '🇺🇸 Norteamérica',
   europe: '🇪🇺 Europa',
   asia_mideast: '🌏 Asia y Medio Oriente',
