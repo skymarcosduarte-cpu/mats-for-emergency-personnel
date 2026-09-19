@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Phone, Radio, Cctv } from 'lucide-react';
+import { BookOpen, Phone } from 'lucide-react';
 import { SectionLanding, SectionLandingItem } from '@/components/SectionLanding';
 import { BackToHomeButton } from '@/components/BackToHomeButton';
 import EmergencyGuidesScreen from '@/components/EmergencyGuidesScreen';
 import EmergencyDirectory from '@/components/EmergencyDirectory';
-import MonitoringCenter from '@/components/MonitoringCenter';
 
-type SubView = 'landing' | 'guides' | 'directory' | 'zello' | 'monitoring';
+type SubView = 'landing' | 'guides' | 'directory';
 
 interface ResourcesScreenProps {
   onGoHome?: () => void;
@@ -42,24 +41,6 @@ export default function ResourcesScreen({ onGoHome, initialSubView }: ResourcesS
       borderColor: 'border-[hsl(25,100%,50%)]/40',
       onClick: () => setSubView('guides'),
     },
-    {
-      id: 'monitoring',
-      label: 'Centro de Monitoreo',
-      description: 'feeds de noticias en vivo',
-      icon: <Cctv className="w-8 h-8 text-white" strokeWidth={2.5} />,
-      iconBg: 'bg-[hsl(150,100%,35%)]',
-      borderColor: 'border-[hsl(150,100%,35%)]/40',
-      onClick: () => setSubView('monitoring'),
-    },
-    {
-      id: 'zello',
-      label: 'Canal Zello',
-      description: 'Únete al canal de radio PoC de la comunidad EMERGENCIAS ARABA en Zello',
-      icon: <Radio className="w-8 h-8 text-white" strokeWidth={2.5} />,
-      iconBg: 'bg-[hsl(28,100%,45%)]',
-      borderColor: 'border-[hsl(28,100%,45%)]/40',
-      onClick: () => window.open('https://on.zello.com/7lk8s2', '_blank', 'noopener,noreferrer'),
-    },
   ];
 
   if (subView === 'guides') {
@@ -72,10 +53,6 @@ export default function ResourcesScreen({ onGoHome, initialSubView }: ResourcesS
         <EmergencyGuidesScreen />
       </div>
     );
-  }
-
-  if (subView === 'monitoring') {
-    return <MonitoringCenter onBack={() => setSubView('landing')} />;
   }
 
   if (subView === 'directory') {

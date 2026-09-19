@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import DOMPurify from 'dompurify';
-import { ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame, AlertTriangle, Users, Radio, MessageCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Info, Building2, Fuel, Pill, Shield, Flame, AlertTriangle, Users, MessageCircle } from 'lucide-react';
 import { GpsStatusBanner } from '@/components/GpsStatusBanner';
 import { MapControlsMenu } from '@/components/MapControlsMenu';
 import { ImOkButton } from '@/components/ImOkButton';
@@ -2064,86 +2064,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         badgeColor = '#2e8b57';
       }
       
-      // Zello: check if actively transmitting — wrap icon with dramatic glowing badge overlay
-      const zelloTransmittingUntil = (loc as any).zello_transmitting_until;
-      const isZelloActive = zelloTransmittingUntil && new Date(zelloTransmittingUntil) > new Date();
-      if (isZelloActive) {
-        const zelloUsername = (loc as any).zello_username || '';
-        const baseHtml = `
-          <div style="position: relative; display: inline-block;">
-            <!-- Outer glow ring -->
-            <div style="
-              position: absolute;
-              top: 50%; left: 50%;
-              transform: translate(-50%, -50%);
-              width: 70px; height: 70px;
-              border-radius: 50%;
-              background: radial-gradient(circle, rgba(249,115,22,0.35) 0%, rgba(249,115,22,0) 70%);
-              animation: zello-glow-pulse 1.2s ease-in-out infinite;
-              z-index: 0;
-              pointer-events: none;
-            "></div>
-            <!-- Spinning ring -->
-            <div style="
-              position: absolute;
-              top: 50%; left: 50%;
-              transform: translate(-50%, -50%);
-              width: 56px; height: 56px;
-              border-radius: 50%;
-              border: 2.5px dashed rgba(249,115,22,0.7);
-              animation: zello-spin 3s linear infinite;
-              z-index: 1;
-              pointer-events: none;
-            "></div>
-            <div class="mats-marker" style="position: relative; z-index: 2;">
-              ${icon.options.html}
-              <!-- Main mic badge -->
-              <div style="
-                position: absolute;
-                top: -12px;
-                right: -12px;
-                width: 26px;
-                height: 26px;
-                background: linear-gradient(135deg, #f97316, #ea580c);
-                border: 2.5px solid #fff;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 13px;
-                box-shadow: 0 0 0 3px rgba(249,115,22,0.4), 0 0 16px rgba(249,115,22,0.9), 0 2px 6px rgba(0,0,0,0.4);
-                animation: zello-badge-pulse 0.8s ease-in-out infinite alternate;
-                z-index: 10;
-              ">🎙️</div>
-            </div>
-            <!-- "EN VIVO" label -->
-            <div style="
-              position: absolute;
-              bottom: -18px;
-              left: 50%;
-              transform: translateX(-50%);
-              background: linear-gradient(90deg, #f97316, #ef4444);
-              color: white;
-              font-size: 9px;
-              font-weight: 900;
-              padding: 2px 6px;
-              border-radius: 10px;
-              white-space: nowrap;
-              box-shadow: 0 0 8px rgba(249,115,22,0.8);
-              letter-spacing: 0.05em;
-              animation: zello-label-blink 1s step-end infinite;
-              z-index: 10;
-            ">● EN VIVO${zelloUsername ? ' @' + zelloUsername : ''}</div>
-          </div>`;
-        icon = L.divIcon({
-          className: 'mats-marker zello-active-marker',
-          html: baseHtml,
-          iconSize: [56, 72],
-          iconAnchor: [28, 50],
-          popupAnchor: icon.options.popupAnchor as [number, number],
-        });
-      }
-      
       const displayName = loc.display_name ? sanitize(loc.display_name) : null;
       
       // Speed info for users in transit or moving - only show if location is fresh
@@ -2172,16 +2092,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
       // Specialties info (reuse userSpecialties from above)
       const specialtiesInfo = userSpecialties && userSpecialties.length > 0
         ? `<div style="font-size: 10px; color: #3b82f6; margin-top: 4px; max-width: 200px; word-wrap: break-word;">📋 ${userSpecialties.join(', ')}</div>`
-        : '';
-
-      // Zello info (reuse isZelloActive and loc fields already computed above)
-      const zelloUsername = (loc as any).zello_username;
-      const isZelloTransmitting = isZelloActive;
-      const zelloInfo = zelloUsername || isZelloTransmitting
-        ? `<div style="font-size: 10px; color: #f97316; margin-top: 6px; padding: 4px 6px; background: rgba(249,115,22,0.1); border-radius: 4px; border: 1px solid rgba(249,115,22,0.3);">
-            ${isZelloTransmitting ? '<span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #f97316; margin-right: 4px;"></span>' : ''}
-            🎙️ ${isZelloTransmitting ? 'TRANSMITIENDO' : 'en Zello'}${zelloUsername ? `: @${sanitize(zelloUsername)}` : ''}
-           </div>`
         : '';
 
       // Badge HTML for role
@@ -2213,7 +2123,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
           </div>
           ${specialtiesInfo}
           ${medicalInfo}
-          ${zelloInfo}
           ${speedInfo}
           ${transitInfo}
           ${staleWarning}
@@ -3887,18 +3796,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ className, respondersToMyA
         <span className="text-base">🚗</span>
         <span className="font-semibold text-sm">Waze</span>
       </button>
-
-      {/* Floating Zello Channel Button */}
-      <a
-        href="https://on.zello.com/7lk8s2"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-24 left-4 z-[1500] flex items-center gap-2 px-3 py-2.5 bg-orange-500 text-white rounded-full shadow-lg hover:bg-orange-600 active:scale-95 transition-all"
-        aria-label="Abrir canal de Zello"
-      >
-        <Radio className="w-4 h-4" />
-        <span className="font-semibold text-sm">Zello</span>
-      </a>
 
       {/* Global Hazard Panel - tsunamis, volcanoes, storms, security */}
       <GlobalHazardPanel

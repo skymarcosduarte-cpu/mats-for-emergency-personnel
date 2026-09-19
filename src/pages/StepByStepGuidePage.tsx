@@ -66,10 +66,10 @@ export default function StepByStepGuidePage() {
   return (
     <div className="min-h-screen bg-white print:bg-white">
       <Helmet>
-        <title>Guía paso a paso de M.A.T.S.: SOS, sismos y viajes</title>
-        <meta name="description" content="Tutorial paso a paso de M.A.T.S. for Emergency Personnel: configurar el botón SOS, alertas sísmicas, Tránsito Seguro, Red Mesh y mapa comunitario. Descargable en PDF." />
+        <title>Guía paso a paso de M.A.T.S.: SOS, sismos y Red Mesh</title>
+        <meta name="description" content="Tutorial paso a paso de M.A.T.S. for Emergency Personnel: configurar el botón SOS, alertas sísmicas, Red Mesh y mapa operativo. Descargable en PDF." />
         <link rel="canonical" href="https://mats-app.com/guia-paso-a-paso" />
-        <meta property="og:title" content="Guía paso a paso de M.A.T.S.: SOS, sismos y viajes" />
+        <meta property="og:title" content="Guía paso a paso de M.A.T.S.: SOS, sismos y Red Mesh" />
         <meta property="og:url" content="https://mats-app.com/guia-paso-a-paso" />
         <meta property="og:description" content="Tutorial ilustrado de todas las funciones de M.A.T.S. for Emergency Personnel, página por página." />
       </Helmet>

@@ -1,20 +1,11 @@
 // Bottom Navigation Component for COMUNIDAD EX SOS
 
 import React from 'react';
-import { 
-  Home,
-  Map, 
-  Car, 
-  Activity, 
-  Settings,
-  Users,
-  BookOpen,
-  ShieldAlert
-} from 'lucide-react';
+import { Home, Map, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUpdateAvailable } from '@/hooks/useUpdateCheck';
 
-export type TabId = 'home' | 'map' | 'transit' | 'alerts' | 'community' | 'resources' | 'status' | 'detector' | 'settings';
+export type TabId = 'home' | 'map' | 'alerts' | 'resources' | 'status' | 'detector' | 'settings';
 
 interface NavItem {
   id: TabId;

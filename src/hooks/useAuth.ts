@@ -29,8 +29,6 @@ interface Profile {
   terms_accepted_at: string | null;
   tutorial_disclaimer_accepted_at: string | null;
   opt_out_drills: boolean;
-  zello_username: string | null;
-  zello_transmitting_until: string | null;
   created_at: string;
   updated_at: string;
 }
