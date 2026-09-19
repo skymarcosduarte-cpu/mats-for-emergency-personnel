@@ -6,8 +6,6 @@ import {
   Shield, 
   MapPin, 
   Bell, 
-  Car, 
-  Users, 
   ChevronRight, 
   ChevronLeft,
   Check,
