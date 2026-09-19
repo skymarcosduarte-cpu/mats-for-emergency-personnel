@@ -34,9 +34,6 @@ interface UserLocation {
   transit_origin_lat: number | null;
   transit_origin_lng: number | null;
   transit_eta: string | null;
-  // Zello integration
-  zello_username?: string | null;
-  zello_transmitting_until?: string | null;
 }
 
 interface HelpRequest {
@@ -120,32 +117,7 @@ export function useUserLocations() {
       .select('*');
 
     if (!error && data) {
-      // Also fetch Zello fields from profiles_public (privacy-safe view)
-      const userIds = data.map((d: any) => d.user_id).filter(Boolean);
-      let profilesMap: Record<string, { zello_username: string | null; zello_transmitting_until: string | null }> = {};
-      
-      if (userIds.length > 0) {
-        const { data: profilesData } = await supabase
-          .from('profiles_public')
-          .select('user_id, zello_username, zello_transmitting_until')
-          .in('user_id', userIds);
-        
-        if (profilesData) {
-          profilesData.forEach((p: any) => {
-            profilesMap[p.user_id] = { 
-              zello_username: p.zello_username, 
-              zello_transmitting_until: p.zello_transmitting_until,
-            };
-          });
-        }
-      }
-
-      // Merge profile fields into location data
-      const enriched = data.map((loc: any) => ({
-        ...loc,
-        zello_username: profilesMap[loc.user_id]?.zello_username || null,
-        zello_transmitting_until: profilesMap[loc.user_id]?.zello_transmitting_until || null,
-      }));
+      const enriched = data;
 
       console.log('[useUserLocations] Fetched locations with roles:', enriched.length);
       setLocations(enriched as UserLocation[]);

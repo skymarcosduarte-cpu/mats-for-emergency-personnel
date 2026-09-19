@@ -5,9 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Map, 
   Activity, 
-  Car, 
   HeartPulse, 
-  Users, 
   Settings,
   ChevronRight,
   AlertTriangle,
@@ -43,7 +41,6 @@ interface SectionItem {
   iconBg: string;
 }
 
-// Comunidad y Ajustes van hasta abajo de la cuadrícula.
 const SECTIONS: SectionItem[] = [
   { 
     id: 'alerts', 
@@ -69,14 +66,6 @@ const SECTIONS: SectionItem[] = [
     gradient: 'home-section-resources',
     iconBg: 'home-section-icon-resources'
   },
-  { 
-    id: 'transit', 
-    label: 'Tránsito Seguro', 
-    icon: <Car className="w-10 h-10" strokeWidth={2.5} />,
-    description: 'Registrar y monitorear viajes',
-    gradient: 'home-section-transit',
-    iconBg: 'home-section-icon-transit'
-  },
 ];
 
 // "Red Mesh" incluye la Red Malla Bluetooth y el test mensual: debe ser
@@ -101,25 +90,14 @@ SECTIONS.push({
   iconBg: 'home-section-icon-detector',
 });
 
-// Comunidad y Ajustes: última fila de la cuadrícula.
-SECTIONS.push(
-  {
-    id: 'community',
-    label: 'Comunidad',
-    icon: <Users className="w-10 h-10" strokeWidth={2.5} />,
-    description: 'AviSOS, Noticias y Marketplace',
-    gradient: 'home-section-community',
-    iconBg: 'home-section-icon-community',
-  },
-  {
+SECTIONS.push({
     id: 'settings',
     label: 'Ajustes',
     icon: <Settings className="w-10 h-10" strokeWidth={2.5} />,
     description: 'Configuración y perfil',
     gradient: 'home-section-settings',
     iconBg: 'home-section-icon-settings',
-  },
-);
+});
 
 // Types for emergency alerts
 interface EmergencyAlert {
@@ -531,7 +509,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
             </div>
             <div className="flex-1">
               <p className="text-xl font-bold text-safe">{onlineCount} usuarios conectados</p>
-              <p className="text-base text-muted-foreground">Miembros activos en la comunidad</p>
+              <p className="text-base text-muted-foreground">Personal activo en la red</p>
             </div>
             <ChevronRight className="w-6 h-6 text-muted-foreground" />
           </div>

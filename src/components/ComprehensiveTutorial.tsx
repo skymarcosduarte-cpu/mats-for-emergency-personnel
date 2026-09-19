@@ -396,20 +396,6 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
                   <p className="text-xs text-muted-foreground">Tarjetas con protocolos de primeros auxilios, evacuación, seguridad y más</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 p-3 bg-safe/10 rounded-lg border border-safe/30">
-                <Radio className="w-5 h-5 text-safe mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-safe">Centro de Monitoreo — feeds de noticias en vivo</p>
-                  <p className="text-xs text-muted-foreground">Abre por defecto con N+, CNN en Español, Sky News y TELESUR. Cuadrículas de 1x1 a 3x3 y pantalla completa</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-3 bg-warning/10 rounded-lg border border-warning/30">
-                <Radio className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-warning">Canal Zello</p>
-                  <p className="text-xs text-muted-foreground">Radio PoC de la comunidad EMERGENCIAS ARABA</p>
-                </div>
-              </div>
             </div>
             <div className="bg-safe/10 border border-safe/30 rounded-lg p-2 text-xs">
               <p className="font-medium text-safe">📥 El directorio se descarga automáticamente y funciona SIN INTERNET</p>

@@ -22,8 +22,6 @@ export interface UserLocationSummary {
   show_name_on_map?: boolean | null;
   can_provide_medical_assistance?: boolean | null;
   has_first_aid_kit?: boolean | null;
-  zello_username?: string | null;
-  zello_transmitting_until?: string | null;
 }
 
 interface ActiveUsersPanelProps {
@@ -297,28 +295,10 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                     className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/50 active:bg-accent/70 transition-colors group"
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      {/* Role icon with optional Zello pulsing badge */}
                       <div className="relative flex-shrink-0">
                         <span className="text-lg">
                           {getRoleIcon(user.role, user.is_in_transit)}
                         </span>
-                        {(() => {
-                          const until = user.zello_transmitting_until;
-                          const isActive = until && new Date(until) > new Date();
-                          return isActive ? (
-                            <>
-                              {/* Outer glow ring */}
-                              <span className="absolute -inset-2 rounded-full bg-orange-500/20 animate-ping" />
-                              <span
-                                className="absolute -top-2 -right-2 text-[14px] drop-shadow-[0_0_6px_rgba(249,115,22,1)]"
-                                style={{ filter: 'drop-shadow(0 0 4px #f97316)' }}
-                                title={user.zello_username ? `🎙️ @${user.zello_username} transmitiendo en Zello` : '🎙️ Transmitiendo en Zello'}
-                              >
-                                🎙️
-                              </span>
-                            </>
-                          ) : null;
-                        })()}
                       </div>
                       <div className="min-w-0 flex-1">
                         {/* Show name if allowed */}
@@ -336,30 +316,6 @@ export const ActiveUsersPanel: React.FC<ActiveUsersPanelProps> = ({
                         <div className="flex items-center gap-1">
                           {getRoleBadge(user.role, user.is_in_transit)}
                         </div>
-                        {/* Zello username + transmission status */}
-                        {user.zello_username && (() => {
-                          const until = user.zello_transmitting_until;
-                          const isActive = until && new Date(until) > new Date();
-                          return isActive ? (
-                            <div className="mt-1 flex items-center gap-1">
-                              <span
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black text-white"
-                                style={{
-                                  background: 'linear-gradient(90deg, #f97316, #ef4444)',
-                                  boxShadow: '0 0 8px rgba(249,115,22,0.9), 0 0 2px rgba(249,115,22,0.5)',
-                                  animation: 'zello-badge-pulse 0.8s ease-in-out infinite alternate',
-                                }}
-                              >
-                                🎙️ EN VIVO
-                              </span>
-                              <span className="text-[10px] text-orange-400 font-medium">@{user.zello_username}</span>
-                            </div>
-                          ) : (
-                            <div className="text-[10px] mt-0.5 flex items-center gap-0.5 font-medium text-muted-foreground">
-                              📻 @{user.zello_username}
-                            </div>
-                          );
-                        })()}
                         {user.is_in_transit && user.transit_destination && (
                           <div className="text-[10px] text-amber-500 truncate max-w-[100px] mt-0.5" title={user.transit_destination}>
                             → {user.transit_destination}
