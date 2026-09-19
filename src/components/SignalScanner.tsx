@@ -69,14 +69,19 @@ export const SignalScanner: React.FC = () => {
       publishSectorOverlay(snapshot);
       setScanning(signalScanner.isScanning());
       setError(signalScanner.getLastError());
+      setPass(signalScanner.getPass());
+      setConfirmed(signalScanner.getConfirmedBySector());
+      // Guía sonora: pitidos más rápidos cuando la señal se hace más fuerte
+      signalGuide.update(next[0] ? next[0].rssi : null);
     });
     return unsubscribe;
   }, []);
 
-  // Al salir de la pantalla se detiene el escaneo para no pelear con la Red Mesh
+  // Al salir de la pantalla se detiene el escaneo y la guía sonora
   useEffect(() => {
     return () => {
       if (signalScanner.isScanning()) void signalScanner.stop();
+      signalGuide.setEnabled(false);
     };
   }, []);
 
