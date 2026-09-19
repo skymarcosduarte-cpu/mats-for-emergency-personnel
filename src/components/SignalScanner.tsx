@@ -13,7 +13,11 @@ import {
   Info,
   AlertTriangle,
   Clock,
+  Volume2,
+  VolumeX,
+  CheckCircle2,
 } from 'lucide-react';
+import { signalGuide } from '@/lib/mesh/signalGuide';
 import { SignalSectorMap } from '@/components/SignalSectorMap';
 import type { SectorSnapshot } from '@/lib/mesh/signalSectors';
 import { publishSectorOverlay, clearSectorOverlay } from '@/lib/mesh/signalSectorOverlay';
@@ -51,6 +55,9 @@ export const SignalScanner: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(signalScanner.getLastError());
   const [sectors, setSectors] = useState<SectorSnapshot>(signalScanner.getSectors());
+  const [guideOn, setGuideOn] = useState(signalGuide.isEnabled());
+  const [pass, setPass] = useState(signalScanner.getPass());
+  const [confirmed, setConfirmed] = useState<{ label: string; devices: number }[]>([]);
   const { position } = useLocation();
 
   useEffect(() => {
@@ -62,14 +69,19 @@ export const SignalScanner: React.FC = () => {
       publishSectorOverlay(snapshot);
       setScanning(signalScanner.isScanning());
       setError(signalScanner.getLastError());
+      setPass(signalScanner.getPass());
+      setConfirmed(signalScanner.getConfirmedBySector());
+      // Guía sonora: pitidos más rápidos cuando la señal se hace más fuerte
+      signalGuide.update(next[0] ? next[0].rssi : null);
     });
     return unsubscribe;
   }, []);
 
-  // Al salir de la pantalla se detiene el escaneo para no pelear con la Red Mesh
+  // Al salir de la pantalla se detiene el escaneo y la guía sonora
   useEffect(() => {
     return () => {
       if (signalScanner.isScanning()) void signalScanner.stop();
+      signalGuide.setEnabled(false);
     };
   }, []);
 
@@ -153,6 +165,61 @@ export const SignalScanner: React.FC = () => {
           )}
           {scanning ? 'DETENER BÚSQUEDA' : 'INICIAR BÚSQUEDA'}
         </Button>
+
+        {/* Guía sonora: pitidos más rápidos al acercarse, avisos de voz */}
+        <Button
+          variant={guideOn ? 'default' : 'outline'}
+          size="lg"
+          className="w-full h-12 text-sm font-bold"
+          onClick={() => {
+            const next = !guideOn;
+            signalGuide.setEnabled(next);
+            setGuideOn(next);
+            toast.info(next ? 'Guía sonora activada' : 'Guía sonora desactivada');
+          }}
+        >
+          {guideOn ? <Volume2 className="w-5 h-5 mr-2" /> : <VolumeX className="w-5 h-5 mr-2" />}
+          {guideOn ? 'GUÍA SONORA ACTIVA' : 'ACTIVAR GUÍA SONORA'}
+        </Button>
+
+        {/* Comparar dos pasadas del mismo barrido */}
+        <div className="p-3 rounded-lg border border-border space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground">
+            PASADA DE BARRIDO · actualmente PASO {pass}
+          </p>
+          <div className="flex gap-2">
+            {[1, 2].map((n) => (
+              <Button
+                key={n}
+                size="sm"
+                variant={pass === n ? 'default' : 'outline'}
+                className="flex-1 font-bold"
+                onClick={() => {
+                  signalScanner.setPass(n);
+                  setPass(n);
+                  toast.info(`Registrando como Paso ${n}`);
+                }}
+              >
+                PASO {n}
+              </Button>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Camina la zona en Paso 1, regresa y repítela en Paso 2: si una señal aparece en el
+            mismo sector en las dos pasadas, es un indicio confirmado (no alguien que iba pasando).
+          </p>
+          {confirmed.length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {confirmed.map((entry) => (
+                <Badge key={entry.label} className="bg-destructive text-destructive-foreground">
+                  <CheckCircle2 className="w-3 h-3 mr-1" /> {entry.label}: {entry.devices}{' '}
+                  confirmado{entry.devices === 1 ? '' : 's'}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+
 
         {error && (
           <div className="flex gap-2 p-3 rounded-lg bg-muted text-sm text-muted-foreground">

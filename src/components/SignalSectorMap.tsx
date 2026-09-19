@@ -23,15 +23,20 @@ function heatClass(ratio: number): string {
 
 export const SignalSectorMap: React.FC<Props> = ({ snapshot, userCell }) => {
   const { cells, hot } = snapshot;
+  const visited = snapshot.visited ?? [];
+  const visitedOrder = new Map(visited.map((key, index) => [key, index + 1]));
   // La cuadrícula se amplía si el rescatista caminó fuera de las celdas con
-  // indicios, para que siempre vea en qué sector está parado.
-  const rows = userCell
-    ? [...new Set([...snapshot.rows, userCell.row])].sort((a, b) => a - b)
-    : snapshot.rows;
-  const cols = userCell
-    ? [...new Set([...snapshot.cols, userCell.col])].sort((a, b) => a - b)
-    : snapshot.cols;
-  if (cells.length === 0 && !userCell) return null;
+  // indicios (o dejó recorrido ahí), para que siempre vea dónde está parado
+  // y qué zonas ya barrió.
+  const extraRows = visited.map((key) => Number(key.split(':')[0]));
+  const extraCols = visited.map((key) => Number(key.split(':')[1]));
+  const rows = [
+    ...new Set([...snapshot.rows, ...extraRows, ...(userCell ? [userCell.row] : [])]),
+  ].sort((a, b) => a - b);
+  const cols = [
+    ...new Set([...snapshot.cols, ...extraCols, ...(userCell ? [userCell.col] : [])]),
+  ].sort((a, b) => a - b);
+  if (cells.length === 0 && !userCell && visited.length === 0) return null;
 
   const maxScore = Math.max(...cells.map((c) => SectorGrid.score(c)), 0);
   const byKey = new Map(cells.map((c) => [`${c.row}:${c.col}`, c]));
@@ -59,20 +64,33 @@ export const SignalSectorMap: React.FC<Props> = ({ snapshot, userCell }) => {
             const ratio = cell && maxScore > 0 ? SectorGrid.score(cell) / maxScore : 0;
             const isHot = Boolean(cell && hot && cell.row === hot.row && cell.col === hot.col);
             const isUser = Boolean(userCell && userCell.row === row && userCell.col === col);
+            const step = visitedOrder.get(`${row}:${col}`);
+            const confirmed = cell ? SectorGrid.confirmed(cell).length : 0;
             return (
               <div
                 key={`${row}:${col}`}
                 className={cn(
                   'relative aspect-square rounded-md flex flex-col items-center justify-center text-xs font-bold',
                   heatClass(ratio),
+                  step && !cell && 'border-2 border-dashed border-foreground/50',
                   isHot && 'ring-4 ring-primary ring-offset-1 ring-offset-background',
                   isUser && 'outline outline-4 outline-offset-2 outline-foreground',
                 )}
               >
-                <span>{cell ? cell.label : isUser ? userCell?.label : ''}</span>
+                <span>
+                  {cell ? cell.label : isUser ? userCell?.label : step ? '·' : ''}
+                </span>
                 {cell && (
                   <span className="text-[10px] font-semibold opacity-90">
                     {cell.devices.size} disp.
+                  </span>
+                )}
+                {confirmed > 0 && (
+                  <span className="text-[10px] font-black opacity-90">✓{confirmed}</span>
+                )}
+                {step && !isUser && (
+                  <span className="absolute bottom-0.5 right-1 text-[9px] font-semibold opacity-70">
+                    {step}
                   </span>
                 )}
                 {isUser && (
@@ -85,6 +103,12 @@ export const SignalSectorMap: React.FC<Props> = ({ snapshot, userCell }) => {
           }),
         )}
       </div>
+
+      <p className="text-[11px] text-muted-foreground">
+        El número pequeño es tu recorrido (orden en que pasaste por el sector); los cuadros con
+        borde punteado ya los barriste sin encontrar señal. ✓ = dispositivo oído en dos pasadas
+        distintas (indicio confirmado).
+      </p>
 
       {hot && (
         <div className="flex gap-2 items-start p-3 rounded-lg border-2 border-primary bg-primary/5">
