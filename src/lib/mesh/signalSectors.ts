@@ -29,6 +29,8 @@ export interface SectorCell {
   lat: number;
   lng: number;
   updatedAt: number;
+  /** Dispositivos oídos en cada pasada (1, 2…): permite comparar barridos */
+  passes: Map<number, Set<string>>;
 }
 
 export interface SectorSnapshot {
@@ -36,6 +38,8 @@ export interface SectorSnapshot {
   rows: number[];
   cols: number[];
   hot: SectorCell | null;
+  /** Celdas ya recorridas por el rescatista (clave "row:col"), en orden */
+  visited: string[];
 }
 
 function labelFor(row: number, col: number): string {
