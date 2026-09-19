@@ -1056,7 +1056,12 @@ export const InternalMessaging: React.FC<InternalMessagingProps> = ({
               )}
             >
               <span className="text-[10px]">{formatMessageTime(msg.created_at)}</span>
-              {isMine && (msg.read ? <CheckCheck className="w-3.5 h-3.5 text-blue-400" /> : <Check className="w-3.5 h-3.5" />)}
+              {isMine && msg.pending ? (
+                <span className="text-[10px] font-semibold">⏳ Sin enviar</span>
+              ) : (
+                isMine && (msg.read ? <CheckCheck className="w-3.5 h-3.5 text-blue-400" /> : <Check className="w-3.5 h-3.5" />)
+              )}
+
             </div>
           </div>
         </div>
