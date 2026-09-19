@@ -549,16 +549,6 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ userRole = 'SO
     }
   };
 
-  // Render Memory Gallery as its own full screen
-  if (activeSection === 'galeria' && !showLanding) {
-    return <MemoryGallery onBack={() => setShowLanding(true)} />;
-  }
-
-  // Render Job Board as its own full screen
-  if (activeSection === 'jobs' && !showLanding) {
-    return <JobBoardScreen onBack={() => setShowLanding(true)} />;
-  }
-
   // Landing view with large buttons
   if (showLanding) {
     return (
