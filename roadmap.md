@@ -17,3 +17,10 @@
 - [x] Cambiar la descripción de Sismos a “Últimos Sismos y Monitoreo”.
 - [x] Sustituir las etiquetas SOS y EX-SOS por “Rescatista Activo” y “Ex-Rescatista” en registro y Ajustes.
 - [x] Verificar los accesos y textos actualizados.
+
+# Centro de Monitoreo simplificado
+
+- [x] Limitar el catálogo y la pantalla a N+, CNN en Español, Euronews en Español y Live Earthquake Monitoring / GlobalQuake.
+- [x] Eliminar los controles de agregar/cambiar cámaras y dejar solamente audio por stream.
+- [x] Verificar cuatro streams fijos y cambios de audio con pruebas y pantalla independiente.
+- [ ] Confirmar reproducción en vivo: YouTube devuelve restricciones/errores desde el entorno de prueba; requiere comprobación en la app con sesión y red permitida.

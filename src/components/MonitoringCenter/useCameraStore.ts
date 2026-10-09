@@ -1,133 +1,23 @@
-// Hook de estado para el Centro de Monitoreo con persistencia en localStorage — v2
+import { useState, useCallback } from 'react';
+import { CellConfig } from './types';
+import { DEFAULT_INITIAL_CAMERA_IDS } from './cameraData';
 
-import { useState, useCallback, useEffect } from 'react';
-import { LayoutType, CellConfig, Camera, MonitoringState } from './types';
-import { getCellCount, DEFAULT_INITIAL_CAMERA_IDS } from './cameraData';
-
-const STORAGE_KEY = 'mats-monitoring-center-v11';
-
-function loadState(): MonitoringState | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveState(state: MonitoringState) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch { /* silently fail */ }
-}
-
-function createDefaultCells(): CellConfig[] {
-  return DEFAULT_INITIAL_CAMERA_IDS.map((cameraId, i) => ({
-    slotIndex: i,
-    cameraId,
-    isMuted: true,
+export function createDefaultCells(): CellConfig[] {
+  return DEFAULT_INITIAL_CAMERA_IDS.map((cameraId, slotIndex) => ({
+    slotIndex, cameraId, isMuted: true,
   }));
 }
 
-function createEmptyCells(count: number): CellConfig[] {
-  return Array.from({ length: count }, (_, i) => ({
-    slotIndex: i,
-    cameraId: null,
-    isMuted: true,
-  }));
+export function toggleCellAudio(cells: CellConfig[], slotIndex: number): CellConfig[] {
+  return cells.map(cell => cell.slotIndex === slotIndex
+    ? { ...cell, isMuted: !cell.isMuted } : cell);
 }
 
 export function useCameraStore() {
-  const [layout, setLayoutState] = useState<LayoutType>(() => {
-    const saved = loadState();
-    return saved?.layout ?? '2x2';
-  });
-  const [cells, setCellsState] = useState<CellConfig[]>(() => {
-    const saved = loadState();
-    return saved?.cells ?? createDefaultCells();
-  });
-  const [customCameras, setCustomCameras] = useState<Camera[]>(() => {
-    const saved = loadState();
-    return saved?.customCameras ?? [];
-  });
-
-  // Persistence is handled below after allCells declaration
-
-  // Keep a full registry of all cell assignments so expanding restores them
-  const [allCells, setAllCells] = useState<CellConfig[]>(() => {
-    const saved = loadState();
-    return saved?.allCells ?? saved?.cells ?? createDefaultCells();
-  });
-
-  // Persist allCells too
-  useEffect(() => {
-    saveState({ layout, cells, customCameras, allCells });
-  }, [layout, cells, customCameras, allCells]);
-
-  const setLayout = useCallback((newLayout: LayoutType) => {
-    const newCount = getCellCount(newLayout);
-    setAllCells(prevAll => {
-      // Merge current visible cells into the full registry
-      const merged = [...prevAll];
-      // Expand registry if needed
-      while (merged.length < newCount) {
-        merged.push({ slotIndex: merged.length, cameraId: null, isMuted: true });
-      }
-      // Slice visible cells from the full registry
-      const visible = merged.slice(0, newCount).map((c, i) => ({ ...c, slotIndex: i }));
-      setCellsState(visible);
-      return merged.map((c, i) => ({ ...c, slotIndex: i }));
-    });
-    setLayoutState(newLayout);
-  }, []);
-
-  // Sync allCells when cells change (assign/remove/mute)
-  const updateCell = useCallback((slotIndex: number, update: Partial<CellConfig>) => {
-    const updater = (prev: CellConfig[]) => prev.map(c =>
-      c.slotIndex === slotIndex ? { ...c, ...update } : c
-    );
-    setCellsState(updater);
-    setAllCells(updater);
-  }, []);
-
-  const assignCamera = useCallback((slotIndex: number, cameraId: string) => {
-    updateCell(slotIndex, { cameraId });
-  }, [updateCell]);
-
-  const removeCamera = useCallback((slotIndex: number) => {
-    updateCell(slotIndex, { cameraId: null });
-  }, [updateCell]);
-
+  // Fixed streams intentionally ignore legacy layouts, custom cameras and saved audio.
+  const [cells, setCells] = useState(createDefaultCells);
   const toggleMute = useCallback((slotIndex: number) => {
-    const toggle = (prev: CellConfig[]) => prev.map(c =>
-      c.slotIndex === slotIndex ? { ...c, isMuted: !c.isMuted } : c
-    );
-    setCellsState(toggle);
-    setAllCells(toggle);
+    setCells(previous => toggleCellAudio(previous, slotIndex));
   }, []);
-
-  const addCustomCamera = useCallback((camera: Camera) => {
-    setCustomCameras(prev => [...prev, camera]);
-  }, []);
-
-  const removeCustomCamera = useCallback((cameraId: string) => {
-    setCustomCameras(prev => prev.filter(c => c.id !== cameraId));
-    const updater = (prev: CellConfig[]) => prev.map(c =>
-      c.cameraId === cameraId ? { ...c, cameraId: null } : c
-    );
-    setCellsState(updater);
-    setAllCells(updater);
-  }, []);
-
-  return {
-    layout,
-    cells,
-    customCameras,
-    setLayout,
-    assignCamera,
-    removeCamera,
-    toggleMute,
-    addCustomCamera,
-    removeCustomCamera,
-  };
+  return { cells, toggleMute };
 }
